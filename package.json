@@ -2,6 +2,7 @@
   "name": "retrieva",
   "version": "1.0.0",
   "description": "RAG-powered knowledge retrieval platform",
+  "type": "module",
   "private": true,
   "workspaces": [
     "backend",
