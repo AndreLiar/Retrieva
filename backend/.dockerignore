@@ -1,0 +1,43 @@
+# Dependencies
+node_modules
+npm-debug.log
+
+# Testing
+coverage
+tests
+*.test.js
+*.spec.js
+vitest.config.js
+
+# Development
+.env
+.env.local
+.env.*.local
+.DS_Store
+
+# Git
+.git
+.gitignore
+
+# Documentation
+*.md
+docs
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# Logs
+logs
+*.log
+
+# Build artifacts
+dist
+build
+
+# Misc
+.eslintrc*
+.prettierrc*
+.editorconfig

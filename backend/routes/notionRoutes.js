@@ -1,0 +1,43 @@
+import express from 'express';
+import {
+  getAuthorizationUrl,
+  handleOAuthCallback,
+  getWorkspaces,
+  getWorkspace,
+  updateWorkspace,
+  deleteWorkspace,
+  triggerSync,
+  getSyncStatus,
+  getSyncHistory,
+  listPages,
+  listDatabases,
+  disconnectWorkspace,
+} from '../controllers/notionController.js';
+import { authenticate, optionalAuth } from '../middleware/auth.js';
+import { loadWorkspace, loadWorkspaceSafe } from '../middleware/loadWorkspace.js';
+
+const router = express.Router();
+
+// OAuth flow routes
+// Auth URL requires authentication (user must be logged in to connect workspace)
+router.get('/auth', authenticate, getAuthorizationUrl);
+// Callback is called by Notion, uses state token to identify user
+router.get('/callback', handleOAuthCallback);
+
+// Workspace management routes (require authentication)
+router.get('/workspaces', authenticate, getWorkspaces);
+router.get('/workspaces/:id', authenticate, loadWorkspaceSafe, getWorkspace);
+router.patch('/workspaces/:id', authenticate, loadWorkspace, updateWorkspace);
+router.delete('/workspaces/:id', authenticate, loadWorkspace, deleteWorkspace);
+router.post('/workspaces/:id/disconnect', authenticate, loadWorkspace, disconnectWorkspace);
+
+// Sync management routes (require authentication)
+router.post('/workspaces/:id/sync', authenticate, loadWorkspace, triggerSync);
+router.get('/workspaces/:id/sync-status', authenticate, loadWorkspaceSafe, getSyncStatus);
+router.get('/workspaces/:id/sync-history', authenticate, loadWorkspace, getSyncHistory);
+
+// Document selection routes (require authentication)
+router.get('/workspaces/:id/pages', authenticate, loadWorkspace, listPages);
+router.get('/workspaces/:id/databases', authenticate, loadWorkspace, listDatabases);
+
+export default router;

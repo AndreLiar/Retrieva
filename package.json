@@ -1,0 +1,42 @@
+{
+  "name": "retrieva",
+  "version": "1.0.0",
+  "description": "RAG-powered knowledge retrieval platform",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "ragas-service"
+  ],
+  "scripts": {
+    "prepare": "husky",
+    "backend": "npm --prefix backend",
+    "backend:dev": "npm --prefix backend run dev",
+    "backend:test": "npm --prefix backend test",
+    "backend:lint": "npm --prefix backend run lint",
+    "ragas": "cd ragas-service && python app.py",
+    "lint": "npm --prefix backend run lint",
+    "test": "npm --prefix backend test",
+    "test:ci": "npm --prefix backend test -- --run"
+  },
+  "devDependencies": {
+    "husky": "^9.0.0",
+    "lint-staged": "^15.0.0",
+    "@commitlint/cli": "^19.0.0",
+    "@commitlint/config-conventional": "^19.0.0"
+  },
+  "lint-staged": {
+    "backend/**/*.js": [
+      "eslint --fix --config backend/eslint.config.js",
+      "prettier --write --config backend/.prettierrc"
+    ],
+    "ragas-service/**/*.py": [
+      "echo 'Python files staged - linting handled in CI'"
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AndreLiar/Retrieva.git"
+  },
+  "author": "",
+  "license": "ISC"
+}

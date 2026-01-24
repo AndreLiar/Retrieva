@@ -1,0 +1,59 @@
+# =============================================================================
+# Retrieva - Git Ignore
+# =============================================================================
+
+# Dependencies
+node_modules/
+.pnp/
+.pnp.js
+
+# Testing
+coverage/
+
+# Production builds
+dist/
+build/
+
+# Environment files (keep .env.example)
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+venv/
+.venv/
+ENV/
+
+# Misc
+*.bak
+*.tmp
+.cache/
+
+# Qdrant data
+qdrant_storage/
+backend/qdrant_storage/
+
+# Package locks in subfolders (use root)
+# backend/package-lock.json
+
+# Husky in subfolders
+backend/.husky/

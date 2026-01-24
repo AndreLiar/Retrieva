@@ -1,0 +1,27 @@
+# Docker Compose for RAGAS Evaluation Microservice only
+# Your existing MongoDB, Redis, Qdrant infrastructure stays as-is
+
+version: '3.8'
+
+services:
+  ragas-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8001"
+    environment:
+      - RAGAS_SERVICE_PORT=8001
+      - RAGAS_LLM_PROVIDER=${RAGAS_LLM_PROVIDER:-ollama}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-llama3.2}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    # For macOS/Windows to access host services (Ollama)
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

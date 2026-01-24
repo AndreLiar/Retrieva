@@ -1,0 +1,21 @@
+# =============================================================================
+# Pre-commit Hook: Lint + Format
+# =============================================================================
+# Runs before each commit to ensure code quality
+
+echo "🔍 Running pre-commit checks..."
+
+# Run lint-staged for incremental linting
+npx lint-staged
+
+# Check if backend has changes
+if git diff --cached --name-only | grep -q "^backend/"; then
+  echo "📝 Linting backend code..."
+  cd backend && npm run lint --if-present || {
+    echo "❌ Linting failed. Please fix errors before committing."
+    exit 1
+  }
+  cd ..
+fi
+
+echo "✅ Pre-commit checks passed!"

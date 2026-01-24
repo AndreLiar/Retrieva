@@ -1,0 +1,30 @@
+# Logs
+logs/
+*.log
+combined.log
+error.log
+
+# Database files
+qdrant_storage/
+dump.rdb
+*.db
+
+# Temporary files
+*.tmp
+tmp/
+
+# Node modules
+node_modules/
+
+# Environment
+.env
+.env.local
+
+# Redis dump
+dump.rdb
+
+# MongoDB data
+data/
+
+# Coverage
+coverage/

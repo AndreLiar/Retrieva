@@ -1,0 +1,27 @@
+{
+  "verbose": false,
+  "watch": [
+    "routes/**/*.js",
+    "controllers/**/*.js",
+    "services/**/*.js",
+    "adapters/**/*.js",
+    "config/**/*.js",
+    "utils/**/*.js",
+    "app.js",
+    "index.js"
+  ],
+  "ignore": [
+    "node_modules/**",
+    "logs/**",
+    "*.log",
+    "qdrant_storage/**",
+    "dump.rdb",
+    ".git/**",
+    "models/**",
+    "workers/**",
+    "loaders/**",
+    "queues/**"
+  ],
+  "ext": "js,json",
+  "delay": "2000"
+}
