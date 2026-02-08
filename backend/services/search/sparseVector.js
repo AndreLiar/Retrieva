@@ -23,6 +23,7 @@ const vocabularySchema = new mongoose.Schema(
   {
     workspaceId: { type: String, required: true, index: true },
     term: { type: String, required: true },
+    termIndex: { type: Number, required: true }, // Stable index for sparse vector matching
     idf: { type: Number, required: true },
     documentFrequency: { type: Number, required: true },
   },
@@ -30,6 +31,7 @@ const vocabularySchema = new mongoose.Schema(
 );
 
 vocabularySchema.index({ workspaceId: 1, term: 1 }, { unique: true });
+vocabularySchema.index({ workspaceId: 1, termIndex: 1 }); // For efficient loading
 
 const Vocabulary = mongoose.models.Vocabulary || mongoose.model('Vocabulary', vocabularySchema);
 
@@ -49,6 +51,7 @@ const sparseVectorSchema = new mongoose.Schema(
     metadata: {
       title: String,
       contentHash: String,
+      sourceId: String, // For matching with dense results in hybrid search
     },
   },
   { timestamps: true }
@@ -205,7 +208,7 @@ class SparseVectorManager {
       vocabOps.push({
         updateOne: {
           filter: { workspaceId, term },
-          update: { $set: { idf, documentFrequency: df } },
+          update: { $set: { idf, documentFrequency: df, termIndex } }, // Store termIndex!
           upsert: true,
         },
       });
@@ -254,10 +257,9 @@ class SparseVectorManager {
     const vocab = await Vocabulary.find({ workspaceId }).lean();
     const vocabMap = new Map();
 
-    let index = 0;
     for (const entry of vocab) {
-      vocabMap.set(entry.term, { index, idf: entry.idf });
-      index++;
+      // Use the stored termIndex for stable sparse vector matching
+      vocabMap.set(entry.term, { index: entry.termIndex, idf: entry.idf });
     }
 
     this.vocabCache.set(workspaceId, vocabMap);
@@ -378,7 +380,11 @@ class SparseVectorManager {
                   vector,
                   docLength: terms.length,
                   documentSourceId: doc.documentSourceId,
-                  metadata: { title: doc.title, contentHash: doc.contentHash },
+                  metadata: {
+                    title: doc.title,
+                    contentHash: doc.contentHash,
+                    sourceId: doc.sourceId, // For matching with dense results
+                  },
                 },
               },
               upsert: true,
@@ -503,6 +509,11 @@ class SparseVectorManager {
   /**
    * Hybrid search combining dense and sparse results
    *
+   * Uses a modified RRF (Reciprocal Rank Fusion) with sparse score boosting:
+   * - Standard RRF for documents in both dense and sparse results
+   * - Sparse-only documents with high BM25 scores get a relevance boost
+   * - This ensures keyword-matched documents aren't buried by semantic-only results
+   *
    * @param {string} workspaceId - Workspace ID
    * @param {string} query - Search query
    * @param {Array} denseResults - Results from dense retrieval
@@ -515,13 +526,16 @@ class SparseVectorManager {
 
     const sparseResults = await this.searchSparse(workspaceId, query, { limit: limit * 2 });
 
-    // RRF scoring
+    // Track max sparse score for normalization
+    const maxSparseScore = sparseResults.length > 0 ? sparseResults[0].score : 1;
+
+    // RRF scoring - use sourceId as the common key for matching
     const RRF_K = 60;
     const rrfScores = new Map();
 
-    // Process dense results
+    // Process dense results - use sourceId as the key
     denseResults.forEach((result, rank) => {
-      const id = result.metadata?.vectorStoreId || result.id || `dense_${rank}`;
+      const id = result.metadata?.sourceId || result.metadata?.vectorStoreId || `dense_${rank}`;
       if (!rrfScores.has(id)) {
         rrfScores.set(id, {
           denseRank: null,
@@ -529,16 +543,20 @@ class SparseVectorManager {
           denseScore: null,
           sparseScore: null,
           doc: result,
+          vectorStoreId: result.metadata?.vectorStoreId,
         });
       }
       const entry = rrfScores.get(id);
-      entry.denseRank = rank + 1;
-      entry.denseScore = result.metadata?.score || 1 / (rank + 1);
+      if (!entry.denseRank || rank + 1 < entry.denseRank) {
+        entry.denseRank = rank + 1;
+        entry.denseScore = result.metadata?.score || 1 / (rank + 1);
+        entry.doc = result;
+      }
     });
 
-    // Process sparse results
+    // Process sparse results - use sourceId as the key
     sparseResults.forEach((result, rank) => {
-      const id = result.vectorStoreId;
+      const id = result.metadata?.sourceId || result.vectorStoreId;
       if (!rrfScores.has(id)) {
         rrfScores.set(id, {
           denseRank: null,
@@ -546,32 +564,66 @@ class SparseVectorManager {
           denseScore: null,
           sparseScore: null,
           doc: null,
+          vectorStoreId: result.vectorStoreId,
         });
       }
       const entry = rrfScores.get(id);
-      entry.sparseRank = rank + 1;
-      entry.sparseScore = result.score;
+      if (!entry.sparseRank || rank + 1 < entry.sparseRank) {
+        entry.sparseRank = rank + 1;
+        entry.sparseScore = result.score;
+        if (!entry.vectorStoreId) {
+          entry.vectorStoreId = result.vectorStoreId;
+        }
+      }
     });
 
-    // Calculate RRF scores
+    // Calculate RRF scores with sparse relevance boosting
     const merged = [];
     for (const [id, entry] of rrfScores) {
       let rrfScore = 0;
-      if (entry.denseRank) rrfScore += alpha * (1 / (RRF_K + entry.denseRank));
-      if (entry.sparseRank) rrfScore += (1 - alpha) * (1 / (RRF_K + entry.sparseRank));
+
+      // Standard RRF contribution from dense results
+      if (entry.denseRank) {
+        rrfScore += alpha * (1 / (RRF_K + entry.denseRank));
+      }
+
+      // Sparse contribution with score-based boosting
+      if (entry.sparseRank) {
+        const baseSparseCont = (1 - alpha) * (1 / (RRF_K + entry.sparseRank));
+
+        // Calculate normalized sparse score (0-1)
+        const normalizedSparseScore = entry.sparseScore / maxSparseScore;
+
+        // For sparse-only results with high BM25 scores, apply a relevance boost
+        // This compensates for dense search missing highly relevant keyword matches
+        if (!entry.denseRank && normalizedSparseScore >= 0.5) {
+          // Boost factor: up to 2x for top sparse results
+          // Scales from 1.0 (at 50% of max score) to 2.0 (at 100% of max score)
+          const boostFactor = 1.0 + normalizedSparseScore;
+          rrfScore += baseSparseCont * boostFactor;
+        } else {
+          rrfScore += baseSparseCont;
+        }
+      }
 
       merged.push({
         id,
+        vectorStoreId: entry.vectorStoreId,
         rrfScore,
         denseRank: entry.denseRank,
         sparseRank: entry.sparseRank,
         denseScore: entry.denseScore,
         sparseScore: entry.sparseScore,
+        normalizedSparseScore: entry.sparseScore ? (entry.sparseScore / maxSparseScore).toFixed(3) : null,
         doc: entry.doc,
       });
     }
 
     merged.sort((a, b) => b.rrfScore - a.rrfScore);
+
+    // Debug logging
+    const sparseOnlyWithVectorId = merged.filter(m => m.sparseRank && !m.denseRank && m.vectorStoreId);
+    const sparseOnlyWithoutVectorId = merged.filter(m => m.sparseRank && !m.denseRank && !m.vectorStoreId);
 
     logger.info('Hybrid search completed', {
       service: 'sparse-vector',
@@ -579,7 +631,16 @@ class SparseVectorManager {
       denseResults: denseResults.length,
       sparseResults: sparseResults.length,
       mergedResults: merged.length,
-      topRRFScore: merged[0]?.rrfScore?.toFixed(4),
+      maxSparseScore: maxSparseScore.toFixed(2),
+      sparseOnlyWithVectorId: sparseOnlyWithVectorId.length,
+      sparseOnlyWithoutVectorId: sparseOnlyWithoutVectorId.length,
+      sparseOnlyCount: merged.filter((m) => m.sparseRank && !m.denseRank).length,
+      topResult: {
+        rrfScore: merged[0]?.rrfScore?.toFixed(4),
+        denseRank: merged[0]?.denseRank,
+        sparseRank: merged[0]?.sparseRank,
+        normalizedSparseScore: merged[0]?.normalizedSparseScore,
+      },
       processingTimeMs: Date.now() - startTime,
     });
 
@@ -636,6 +697,102 @@ class SparseVectorManager {
 
   async removeFromInvertedIndex(workspaceId, vectorStoreId) {
     return this.invertedIndexManager.removeFromInvertedIndex(workspaceId, vectorStoreId);
+  }
+
+  /**
+   * Rebuild vocabulary from Qdrant documents
+   * Fetches all documents for a workspace from Qdrant and rebuilds vocabulary
+   *
+   * @param {string} workspaceId - Workspace ID
+   * @returns {Promise<Object>} Vocabulary stats
+   */
+  async rebuildVocabularyFromQdrant(workspaceId) {
+    const startTime = Date.now();
+    logger.info('Rebuilding vocabulary from Qdrant', {
+      service: 'sparse-vector',
+      workspaceId,
+    });
+
+    try {
+      const { QdrantClient } = await import('@qdrant/js-client-rest');
+      const qdrantUrl = process.env.QDRANT_URL || 'http://localhost:6333';
+      const collectionName = process.env.QDRANT_COLLECTION_NAME || 'langchain-rag';
+
+      const client = new QdrantClient({ url: qdrantUrl });
+
+      // Fetch all documents for this workspace from Qdrant
+      const documents = [];
+      let offset = null;
+      const batchSize = 100;
+
+      do {
+        const result = await client.scroll(collectionName, {
+          filter: {
+            must: [
+              {
+                key: 'metadata.workspaceId',
+                match: { value: workspaceId },
+              },
+            ],
+          },
+          limit: batchSize,
+          offset: offset,
+          with_payload: true,
+          with_vector: false,
+        });
+
+        for (const point of result.points) {
+          const content = point.payload?.pageContent || point.payload?.content || '';
+          if (content) {
+            documents.push({
+              content,
+              vectorStoreId: point.id,
+              // Include sourceId and title for hybrid search matching
+              sourceId: point.payload?.metadata?.sourceId,
+              title: point.payload?.metadata?.documentTitle,
+            });
+          }
+        }
+
+        offset = result.next_page_offset;
+      } while (offset);
+
+      if (documents.length === 0) {
+        logger.warn('No documents found in Qdrant for vocabulary rebuild', {
+          service: 'sparse-vector',
+          workspaceId,
+        });
+        return { vocabularySize: 0, totalDocuments: 0, avgDocLength: 0 };
+      }
+
+      logger.info(`Fetched ${documents.length} documents from Qdrant`, {
+        service: 'sparse-vector',
+        workspaceId,
+      });
+
+      // Build vocabulary from fetched documents
+      const result = await this.buildVocabulary(workspaceId, documents);
+
+      // Now re-index all sparse vectors with the new vocabulary
+      await this.batchIndexDocuments(workspaceId, documents);
+
+      logger.info('Vocabulary rebuild complete', {
+        service: 'sparse-vector',
+        workspaceId,
+        vocabularySize: result.vocabularySize,
+        documentsReindexed: documents.length,
+        processingTimeMs: Date.now() - startTime,
+      });
+
+      return result;
+    } catch (error) {
+      logger.error('Failed to rebuild vocabulary from Qdrant', {
+        service: 'sparse-vector',
+        workspaceId,
+        error: error.message,
+      });
+      throw error;
+    }
   }
 
   /**

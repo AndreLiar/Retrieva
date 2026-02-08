@@ -34,11 +34,21 @@ let io = null;
 // Connected users map: userId -> Set of socket IDs
 const connectedUsers = new Map();
 
-// Offline message queue: userId -> Array of queued events
+// ISSUE #32 FIX: Track dynamic rooms per socket for cleanup
+// socketId -> Set of room names (query rooms, etc.)
+const socketRooms = new Map();
+
+// Offline message queue: userId -> { messages: Array, createdAt: Date }
 const offlineQueue = new Map();
 
 // Maximum offline queue size per user
 const MAX_QUEUE_SIZE = 100;
+
+// ISSUE #17 FIX: Maximum age for offline queues (24 hours)
+const MAX_QUEUE_AGE_MS = 24 * 60 * 60 * 1000;
+
+// Cleanup interval (1 hour)
+const QUEUE_CLEANUP_INTERVAL_MS = 60 * 60 * 1000;
 
 /**
  * Initialize Socket.io server
@@ -78,8 +88,8 @@ export function initializeSocketServer(httpServer) {
       // Verify JWT token
       const decoded = verifyAccessToken(token);
 
-      // Get user from database
-      const user = await User.findById(decoded.userId).select('name email');
+      // Get user from database (include isActive for status check)
+      const user = await User.findById(decoded.userId).select('name email isActive');
       if (!user) {
         return next(new Error('User not found'));
       }
@@ -151,6 +161,9 @@ function handleConnection(socket) {
   }
   connectedUsers.get(userId).add(socket.id);
 
+  // ISSUE #32 FIX: Initialize room tracking for this socket
+  socketRooms.set(socket.id, new Set());
+
   // Register with presence service
   presenceService.userConnected(userId, socket.id, {
     name: socket.user.name,
@@ -176,8 +189,11 @@ function handleConnection(socket) {
   });
 
   // Handle joining additional rooms (e.g., for specific queries)
+  // ISSUE #32 FIX: Track dynamic rooms for cleanup
   socket.on('join:query', (queryId) => {
-    socket.join(`query:${queryId}`);
+    const roomName = `query:${queryId}`;
+    socket.join(roomName);
+    socketRooms.get(socket.id)?.add(roomName);
     logger.debug('Socket joined query room', {
       service: 'socket',
       userId,
@@ -186,7 +202,9 @@ function handleConnection(socket) {
   });
 
   socket.on('leave:query', (queryId) => {
-    socket.leave(`query:${queryId}`);
+    const roomName = `query:${queryId}`;
+    socket.leave(roomName);
+    socketRooms.get(socket.id)?.delete(roomName);
   });
 
   // Handle workspace room updates (when user joins new workspace)
@@ -308,12 +326,25 @@ function handleConnection(socket) {
 
   // Handle disconnection
   socket.on('disconnect', (reason) => {
+    // ISSUE #32 FIX: Get tracked rooms before cleanup
+    const trackedRooms = socketRooms.get(socket.id);
+    const roomCount = trackedRooms?.size || 0;
+
     logger.info('Client disconnected', {
       service: 'socket',
       userId,
       socketId: socket.id,
       reason,
+      dynamicRoomsCount: roomCount,
     });
+
+    // ISSUE #32 FIX: Explicitly leave all tracked dynamic rooms
+    if (trackedRooms) {
+      for (const roomName of trackedRooms) {
+        socket.leave(roomName);
+      }
+      socketRooms.delete(socket.id);
+    }
 
     // Remove from connected users
     const userSockets = connectedUsers.get(userId);
@@ -370,30 +401,49 @@ function extractTokenFromCookie(cookieHeader) {
 
 /**
  * Deliver queued offline messages to reconnected user
+ * ISSUE #33 FIX: Atomic check-and-delete to prevent duplicate delivery
  *
  * @param {AuthenticatedSocket} socket - Authenticated socket
  */
 function deliverOfflineQueue(socket) {
   const { userId } = socket.user;
-  const queue = offlineQueue.get(userId);
 
-  if (queue && queue.length > 0) {
-    logger.info('Delivering offline queue', {
-      service: 'socket',
-      userId,
-      queueSize: queue.length,
-    });
-
-    queue.forEach(({ event, data }) => {
-      socket.emit(event, { ...data, wasQueued: true });
-    });
-
-    offlineQueue.delete(userId);
+  // ISSUE #33 FIX: Atomically get and delete to prevent duplicates
+  // If multiple sockets connect simultaneously, only the first gets the queue
+  const queueEntry = offlineQueue.get(userId);
+  if (!queueEntry || queueEntry.messages.length === 0) {
+    return;
   }
+
+  // Immediately delete to prevent other sockets from getting the same messages
+  offlineQueue.delete(userId);
+
+  // Track delivery for deduplication
+  const deliveryId = `${userId}-${Date.now()}`;
+
+  logger.info('Delivering offline queue', {
+    service: 'socket',
+    userId,
+    queueSize: queueEntry.messages.length,
+    queueAge: Date.now() - queueEntry.createdAt.getTime(),
+    deliveryId,
+    socketId: socket.id,
+  });
+
+  // Deliver messages with deduplication metadata
+  queueEntry.messages.forEach(({ event, data }, index) => {
+    socket.emit(event, {
+      ...data,
+      wasQueued: true,
+      deliveryId,
+      messageIndex: index,
+    });
+  });
 }
 
 /**
  * Queue message for offline user
+ * ISSUE #17 FIX: Track creation time for cleanup
  *
  * @param {string} userId - User ID
  * @param {string} event - Event name
@@ -401,17 +451,20 @@ function deliverOfflineQueue(socket) {
  */
 function queueOfflineMessage(userId, event, data) {
   if (!offlineQueue.has(userId)) {
-    offlineQueue.set(userId, []);
+    offlineQueue.set(userId, {
+      messages: [],
+      createdAt: new Date(),
+    });
   }
 
-  const queue = offlineQueue.get(userId);
+  const queueEntry = offlineQueue.get(userId);
 
   // Limit queue size
-  if (queue.length >= MAX_QUEUE_SIZE) {
-    queue.shift(); // Remove oldest
+  if (queueEntry.messages.length >= MAX_QUEUE_SIZE) {
+    queueEntry.messages.shift(); // Remove oldest
   }
 
-  queue.push({
+  queueEntry.messages.push({
     event,
     data: { ...data, queuedAt: new Date().toISOString() },
   });
@@ -549,9 +602,38 @@ export function getStats() {
   return {
     totalConnections: io?.sockets.sockets.size || 0,
     uniqueUsers: connectedUsers.size,
-    offlineQueueSize: Array.from(offlineQueue.values()).reduce((sum, q) => sum + q.length, 0),
+    offlineQueueSize: Array.from(offlineQueue.values()).reduce((sum, q) => sum + q.messages.length, 0),
+    offlineQueueUsers: offlineQueue.size,
   };
 }
+
+/**
+ * ISSUE #17 FIX: Clean up stale offline queues
+ * Removes queues older than 24 hours to prevent memory growth
+ */
+function cleanupStaleOfflineQueues() {
+  const now = Date.now();
+  let cleanedCount = 0;
+
+  for (const [userId, queueEntry] of offlineQueue.entries()) {
+    const age = now - queueEntry.createdAt.getTime();
+    if (age > MAX_QUEUE_AGE_MS) {
+      offlineQueue.delete(userId);
+      cleanedCount++;
+    }
+  }
+
+  if (cleanedCount > 0) {
+    logger.info('Cleaned up stale offline queues', {
+      service: 'socket',
+      cleanedCount,
+      remainingQueues: offlineQueue.size,
+    });
+  }
+}
+
+// ISSUE #17 FIX: Start cleanup interval when module loads
+setInterval(cleanupStaleOfflineQueues, QUEUE_CLEANUP_INTERVAL_MS);
 
 // Export for use in other modules
 export const socketService = {

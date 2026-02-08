@@ -34,7 +34,7 @@ Before starting the server, ensure these services are running:
 - **MongoDB**: `mongodb://localhost:27017`
 - **Redis**: `redis://localhost:6378`
 - **Qdrant**: `http://localhost:6333`
-- **Ollama**: `http://localhost:11434` with models `llama3.2:latest` and `nomic-embed-text:latest`
+- **Ollama**: `http://localhost:11434` with models `llama3.2:latest` and `bge-m3:latest`
 
 ## Architecture
 
@@ -88,6 +88,14 @@ Before starting the server, ensure these services are running:
 - Response formatting via `sendSuccess`/`sendError` from `utils/index.js`
 - Winston logger for all logging (access via `import logger from './config/logger.js'`)
 - **Maximum 500 lines per file**: Keep files under 500 lines of code. If a file exceeds this limit, refactor by extracting related functionality into separate modules. This improves readability, maintainability, and testability.
+
+## Environment Configuration
+
+**IMPORTANT**: When updating environment variables, always update BOTH files:
+- `.env` - The actual configuration used for development/testing
+- `.env.example` - Template for other developers/deployments
+
+Never update just `.env.example` - changes won't take effect until `.env` is also updated.
 
 ## Known Limitations
 

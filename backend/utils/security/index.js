@@ -62,8 +62,17 @@ export {
   applyConfidenceHandling,
 } from './confidenceHandler.js';
 
-// Encryption
-export { encrypt, decrypt } from './encryption.js';
+// Encryption (with key rotation support)
+export {
+  encrypt,
+  decrypt,
+  rotateEncryption,
+  needsKeyRotation,
+  getEncryptionVersion,
+  getCurrentKeyVersion,
+  getKeyRotationStatus,
+  generateEncryptionKey,
+} from './encryption.js';
 
 // Field-level Encryption
 export {
@@ -90,3 +99,13 @@ export {
   getRefreshTokenCookieOptions,
   clearCookieOptions,
 } from './cookieConfig.js';
+
+// Crypto Utilities
+export {
+  sha256,
+  generateToken,
+  generateTokenPair,
+  verifyToken,
+  timingSafeEqual,
+  contentHash,
+} from './crypto.js';

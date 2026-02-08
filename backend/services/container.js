@@ -17,7 +17,7 @@
  *   const service = await container.resolve('ragService');
  */
 
-import { llm } from '../config/llm.js';
+import { getDefaultLLM } from '../config/llm.js';
 import { getVectorStore } from '../config/vectorStore.js';
 import { ragCache } from '../utils/rag/ragCache.js';
 import { answerFormatter } from './answerFormatter.js';
@@ -182,7 +182,7 @@ class ServiceContainer {
  */
 function registerDefaults(container) {
   // Core dependencies (infrastructure)
-  container.register('llm', () => llm, { instance: true });
+  container.register('llm', async () => getDefaultLLM());
   container.register('logger', () => logger, { instance: true });
   container.register('vectorStoreFactory', () => getVectorStore, { instance: true });
 
@@ -216,8 +216,9 @@ function registerDefaults(container) {
   container.register('ragService', async (c) => {
     // Lazy import to avoid circular dependency
     const { createRAGService } = await import('./rag.js');
+    const llm = await c.resolve('llm');
     return createRAGService({
-      llm: c.get('llm'),
+      llm,
       vectorStoreFactory: c.get('vectorStoreFactory'),
       cache: c.get('cache'),
       answerFormatter: c.get('answerFormatter'),

@@ -16,8 +16,11 @@ import {
   compressDocuments,
 } from '../rag/retrievalEnhancements.js';
 import { rerankDocuments } from '../rag/documentRanking.js';
+import { filterLowQualityChunks } from '../rag/chunkFilter.js';
 import { deduplicateDocuments } from '../../utils/rag/contextFormatter.js';
 import { sparseVectorManager } from '../search/sparseVector.js';
+import { expandDocumentContext, EXPANSION_CONFIG } from '../rag/contextExpansion.js';
+import { crossEncoderRerank, RERANK_CONFIG } from '../rag/crossEncoderRerank.js';
 import logger from '../../config/logger.js';
 
 /**
@@ -61,15 +64,137 @@ export async function focusedRetrieval(query, retriever, vectorStore, config, op
     try {
       const hybridResults = await sparseVectorManager.hybridSearch(workspaceId, query, docs, {
         limit: config.topK,
-        alpha: 0.6,
+        alpha: 0.5, // 50% semantic, 50% BM25 - balanced for conceptual and keyword queries
       });
-      // Merge hybrid results with docs that have full content
-      const hybridIds = new Set(hybridResults.map((r) => r.id));
-      docs = docs.filter(
-        (d) => hybridIds.has(d.metadata?.vectorStoreId) || !d.metadata?.vectorStoreId
-      );
+
+      // Build map of original docs by sourceId for matching with hybrid results
+      const docsBySourceId = new Map();
+      docs.forEach((d) => {
+        const sourceId = d.metadata?.sourceId;
+        if (sourceId) docsBySourceId.set(sourceId, d);
+      });
+
+      // For sparse-only results, we need to fetch content from Qdrant
+      // Use vectorStoreId (Qdrant point ID) for fetching
+      const sparseOnlyResults = hybridResults.filter((r) => !r.doc && r.sparseRank);
+      const sparseOnlyVectorIds = sparseOnlyResults
+        .map((r) => r.vectorStoreId)
+        .filter(Boolean);
+
+      logger.info('Sparse-only results to fetch', {
+        service: 'retrieval-strategies',
+        sparseOnlyCount: sparseOnlyResults.length,
+        vectorIdsCount: sparseOnlyVectorIds.length,
+        sampleIds: sparseOnlyVectorIds.slice(0, 3),
+        sampleResults: sparseOnlyResults.slice(0, 2).map(r => ({
+          id: r.id,
+          vectorStoreId: r.vectorStoreId,
+          sparseRank: r.sparseRank,
+          hasDoc: !!r.doc
+        })),
+      });
+
+      let sparseOnlyDocs = new Map();
+      if (sparseOnlyVectorIds.length > 0) {
+        try {
+          // Fetch content from Qdrant for sparse-only matches
+          const { QdrantClient } = await import('@qdrant/js-client-rest');
+          const qdrantUrl = process.env.QDRANT_URL || 'http://localhost:6333';
+          const collectionName = process.env.QDRANT_COLLECTION_NAME || 'langchain-rag';
+          const client = new QdrantClient({ url: qdrantUrl });
+
+          // Fetch points by vectorStoreId (Qdrant UUID)
+          const points = await client.retrieve(collectionName, {
+            ids: sparseOnlyVectorIds,
+            with_payload: true,
+            with_vector: false,
+          });
+
+          for (const point of points) {
+            const sourceId = point.payload?.metadata?.sourceId;
+            sparseOnlyDocs.set(sourceId || point.id, {
+              pageContent: point.payload?.pageContent || '',
+              metadata: {
+                ...point.payload?.metadata,
+                vectorStoreId: point.id,
+                documentTitle: point.payload?.metadata?.documentTitle,
+                documentUrl: point.payload?.metadata?.documentUrl,
+                sourceId: sourceId,
+                section: point.payload?.metadata?.section,
+              },
+            });
+          }
+
+          logger.debug('Fetched sparse-only documents from Qdrant', {
+            service: 'retrieval-strategies',
+            sparseOnlyCount: sparseOnlyDocs.size,
+            fetchedIds: sparseOnlyVectorIds.length,
+          });
+        } catch (fetchError) {
+          logger.warn('Failed to fetch sparse-only docs from Qdrant', {
+            service: 'retrieval-strategies',
+            error: fetchError.message,
+          });
+        }
+      }
+
+      // Reorder docs according to RRF ranking, including sparse-only matches
+      const rerankedDocs = [];
+      let sparseOnlyAdded = 0;
+      for (const result of hybridResults) {
+        // result.id is now sourceId, try to get doc from original dense results
+        let doc = result.doc || docsBySourceId.get(result.id);
+
+        // If not found in dense results, try sparse-only docs (keyed by sourceId)
+        if (!doc && sparseOnlyDocs.has(result.id)) {
+          doc = sparseOnlyDocs.get(result.id);
+          sparseOnlyAdded++;
+        }
+
+        if (doc) {
+          // Add RRF score to metadata for debugging/display
+          doc.rrfScore = result.rrfScore;
+          doc.metadata = doc.metadata || {};
+          doc.metadata.rrfScore = result.rrfScore;
+          doc.metadata.denseRank = result.denseRank;
+          doc.metadata.sparseRank = result.sparseRank;
+          rerankedDocs.push(doc);
+        } else if (result.sparseRank && !result.denseRank) {
+          // Log when we can't find a sparse-only doc
+          logger.warn('Could not find sparse-only doc', {
+            service: 'retrieval-strategies',
+            resultId: result.id,
+            vectorStoreId: result.vectorStoreId,
+            sparseOnlyDocsKeys: Array.from(sparseOnlyDocs.keys()).slice(0, 5),
+          });
+        }
+      }
+
+      // Log top 5 results with ranking details
+      const topResultsDebug = hybridResults.slice(0, 5).map((r, i) => ({
+        rank: i + 1,
+        title: r.doc?.metadata?.documentTitle || sparseOnlyDocs.get(r.id)?.metadata?.documentTitle || 'unknown',
+        rrfScore: r.rrfScore?.toFixed(4),
+        denseRank: r.denseRank || '-',
+        sparseRank: r.sparseRank || '-',
+        normalizedSparseScore: r.normalizedSparseScore || '-',
+        isSparseOnly: !r.denseRank && !!r.sparseRank,
+      }));
+
+      logger.info('Hybrid search reranking complete', {
+        service: 'retrieval-strategies',
+        originalDocs: docs.length,
+        hybridResults: hybridResults.length,
+        sparseOnlyFetched: sparseOnlyDocs.size,
+        sparseOnlyAdded,
+        finalDocs: rerankedDocs.length,
+        topDoc: rerankedDocs[0]?.metadata?.documentTitle,
+        top5Results: topResultsDebug,
+      });
+
+      docs = rerankedDocs;
     } catch (error) {
-      logger.debug('Hybrid search unavailable, using semantic only', {
+      logger.warn('Hybrid search failed, using semantic only', {
         service: 'retrieval-strategies',
         error: error.message,
       });
@@ -79,6 +204,54 @@ export async function focusedRetrieval(query, retriever, vectorStore, config, op
   // Rerank if enabled
   if (config.useReranking && docs.length > config.rerankTopK) {
     docs = rerankDocuments(docs, query, config.rerankTopK);
+  }
+
+  // Cross-encoder re-ranking for higher quality (if enabled)
+  if (RERANK_CONFIG.enabled && docs.length > 0) {
+    try {
+      const rerankResult = await crossEncoderRerank(query, docs, {
+        topN: config.rerankTopK || 5,
+      });
+      if (rerankResult.success) {
+        docs = rerankResult.documents;
+        logger.debug('Cross-encoder re-ranking applied', {
+          service: 'retrieval-strategies',
+          provider: rerankResult.provider,
+          processingTimeMs: rerankResult.processingTimeMs,
+        });
+      }
+    } catch (error) {
+      logger.warn('Cross-encoder re-ranking failed, using RRF results', {
+        service: 'retrieval-strategies',
+        error: error.message,
+      });
+    }
+  }
+
+  // Filter low-quality chunks (Phase 4 + Phase 5: code filtering)
+  docs = filterLowQualityChunks(docs, { query });
+
+  // Context expansion - fetch sibling chunks for better context
+  if (EXPANSION_CONFIG.enabled && workspaceId && docs.length > 0) {
+    try {
+      const expansionResult = await expandDocumentContext(docs, workspaceId, {
+        windowSize: 1,
+        maxChunksPerSource: 3,
+      });
+      if (expansionResult.metrics.expanded) {
+        docs = expansionResult.chunks;
+        logger.debug('Context expansion applied', {
+          service: 'retrieval-strategies',
+          originalCount: expansionResult.metrics.originalCount,
+          expandedCount: expansionResult.metrics.expandedCount,
+        });
+      }
+    } catch (error) {
+      logger.warn('Context expansion failed, using original docs', {
+        service: 'retrieval-strategies',
+        error: error.message,
+      });
+    }
   }
 
   // Compress if enabled
@@ -92,6 +265,8 @@ export async function focusedRetrieval(query, retriever, vectorStore, config, op
       strategy: 'focused_retrieval',
       retrieved: docs.length,
       processingTimeMs: Date.now() - startTime,
+      contextExpanded: EXPANSION_CONFIG.enabled,
+      crossEncoderApplied: RERANK_CONFIG.enabled,
     },
     strategy: 'focused_retrieval',
   };
@@ -145,6 +320,9 @@ export async function multiAspectRetrieval(query, retriever, vectorStore, config
   if (config.useReranking && docs.length > config.rerankTopK) {
     docs = rerankDocuments(docs, query, config.rerankTopK);
   }
+
+  // Filter low-quality chunks (Phase 4 + Phase 5: code filtering)
+  docs = filterLowQualityChunks(docs, { query });
 
   // Compress
   if (config.useCompression) {
@@ -204,6 +382,9 @@ export async function deepRetrieval(query, retriever, vectorStore, config, optio
     docs = rerankDocuments(docs, query, config.rerankTopK);
   }
 
+  // Filter low-quality chunks (Phase 4 + Phase 5: code filtering)
+  docs = filterLowQualityChunks(docs, { query });
+
   // Compress while preserving detail
   if (config.useCompression) {
     docs = await compressDocuments(docs, query);
@@ -257,6 +438,9 @@ export async function broadRetrieval(query, retriever, vectorStore, config, opti
   } else if (config.useReranking && docs.length > config.rerankTopK) {
     docs = rerankDocuments(docs, query, config.rerankTopK);
   }
+
+  // Filter low-quality chunks (Phase 4 + Phase 5: code filtering)
+  docs = filterLowQualityChunks(docs, { query });
 
   // Compress for summary
   if (config.useCompression) {

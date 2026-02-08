@@ -6,20 +6,21 @@ import {
   askQuestion,
   updateConversation,
   deleteConversation,
+  bulkDeleteConversations,
 } from '../controllers/conversationController.js';
 import { authenticate } from '../middleware/auth.js';
-import { requireWorkspaceAccess } from '../middleware/workspaceAuth.js';
 
 const router = express.Router();
 
 // SECURITY: All conversation routes require authentication
-// No anonymous access - users must be logged in and have workspace access
+// Conversations are user-scoped (userId), not workspace-scoped
+// Users can only access their own conversations (BOLA protection in controllers)
 router.use(authenticate);
-router.use(requireWorkspaceAccess);
 
 // Conversation management
 router.post('/', createConversation);
 router.get('/', getConversations);
+router.post('/bulk-delete', bulkDeleteConversations); // Must be before /:id routes
 router.get('/:id', getConversation);
 router.patch('/:id', updateConversation);
 router.delete('/:id', deleteConversation);

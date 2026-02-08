@@ -18,6 +18,9 @@ import { memoryDecay } from '../services/memory/memoryDecay.js';
 import { memoryMonitor } from '../services/memory/memoryMonitor.js';
 import logger from '../config/logger.js';
 
+// Dead Letter Queue for failed jobs
+import { setupDLQListener } from '../services/deadLetterQueue.js';
+
 let memoryDecayWorker = null;
 
 /**
@@ -191,6 +194,9 @@ export function startMemoryDecayWorker(options = {}) {
       jobId,
     });
   });
+
+  // Setup Dead Letter Queue listener for final failures
+  setupDLQListener(memoryDecayWorker, 'memoryDecay');
 
   logger.info('Memory decay worker started', {
     service: 'memory-decay-worker',

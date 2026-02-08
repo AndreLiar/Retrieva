@@ -8,10 +8,14 @@ import {
   deleteWorkspace,
   triggerSync,
   getSyncStatus,
+  getSyncMetricsEndpoint,
   getSyncHistory,
   listPages,
   listDatabases,
   disconnectWorkspace,
+  getTokenHealth,
+  checkWorkspaceToken,
+  updateTokenPreference,
 } from '../controllers/notionController.js';
 import { authenticate, optionalAuth } from '../middleware/auth.js';
 import { loadWorkspace, loadWorkspaceSafe } from '../middleware/loadWorkspace.js';
@@ -34,10 +38,16 @@ router.post('/workspaces/:id/disconnect', authenticate, loadWorkspace, disconnec
 // Sync management routes (require authentication)
 router.post('/workspaces/:id/sync', authenticate, loadWorkspace, triggerSync);
 router.get('/workspaces/:id/sync-status', authenticate, loadWorkspaceSafe, getSyncStatus);
+router.get('/workspaces/:id/sync-metrics', authenticate, loadWorkspaceSafe, getSyncMetricsEndpoint);
 router.get('/workspaces/:id/sync-history', authenticate, loadWorkspace, getSyncHistory);
 
 // Document selection routes (require authentication)
 router.get('/workspaces/:id/pages', authenticate, loadWorkspace, listPages);
 router.get('/workspaces/:id/databases', authenticate, loadWorkspace, listDatabases);
+
+// Token health routes (require authentication)
+router.get('/token-health', authenticate, getTokenHealth);
+router.post('/workspaces/:id/check-token', authenticate, loadWorkspace, checkWorkspaceToken);
+router.patch('/token-preference', authenticate, updateTokenPreference);
 
 export default router;

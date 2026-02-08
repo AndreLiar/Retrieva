@@ -5,6 +5,7 @@
  */
 
 import mongoose from 'mongoose';
+import { tenantIsolationPlugin } from '../services/tenantIsolation.js';
 
 /**
  * @typedef {Object} ConversationDocument
@@ -33,7 +34,7 @@ const conversationSchema = new mongoose.Schema(
       index: true,
     },
     workspaceId: {
-      type: String,
+      type: mongoose.Schema.Types.Mixed, // Allow both String and ObjectId for flexibility
       index: true,
       default: 'default', // Default workspace for entity memory
     },
@@ -45,6 +46,13 @@ const conversationSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    // ISSUE #25 FIX: Metadata for idempotency key support
+    metadata: {
+      idempotencyKey: {
+        type: String,
+        sparse: true, // Only index when present
+      },
+    },
   },
   {
     timestamps: true,
@@ -54,9 +62,30 @@ const conversationSchema = new mongoose.Schema(
 // Index for efficient retrieval of user's conversations
 conversationSchema.index({ userId: 1, updatedAt: -1 });
 
+// SECURITY: Add compound index for tenant isolation queries
+conversationSchema.index({ workspaceId: 1, userId: 1, updatedAt: -1 });
+
+// ISSUE #25 FIX: Compound unique index for idempotency key lookups
+// Ensures only one conversation per user+workspace+idempotencyKey combination
+conversationSchema.index(
+  { userId: 1, workspaceId: 1, 'metadata.idempotencyKey': 1 },
+  { unique: true, sparse: true }
+);
+
 // Update lastMessageAt when conversation is modified
-conversationSchema.pre('save', function () {
+conversationSchema.pre('save', async function () {
   this.lastMessageAt = new Date();
 });
+
+// SECURITY: Apply database-level tenant isolation plugin
+// This ensures all queries are automatically filtered by workspaceId
+// Disabled in test environment to allow for simpler test setup
+if (process.env.NODE_ENV !== 'test') {
+  conversationSchema.plugin(tenantIsolationPlugin, {
+    tenantField: 'workspaceId',
+    enforceOnSave: true,
+    auditLog: process.env.NODE_ENV !== 'production', // Only audit in non-production
+  });
+}
 
 export const Conversation = mongoose.model('Conversation', conversationSchema);

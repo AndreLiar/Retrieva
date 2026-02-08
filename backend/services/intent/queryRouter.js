@@ -46,15 +46,15 @@ const REDIS_KEYS = {
  * Retrieval strategies for each intent type
  */
 const RETRIEVAL_STRATEGIES = {
-  // Simple fact lookup - fast, focused retrieval
+  // Simple fact lookup - focused but comprehensive retrieval
   [IntentType.FACTUAL]: {
     name: 'focused_retrieval',
     config: {
-      topK: 8,
-      useQueryExpansion: false,
+      topK: 12,  // Increased from 8 for better coverage
+      useQueryExpansion: true,  // Enabled for better matching
       useHyDE: false,
       useReranking: true,
-      rerankTopK: 3,
+      rerankTopK: 5,  // Increased from 3 for better diversity
       useCompression: true,
       retrievalMode: 'hybrid',
     },
@@ -147,17 +147,19 @@ const RETRIEVAL_STRATEGIES = {
     },
   },
 
-  // Out of scope - no retrieval, graceful decline
+  // Out of scope - still search the workspace first, then report "not found"
+  // Changed from 'decline' to 'workspace_search' - we should always try to search
+  // the user's connected Notion before saying we can't help
   [IntentType.OUT_OF_SCOPE]: {
-    name: 'decline',
+    name: 'workspace_search',
     config: {
-      topK: 0,
+      topK: 5, // Quick search to verify nothing matches
       useQueryExpansion: false,
       useHyDE: false,
-      useReranking: false,
-      rerankTopK: 0,
+      useReranking: true,
+      rerankTopK: 3,
       useCompression: false,
-      retrievalMode: 'none',
+      retrievalMode: 'hybrid',
     },
   },
 
@@ -229,7 +231,10 @@ const RESPONSE_PROMPTS = {
 
   [IntentType.CHITCHAT]: `Respond conversationally and helpfully. You are a knowledge assistant - be friendly but guide users toward using the knowledge base if they have questions.`,
 
-  [IntentType.OUT_OF_SCOPE]: `Politely explain that this query is outside the scope of the knowledge base. Suggest what types of questions you can help with instead.`,
+  [IntentType.OUT_OF_SCOPE]: `If you found relevant information, answer the question using that information.
+If no relevant information was found, explain that you searched the connected Notion workspace but didn't find information about this topic.
+Offer to provide a general explanation if that would be helpful, or suggest the user rephrase their question.
+Never refuse or say the question is "out of scope" - instead say "I didn't find this in your Notion pages".`,
 
   [IntentType.OPINION]: `Provide a balanced recommendation:
 1. Present relevant options found in the knowledge base

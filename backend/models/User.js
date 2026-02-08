@@ -6,8 +6,8 @@
 
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
-import crypto from 'crypto';
 import { createEncryptionPlugin } from '../utils/security/fieldEncryption.js';
+import { sha256, generateToken } from '../utils/security/crypto.js';
 
 /**
  * @typedef {Object} UserDocument
@@ -116,6 +116,9 @@ const userSchema = new mongoose.Schema(
       type: Date,
       select: false,
     },
+    emailVerificationLastSentAt: {
+      type: Date,
+    },
     // Password reset
     passwordResetToken: {
       type: String,
@@ -149,7 +152,16 @@ const userSchema = new mongoose.Schema(
         sync_failed: { type: Boolean, default: true },
         system_alert: { type: Boolean, default: true },
         token_limit_reached: { type: Boolean, default: true },
+        notion_token_expired: { type: Boolean, default: true },
       },
+    },
+    // Notion token handling preference
+    // 'notify' - Send email when token expires (default)
+    // 'auto_reconnect' - Attempt automatic reconnection (future)
+    notionTokenPreference: {
+      type: String,
+      enum: ['notify', 'auto_reconnect'],
+      default: 'notify',
     },
   },
   {
@@ -322,10 +334,10 @@ userSchema.methods.clearAllRefreshTokens = async function () {
  */
 userSchema.methods.createPasswordResetToken = async function () {
   // Generate random token
-  const rawToken = crypto.randomBytes(32).toString('hex');
+  const rawToken = generateToken(32);
 
   // Hash token for storage (don't store raw token in DB)
-  this.passwordResetToken = crypto.createHash('sha256').update(rawToken).digest('hex');
+  this.passwordResetToken = sha256(rawToken);
 
   // Token expires in 1 hour
   this.passwordResetExpires = Date.now() + 60 * 60 * 1000;
@@ -342,7 +354,7 @@ userSchema.methods.createPasswordResetToken = async function () {
  * @returns {boolean} Whether token is valid
  */
 userSchema.methods.verifyPasswordResetToken = function (rawToken) {
-  const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
+  const hashedToken = sha256(rawToken);
 
   return this.passwordResetToken === hashedToken && this.passwordResetExpires > Date.now();
 };
@@ -364,13 +376,14 @@ userSchema.methods.clearPasswordResetToken = async function () {
  */
 userSchema.methods.createEmailVerificationToken = async function () {
   // Generate random token
-  const rawToken = crypto.randomBytes(32).toString('hex');
+  const rawToken = generateToken(32);
 
   // Hash token for storage
-  this.emailVerificationToken = crypto.createHash('sha256').update(rawToken).digest('hex');
+  this.emailVerificationToken = sha256(rawToken);
 
   // Token expires in 24 hours
   this.emailVerificationExpires = Date.now() + 24 * 60 * 60 * 1000;
+  this.emailVerificationLastSentAt = new Date();
 
   await this.save({ validateBeforeSave: false });
 
@@ -383,7 +396,7 @@ userSchema.methods.createEmailVerificationToken = async function () {
  * @returns {Promise<boolean>} Whether verification succeeded
  */
 userSchema.methods.verifyEmail = async function (rawToken) {
-  const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
+  const hashedToken = sha256(rawToken);
 
   if (this.emailVerificationToken !== hashedToken || this.emailVerificationExpires < Date.now()) {
     return false;

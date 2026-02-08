@@ -5,6 +5,23 @@ import { z } from 'zod';
  * Provides runtime type checking and input validation
  */
 
+/**
+ * ISSUE #38 FIX: Sanitize strings to prevent XSS attacks
+ * Escapes HTML entities that could be used for script injection
+ * @param {string} str - String to sanitize
+ * @returns {string} Sanitized string with HTML entities escaped
+ */
+function sanitizeHtml(str) {
+  if (!str) return str;
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;')
+    .replace(/\//g, '&#x2F;');
+}
+
 // RAG Endpoint Schemas
 export const askQuestionSchema = z.object({
   question: z
@@ -48,17 +65,24 @@ export const streamQuestionSchema = z.object({
 });
 
 // Conversation Schemas
+// ISSUE #38 FIX: Added .transform(sanitizeHtml) to sanitize title and prevent XSS
 export const createConversationSchema = z.object({
   title: z
     .string()
     .min(1, 'Title cannot be empty')
     .max(200, 'Title too long (max 200 characters)')
+    .transform(sanitizeHtml)
     .optional(),
   workspaceId: z.string().optional(),
 });
 
 export const updateConversationSchema = z.object({
-  title: z.string().min(1, 'Title cannot be empty').max(200, 'Title too long').optional(),
+  title: z
+    .string()
+    .min(1, 'Title cannot be empty')
+    .max(200, 'Title too long')
+    .transform(sanitizeHtml)
+    .optional(),
 });
 
 // Notion Workspace Schemas
@@ -190,8 +214,9 @@ export const loginSchema = z.object({
   password: z.string().min(1, 'Password is required'),
 });
 
+// Refresh token can come from cookies or body, so make body validation optional
 export const refreshTokenSchema = z.object({
-  refreshToken: z.string().min(1, 'Refresh token is required'),
+  refreshToken: z.string().min(1, 'Refresh token is required').optional(),
 });
 
 export const forgotPasswordSchema = z.object({
@@ -206,6 +231,21 @@ export const resetPasswordSchema = z.object({
 export const verifyEmailSchema = z.object({
   token: z.string().min(1, 'Verification token is required'),
 });
+
+export const updateProfileSchema = z
+  .object({
+    name: z
+      .string()
+      .min(2, 'Name must be at least 2 characters')
+      .max(100, 'Name too long')
+      .trim()
+      .optional(),
+    email: z.string().email('Invalid email address').toLowerCase().optional(),
+  })
+  .refine((data) => data.name || data.email, {
+    message: 'At least one field must be provided',
+    path: ['name'],
+  });
 
 export const changePasswordSchema = z
   .object({

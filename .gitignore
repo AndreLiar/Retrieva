@@ -57,3 +57,7 @@ backend/qdrant_storage/
 
 # Husky in subfolders
 backend/.husky/
+
+# Claude Code generated docs
+AGENTS.md
+PRODUCTION_READINESS_ANALYSIS.md

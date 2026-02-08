@@ -36,7 +36,7 @@ curl -X POST http://localhost:3007/api/v1/rag \
 
 ### Prerequisites
 - Ollama must be running locally (`ollama serve`)
-- Required models: `ollama pull llama3.2` and `ollama pull nomic-embed-text`
+- Required models: `ollama pull llama3.2` and `ollama pull bge-m3`
 - Qdrant must be running at `http://localhost:6333` (usually via Docker)
 
 ## Architecture
@@ -49,7 +49,7 @@ The RAG system uses a sophisticated multi-step pipeline optimized for Notion:
    - Fetches Notion pages via NotionAdapter
    - Groups blocks semantically (not by character count)
    - Tracks heading paths for breadcrumbs
-   - Generates embeddings with Ollama's `nomic-embed-text` model
+   - Generates embeddings with Ollama's `bge-m3` model
    - Stores in Qdrant with rich metadata (block types, heading paths, etc.)
 
 2. **System Initialization** (services/rag.js:201-270)
@@ -114,7 +114,7 @@ Unlike traditional character-based splitting, this system chunks by **semantic b
 
 **LangChain Configuration**:
 - LLM: `llama3.2:latest` via Ollama (config/llm.js)
-- Embeddings: `nomic-embed-text:latest` via Ollama (config/embeddings.js)
+- Embeddings: `bge-m3:latest` via Ollama (config/embeddings.js)
 - Vector Store: Qdrant with collection name from env (config/vectorStore.js)
 - Prompts: ChatPromptTemplate with MessagesPlaceholder for history (prompts/ragPrompt.js)
 

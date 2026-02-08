@@ -1,28 +1,24 @@
 /**
  * Intent-Aware RAG Service
  *
- * Wraps the core RAG service with intent classification and routing
- * - Classifies query intent before processing
- * - Routes to optimal retrieval strategy
- * - Generates intent-appropriate responses
- * - Skips RAG for non-retrieval intents
- * - Full context awareness (conversational, knowledge, task)
+ * Plugin layer over the core RAG pipeline (rag.js).
+ * Adds context enrichment (coreference, session, preferences, domain,
+ * concepts, tasks) then delegates to ragService.askWithConversation()
+ * which owns all safety/quality: sanitization, PII masking, confidence
+ * handling, hallucination blocking, retry, and caching.
  *
  * @module services/intentAwareRAG
  */
 
-import { StringOutputParser } from '@langchain/core/output_parsers';
-import { ChatPromptTemplate } from '@langchain/core/prompts';
-import { randomUUID } from 'crypto';
+// Core RAG pipeline — single owner of safety + quality
+import { ragService } from './rag.js';
 
-// Intent services
-import { queryRouter, IntentType } from './intent/index.js';
-import { executeStrategy } from './intent/retrievalStrategies.js';
+// Intent routing
+import { queryRouter } from './intent/index.js';
 
 // Extracted intent modules
 import {
   handleNonRAGIntent,
-  handleNoDocuments,
   handleOutOfScope,
 } from './intent/intentHandlers.js';
 import {
@@ -30,17 +26,6 @@ import {
   updateContextAfterInteraction,
   getStyleInstruction,
 } from './intent/intentContextBuilder.js';
-
-// Core RAG components
-import { rerankDocuments } from './rag/documentRanking.js';
-import { evaluateAnswer, toValidationResult, extractCitedSources } from './rag/llmJudge.js';
-import { formatContext, formatSources } from '../utils/rag/contextFormatter.js';
-import { sanitizeDocuments, sanitizeFormattedContext } from '../utils/security/contextSanitizer.js';
-import { buildQdrantFilter } from './rag/queryRetrieval.js';
-import { trackQueryAnalytics } from './rag/analyticsTracker.js';
-
-// Memory services
-import { entityMemory } from './memory/entityMemory.js';
 
 // Context services
 import {
@@ -52,53 +37,22 @@ import {
   taskTracker,
 } from './context/index.js';
 
-// LangSmith tracing
-import { getCallbacks } from '../config/langsmith.js';
-
-// Default dependencies
-import { llm as defaultLlm } from '../config/llm.js';
-import { getVectorStore as defaultVectorStoreFactory } from '../config/vectorStore.js';
-import { ragCache as defaultCache } from '../utils/rag/ragCache.js';
 import { answerFormatter as defaultAnswerFormatter } from './answerFormatter.js';
 import defaultLogger from '../config/logger.js';
-import { Analytics as DefaultAnalytics } from '../models/Analytics.js';
 import { Message as DefaultMessage } from '../models/Message.js';
 import { Conversation as DefaultConversation } from '../models/Conversation.js';
 
 /**
- * @typedef {Object} IntentAwareResult
- * @property {string} answer - Generated answer
- * @property {Object} formattedAnswer - Formatted answer structure
- * @property {Array} sources - Source documents
- * @property {Object} validation - Answer validation
- * @property {Array} citedSources - Actually cited sources
- * @property {Object} intent - Intent classification details
- * @property {Object} routing - Routing decision details
- * @property {Object} metrics - Processing metrics
- * @property {string} conversationId - Conversation ID
- * @property {number} totalTime - Total processing time
- */
-
-/**
- * Intent-Aware RAG Service
+ * Intent-Aware RAG Service — plugin layer
  */
 class IntentAwareRAGService {
   constructor(dependencies = {}) {
-    this.llm = dependencies.llm || defaultLlm;
-    this.vectorStoreFactory = dependencies.vectorStoreFactory || defaultVectorStoreFactory;
-    this.cache = dependencies.cache || defaultCache;
     this.answerFormatter = dependencies.answerFormatter || defaultAnswerFormatter;
     this.logger = dependencies.logger || defaultLogger;
 
     const models = dependencies.models || {};
-    this.Analytics = models.Analytics || DefaultAnalytics;
     this.Message = models.Message || DefaultMessage;
     this.Conversation = models.Conversation || DefaultConversation;
-
-    this.retriever = null;
-    this.vectorStore = null;
-    this._initialized = false;
-    this._initPromise = null;
 
     this.router = queryRouter;
 
@@ -113,50 +67,21 @@ class IntentAwareRAGService {
   }
 
   async init() {
-    if (this._initPromise) return this._initPromise;
-    if (this._initialized) return;
-
-    this._initPromise = this._doInit();
-    await this._initPromise;
-    this._initPromise = null;
-  }
-
-  async _doInit() {
-    this.logger.info('Initializing Intent-Aware RAG system...', { service: 'intent-rag' });
-
-    const vectorStore = await this.vectorStoreFactory([]);
-    this.retriever = vectorStore.asRetriever({ k: 15, searchType: 'similarity' });
-    this.vectorStore = vectorStore;
-
-    this.logger.info('Intent-Aware RAG system initialized', { service: 'intent-rag' });
-    this._initialized = true;
-  }
-
-  async _ensureInitialized() {
-    if (!this._initialized) await this.init();
+    // Delegate init to the core pipeline
+    await ragService.init();
   }
 
   /**
-   * Process a query with intent awareness
+   * Process a query with context enrichment, then delegate to ragService.
    */
   async ask(question, options = {}) {
-    const { conversationId, filters = null, forceIntent = null, userId = null } = options;
+    const { conversationId, filters = null, forceIntent = null, userId = null, onEvent = null } = options;
 
     if (!conversationId) {
       throw new Error('conversationId is required');
     }
 
-    await this._ensureInitialized();
-
     const startTime = Date.now();
-    const requestId = randomUUID();
-
-    this.logger.info('Processing intent-aware query', {
-      service: 'intent-rag',
-      conversationId,
-      questionLength: question.length,
-      requestId,
-    });
 
     const conversation = await this.Conversation.findById(conversationId);
     if (!conversation) throw new Error(`Conversation ${conversationId} not found`);
@@ -170,7 +95,7 @@ class IntentAwareRAGService {
       .sort({ timestamp: 1 })
       .lean();
 
-    // Build full context using extracted module
+    // === PLUGIN: Context enrichment (unique to this layer) ===
     const contextInfo = await buildFullContext(
       question,
       { conversationId, userId: effectiveUserId, workspaceId, messages },
@@ -180,25 +105,20 @@ class IntentAwareRAGService {
 
     const processedQuery = contextInfo.resolvedQuery || question;
 
-    // Check if query is out of scope
+    // NOTE: We no longer bypass RAG based on domain scope check.
+    // When a user connects their Notion workspace, we should ALWAYS search first,
+    // then report "not found in your Notion" instead of refusing based on domain policing.
+    // The scope check is still logged for diagnostics but doesn't prevent RAG execution.
     if (!contextInfo.inScope && contextInfo.scopeConfidence > 0.7) {
-      this.logger.info('Query out of scope', {
+      this.logger.info('Query may be outside typical domain (will search anyway)', {
         service: 'intent-rag',
         reason: contextInfo.scopeReason,
+        action: 'proceeding_with_search',
       });
-
-      return handleOutOfScope(
-        question,
-        contextInfo,
-        { conversationId, startTime },
-        {
-          saveMessages: this._saveMessages.bind(this),
-          answerFormatter: this.answerFormatter,
-        }
-      );
+      // Continue to RAG - don't return early
     }
 
-    // Route the query
+    // Route query (with optional forceIntent for testing)
     const routing = await this.router.route(processedQuery, {
       conversationHistory: messages,
       forceIntent,
@@ -213,7 +133,7 @@ class IntentAwareRAGService {
       confidence: routing.confidence.toFixed(2),
     });
 
-    // Handle non-RAG intents using extracted module
+    // Handle non-RAG intents locally (canned responses, safe by construction)
     if (routing.skipRAG) {
       return handleNonRAGIntent(
         question,
@@ -227,140 +147,36 @@ class IntentAwareRAGService {
       );
     }
 
-    // Check cache
-    const cached = await this.cache.get(question, conversationId);
-    if (cached) {
-      this.logger.info('Returning cached answer', { service: 'intent-rag', requestId });
-      return { ...cached, fromCache: true };
-    }
+    // === BUILD PLUGIN INSTRUCTIONS ===
+    const styleInstruction = getStyleInstruction(contextInfo);
+    const domainInstruction = contextInfo.domainContext
+      ? `\nDomain context: ${contextInfo.domainContext}`
+      : '';
+    const taskInstruction =
+      contextInfo.hasActiveTask && contextInfo.taskContextStr
+        ? `\nOngoing task: ${contextInfo.taskContextStr}`
+        : '';
+    const callerInstruction = [styleInstruction, domainInstruction, taskInstruction]
+      .filter(Boolean)
+      .join('\n');
 
-    // Build filters
-    let qdrantFilter = null;
-    try {
-      qdrantFilter = buildQdrantFilter(filters, workspaceId);
-    } catch (error) {
-      const validationError = new Error(error.message);
-      validationError.statusCode = 400;
-      validationError.isValidationError = true;
-      throw validationError;
-    }
-
-    // Execute retrieval strategy
-    const retrievalResult = await executeStrategy(
-      routing.strategy,
-      question,
-      this.retriever,
-      this.vectorStore,
-      routing.config,
-      {
-        filter: qdrantFilter,
-        entities: routing.entities,
-        workspaceId,
-        conversationContext: messages,
-      }
-    );
-
-    // Handle no documents found using extracted module
-    if (retrievalResult.documents.length === 0 && routing.intent !== IntentType.CLARIFICATION) {
-      return handleNoDocuments(
-        question,
-        routing,
-        { conversationId, startTime },
-        {
-          saveMessages: this._saveMessages.bind(this),
-          answerFormatter: this.answerFormatter,
-        }
-      );
-    }
-
-    // Get memory context
-    let memoryContext = { entityContext: '', summaryContext: '' };
-    try {
-      memoryContext = await entityMemory.buildMemoryContext(question, workspaceId, conversationId);
-    } catch (error) {
-      this.logger.warn('Failed to build memory context', {
-        service: 'intent-rag',
-        error: error.message,
-      });
-    }
-
-    // Prepare context
-    const sanitizedDocs = sanitizeDocuments(retrievalResult.documents);
-    const rawContext = formatContext(sanitizedDocs);
-    const docContext = sanitizeFormattedContext(rawContext);
-    const sources = formatSources(sanitizedDocs);
-
-    const contextParts = [];
-    if (memoryContext.summaryContext) {
-      contextParts.push(`[Document Overviews]\n${memoryContext.summaryContext}`);
-    }
-    if (memoryContext.entityContext) {
-      contextParts.push(memoryContext.entityContext);
-    }
-    contextParts.push(docContext);
-    const context = contextParts.join('\n\n---\n\n');
-
-    // Generate response
-    const response = await this._generateIntentAwareResponse(
-      processedQuery,
-      context,
-      messages,
-      routing,
-      { conversationId, requestId, contextInfo, originalQuery: question }
-    );
-
-    // Evaluate answer
-    const judgeEvaluation = await evaluateAnswer(question, response, sources, context);
-    const validation = toValidationResult(judgeEvaluation);
-    const citedSources = extractCitedSources(judgeEvaluation, sources);
-
-    await this._saveMessages(conversationId, question, response);
-
-    const formattedAnswer = await this.answerFormatter.format(response, question);
-
-    const result = {
-      answer: response,
-      formattedAnswer,
-      sources,
-      validation,
-      citedSources,
-      intent: {
-        type: routing.intent,
-        confidence: routing.confidence,
-        reasoning: routing.reasoning,
-      },
-      routing: {
-        strategy: routing.strategy,
-        config: routing.config,
-        responseStyle: routing.responseStyle,
-      },
-      context: {
-        originalQuery: question,
-        resolvedQuery: contextInfo.resolvedQuery,
-        hadCoreferences: contextInfo.hadCoreferences,
-        conversationPhase: contextInfo.conversationPhase,
-        currentTopic: contextInfo.currentTopic,
-        hasActiveTask: contextInfo.hasActiveTask,
-        taskProgress: contextInfo.taskProgress,
-        relevantConcepts: contextInfo.relevantConcepts,
-      },
-      metrics: {
-        ...retrievalResult.metrics,
-        intentClassificationMs: routing.processingTimeMs,
-        contextBuildMs: contextInfo.processingTimeMs,
-      },
+    // === DELEGATE to the core pipeline (owns safety + quality) ===
+    const result = await ragService.askWithConversation(processedQuery, {
       conversationId,
-      totalTime: Date.now() - startTime,
-    };
+      filters,
+      onEvent,
+      routing,
+      responseInstruction: callerInstruction,
+    });
 
-    // Update context after interaction using extracted module
+    // === PLUGIN: Post-interaction context update ===
     await updateContextAfterInteraction(
       {
         conversationId,
         userId: effectiveUserId,
         workspaceId,
         query: processedQuery,
-        response,
+        response: result.answer,
         intent: routing.intent,
         entities: routing.entities || [],
         topic: contextInfo.primaryConcept,
@@ -369,71 +185,29 @@ class IntentAwareRAGService {
       this.logger
     );
 
-    await trackQueryAnalytics({
-      Analytics: this.Analytics,
-      cache: this.cache,
-      logger: this.logger,
-      requestId,
-      question,
-      cacheHit: false,
-      citedSources,
-      conversationId,
-      intent: routing.intent,
-    });
-
-    await this.cache.set(question, result, conversationId);
-
-    this.logger.info('Intent-aware query complete', {
-      service: 'intent-rag',
-      intent: routing.intent,
-      documentsUsed: retrievalResult.documents.length,
-      confidence: validation.confidence.toFixed(2),
-      totalTimeMs: result.totalTime,
-    });
+    // Augment result with context metadata (standard schema + extras)
+    result.intent = {
+      type: routing.intent,
+      confidence: routing.confidence,
+      reasoning: routing.reasoning,
+    };
+    result.context = {
+      resolvedQuery: contextInfo.resolvedQuery,
+      hadCoreferences: contextInfo.hadCoreferences,
+      conversationPhase: contextInfo.conversationPhase,
+      currentTopic: contextInfo.currentTopic,
+      hasActiveTask: contextInfo.hasActiveTask,
+    };
 
     return result;
   }
 
-  async _generateIntentAwareResponse(question, context, history, routing, options) {
-    const { conversationId, contextInfo = {} } = options;
+  async _generateClarificationResponse(question, history, _routing) {
+    // Delegate to ragService LLM for clarification
+    const { llm } = ragService;
+    const { ChatPromptTemplate } = await import('@langchain/core/prompts');
+    const { StringOutputParser } = await import('@langchain/core/output_parsers');
 
-    const styleInstruction = getStyleInstruction(contextInfo);
-    const taskInstruction =
-      contextInfo.hasActiveTask && contextInfo.taskContextStr
-        ? `\n\nOngoing task context:\n${contextInfo.taskContextStr}`
-        : '';
-    const domainInstruction = contextInfo.domainContext ? `\n\n${contextInfo.domainContext}` : '';
-
-    const systemPrompt = `You are a helpful knowledge assistant. ${routing.responsePrompt}
-${domainInstruction}${taskInstruction}
-
-Important guidelines:
-- Only use information from the provided context
-- Always cite sources using [1], [2], etc. notation
-- If information is not in the context, say so
-- ${styleInstruction}`;
-
-    const prompt = ChatPromptTemplate.fromMessages([
-      ['system', systemPrompt],
-      ['user', `Context:\n{context}\n\nQuestion: {question}`],
-    ]);
-
-    const chain = prompt.pipe(this.llm).pipe(new StringOutputParser());
-
-    const callbacks = getCallbacks({
-      runName: `rag-${routing.intent}`,
-      metadata: {
-        intent: routing.intent,
-        strategy: routing.strategy,
-        phase: contextInfo.conversationPhase,
-      },
-      sessionId: conversationId,
-    });
-
-    return chain.invoke({ context, question }, { callbacks });
-  }
-
-  async _generateClarificationResponse(question, history, routing) {
     const recentContext = history
       .slice(-6)
       .map((m) => `${m.role.toUpperCase()}: ${m.content}`)
@@ -447,13 +221,12 @@ Important guidelines:
 Recent conversation:
 ${recentContext}
 
-Provide a helpful clarification based on the conversation context. If you need more information to clarify, ask a specific follow-up question.`,
+Provide a helpful clarification based on the conversation context.`,
       ],
       ['user', '{question}'],
     ]);
 
-    const chain = prompt.pipe(this.llm).pipe(new StringOutputParser());
-
+    const chain = prompt.pipe(llm).pipe(new StringOutputParser());
     return chain.invoke({ question });
   }
 
@@ -526,18 +299,15 @@ Provide a helpful clarification based on the conversation context. If you need m
         service: 'intent-rag',
         error: error.message,
       });
-
       return { conversationId };
     }
   }
 
   clearContextCaches(params = {}) {
     const { conversationId, workspaceId } = params;
-
     if (conversationId) {
       this.contextServices.tasks.clearCache(conversationId);
     }
-
     if (workspaceId) {
       this.contextServices.domain.clearCache(workspaceId);
       this.contextServices.concepts.clearCache(workspaceId);
@@ -545,7 +315,7 @@ Provide a helpful clarification based on the conversation context. If you need m
   }
 }
 
-// Factory functions
+// Factory
 export async function createIntentAwareRAGService(dependencies = {}) {
   const service = new IntentAwareRAGService(dependencies);
   await service.init();

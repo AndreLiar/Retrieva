@@ -31,14 +31,15 @@ export const notionSyncQueue = new Queue('notionSync', {
 /**
  * Queue for document indexing operations
  * Processes individual documents and indexes them in Qdrant
+ * ISSUE #18 FIX: Changed to exponential backoff for better retry behavior
  */
 export const documentIndexQueue = new Queue('documentIndex', {
   connection: redisConnection,
   defaultJobOptions: {
-    attempts: 2,
+    attempts: 3, // Increased from 2 for better recovery
     backoff: {
-      type: 'fixed',
-      delay: 30000, // 30 seconds
+      type: 'exponential',
+      delay: 30000, // Start with 30 seconds, then 60s, then 120s
     },
     removeOnComplete: {
       count: 1000,
@@ -108,26 +109,48 @@ export async function scheduleMemoryDecayJob() {
   });
 }
 
-// Log queue events
-notionSyncQueue.on('error', (error) => {
-  logger.error('Notion sync queue error:', error);
-});
+// ISSUE #34 FIX: Store event listener references for cleanup
+const queueEventListeners = {
+  notionSync: null,
+  documentIndex: null,
+  memoryDecay: null,
+};
 
-documentIndexQueue.on('error', (error) => {
-  logger.error('Document index queue error:', error);
-});
+// Log queue events with stored references
+queueEventListeners.notionSync = (error) => {
+  logger.error('Notion sync queue error:', { error: error.message, stack: error.stack });
+};
+notionSyncQueue.on('error', queueEventListeners.notionSync);
 
-memoryDecayQueue.on('error', (error) => {
-  logger.error('Memory decay queue error:', error);
-});
+queueEventListeners.documentIndex = (error) => {
+  logger.error('Document index queue error:', { error: error.message, stack: error.stack });
+};
+documentIndexQueue.on('error', queueEventListeners.documentIndex);
+
+queueEventListeners.memoryDecay = (error) => {
+  logger.error('Memory decay queue error:', { error: error.message, stack: error.stack });
+};
+memoryDecayQueue.on('error', queueEventListeners.memoryDecay);
 
 logger.info('BullMQ queues initialized successfully');
 
 /**
  * Gracefully close all queues
+ * ISSUE #34 FIX: Remove event listeners before closing
  */
 export const closeQueues = async () => {
   try {
+    // Remove event listeners to prevent memory leaks
+    if (queueEventListeners.notionSync) {
+      notionSyncQueue.off('error', queueEventListeners.notionSync);
+    }
+    if (queueEventListeners.documentIndex) {
+      documentIndexQueue.off('error', queueEventListeners.documentIndex);
+    }
+    if (queueEventListeners.memoryDecay) {
+      memoryDecayQueue.off('error', queueEventListeners.memoryDecay);
+    }
+
     await Promise.all([
       notionSyncQueue.close(),
       documentIndexQueue.close(),

@@ -86,10 +86,9 @@ const conceptNodeSchema = new mongoose.Schema(
   }
 );
 
-// Indexes
+// Indexes (parent index is defined inline in schema)
 conceptNodeSchema.index({ workspaceId: 1, normalizedName: 1 }, { unique: true });
 conceptNodeSchema.index({ workspaceId: 1, level: 1 });
-conceptNodeSchema.index({ parent: 1 });
 
 // Pre-save hook
 conceptNodeSchema.pre('save', function (next) {

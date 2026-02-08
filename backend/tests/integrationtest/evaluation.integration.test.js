@@ -129,7 +129,9 @@ describe('Evaluation API Integration Tests', () => {
   };
 
   beforeAll(async () => {
-    mongoServer = await MongoMemoryServer.create();
+    mongoServer = await MongoMemoryServer.create({
+      instance: { launchTimeout: 60000 },
+    });
     const mongoUri = mongoServer.getUri();
     process.env.MONGODB_URI = mongoUri;
 

@@ -14,16 +14,22 @@ class RAGCache {
 
   /**
    * Generate cache key from question
+   * SECURITY: workspaceId is REQUIRED for tenant isolation
    * @param {string} question - User question
+   * @param {string} workspaceId - Workspace ID (required for tenant isolation)
    * @param {string} conversationId - Optional conversation ID
    * @returns {string} Cache key
    */
-  getCacheKey(question, conversationId = null) {
+  getCacheKey(question, workspaceId, conversationId = null) {
+    if (!workspaceId) {
+      throw new Error('workspaceId is required for cache key generation (tenant isolation)');
+    }
     const normalized = question.toLowerCase().trim();
     const hash = createHash('sha256').update(normalized).digest('hex');
+    // Include workspaceId in key to ensure tenant isolation
     return conversationId
-      ? `rag:conv:${conversationId}:${hash.substring(0, 16)}`
-      : `rag:${hash.substring(0, 16)}`;
+      ? `rag:ws:${workspaceId}:conv:${conversationId}:${hash.substring(0, 16)}`
+      : `rag:ws:${workspaceId}:${hash.substring(0, 16)}`;
   }
 
   /**
@@ -39,20 +45,28 @@ class RAGCache {
   /**
    * Get cached answer
    * @param {string} question - User question
+   * @param {string} workspaceId - Workspace ID (required for tenant isolation)
    * @param {string} conversationId - Optional conversation ID
    * @returns {Promise<Object|null>} Cached answer or null
    */
-  async get(question, conversationId = null) {
+  async get(question, workspaceId, conversationId = null) {
     if (!this.enabled) return null;
+    if (!workspaceId) {
+      logger.warn('Cache get called without workspaceId, skipping for tenant isolation', {
+        service: 'rag-cache',
+      });
+      return null;
+    }
 
     try {
-      const key = this.getCacheKey(question, conversationId);
+      const key = this.getCacheKey(question, workspaceId, conversationId);
       const cached = await redisClient.get(key);
 
       if (cached) {
         logger.info('Cache HIT', {
           service: 'rag-cache',
           question: question.substring(0, 50) + '...',
+          workspaceId,
           conversationId,
         });
 
@@ -86,13 +100,20 @@ class RAGCache {
    * Cache answer
    * @param {string} question - User question
    * @param {Object} answer - Answer object to cache
+   * @param {string} workspaceId - Workspace ID (required for tenant isolation)
    * @param {string} conversationId - Optional conversation ID
    */
-  async set(question, answer, conversationId = null) {
+  async set(question, answer, workspaceId, conversationId = null) {
     if (!this.enabled) return;
+    if (!workspaceId) {
+      logger.warn('Cache set called without workspaceId, skipping for tenant isolation', {
+        service: 'rag-cache',
+      });
+      return;
+    }
 
     try {
-      const key = this.getCacheKey(question, conversationId);
+      const key = this.getCacheKey(question, workspaceId, conversationId);
       const value = JSON.stringify({
         ...answer,
         cachedAt: new Date().toISOString(),
@@ -104,6 +125,7 @@ class RAGCache {
         service: 'rag-cache',
         question: question.substring(0, 50) + '...',
         ttl: this.ttl,
+        workspaceId,
         conversationId,
       });
     } catch (error) {
@@ -117,18 +139,26 @@ class RAGCache {
   /**
    * Invalidate cache for a question
    * @param {string} question - User question
+   * @param {string} workspaceId - Workspace ID (required for tenant isolation)
    * @param {string} conversationId - Optional conversation ID
    */
-  async invalidate(question, conversationId = null) {
+  async invalidate(question, workspaceId, conversationId = null) {
     if (!this.enabled) return;
+    if (!workspaceId) {
+      logger.warn('Cache invalidate called without workspaceId, skipping for tenant isolation', {
+        service: 'rag-cache',
+      });
+      return;
+    }
 
     try {
-      const key = this.getCacheKey(question, conversationId);
+      const key = this.getCacheKey(question, workspaceId, conversationId);
       await redisClient.del(key);
 
       logger.info('Cache invalidated', {
         service: 'rag-cache',
         question: question.substring(0, 50) + '...',
+        workspaceId,
       });
     } catch (error) {
       logger.error('Cache invalidation error', {
@@ -155,6 +185,37 @@ class RAGCache {
     } catch (error) {
       logger.error('Cache clear error', {
         service: 'rag-cache',
+        error: error.message,
+      });
+    }
+  }
+
+  /**
+   * Clear cache for a specific workspace (tenant-safe)
+   * @param {string} workspaceId - Workspace ID
+   */
+  async clearByWorkspace(workspaceId) {
+    if (!this.enabled) return;
+    if (!workspaceId) {
+      logger.warn('clearByWorkspace called without workspaceId', {
+        service: 'rag-cache',
+      });
+      return;
+    }
+
+    try {
+      const keys = await redisClient.keys(`rag:ws:${workspaceId}:*`);
+      if (keys.length > 0) {
+        await redisClient.del(keys);
+        logger.info(`Cleared ${keys.length} cached answers for workspace`, {
+          service: 'rag-cache',
+          workspaceId,
+        });
+      }
+    } catch (error) {
+      logger.error('Workspace cache clear error', {
+        service: 'rag-cache',
+        workspaceId,
         error: error.message,
       });
     }

@@ -23,7 +23,20 @@ const messageSchema = new mongoose.Schema(
     content: {
       type: String,
       required: true,
+      maxlength: [50000, 'Message content cannot exceed 50,000 characters'],
     },
+    sources: [
+      {
+        id: String,
+        title: String,
+        content: String,
+        url: String,
+        pageId: String,
+        score: Number,
+        section: String,
+        type: { type: String },
+      },
+    ],
     timestamp: {
       type: Date,
       default: Date.now,

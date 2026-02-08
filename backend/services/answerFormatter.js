@@ -1,6 +1,6 @@
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { StringOutputParser } from '@langchain/core/output_parsers';
-import { llm } from '../config/llm.js';
+import { getDefaultLLM } from '../config/llm.js';
 import logger from '../config/logger.js';
 
 /**
@@ -15,6 +15,8 @@ class AnswerFormatter {
   }
 
   async init() {
+    const llm = await getDefaultLLM();
+
     // Chain to extract structure from answer
     const formattingPrompt = ChatPromptTemplate.fromMessages([
       [

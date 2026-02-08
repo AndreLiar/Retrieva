@@ -101,11 +101,13 @@ export const IntentCharacteristics = {
     responseStyle: 'conversational',
   },
   [IntentType.OUT_OF_SCOPE]: {
-    requiresRAG: false,
-    retrievalDepth: 'none',
-    retrievalCount: 0,
+    // Changed: Try RAG first, then report "not found" instead of refusing
+    // When workspace is connected, we should search first before declining
+    requiresRAG: true,
+    retrievalDepth: 'shallow', // Quick search to verify nothing matches
+    retrievalCount: 5,
     needsContext: false,
-    responseStyle: 'decline',
+    responseStyle: 'not_found', // Changed from 'decline' to 'not_found'
   },
   [IntentType.OPINION]: {
     requiresRAG: true,
@@ -186,7 +188,6 @@ const QUICK_PATTERNS = {
     /^(thanks|thank\s*you|thx|ty)[\s!.]*$/i,
     /^(bye|goodbye|see\s*you|later)[\s!.]*$/i,
     /^(how\s*are\s*you|what'?s\s*up)[\s?!.]*$/i,
-    /^(ok|okay|sure|yes|no|alright)[\s!.]*$/i,
   ],
   clarification: [
     /^(what\s*(do\s*you\s*mean|did\s*you\s*mean)|can\s*you\s*explain|elaborate|more\s*(details?|info))[\s?]*$/i,
@@ -200,12 +201,89 @@ const QUICK_PATTERNS = {
   aggregation: [/^(list|show|give\s*me)\s*(all|the)\b/i, /\b(summary|overview|summarize)\b/i],
 };
 
+// Short affirmations that are context-dependent: chitchat if first message, clarification if in conversation
+const SHORT_AFFIRMATION_PATTERN = /^(ok|okay|sure|yes|no|alright|yeah|yep|nope|nah)[\s!.]*$/i;
+
 /**
- * Quick pattern-based classification for obvious intents
+ * Keyword-based scoring for intents not covered by quick regex patterns.
+ * Runs between regex and LLM to reduce LLM calls for common patterns.
  * @private
  */
-function quickClassify(query) {
+const KEYWORD_SIGNALS = {
+  [IntentType.EXPLANATION]: [
+    { phrase: 'explain', weight: 2.0 },
+    { phrase: 'why does', weight: 2.0 },
+    { phrase: 'why do', weight: 2.0 },
+    { phrase: 'why is', weight: 1.5 },
+    { phrase: 'why are', weight: 1.5 },
+    { phrase: 'how does', weight: 1.5 },
+    { phrase: 'what causes', weight: 1.5 },
+    { phrase: 'reason for', weight: 1.5 },
+    { phrase: 'mechanism', weight: 1.0 },
+  ],
+  [IntentType.FACTUAL]: [
+    { phrase: 'what is', weight: 2.0 },
+    { phrase: 'what are', weight: 2.0 },
+    { phrase: 'who is', weight: 2.0 },
+    { phrase: 'who are', weight: 2.0 },
+    { phrase: 'where is', weight: 2.0 },
+    { phrase: 'define', weight: 2.0 },
+    { phrase: 'meaning of', weight: 2.0 },
+    { phrase: 'definition of', weight: 2.0 },
+  ],
+  [IntentType.OPINION]: [
+    { phrase: 'should i', weight: 2.0 },
+    { phrase: 'should we', weight: 2.0 },
+    { phrase: 'do you recommend', weight: 2.0 },
+    { phrase: 'is it worth', weight: 1.5 },
+    { phrase: 'pros and cons', weight: 2.0 },
+    { phrase: 'which is better', weight: 2.0 },
+    { phrase: 'best practice', weight: 1.5 },
+    { phrase: 'recommend', weight: 1.0 },
+  ],
+  [IntentType.TEMPORAL]: [
+    { phrase: 'last week', weight: 2.0 },
+    { phrase: 'last month', weight: 2.0 },
+    { phrase: 'last year', weight: 2.0 },
+    { phrase: 'recently', weight: 1.5 },
+    { phrase: 'latest', weight: 1.5 },
+    { phrase: 'what changed', weight: 1.5 },
+    { phrase: 'history of', weight: 1.5 },
+    { phrase: 'timeline', weight: 1.5 },
+    { phrase: 'recent update', weight: 2.0 },
+    { phrase: 'recent change', weight: 2.0 },
+  ],
+};
+
+/**
+ * Quick pattern-based classification for obvious intents.
+ * Context-aware: short affirmations in active conversations become clarifications.
+ * @private
+ */
+function quickClassify(query, conversationHistory = []) {
   const trimmedQuery = query.trim();
+
+  // Handle short affirmations with context awareness
+  if (SHORT_AFFIRMATION_PATTERN.test(trimmedQuery)) {
+    if (conversationHistory.length > 0) {
+      return {
+        intent: IntentType.CLARIFICATION,
+        confidence: 0.85,
+        reasoning: 'Short affirmation in active conversation treated as continuation',
+        entities: [],
+        isFollowUp: true,
+        quickMatch: true,
+      };
+    }
+    return {
+      intent: IntentType.CHITCHAT,
+      confidence: 0.95,
+      reasoning: 'Pattern-matched quick classification',
+      entities: [],
+      isFollowUp: false,
+      quickMatch: true,
+    };
+  }
 
   for (const [intent, patterns] of Object.entries(QUICK_PATTERNS)) {
     for (const pattern of patterns) {
@@ -220,6 +298,45 @@ function quickClassify(query) {
         };
       }
     }
+  }
+
+  return null;
+}
+
+/**
+ * Keyword-based scoring classification for intents missed by regex.
+ * Reduces LLM calls for common query patterns.
+ * @private
+ */
+function keywordScoreClassify(query) {
+  const lower = query.toLowerCase().trim();
+
+  let bestIntent = null;
+  let bestScore = 0;
+
+  for (const [intent, signals] of Object.entries(KEYWORD_SIGNALS)) {
+    let score = 0;
+    for (const { phrase, weight } of signals) {
+      if (lower.includes(phrase)) {
+        score += weight;
+      }
+    }
+    if (score > bestScore) {
+      bestScore = score;
+      bestIntent = intent;
+    }
+  }
+
+  // Require minimum score threshold (at least one strong match)
+  if (bestIntent && bestScore >= 1.5) {
+    return {
+      intent: bestIntent,
+      confidence: Math.min(0.85, 0.65 + bestScore * 0.05),
+      reasoning: `Keyword-scored classification (score: ${bestScore.toFixed(1)})`,
+      entities: [],
+      isFollowUp: false,
+      quickMatch: false,
+    };
   }
 
   return null;
@@ -376,8 +493,8 @@ class IntentClassifier {
     const { conversationHistory = [], useCache = true } = options;
     const startTime = Date.now();
 
-    // Try quick pattern matching first
-    const quickResult = quickClassify(query);
+    // Tier 1: Quick pattern matching (regex)
+    const quickResult = quickClassify(query, conversationHistory);
     if (quickResult) {
       logger.debug('Quick classified intent', {
         service: 'intent-classifier',
@@ -388,7 +505,19 @@ class IntentClassifier {
       return quickResult;
     }
 
-    // Check Redis cache
+    // Tier 2: Keyword scoring (catches common patterns without LLM cost)
+    const keywordResult = keywordScoreClassify(query);
+    if (keywordResult) {
+      logger.debug('Keyword-scored intent', {
+        service: 'intent-classifier',
+        intent: keywordResult.intent,
+        confidence: keywordResult.confidence,
+        processingTimeMs: Date.now() - startTime,
+      });
+      return keywordResult;
+    }
+
+    // Tier 3: LLM classification (check Redis cache first)
     const contextHash = this._hashContext(conversationHistory);
     const cacheKey = this._getCacheKey(query, contextHash);
 

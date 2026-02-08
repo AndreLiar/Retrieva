@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
-import crypto from 'crypto';
 import logger from '../../config/logger.js';
+import { sha256, timingSafeEqual } from './crypto.js';
 
 // Validate required JWT secrets at startup
 const ACCESS_TOKEN_SECRET = process.env.JWT_ACCESS_SECRET;
@@ -33,7 +33,7 @@ const REFRESH_TOKEN_EXPIRY = process.env.JWT_REFRESH_EXPIRY || '7d'; // 7 days
  * @returns {string} SHA-256 hash of the token
  */
 export const hashRefreshToken = (token) => {
-  return crypto.createHash('sha256').update(token).digest('hex');
+  return sha256(token);
 };
 
 /**
@@ -44,7 +44,7 @@ export const hashRefreshToken = (token) => {
  */
 export const compareRefreshToken = (rawToken, hashedToken) => {
   const hash = hashRefreshToken(rawToken);
-  return crypto.timingSafeEqual(Buffer.from(hash), Buffer.from(hashedToken));
+  return timingSafeEqual(hash, hashedToken);
 };
 
 /**

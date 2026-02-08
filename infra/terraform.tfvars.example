@@ -1,0 +1,62 @@
+# =============================================================================
+# Terraform Variables Example
+# =============================================================================
+# Copy this file to terraform.tfvars and fill in your values.
+# DO NOT commit terraform.tfvars to version control (contains sensitive data).
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Required Variables
+# -----------------------------------------------------------------------------
+
+# Your Azure subscription ID
+# Get it with: az account show --query "id" -o tsv
+subscription_id = "your-subscription-id-here"
+
+# Email address to receive budget alerts
+budget_alert_email = "your-email@example.com"
+
+# -----------------------------------------------------------------------------
+# Optional Variables (defaults shown)
+# -----------------------------------------------------------------------------
+
+# Project name used for resource naming
+# project_name = "rag-backend"
+
+# Environment (dev, staging, prod)
+# environment = "dev"
+
+# Azure region for resources
+# location = "westeurope"
+
+# Monthly budget amount in USD
+# budget_amount = 20
+
+# Budget alert thresholds (percentage)
+# budget_thresholds = [50, 80, 100]
+
+# Azure OpenAI SKU
+# openai_sku = "S0"
+
+# Embedding model configuration
+# embedding_model = {
+#   name     = "text-embedding-3-small"
+#   model    = "text-embedding-3-small"
+#   version  = "1"
+#   capacity = 120  # Tokens per minute (in thousands)
+# }
+
+# LLM model configuration
+# llm_model = {
+#   name     = "gpt-35-turbo"
+#   model    = "gpt-35-turbo"
+#   version  = "0125"
+#   capacity = 120  # Tokens per minute (in thousands)
+# }
+
+# Resource tags
+# tags = {
+#   Project     = "RAG Backend"
+#   ManagedBy   = "Terraform"
+#   Environment = "Development"
+# }

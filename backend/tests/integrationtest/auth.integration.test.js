@@ -131,7 +131,9 @@ describe('Authentication API Integration Tests', () => {
 
   beforeAll(async () => {
     // Setup in-memory MongoDB
-    mongoServer = await MongoMemoryServer.create();
+    mongoServer = await MongoMemoryServer.create({
+      instance: { launchTimeout: 60000 },
+    });
     const mongoUri = mongoServer.getUri();
     process.env.MONGODB_URI = mongoUri;
 
@@ -394,6 +396,56 @@ describe('Authentication API Integration Tests', () => {
 
     it('should reject request with malformed Authorization header', async () => {
       const res = await request.get(`${API_BASE}/me`).set('Authorization', 'InvalidFormat token');
+
+      expect(res.status).toBe(401);
+    });
+  });
+
+  // =============================================================================
+  // Update Profile Tests
+  // =============================================================================
+  describe('PATCH /auth/profile', () => {
+    let accessToken;
+
+    beforeEach(async () => {
+      await request.post(`${API_BASE}/register`).send(validUser);
+
+      const User = mongoose.model('User');
+      await User.updateOne(
+        { email: validUser.email },
+        { $set: { isEmailVerified: true, isActive: true } }
+      );
+
+      const loginRes = await request.post(`${API_BASE}/login`).send({
+        email: validUser.email,
+        password: validUser.password,
+      });
+
+      accessToken = loginRes.body.data.accessToken;
+    });
+
+    it('should update user name when valid data provided', async () => {
+      const res = await request
+        .patch(`${API_BASE}/profile`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ name: 'Updated Name', email: validUser.email });
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.user.name).toBe('Updated Name');
+    });
+
+    it('should reject attempts to change email address', async () => {
+      const res = await request
+        .patch(`${API_BASE}/profile`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ name: 'Another Name', email: 'new-email@example.com' });
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toContain('Email cannot be changed');
+    });
+
+    it('should require authentication', async () => {
+      const res = await request.patch(`${API_BASE}/profile`).send({ name: 'No Auth' });
 
       expect(res.status).toBe(401);
     });

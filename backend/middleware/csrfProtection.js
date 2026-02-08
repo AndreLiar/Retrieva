@@ -14,6 +14,7 @@
 
 import crypto from 'crypto';
 import logger from '../config/logger.js';
+import { generateToken as generateCryptoToken } from '../utils/security/crypto.js';
 
 /**
  * Configuration
@@ -43,7 +44,7 @@ const EXCLUDED_PATHS = [
  * @returns {string} CSRF token
  */
 function generateToken() {
-  return crypto.randomBytes(TOKEN_LENGTH).toString('hex');
+  return generateCryptoToken(TOKEN_LENGTH);
 }
 
 /**
@@ -165,7 +166,7 @@ export function csrfProtection(options = {}) {
       ) {
         throw new Error('Token mismatch');
       }
-    } catch (error) {
+    } catch (_error) {
       logger.warn('CSRF validation failed - token mismatch', {
         service: 'csrf',
         path: req.path,

@@ -1,4 +1,5 @@
 import { Analytics } from '../models/Analytics.js';
+import { Conversation } from '../models/Conversation.js';
 import { ragCache } from '../utils/rag/ragCache.js';
 import logger from '../config/logger.js';
 import { sendSuccess, sendError } from '../utils/core/responseFormatter.js';
@@ -17,17 +18,100 @@ import { sendSuccess, sendError } from '../utils/core/responseFormatter.js';
  */
 
 /**
+ * ISSUE #37 FIX: Validate date string and return Date object or null
+ * Prevents invalid dates from propagating to database queries
+ * @param {string} dateString - Date string to validate
+ * @returns {Date|null} Valid Date object or null if invalid
+ */
+function parseAndValidateDate(dateString) {
+  if (!dateString) return null;
+
+  // Try parsing the date
+  const timestamp = Date.parse(dateString);
+
+  // Check if parsing resulted in a valid date
+  if (isNaN(timestamp)) {
+    return null;
+  }
+
+  const date = new Date(timestamp);
+
+  // Additional sanity check: ensure date is within reasonable range
+  // (1970-01-01 to 100 years from now)
+  const minDate = new Date('1970-01-01');
+  const maxDate = new Date();
+  maxDate.setFullYear(maxDate.getFullYear() + 100);
+
+  if (date < minDate || date > maxDate) {
+    return null;
+  }
+
+  return date;
+}
+
+/**
  * Get business analytics summary
  * GET /api/v1/analytics/summary?startDate=2024-01-01&endDate=2024-12-31
  */
 export const getAnalyticsSummary = async (req, res) => {
   try {
-    const { startDate, endDate } = req.query;
+    const { startDate, endDate, workspaceId } = req.query;
 
+    // ISSUE #37 FIX: Validate date strings before using them
+    const parsedStartDate = parseAndValidateDate(startDate);
+    const parsedEndDate = parseAndValidateDate(endDate);
+
+    // Return error if dates were provided but are invalid
+    if (startDate && !parsedStartDate) {
+      return sendError(res, 400, 'Invalid startDate format. Use ISO 8601 format (e.g., 2024-01-01)');
+    }
+    if (endDate && !parsedEndDate) {
+      return sendError(res, 400, 'Invalid endDate format. Use ISO 8601 format (e.g., 2024-12-31)');
+    }
+
+    const dateFilter = {};
+    if (parsedStartDate) dateFilter.$gte = parsedStartDate;
+    if (parsedEndDate) dateFilter.$lte = parsedEndDate;
+
+    const match = {};
+    if (Object.keys(dateFilter).length > 0) match.timestamp = dateFilter;
+    if (workspaceId) match.workspaceId = workspaceId;
+
+    // Get total questions count
+    const totalQuestions = await Analytics.countDocuments(match);
+
+    // Get conversation count
+    const conversationMatch = {};
+    if (workspaceId) conversationMatch.workspaceId = workspaceId;
+    if (parsedStartDate || parsedEndDate) {
+      conversationMatch.createdAt = {};
+      if (parsedStartDate) conversationMatch.createdAt.$gte = parsedStartDate;
+      if (parsedEndDate) conversationMatch.createdAt.$lte = parsedEndDate;
+    }
+    const totalConversations = await Conversation.countDocuments(conversationMatch);
+
+    // Get cache stats and feedback
     const summary = await Analytics.getBusinessSummary(startDate, endDate);
     const cacheStatus = await ragCache.getStats();
 
+    // Calculate satisfaction rate from feedback
+    const satisfactionRate = summary.feedback.totalFeedback > 0
+      ? parseFloat(summary.feedback.helpfulRate) / 100
+      : 0;
+
+    // Calculate cache hit rate as a number
+    const cacheHitRate = summary.cache.totalRequests > 0
+      ? summary.cache.cacheHits / summary.cache.totalRequests
+      : 0;
+
     const result = {
+      // Frontend-compatible fields
+      totalQuestions,
+      totalConversations,
+      averageResponseTime: 0, // Response time tracked in LangSmith
+      satisfactionRate,
+      cacheHitRate,
+      // Additional detail
       period: {
         start: startDate || 'All time',
         end: endDate || 'Now',
@@ -38,12 +122,13 @@ export const getAnalyticsSummary = async (req, res) => {
       },
       feedback: summary.feedback,
       topQuestions: summary.topQuestions,
-      note: 'For LLM performance metrics, see LangSmith. For quality evaluation, use /api/v1/evaluation endpoints.',
     };
 
     logger.info('Analytics summary generated', {
       service: 'analytics',
       totalRequests: summary.cache.totalRequests,
+      totalQuestions,
+      totalConversations,
     });
 
     sendSuccess(res, 200, 'Analytics summary retrieved successfully', result);
@@ -241,6 +326,138 @@ export const getFeedbackSummary = async (req, res) => {
       error: error.message,
     });
     sendError(res, 500, 'Failed to retrieve feedback summary');
+  }
+};
+
+/**
+ * Get usage data over time (questions and conversations by date)
+ * GET /api/v1/analytics/usage?startDate=...&endDate=...&interval=day&workspaceId=...
+ */
+export const getUsageData = async (req, res) => {
+  try {
+    const { startDate, endDate, interval = 'day', workspaceId } = req.query;
+
+    // ISSUE #37 FIX: Validate date strings before using them
+    const parsedStartDate = parseAndValidateDate(startDate);
+    const parsedEndDate = parseAndValidateDate(endDate);
+
+    if (startDate && !parsedStartDate) {
+      return sendError(res, 400, 'Invalid startDate format. Use ISO 8601 format (e.g., 2024-01-01)');
+    }
+    if (endDate && !parsedEndDate) {
+      return sendError(res, 400, 'Invalid endDate format. Use ISO 8601 format (e.g., 2024-12-31)');
+    }
+
+    const dateFormat = interval === 'week' ? '%Y-W%V' : interval === 'month' ? '%Y-%m' : '%Y-%m-%d';
+
+    const match = {};
+    if (parsedStartDate || parsedEndDate) {
+      match.timestamp = {};
+      if (parsedStartDate) match.timestamp.$gte = parsedStartDate;
+      if (parsedEndDate) match.timestamp.$lte = parsedEndDate;
+    }
+    if (workspaceId) match.workspaceId = workspaceId;
+
+    // Questions per date
+    const questionTrends = await Analytics.aggregate([
+      { $match: match },
+      {
+        $group: {
+          _id: { $dateToString: { format: dateFormat, date: '$timestamp' } },
+          questions: { $sum: 1 },
+          conversations: { $addToSet: '$conversationId' },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          date: '$_id',
+          questions: 1,
+          conversations: { $size: '$conversations' },
+        },
+      },
+      { $sort: { date: 1 } },
+    ]);
+
+    logger.info('Usage data retrieved', {
+      service: 'analytics',
+      dataPoints: questionTrends.length,
+    });
+
+    sendSuccess(res, 200, 'Usage data retrieved successfully', {
+      data: questionTrends,
+    });
+  } catch (error) {
+    logger.error('Failed to get usage data', {
+      service: 'analytics',
+      error: error.message,
+    });
+    sendError(res, 500, 'Failed to retrieve usage data');
+  }
+};
+
+/**
+ * Get feedback distribution (positive vs negative)
+ * GET /api/v1/analytics/feedback-distribution?startDate=...&endDate=...&workspaceId=...
+ */
+export const getFeedbackDistribution = async (req, res) => {
+  try {
+    const { startDate, endDate, workspaceId } = req.query;
+
+    // ISSUE #37 FIX: Validate date strings before using them
+    const parsedStartDate = parseAndValidateDate(startDate);
+    const parsedEndDate = parseAndValidateDate(endDate);
+
+    if (startDate && !parsedStartDate) {
+      return sendError(res, 400, 'Invalid startDate format. Use ISO 8601 format (e.g., 2024-01-01)');
+    }
+    if (endDate && !parsedEndDate) {
+      return sendError(res, 400, 'Invalid endDate format. Use ISO 8601 format (e.g., 2024-12-31)');
+    }
+
+    const match = { 'userFeedback.rating': { $exists: true, $ne: null } };
+    if (parsedStartDate || parsedEndDate) {
+      match.timestamp = {};
+      if (parsedStartDate) match.timestamp.$gte = parsedStartDate;
+      if (parsedEndDate) match.timestamp.$lte = parsedEndDate;
+    }
+    if (workspaceId) match.workspaceId = workspaceId;
+
+    const result = await Analytics.aggregate([
+      { $match: match },
+      {
+        $group: {
+          _id: null,
+          positiveCount: {
+            $sum: { $cond: [{ $gte: ['$userFeedback.rating', 4] }, 1, 0] },
+          },
+          negativeCount: {
+            $sum: { $cond: [{ $lt: ['$userFeedback.rating', 4] }, 1, 0] },
+          },
+        },
+      },
+    ]);
+
+    const counts = result[0] || { positiveCount: 0, negativeCount: 0 };
+
+    logger.info('Feedback distribution retrieved', {
+      service: 'analytics',
+      positive: counts.positiveCount,
+      negative: counts.negativeCount,
+    });
+
+    sendSuccess(res, 200, 'Feedback distribution retrieved successfully', {
+      data: [
+        { rating: 'positive', count: counts.positiveCount },
+        { rating: 'negative', count: counts.negativeCount },
+      ],
+    });
+  } catch (error) {
+    logger.error('Failed to get feedback distribution', {
+      service: 'analytics',
+      error: error.message,
+    });
+    sendError(res, 500, 'Failed to retrieve feedback distribution');
   }
 };
 

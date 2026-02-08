@@ -41,7 +41,11 @@ let mongoServer;
  * Initialize test database
  */
 export const setupTestDatabase = async () => {
-  mongoServer = await MongoMemoryServer.create();
+  mongoServer = await MongoMemoryServer.create({
+    instance: {
+      launchTimeout: 60000, // 60 seconds timeout for instance startup
+    },
+  });
   const mongoUri = mongoServer.getUri();
 
   // Set environment for test database

@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { notionSyncQueue } from '../config/queue.js';
 import { NotionWorkspace } from '../models/NotionWorkspace.js';
+import { SyncJob } from '../models/SyncJob.js';
 import logger from '../config/logger.js';
 
 const SYNC_INTERVAL_HOURS = parseInt(process.env.SYNC_INTERVAL_HOURS) || 6;
@@ -142,6 +143,7 @@ export class SyncScheduler {
 
   /**
    * Trigger immediate sync for a workspace
+   * Prevents duplicate syncs - only one sync job per workspace at a time
    * @param {string} workspaceId - Notion workspace ID
    * @param {string} syncType - 'full' or 'incremental'
    * @param {string} triggeredBy - 'manual', 'auto', or 'webhook'
@@ -155,6 +157,31 @@ export class SyncScheduler {
     options = {}
   ) {
     try {
+      // Check if there's already an active sync job for this workspace
+      const activeJobs = await SyncJob.getActiveJobs(workspaceId);
+      if (activeJobs && activeJobs.length > 0) {
+        const existingJob = activeJobs[0];
+        logger.warn(`Sync already in progress for workspace ${workspaceId}`, {
+          service: 'sync-scheduler',
+          existingJobId: existingJob.jobId,
+          existingJobStatus: existingJob.status,
+          startedAt: existingJob.startedAt,
+        });
+
+        return {
+          jobId: existingJob.jobId,
+          status: 'already_running',
+          workspaceId,
+          message: 'A sync is already in progress for this workspace',
+          existingJob: {
+            jobId: existingJob.jobId,
+            status: existingJob.status,
+            startedAt: existingJob.startedAt,
+            progress: existingJob.progress,
+          },
+        };
+      }
+
       const job = await notionSyncQueue.add(
         'syncNotionWorkspace',
         {

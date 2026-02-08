@@ -2,9 +2,13 @@ import { StringOutputParser } from '@langchain/core/output_parsers';
 import { ChatPromptTemplate, MessagesPlaceholder } from '@langchain/core/prompts';
 import { HumanMessage, AIMessage } from '@langchain/core/messages';
 import { randomUUID } from 'crypto';
+import mongoose from 'mongoose';
 
 // Prompts
 import { ragPrompt } from '../prompts/ragPrompt.js';
+
+// LLM timeout protection
+import { invokeWithTimeout, streamWithTimeout, LLMTimeoutError } from '../utils/core/asyncHelpers.js';
 
 // Extracted modules
 import { rerankDocuments } from './rag/documentRanking.js';
@@ -15,16 +19,20 @@ import { sanitizeDocuments, sanitizeFormattedContext } from '../utils/security/c
 import { sanitizeLLMOutput } from '../utils/security/outputSanitizer.js';
 import { scanOutputForSensitiveInfo } from '../utils/security/piiMasker.js';
 import { applyConfidenceHandling } from '../utils/security/confidenceHandler.js';
+import { processCitations, analyzeCitationCoverage } from '../utils/rag/citationValidator.js';
+import { processOutput } from '../utils/rag/outputValidator.js';
 import {
   buildQdrantFilter,
-  performMultiQueryRetrieval,
   retrieveAdditionalDocuments,
 } from './rag/queryRetrieval.js';
 import { trackQueryAnalytics, buildRAGResult } from './rag/analyticsTracker.js';
 import { guardrailsConfig } from '../config/guardrails.js';
 
-// Streaming module
-import { askWithStreaming } from './rag/ragStreaming.js';
+// Intent-aware routing
+import { IntentType } from './intent/intentClassifier.js';
+import { queryRouter } from './intent/queryRouter.js';
+import { executeStrategy } from './intent/retrievalStrategies.js';
+import { CHITCHAT_RESPONSES, OUT_OF_SCOPE_RESPONSE } from './intent/intentHandlers.js';
 
 // M3 Compressed Memory Layer
 import { entityMemory } from './memory/entityMemory.js';
@@ -33,7 +41,7 @@ import { entityMemory } from './memory/entityMemory.js';
 import { getCallbacks } from '../config/langsmith.js';
 
 // Default dependencies
-import { llm as defaultLlm } from '../config/llm.js';
+import { getDefaultLLM } from '../config/llm.js';
 import { getVectorStore as defaultVectorStoreFactory } from '../config/vectorStore.js';
 import { ragCache as defaultCache } from '../utils/rag/ragCache.js';
 import { answerFormatter as defaultAnswerFormatter } from './answerFormatter.js';
@@ -41,6 +49,7 @@ import defaultLogger from '../config/logger.js';
 import { Analytics as DefaultAnalytics } from '../models/Analytics.js';
 import { Message as DefaultMessage } from '../models/Message.js';
 import { Conversation as DefaultConversation } from '../models/Conversation.js';
+import { NotionWorkspace as DefaultNotionWorkspace } from '../models/NotionWorkspace.js';
 
 /**
  * @typedef {Object} RAGDependencies
@@ -94,7 +103,8 @@ import { Conversation as DefaultConversation } from '../models/Conversation.js';
  */
 class RAGService {
   constructor(dependencies = {}) {
-    this.llm = dependencies.llm || defaultLlm;
+    this._injectedLLM = dependencies.llm || null;
+    this.llm = null; // Will be set during init()
     this.vectorStoreFactory = dependencies.vectorStoreFactory || defaultVectorStoreFactory;
     this.cache = dependencies.cache || defaultCache;
     this.answerFormatter = dependencies.answerFormatter || defaultAnswerFormatter;
@@ -104,6 +114,7 @@ class RAGService {
     this.Analytics = models.Analytics || DefaultAnalytics;
     this.Message = models.Message || DefaultMessage;
     this.Conversation = models.Conversation || DefaultConversation;
+    this.NotionWorkspace = models.NotionWorkspace || DefaultNotionWorkspace;
 
     this.retriever = null;
     this.rephraseChain = null;
@@ -124,6 +135,15 @@ class RAGService {
   async _doInit() {
     this.logger.info('Initializing RAG system for Notion...', { service: 'rag' });
 
+    // Initialize LLM - use injected LLM or get from provider factory
+    if (this._injectedLLM) {
+      this.llm = this._injectedLLM;
+      this.logger.info('Using injected LLM instance', { service: 'rag' });
+    } else {
+      this.llm = await getDefaultLLM();
+      this.logger.info('LLM initialized from provider factory', { service: 'rag' });
+    }
+
     const vectorStore = await this.vectorStoreFactory([]);
     this.retriever = vectorStore.asRetriever({ k: 15, searchType: 'similarity' });
     this.vectorStore = vectorStore;
@@ -142,7 +162,7 @@ class RAGService {
     ]);
 
     this.rephraseChain = historyAwarePrompt.pipe(this.llm).pipe(new StringOutputParser());
-    initChains();
+    await initChains();
     this._initialized = true;
   }
 
@@ -177,6 +197,27 @@ class RAGService {
     return { context, sources, sanitizedDocs };
   }
 
+  async _resolveQdrantWorkspaceId(workspaceId) {
+    if (!workspaceId || workspaceId === 'default') return 'default';
+    try {
+      const notionWs = await this.NotionWorkspace.findById(workspaceId);
+      if (notionWs?.workspaceId) {
+        this.logger.info('Resolved workspace ID for Qdrant filter', {
+          service: 'rag',
+          mongoId: String(workspaceId),
+          notionWorkspaceId: notionWs.workspaceId,
+        });
+        return notionWs.workspaceId;
+      }
+    } catch {
+      this.logger.debug('WorkspaceId is not a MongoDB ObjectId, using as-is', {
+        service: 'rag',
+        workspaceId,
+      });
+    }
+    return workspaceId;
+  }
+
   async _generateAnswer(question, context, history, metadata = {}) {
     const chain = ragPrompt.pipe(this.llm).pipe(new StringOutputParser());
     const callbacks = getCallbacks({
@@ -190,7 +231,68 @@ class RAGService {
       sessionId: metadata.sessionId,
     });
 
-    return chain.invoke({ context, input: question, chat_history: history }, { callbacks });
+    const invokeInput = {
+      context,
+      input: question,
+      chat_history: history,
+      responseInstruction: metadata.responseInstruction || '',
+    };
+
+    // Timeout configuration (in ms)
+    const LLM_INVOKE_TIMEOUT = parseInt(process.env.LLM_INVOKE_TIMEOUT) || 60000; // 60s default
+    const LLM_STREAM_INITIAL_TIMEOUT = parseInt(process.env.LLM_STREAM_INITIAL_TIMEOUT) || 30000; // 30s for first chunk
+    const LLM_STREAM_CHUNK_TIMEOUT = parseInt(process.env.LLM_STREAM_CHUNK_TIMEOUT) || 10000; // 10s between chunks
+
+    // If onEvent callback is provided, stream with timeout protection
+    if (metadata.onEvent) {
+      let fullResponse = '';
+      try {
+        const stream = streamWithTimeout(
+          chain,
+          invokeInput,
+          { callbacks },
+          LLM_STREAM_INITIAL_TIMEOUT,
+          LLM_STREAM_CHUNK_TIMEOUT
+        );
+        for await (const chunk of stream) {
+          fullResponse += chunk;
+          metadata.onEvent('chunk', { text: chunk });
+        }
+        return fullResponse;
+      } catch (error) {
+        if (error instanceof LLMTimeoutError) {
+          this.logger.error('LLM stream timed out', {
+            service: 'rag',
+            operation: error.operation,
+            timeoutMs: error.timeoutMs,
+            partialResponse: fullResponse.length > 0,
+          });
+          // Return partial response if we have one, otherwise throw
+          if (fullResponse.length > 0) {
+            this.logger.warn('Returning partial response after timeout', {
+              service: 'rag',
+              responseLength: fullResponse.length,
+            });
+            return fullResponse + '\n\n[Response interrupted due to timeout]';
+          }
+        }
+        throw error;
+      }
+    }
+
+    // Non-streaming invoke with timeout protection
+    try {
+      return await invokeWithTimeout(chain, invokeInput, { callbacks }, LLM_INVOKE_TIMEOUT);
+    } catch (error) {
+      if (error instanceof LLMTimeoutError) {
+        this.logger.error('LLM invoke timed out', {
+          service: 'rag',
+          operation: error.operation,
+          timeoutMs: error.timeoutMs,
+        });
+      }
+      throw error;
+    }
   }
 
   async _processAnswer(response, sources, question, context = '') {
@@ -218,12 +320,49 @@ class RAGService {
     question,
     requestId,
     conversationId = null,
+    workspaceId = null,
     retrievalMetrics = null,
     startTime,
     extraData = {},
   }) {
+    // FIX #2: Output schema validation - ensure answer meets quality standards
+    const outputValidation = processOutput(answer, {
+      strict: false,
+      minLength: 10,
+    });
+
+    if (!outputValidation.valid) {
+      this.logger.warn('LLM output failed schema validation', {
+        service: 'rag',
+        requestId,
+        errors: outputValidation.errors,
+        warnings: outputValidation.warnings,
+      });
+    }
+
+    let processedAnswer = outputValidation.content;
+
+    // FIX #1: Citation validation - ensure [Source N] references are valid
+    const citationValidation = processCitations(processedAnswer, sources, {
+      removeInvalid: true,
+      logWarnings: true,
+    });
+
+    if (!citationValidation.valid) {
+      this.logger.warn('Invalid citations detected and corrected', {
+        service: 'rag',
+        requestId,
+        invalidCitations: citationValidation.invalidCitations,
+        validCitations: citationValidation.validCitations,
+      });
+      processedAnswer = citationValidation.text;
+    }
+
+    // Analyze citation coverage for quality metrics
+    const coverageAnalysis = analyzeCitationCoverage(processedAnswer);
+
     // SECURITY FIX (LLM02): Sanitize LLM output before formatting/rendering
-    const sanitization = sanitizeLLMOutput(answer, {
+    const sanitization = sanitizeLLMOutput(processedAnswer, {
       encodeHtml: true,
       removeDangerous: true,
       detectSuspicious: true,
@@ -272,6 +411,17 @@ class RAGService {
       totalTime: Date.now() - startTime,
       _outputSanitized: sanitization.modified,
       _sensitiveInfoFiltered: !sensitiveInfoScan.clean,
+      _citationValidation: {
+        valid: citationValidation.valid,
+        invalidCitations: citationValidation.invalidCitations,
+        coverage: coverageAnalysis.coverage,
+        meetsCoverage: coverageAnalysis.meetsCoverage,
+      },
+      _outputValidation: {
+        valid: outputValidation.valid,
+        warnings: outputValidation.warnings,
+        metadata: outputValidation.metadata,
+      },
       ...extraData,
     });
 
@@ -290,15 +440,16 @@ class RAGService {
     const finalResult = applyConfidenceHandling(result);
 
     // Only cache if not blocked (don't cache low-quality blocked responses)
-    if (!finalResult._confidenceBlocked) {
-      await this.cache.set(question, finalResult, conversationId);
+    // SECURITY: workspaceId required for tenant isolation
+    if (!finalResult._confidenceBlocked && workspaceId) {
+      await this.cache.set(question, finalResult, workspaceId, conversationId);
     }
 
     return finalResult;
   }
 
-  async _handleCacheHit(cached, question, requestId, conversationId = null) {
-    this.logger.info('Returning cached answer', { service: 'rag', requestId });
+  async _handleCacheHit(cached, question, requestId, conversationId = null, workspaceId = null) {
+    this.logger.info('Returning cached answer', { service: 'rag', requestId, workspaceId });
     await trackQueryAnalytics({
       Analytics: this.Analytics,
       cache: this.cache,
@@ -313,33 +464,54 @@ class RAGService {
   }
 
   async askWithConversation(question, options = {}) {
-    const { conversationId, filters = null } = options;
+    const {
+      conversationId,
+      filters = null,
+      onEvent = null,
+      routing: externalRouting = null,
+      responseInstruction: callerInstruction = '',
+    } = options;
 
     if (!conversationId) {
       throw new Error('conversationId is required');
     }
 
+    // ISSUE #31 FIX: Validated emit wrapper for streaming events
+    const rawEmit = onEvent || (() => {});
+    const emit = this._createValidatedEmit(rawEmit);
     await this._ensureInitialized();
 
     const startTime = Date.now();
     const requestId = randomUUID();
 
-    this.logger.info('Processing RAG question', {
-      service: 'rag',
-      conversationId,
-      questionLength: question.length,
-      requestId,
-    });
-
-    const cached = await this.cache.get(question, conversationId);
-    if (cached) {
-      return this._handleCacheHit(cached, question, requestId, conversationId);
-    }
-
+    // SECURITY: Get conversation and workspaceId BEFORE cache check for tenant isolation
     const conversation = await this.Conversation.findById(conversationId);
     if (!conversation) throw new Error(`Conversation ${conversationId} not found`);
 
     const workspaceId = conversation.workspaceId || 'default';
+
+    this.logger.info('Processing RAG question', {
+      service: 'rag',
+      conversationId,
+      workspaceId,
+      questionLength: question.length,
+      requestId,
+      streaming: !!onEvent,
+    });
+
+    // Check cache (SECURITY: workspaceId included for tenant isolation)
+    const cached = await this.cache.get(question, workspaceId, conversationId);
+    if (cached) {
+      if (onEvent) {
+        emit('status', { message: 'Found cached answer...' });
+        for (const char of (cached.answer || '')) {
+          emit('chunk', { text: char });
+        }
+        if (cached.sources) emit('sources', { sources: cached.sources });
+        emit('done', { message: 'Streaming complete' });
+      }
+      return this._handleCacheHit(cached, question, requestId, conversationId, workspaceId);
+    }
 
     const messages = await this.Message.find({ conversationId })
       .sort({ timestamp: -1 })
@@ -347,6 +519,32 @@ class RAGService {
       .sort({ timestamp: 1 });
     const history = this._convertToHistory(messages);
 
+    // Intent-aware routing — use caller-provided routing or classify here
+    const routing = externalRouting || await queryRouter.route(question, {
+      conversationHistory: messages.map((m) => ({ role: m.role, content: m.content })),
+    });
+
+    this.logger.info('Query routed', {
+      service: 'rag',
+      requestId,
+      intent: routing.intent,
+      confidence: routing.confidence,
+      strategy: routing.strategy,
+      skipRAG: routing.skipRAG,
+      externalRouting: !!externalRouting,
+    });
+
+    // Handle non-RAG intents (chitchat, out_of_scope)
+    if (routing.skipRAG) {
+      return this._handleNonRAGIntent(question, routing, {
+        conversationId,
+        startTime,
+        requestId,
+        emit,
+      });
+    }
+
+    // Build memory context
     let memoryContext = { entityContext: '', summaryContext: '' };
     try {
       memoryContext = await entityMemory.buildMemoryContext(question, workspaceId, conversationId);
@@ -364,14 +562,19 @@ class RAGService {
       });
     }
 
+    emit('status', { message: 'Retrieving context...', queryId: requestId });
+
     const searchQuery = await this._rephraseQuery(question, history);
+
+    // Resolve Notion workspace UUID for Qdrant filtering
+    const qdrantWorkspaceId = await this._resolveQdrantWorkspaceId(workspaceId);
 
     let qdrantFilter = null;
     try {
-      qdrantFilter = buildQdrantFilter(filters, workspaceId);
+      qdrantFilter = buildQdrantFilter(filters, qdrantWorkspaceId);
       this.logger.info('Applied Qdrant filters with workspace isolation', {
         service: 'rag',
-        workspaceId,
+        workspaceId: qdrantWorkspaceId,
         hasUserFilters: !!filters,
         filterConditions: qdrantFilter?.must?.length || 0,
       });
@@ -387,22 +590,56 @@ class RAGService {
       throw error;
     }
 
-    const retrieval = await performMultiQueryRetrieval(
+    emit('status', { message: 'Searching documents...' });
+
+    // Execute intent-aware retrieval strategy
+    const retrieval = await executeStrategy(
+      routing.strategy,
       searchQuery,
       this.retriever,
       this.vectorStore,
-      qdrantFilter,
-      this.logger
+      routing.config,
+      {
+        filter: qdrantFilter,
+        entities: routing.entities || [],
+        workspaceId: qdrantWorkspaceId,
+      }
     );
 
-    const rerankedDocs = rerankDocuments(retrieval.documents, searchQuery, 5);
-    this.logger.info(`Re-ranked to top ${rerankedDocs.length} documents`, {
+    this.logger.info('Strategy execution complete', {
       service: 'rag',
-      topScores: rerankedDocs.map((d) => d.score?.toFixed(4)),
+      requestId,
+      strategy: routing.strategy,
+      docsRetrieved: retrieval.documents.length,
+      metrics: retrieval.metrics,
     });
 
-    const compressedDocs = await compressDocuments(rerankedDocs, question);
-    const { context: docContext, sources } = this._prepareContext(compressedDocs);
+    const { context: docContext, sources } = this._prepareContext(retrieval.documents);
+
+    // Retrieval trace logging (gated by env var)
+    if (process.env.LOG_RETRIEVAL_TRACE === 'true') {
+      const tinyThreshold = 50;
+      const chunks = retrieval.documents.map((doc) => ({
+        sourceId: doc.metadata?.sourceId || null,
+        documentTitle: doc.metadata?.documentTitle || null,
+        headingPath: doc.metadata?.heading_path || [],
+        estimatedTokens: doc.metadata?.estimatedTokens || Math.ceil((doc.pageContent?.length || 0) / 4),
+        rrfScore: doc.rrfScore || doc.score || null,
+        block_type: doc.metadata?.block_type || null,
+      }));
+      const tinyChunkCount = chunks.filter((c) => c.estimatedTokens < tinyThreshold).length;
+
+      this.logger.debug('Retrieval trace', {
+        service: 'rag-trace',
+        requestId,
+        query: searchQuery,
+        chunks,
+        retrievedChunkCount: chunks.length,
+        tinyChunkCount,
+      });
+    }
+
+    emit('sources', { sources });
 
     const contextParts = [];
     if (memoryContext.summaryContext) {
@@ -414,12 +651,25 @@ class RAGService {
     contextParts.push(docContext);
     const context = contextParts.join('\n\n---\n\n');
 
+    emit('status', { message: 'Generating answer...' });
+
     try {
+      const routingInstruction = routing.responsePrompt
+        ? `\n   RESPONSE FORMAT INSTRUCTION:\n   ${routing.responsePrompt}`
+        : '';
+      const combinedInstruction = [routingInstruction, callerInstruction]
+        .filter(Boolean)
+        .join('\n');
+
       const response = await this._generateAnswer(question, context, history, {
         runName: 'rag-query',
-        sourcesCount: compressedDocs.length,
+        sourcesCount: retrieval.documents.length,
         sessionId: conversationId,
+        onEvent: onEvent || undefined,
+        responseInstruction: combinedInstruction,
       });
+
+      emit('status', { message: 'Evaluating answer...' });
 
       const { validation, citedSources } = await this._processAnswer(
         response,
@@ -427,6 +677,57 @@ class RAGService {
         question,
         context
       );
+
+      // FIX #3: Stricter hallucination blocking
+      // Block if hasHallucinations is true (strict mode) OR compound condition (legacy mode)
+      const hallucinationConfig = guardrailsConfig.output.hallucinationBlocking || {};
+      const shouldBlockHallucination = hallucinationConfig.strictMode
+        ? validation.hasHallucinations // Strict: block on hallucination flag alone
+        : validation.hasHallucinations && !validation.isGrounded; // Legacy: compound condition
+
+      if (shouldBlockHallucination) {
+        this.logger.warn('Hallucinated answer detected — replacing with fallback', {
+          service: 'rag',
+          confidence: validation.confidence.toFixed(2),
+          hasHallucinations: validation.hasHallucinations,
+          isGrounded: validation.isGrounded,
+          strictMode: hallucinationConfig.strictMode,
+          requestId,
+        });
+
+        const fallbackAnswer = guardrailsConfig.output.confidenceHandling.messages.blocked;
+        emit('replace', { text: fallbackAnswer });
+
+        await this._saveMessages(conversationId, question, fallbackAnswer);
+
+        const result = await this._buildAndCacheResult({
+          answer: fallbackAnswer,
+          sources,
+          validation,
+          citedSources,
+          question,
+          requestId,
+          conversationId,
+          workspaceId,
+          retrievalMetrics: retrieval.metrics,
+          startTime,
+          extraData: { _hallucinationBlocked: true },
+        });
+
+        emit('metadata', {
+          confidence: validation.confidence,
+          citationCount: citedSources.length,
+          citedSources,
+          isGrounded: validation.isGrounded,
+          hasHallucinations: validation.hasHallucinations,
+          isRelevant: validation.isRelevant,
+          reasoning: validation.reasoning,
+        });
+        emit('saved', { conversationId });
+        emit('done', { message: 'Streaming complete' });
+
+        return result;
+      }
 
       // SECURITY FIX (LLM04): Apply retry guardrails to prevent DoS
       const retryConfig = guardrailsConfig.generation.retry;
@@ -437,7 +738,6 @@ class RAGService {
         retrieval.documents.length < 50;
 
       if (shouldRetry) {
-        // Apply cooldown before retry to prevent rapid resource consumption
         if (retryConfig.cooldownMs > 0) {
           await new Promise((resolve) => setTimeout(resolve, retryConfig.cooldownMs));
         }
@@ -454,12 +754,22 @@ class RAGService {
           requestId,
           retryTimeout: retryConfig.retryTimeoutMs,
         });
-        if (retryResult) return retryResult;
+        if (retryResult) {
+          emit('metadata', {
+            confidence: retryResult.validation?.confidence,
+            citationCount: retryResult.citedSources?.length || 0,
+            citedSources: retryResult.citedSources || [],
+            retriedWithMoreContext: true,
+          });
+          emit('saved', { conversationId });
+          emit('done', { message: 'Streaming complete' });
+          return retryResult;
+        }
       }
 
       await this._saveMessages(conversationId, question, response);
 
-      return this._buildAndCacheResult({
+      const result = await this._buildAndCacheResult({
         answer: response,
         sources,
         validation,
@@ -467,9 +777,25 @@ class RAGService {
         question,
         requestId,
         conversationId,
+        workspaceId,
         retrievalMetrics: retrieval.metrics,
         startTime,
       });
+
+      emit('metadata', {
+        confidence: validation.confidence,
+        citationCount: citedSources.length,
+        citedSources,
+        qualityIssues: validation.issues,
+        isGrounded: validation.isGrounded,
+        hasHallucinations: validation.hasHallucinations,
+        isRelevant: validation.isRelevant,
+        reasoning: validation.reasoning,
+      });
+      emit('saved', { conversationId });
+      emit('done', { message: 'Streaming complete' });
+
+      return result;
     } catch (error) {
       this.logger.error('Error generating answer', {
         service: 'rag',
@@ -478,6 +804,60 @@ class RAGService {
       });
       throw error;
     }
+  }
+
+  async _handleNonRAGIntent(question, routing, { conversationId, startTime, requestId, emit }) {
+    let response;
+
+    if (routing.intent === IntentType.CHITCHAT) {
+      response = CHITCHAT_RESPONSES[Math.floor(Math.random() * CHITCHAT_RESPONSES.length)];
+    } else if (routing.intent === IntentType.OUT_OF_SCOPE) {
+      response = OUT_OF_SCOPE_RESPONSE;
+    } else {
+      response =
+        "Could you provide more context or rephrase your question? I'd be happy to help you find information from your documents.";
+    }
+
+    emit('status', { message: 'Generating response...', queryId: requestId });
+
+    // Stream response character by character for consistent UX
+    for (const char of response) {
+      emit('chunk', { text: char });
+    }
+
+    await this._saveMessages(conversationId, question, response);
+
+    emit('metadata', {
+      confidence: routing.confidence,
+      intent: routing.intent,
+      citationCount: 0,
+      citedSources: [],
+      isGrounded: true,
+      hasHallucinations: false,
+      isRelevant: true,
+      reasoning: `Handled as ${routing.intent} intent without RAG retrieval`,
+    });
+    emit('saved', { conversationId });
+    emit('done', { message: 'Streaming complete' });
+
+    const formattedAnswer = await this.answerFormatter.format(response, question);
+
+    return {
+      answer: response,
+      formattedAnswer,
+      sources: [],
+      validation: {
+        isLowQuality: false,
+        confidence: routing.confidence,
+        issues: [],
+        isGrounded: true,
+        hasHallucinations: false,
+      },
+      citedSources: [],
+      intent: { type: routing.intent, confidence: routing.confidence },
+      conversationId,
+      totalTime: Date.now() - startTime,
+    };
   }
 
   /**
@@ -550,7 +930,7 @@ class RAGService {
         retryContext
       );
 
-      if (retryValidation.confidence > 0.2) {
+      if (retryValidation.confidence > 0.2 && !retryValidation.hasHallucinations) {
         this.logger.info('Retry improved answer quality', {
           service: 'rag',
           retryConfidence: retryValidation.confidence.toFixed(2),
@@ -567,6 +947,7 @@ class RAGService {
           question,
           requestId,
           conversationId,
+          workspaceId,
           retrievalMetrics: retrieval.metrics,
           startTime,
           extraData: { retriedWithMoreContext: true, retryDuration: Date.now() - retryStartTime },
@@ -585,23 +966,129 @@ class RAGService {
     }
   }
 
-  async _saveMessages(conversationId, question, response) {
-    await this.Message.create({ conversationId, role: 'user', content: question });
-    await this.Message.create({ conversationId, role: 'assistant', content: response });
-    await this.Conversation.findByIdAndUpdate(conversationId, {
-      lastMessageAt: new Date(),
-      $inc: { messageCount: 2 },
-    });
-    this.logger.info('Saved messages to database', { service: 'rag', conversationId });
+  /**
+   * ISSUE #31 FIX: Create validated emit wrapper for streaming events
+   * Ensures event types and payloads match expected schemas
+   * @param {Function} rawEmit - The raw emit function to wrap
+   * @returns {Function} Validated emit function
+   */
+  _createValidatedEmit(rawEmit) {
+    const validEventTypes = new Set(['status', 'chunk', 'sources', 'done', 'error', 'metadata']);
+
+    const validatePayload = (type, data) => {
+      if (typeof data !== 'object' || data === null) {
+        return { valid: false, error: 'Payload must be an object' };
+      }
+
+      switch (type) {
+        case 'status':
+          if (typeof data.message !== 'string') {
+            return { valid: false, error: 'status event requires message string' };
+          }
+          break;
+        case 'chunk':
+          if (typeof data.text !== 'string') {
+            return { valid: false, error: 'chunk event requires text string' };
+          }
+          break;
+        case 'sources':
+          if (!Array.isArray(data.sources)) {
+            return { valid: false, error: 'sources event requires sources array' };
+          }
+          break;
+        case 'done':
+          // done can have optional message
+          break;
+        case 'error':
+          if (typeof data.message !== 'string') {
+            return { valid: false, error: 'error event requires message string' };
+          }
+          break;
+        case 'metadata':
+          // metadata can have arbitrary structure
+          break;
+      }
+      return { valid: true };
+    };
+
+    return (type, data) => {
+      // Validate event type
+      if (!validEventTypes.has(type)) {
+        this.logger.warn('Invalid streaming event type', { type, validTypes: [...validEventTypes] });
+        return;
+      }
+
+      // Validate payload
+      const validation = validatePayload(type, data);
+      if (!validation.valid) {
+        this.logger.warn('Invalid streaming event payload', {
+          type,
+          error: validation.error,
+        });
+        return;
+      }
+
+      // Add timestamp to all events
+      const enrichedData = {
+        ...data,
+        timestamp: Date.now(),
+      };
+
+      try {
+        rawEmit(type, enrichedData);
+      } catch (error) {
+        this.logger.error('Error emitting streaming event', {
+          type,
+          error: error.message,
+        });
+      }
+    };
   }
 
   /**
-   * Ask a question with real-time streaming response
-   * Delegates to the extracted streaming module
+   * Save user and assistant messages to database
+   * ISSUE #26 FIX: Use MongoDB transaction for atomicity
+   * Ensures either both messages are saved or neither is
    */
-  async askWithStreaming(question, options = {}) {
-    return askWithStreaming(this, question, options);
+  async _saveMessages(conversationId, question, response) {
+    const session = await mongoose.startSession();
+
+    try {
+      await session.withTransaction(async () => {
+        // Create both messages within the transaction
+        await this.Message.create(
+          [{ conversationId, role: 'user', content: question }],
+          { session }
+        );
+        await this.Message.create(
+          [{ conversationId, role: 'assistant', content: response }],
+          { session }
+        );
+
+        // Update conversation metadata
+        await this.Conversation.findByIdAndUpdate(
+          conversationId,
+          {
+            lastMessageAt: new Date(),
+            $inc: { messageCount: 2 },
+          },
+          { session }
+        );
+      });
+
+      this.logger.info('Saved messages to database', { service: 'rag', conversationId });
+    } catch (error) {
+      this.logger.error('Failed to save messages (transaction rolled back)', {
+        service: 'rag',
+        conversationId,
+        error: error.message,
+      });
+      throw error;
+    } finally {
+      await session.endSession();
+    }
   }
+
 }
 
 export async function createRAGService(dependencies = {}) {

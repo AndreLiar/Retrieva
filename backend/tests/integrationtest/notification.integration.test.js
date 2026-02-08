@@ -123,7 +123,9 @@ describe('Notification API Integration Tests', () => {
   let notificationId;
 
   beforeAll(async () => {
-    mongoServer = await MongoMemoryServer.create();
+    mongoServer = await MongoMemoryServer.create({
+      instance: { launchTimeout: 60000 },
+    });
     const mongoUri = mongoServer.getUri();
     process.env.MONGODB_URI = mongoUri;
 

@@ -13,7 +13,8 @@ import { sendError } from '../utils/core/responseFormatter.js';
 export const validate = (schema, source = 'body') => {
   return async (req, res, next) => {
     try {
-      const dataToValidate = req[source];
+      // Handle undefined/null data - default to empty object for body
+      const dataToValidate = req[source] ?? (source === 'body' ? {} : {});
 
       // Validate and parse data - this validates the input
       const validatedData = await schema.parseAsync(dataToValidate);
@@ -36,9 +37,10 @@ export const validate = (schema, source = 'body') => {
     } catch (error) {
       if (error instanceof ZodError) {
         // Format Zod errors for user-friendly response
-        const errors = error.errors.map((err) => ({
-          field: err.path.join('.'),
-          message: err.message,
+        const zodErrors = error.errors || error.issues || [];
+        const errors = zodErrors.map((err) => ({
+          field: err.path?.join('.') || 'unknown',
+          message: err.message || 'Validation error',
         }));
 
         logger.warn('Validation failed', {

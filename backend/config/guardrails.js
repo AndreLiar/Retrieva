@@ -63,6 +63,10 @@ export const guardrailsConfig = {
     maxTokens: parseInt(process.env.GUARDRAIL_MAX_TOKENS) || 2000,
     timeout: parseInt(process.env.GUARDRAIL_LLM_TIMEOUT) || 30000, // 30 seconds
     stopSequences: ['\n\nUser:', '\n\nHuman:', '\n\n[END]'],
+    // Seed for reproducibility (null = random, set for deterministic outputs)
+    seed: process.env.GUARDRAIL_LLM_SEED ? parseInt(process.env.GUARDRAIL_LLM_SEED) : null,
+    // Enable seed for critical flows (evaluations, compliance)
+    useSeedForCriticalFlows: process.env.GUARDRAIL_USE_SEED_CRITICAL === 'true',
     // SECURITY FIX (LLM04): Retry limits to prevent DoS
     retry: {
       enabled: process.env.GUARDRAIL_RETRY_ENABLED !== 'false',
@@ -110,6 +114,13 @@ export const guardrailsConfig = {
       },
     },
 
+    // Hallucination blocking configuration
+    hallucinationBlocking: {
+      // Block if hasHallucinations is true (strict mode)
+      strictMode: process.env.GUARDRAIL_STRICT_HALLUCINATION_BLOCKING !== 'false',
+      // Original compound logic: require both hasHallucinations AND !isGrounded
+      requireBothConditions: process.env.GUARDRAIL_HALLUCINATION_REQUIRE_BOTH === 'true',
+    },
     piiMasking: {
       enabled: process.env.GUARDRAIL_PII_MASKING !== 'false',
       patterns: {

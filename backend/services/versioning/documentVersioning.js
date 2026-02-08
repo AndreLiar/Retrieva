@@ -10,10 +10,10 @@
  * @module services/versioning/documentVersioning
  */
 
-import crypto from 'crypto';
 import { DocumentVersion } from '../../models/DocumentVersion.js';
 import { DocumentSource } from '../../models/DocumentSource.js';
 import logger from '../../config/logger.js';
+import { contentHash } from '../../utils/security/crypto.js';
 
 /**
  * @typedef {Object} VersionInfo
@@ -30,7 +30,7 @@ import logger from '../../config/logger.js';
  * @returns {string} SHA-256 hash
  */
 export function generateContentHash(content) {
-  return crypto.createHash('sha256').update(content.trim().toLowerCase()).digest('hex');
+  return contentHash(content);
 }
 
 /**

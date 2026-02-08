@@ -61,6 +61,17 @@ export {
   rateLimit,
 } from './core/asyncHelpers.js';
 
+// Request helpers
+export {
+  getUserId,
+  isAuthenticated,
+  parsePagination,
+  parsePagePagination,
+  buildPaginationMeta,
+  parseSort,
+  verifyOwnership,
+} from './core/requestHelpers.js';
+
 // ============================================
 // RE-EXPORTS FOR CONVENIENCE
 // ============================================
@@ -74,3 +85,12 @@ export { applyConfidenceHandling } from './security/confidenceHandler.js';
 // RAG utilities (most commonly used)
 export { formatContext, formatSources } from './rag/contextFormatter.js';
 export { ragCache } from './rag/ragCache.js';
+
+// Crypto utilities (most commonly used)
+export {
+  sha256,
+  generateToken,
+  generateTokenPair,
+  verifyToken,
+  contentHash,
+} from './security/crypto.js';

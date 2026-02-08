@@ -33,12 +33,16 @@
 
 /**
  * @typedef {Object} FormattedSource
+ * @property {string} id - Unique source identifier (for frontend compatibility)
  * @property {number} sourceNumber - 1-based source reference number
  * @property {string} title - Document title
+ * @property {string} content - Preview of chunk content (for frontend display)
  * @property {string} url - Document URL
+ * @property {string|null} pageId - Source page/document ID
+ * @property {number|null} score - Relevance score as number (for frontend compatibility)
  * @property {string|null} section - Section within document
  * @property {string} type - Document type
- * @property {string|null} relevanceScore - Relevance score (4 decimal places)
+ * @property {string|null} relevanceScore - Relevance score (4 decimal places) - legacy
  * @property {ChunkInfo} chunkInfo - Chunk metadata
  */
 
@@ -53,13 +57,18 @@ export function formatContext(docs) {
   return docs
     .map((doc, index) => {
       const docTitle = doc.metadata?.documentTitle || 'Untitled';
-      const section = doc.metadata?.section || '';
+      const headingPath = doc.metadata?.heading_path;
       const sourceNum = index + 1;
 
-      const header =
-        section && section !== 'General'
-          ? `[Source ${sourceNum}: ${docTitle} - ${section}]`
-          : `[Source ${sourceNum}: ${docTitle}]`;
+      // Use full heading breadcrumb for hierarchical disambiguation.
+      // Falls back to legacy section field for backward compatibility.
+      const sectionLabel = headingPath?.length > 0
+        ? headingPath.join(' > ')
+        : (doc.metadata?.section || '');
+
+      const header = sectionLabel && sectionLabel !== 'General'
+        ? `[Source ${sourceNum}: ${docTitle} - ${sectionLabel}]`
+        : `[Source ${sourceNum}: ${docTitle}]`;
 
       return `${header}\n${doc.pageContent}`;
     })
@@ -74,19 +83,43 @@ export function formatContext(docs) {
  * @returns {FormattedSource[]} Array of formatted source metadata
  */
 export function formatSources(docs) {
-  return docs.map((doc, index) => ({
-    sourceNumber: index + 1,
-    title: doc.metadata?.documentTitle || 'Untitled',
-    url: doc.metadata?.documentUrl || doc.metadata?.source || '',
-    section: doc.metadata?.section || null,
-    type: doc.metadata?.documentType || 'page',
-    relevanceScore: doc.rrfScore?.toFixed(4) || doc.score?.toFixed(4) || null,
-    chunkInfo: {
-      blockType: doc.metadata?.block_type || null,
-      headingPath: doc.metadata?.heading_path || [],
-      position: doc.metadata?.positionPercent || null,
-    },
-  }));
+  return docs.map((doc, index) => {
+    const sourceNumber = index + 1;
+    const relevanceScore = doc.rrfScore || doc.score || null;
+
+    // Use original content for display (before compression) if available
+    // This ensures source display shows actual document content, not LLM-compressed text
+    const fullContent = doc.metadata?._originalContent || doc.pageContent || '';
+    let contentPreview = fullContent.substring(0, 200);
+    if (fullContent.length > 200) {
+      const lastSpace = contentPreview.lastIndexOf(' ');
+      if (lastSpace > 150) {
+        contentPreview = contentPreview.substring(0, lastSpace);
+      }
+      contentPreview += '...';
+    }
+
+    return {
+      // Frontend-compatible fields
+      id: doc.metadata?.sourceId || `source-${sourceNumber}`,
+      title: doc.metadata?.documentTitle || 'Untitled',
+      content: contentPreview,
+      url: doc.metadata?.documentUrl || doc.metadata?.source || '',
+      pageId: doc.metadata?.sourceId || null,
+      score: relevanceScore ? parseFloat(relevanceScore.toFixed(4)) : null,
+
+      // Extended metadata
+      sourceNumber,
+      section: doc.metadata?.section || null,
+      type: doc.metadata?.documentType || 'page',
+      relevanceScore: relevanceScore?.toFixed(4) || null, // Legacy string format
+      chunkInfo: {
+        blockType: doc.metadata?.block_type || null,
+        headingPath: doc.metadata?.heading_path || [],
+        position: doc.metadata?.positionPercent || null,
+      },
+    };
+  });
 }
 
 /**
@@ -101,7 +134,7 @@ export function deduplicateDocuments(docs) {
   const seenContent = new Set();
 
   for (const doc of docs) {
-    const contentKey = doc.pageContent.substring(0, 100);
+    const contentKey = doc.metadata?.contentFingerprint || doc.pageContent.substring(0, 100);
     if (!seenContent.has(contentKey)) {
       seenContent.add(contentKey);
       uniqueDocs.push(doc);

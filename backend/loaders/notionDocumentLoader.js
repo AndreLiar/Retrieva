@@ -1,6 +1,39 @@
 import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters';
 import logger from '../config/logger.js';
 import { groupBlocksSemantically } from '../services/notionTransformer.js';
+import { estimateTokens } from '../utils/rag/tokenEstimation.js';
+
+/**
+ * Junk patterns — chunks matching these are noise with no retrieval value
+ */
+const JUNK_PATTERNS = [
+  /^\[Table of Contents\]$/i,
+  /^\[Breadcrumb\]$/i,
+  /^---+$/,
+  /^\[Link to page\]$/i,
+  /^\s*$/,
+  /^[-_=\s]+$/, // separator-only
+];
+
+/**
+ * Quality gate: decide whether a semantic group should be indexed.
+ * Rejects trivially small or junk chunks.
+ *
+ * @param {Object} group - Semantic group with content and tokens
+ * @returns {boolean} true if the chunk should be indexed
+ */
+export const shouldIndexChunk = (group) => {
+  const trimmed = (group.content || '').trim();
+
+  if (trimmed.length < 20) return false;
+  if ((group.tokens || 0) < 10) return false;
+
+  for (const pattern of JUNK_PATTERNS) {
+    if (pattern.test(trimmed)) return false;
+  }
+
+  return true;
+};
 
 /**
  * Detect section headers from Notion markdown content
@@ -57,12 +90,13 @@ export const loadAndChunkNotionBlocks = async (blocks, metadata = {}) => {
     });
 
     // SAFETY CHECK: Split oversized chunks that exceed embedding model's context window
-    // nomic-embed-text has 2048 token limit, use 1500 as safe margin
-    const MAX_CHUNK_TOKENS = 1500;
-    const CHARS_PER_TOKEN = 4; // Approximate ratio
-    const MAX_CHUNK_CHARS = MAX_CHUNK_TOKENS * CHARS_PER_TOKEN; // ~6000 chars
+    // bge-m3 has 8192 token context; 800 token limit provides ample margin.
+    // Phase 5: Use 4.5 chars/token for English prose baseline (improved from 4.0)
+    const MAX_CHUNK_TOKENS = 800;
+    const CHARS_PER_TOKEN = 4.5; // Aligned with tokenEstimation.js English ratio
+    const MAX_CHUNK_CHARS = Math.floor(MAX_CHUNK_TOKENS * CHARS_PER_TOKEN); // 3600 chars
 
-    const processedGroups = [];
+    let processedGroups = [];
     let splitCount = 0;
 
     for (const group of semanticGroups) {
@@ -80,7 +114,7 @@ export const loadAndChunkNotionBlocks = async (blocks, metadata = {}) => {
         // Create text splitter for oversized chunks
         const splitter = new RecursiveCharacterTextSplitter({
           chunkSize: MAX_CHUNK_CHARS,
-          chunkOverlap: 200,
+          chunkOverlap: 300, // ~10% of 3200 chars
           separators: ['\n\n', '\n', '. ', ' ', ''],
         });
 
@@ -102,7 +136,7 @@ export const loadAndChunkNotionBlocks = async (blocks, metadata = {}) => {
             category: `${group.category}_split`,
             headingPath: group.headingPath,
             blockTypes: group.blockTypes,
-            tokens: Math.round(subContent.length / CHARS_PER_TOKEN),
+            tokens: estimateTokens(subContent),
             blockCount: Math.round(group.blockCount / subChunks.length),
             startIndex: group.startIndex,
             codeLanguage: group.codeLanguage,
@@ -127,9 +161,53 @@ export const loadAndChunkNotionBlocks = async (blocks, metadata = {}) => {
       });
     }
 
+    // Quality gate: filter out junk/trivially small chunks
+    const preFilterCount = processedGroups.length;
+    processedGroups = processedGroups.filter(shouldIndexChunk);
+    const filteredCount = preFilterCount - processedGroups.length;
+    if (filteredCount > 0) {
+      logger.info(`Filtered ${filteredCount} junk/tiny chunks`, {
+        service: 'notion-loader',
+        preFilterCount,
+        postFilterCount: processedGroups.length,
+      });
+    }
+
+    // P4 FIX: Add trailing overlap between semantic chunks.
+    // Bridges concept boundaries by carrying the last ~100 tokens of the
+    // previous chunk into the current chunk's pageContent (for embedding).
+    const OVERLAP_CHARS = 400; // ~100 tokens at 4 chars/token
+    for (let i = 1; i < processedGroups.length; i++) {
+      const prevContent = processedGroups[i - 1].content;
+      if (prevContent.length > 50) {
+        const overlapStart = Math.max(0, prevContent.length - OVERLAP_CHARS);
+        let overlap = prevContent.substring(overlapStart);
+        // Prefer starting at a sentence boundary
+        const sentenceBreak = overlap.indexOf('. ');
+        if (sentenceBreak > 0 && sentenceBreak < overlap.length * 0.5) {
+          overlap = overlap.substring(sentenceBreak + 2);
+        }
+        processedGroups[i].overlapBefore = overlap.trim();
+      }
+    }
+
     // Convert processed groups to LangChain document format
-    const chunks = processedGroups.map((group, index) => ({
-      pageContent: group.content,
+    const chunks = processedGroups.map((group, index) => {
+      // P0 FIX: Prepend heading breadcrumb so embeddings carry structural context.
+      // heading_group chunks already contain the heading text in their content.
+      // All other chunk types (list, table, code, callout, paragraph_group) are
+      // structural orphans — their embeddings have zero topical signal without this.
+      const needsBreadcrumb =
+        group.headingPath.length > 0 && group.category !== 'heading_group';
+      const headingPrefix = needsBreadcrumb
+        ? `[${group.headingPath.join(' > ')}]\n\n`
+        : '';
+      const overlapPrefix = group.overlapBefore
+        ? `${group.overlapBefore}\n\n`
+        : '';
+
+      return {
+      pageContent: headingPrefix + overlapPrefix + group.content,
       metadata: {
         // Page-level metadata
         source: metadata.url || `notion://${metadata.sourceId}`,
@@ -145,6 +223,10 @@ export const loadAndChunkNotionBlocks = async (blocks, metadata = {}) => {
         createdAt: metadata.createdAt,
         lastModified: metadata.lastModified,
 
+        // Document classification for access control filtering
+        // Defaults to 'internal' if not specified in source document
+        classification: metadata.classification || 'internal',
+
         // Notion properties
         notionProperties: metadata.properties || {},
         archived: metadata.archived,
@@ -158,6 +240,7 @@ export const loadAndChunkNotionBlocks = async (blocks, metadata = {}) => {
         chunkIndex: index,
         totalChunks: semanticGroups.length,
         chunkSize: group.content.length,
+        contentFingerprint: group.content.substring(0, 150),
 
         // CRITICAL NEW METADATA (Phase 2 & 3)
         block_type: group.category, // "heading_group", "list", "code", "table", "callout"
@@ -176,6 +259,10 @@ export const loadAndChunkNotionBlocks = async (blocks, metadata = {}) => {
         is_callout: group.category === 'callout' || group.category === 'callout_split',
         code_language: group.codeLanguage || null,
 
+        // Inter-chunk overlap tracking (P4)
+        has_overlap: !!group.overlapBefore,
+        overlap_chars: group.overlapBefore?.length || 0,
+
         // Oversized chunk split tracking
         is_oversized_split: group.isOversizedSplit || false,
         original_tokens: group.originalTokens || null,
@@ -189,7 +276,8 @@ export const loadAndChunkNotionBlocks = async (blocks, metadata = {}) => {
             : 'General',
         positionPercent: `${(((index + 1) / processedGroups.length) * 100).toFixed(1)}%`,
       },
-    }));
+    };
+    });
 
     logger.info(`Semantic chunking complete`, {
       service: 'notion-loader',
@@ -281,6 +369,9 @@ export const loadAndSplitNotionDocument = async (content, metadata = {}) => {
           createdAt: metadata.createdAt,
           lastModified: metadata.lastModified,
 
+          // Document classification for access control filtering
+          classification: metadata.classification || 'internal',
+
           // Notion properties (tags, status, etc.)
           notionProperties: metadata.properties || {},
 
@@ -367,4 +458,5 @@ export default {
   loadAndSplitNotionDocument,
   loadAndChunkNotionBlocks,
   prepareNotionDocumentForIndexing,
+  shouldIndexChunk,
 };

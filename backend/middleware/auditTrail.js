@@ -72,7 +72,7 @@ const endpointActionMap = {
  * Maps endpoint patterns to audit action types
  *
  * @param {Request} req - Express request object
- * @returns {string} Action type for audit log
+ * @returns {string|null} Action type for audit log, or null if endpoint is not audited
  * @private
  */
 function getActionType(req) {
@@ -97,8 +97,8 @@ function getActionType(req) {
     }
   }
 
-  // Default based on method
-  return `${method.toLowerCase()}_request`;
+  // Return null for unmapped endpoints - they won't be audited
+  return null;
 }
 
 /**
@@ -203,6 +203,12 @@ async function logAuditEntry(req, res, responseBody, startTime) {
     return;
   }
 
+  // Skip logging for unmapped endpoints
+  const actionType = getActionType(req);
+  if (!actionType) {
+    return;
+  }
+
   const latencyMs = Date.now() - startTime;
 
   try {
@@ -221,7 +227,7 @@ async function logAuditEntry(req, res, responseBody, startTime) {
 
       // Action information
       action: {
-        type: getActionType(req),
+        type: actionType,
         endpoint: `${req.method} ${req.originalUrl}`,
         method: req.method,
       },

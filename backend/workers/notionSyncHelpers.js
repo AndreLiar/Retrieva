@@ -8,6 +8,11 @@
  */
 
 import { DocumentSource } from '../models/DocumentSource.js';
+import { QdrantClient } from '@qdrant/js-client-rest';
+import logger from '../config/logger.js';
+
+const QDRANT_URL = process.env.QDRANT_URL || 'http://localhost:6333';
+const COLLECTION_NAME = process.env.QDRANT_COLLECTION_NAME || 'langchain-rag';
 
 /**
  * Filter documents based on workspace settings
@@ -44,6 +49,93 @@ export function filterDocuments(documents, workspace, options) {
 }
 
 /**
+ * Detect documents with MongoDB/Qdrant desync
+ * These are documents with chunkCount > 0 in MongoDB but no vectors in Qdrant
+ *
+ * @param {string} workspaceId - Workspace ID
+ * @returns {Promise<Set<string>>} Set of desync'd document source IDs
+ */
+export async function detectDesyncedDocuments(workspaceId) {
+  const desyncedIds = new Set();
+
+  try {
+    // Find documents that claim to have chunks
+    const docsWithChunks = await DocumentSource.find({
+      workspaceId,
+      chunkCount: { $gt: 0 },
+      syncStatus: { $ne: 'deleted' },
+    }).select('sourceId chunkCount').lean();
+
+    if (docsWithChunks.length === 0) {
+      return desyncedIds;
+    }
+
+    const client = new QdrantClient({ url: QDRANT_URL });
+
+    // Check each document in Qdrant (batch for efficiency)
+    // Process in batches of 50 to avoid overwhelming Qdrant
+    const batchSize = 50;
+    for (let i = 0; i < docsWithChunks.length; i += batchSize) {
+      const batch = docsWithChunks.slice(i, i + batchSize);
+
+      await Promise.all(
+        batch.map(async (doc) => {
+          try {
+            const result = await client.count(COLLECTION_NAME, {
+              filter: {
+                must: [
+                  { key: 'metadata.workspaceId', match: { value: workspaceId } },
+                  { key: 'metadata.sourceId', match: { value: doc.sourceId } },
+                ],
+              },
+              exact: true,
+            });
+
+            const actualCount = result.count || 0;
+
+            // Desync detected: MongoDB says chunkCount > 0, but Qdrant has 0 or fewer
+            if (actualCount === 0 || actualCount < doc.chunkCount * 0.5) {
+              desyncedIds.add(doc.sourceId);
+              logger.warn('Detected MongoDB/Qdrant desync', {
+                service: 'notion-sync',
+                workspaceId,
+                sourceId: doc.sourceId,
+                mongoChunkCount: doc.chunkCount,
+                qdrantVectorCount: actualCount,
+              });
+            }
+          } catch (err) {
+            // If we can't verify, assume it needs re-sync to be safe
+            desyncedIds.add(doc.sourceId);
+            logger.warn('Failed to verify document in Qdrant, marking for re-sync', {
+              service: 'notion-sync',
+              workspaceId,
+              sourceId: doc.sourceId,
+              error: err.message,
+            });
+          }
+        })
+      );
+    }
+
+    if (desyncedIds.size > 0) {
+      logger.info(`Found ${desyncedIds.size} documents with MongoDB/Qdrant desync`, {
+        service: 'notion-sync',
+        workspaceId,
+      });
+    }
+  } catch (error) {
+    logger.error('Failed to detect desynced documents', {
+      service: 'notion-sync',
+      workspaceId,
+      error: error.message,
+    });
+  }
+
+  return desyncedIds;
+}
+
+/**
  * Determine which documents need syncing
  *
  * @param {Array} notionDocuments - Filtered Notion documents
@@ -59,10 +151,33 @@ export async function determineDocumentsToSync(notionDocuments, workspace, syncT
   // For incremental sync, only sync documents modified since last sync
   const lastSyncTime = workspace.lastSuccessfulSyncAt || new Date(0);
 
-  return notionDocuments.filter((doc) => {
+  const modifiedDocs = notionDocuments.filter((doc) => {
     const lastEdited = new Date(doc.last_edited_time);
     return lastEdited > lastSyncTime;
   });
+
+  // CRITICAL: Also include documents with MongoDB/Qdrant desync
+  // This catches documents where indexing silently failed (e.g., embedding API errors)
+  const desyncedIds = await detectDesyncedDocuments(workspace.workspaceId);
+
+  if (desyncedIds.size === 0) {
+    return modifiedDocs;
+  }
+
+  // Add desynced documents that aren't already in the modified list
+  const modifiedIds = new Set(modifiedDocs.map((doc) => doc.id));
+  const desyncedDocs = notionDocuments.filter(
+    (doc) => desyncedIds.has(doc.id) && !modifiedIds.has(doc.id)
+  );
+
+  if (desyncedDocs.length > 0) {
+    logger.info(`Adding ${desyncedDocs.length} desynced documents to sync queue`, {
+      service: 'notion-sync',
+      workspaceId: workspace.workspaceId,
+    });
+  }
+
+  return [...modifiedDocs, ...desyncedDocs];
 }
 
 /**
@@ -115,7 +230,12 @@ export async function processDocument(doc, workspace, adapter, options) {
   // Check if content has changed
   const contentChanged = !existingDoc || existingDoc.contentHash !== documentContent.contentHash;
 
-  if (!contentChanged && syncType === 'incremental') {
+  // Force re-sync if document has an error status (likely MongoDB/Qdrant desync)
+  const needsResync =
+    existingDoc?.syncStatus === 'error' ||
+    (existingDoc?.chunkCount > 0 && existingDoc?.vectorStoreIds?.length === 0);
+
+  if (!contentChanged && !needsResync && syncType === 'incremental') {
     return { status: 'skipped', reason: 'unchanged' };
   }
 

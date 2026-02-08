@@ -2,7 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
-import morgan from 'morgan';
+import { randomUUID } from 'crypto';
+import { httpLogger } from './config/httpLogger.js';
 import rateLimit from 'express-rate-limit';
 import hpp from 'hpp';
 import compression from 'compression';
@@ -22,9 +23,18 @@ import { notificationRoutes } from './routes/notificationRoutes.js';
 import activityRoutes from './routes/activityRoutes.js';
 import presenceRoutes from './routes/presenceRoutes.js';
 import memoryRoutes from './routes/memoryRoutes.js';
+import embeddingRoutes from './routes/embeddingRoutes.js';
+import pipelineRoutes from './routes/pipelineRoutes.js';
 import logger from './config/logger.js';
 import { globalErrorHandler } from './utils/index.js';
-import { swaggerDocument } from './docs/swagger.js';
+import { swaggerDocument } from './config/swagger.js';
+
+// =============================================================================
+// ISSUE #12 FIX: Global Request Timeout Configuration
+// =============================================================================
+const REQUEST_TIMEOUT_MS = parseInt(process.env.REQUEST_TIMEOUT_MS) || 30000; // 30s default
+const STREAMING_TIMEOUT_MS = parseInt(process.env.STREAMING_TIMEOUT_MS) || 180000; // 3 min for streaming
+const SYNC_TIMEOUT_MS = parseInt(process.env.SYNC_TIMEOUT_MS) || 600000; // 10 min for sync operations
 
 // Guardrails middleware
 import { detectAbuse, checkTokenLimits } from './middleware/abuseDetection.js';
@@ -32,6 +42,22 @@ import { createAuditMiddleware } from './middleware/auditTrail.js';
 import { piiDetectionMiddleware } from './utils/security/piiMasker.js';
 
 const app = express();
+
+// =============================================================================
+// ISSUE #28 FIX: Request ID Tracking for Distributed Tracing
+// =============================================================================
+// Assigns a unique ID to each request for logging and debugging
+app.use((req, res, next) => {
+  // Use existing request ID from header (e.g., from load balancer) or generate new one
+  const requestId = req.headers['x-request-id'] || req.headers['x-correlation-id'] || randomUUID();
+  req.requestId = requestId;
+  res.setHeader('X-Request-Id', requestId);
+
+  // Attach to logger context for this request
+  req.logContext = { requestId };
+
+  next();
+});
 
 // =============================================================================
 // CORS Configuration - Whitelist allowed origins
@@ -123,12 +149,56 @@ const limiter = rateLimit({
 });
 app.use('/api', limiter);
 
-// HTTP Request Logger (Morgan) - logs to Winston
-if (process.env.NODE_ENV === 'development') {
-  app.use(morgan('dev', { stream: logger.stream }));
-} else {
-  app.use(morgan('combined', { stream: logger.stream }));
-}
+// =============================================================================
+// ISSUE #12 FIX: Global Request Timeout Middleware
+// =============================================================================
+// Prevents hung requests from blocking the server indefinitely
+app.use((req, res, next) => {
+  // Determine timeout based on endpoint
+  let timeout = REQUEST_TIMEOUT_MS;
+
+  // Streaming endpoints get longer timeout
+  if (req.path.includes('/stream') || req.path.includes('/sse')) {
+    timeout = STREAMING_TIMEOUT_MS;
+  }
+
+  // Sync operations get even longer timeout
+  if (req.path.includes('/sync') || req.path.includes('/notion')) {
+    timeout = SYNC_TIMEOUT_MS;
+  }
+
+  // Health checks should be fast
+  if (req.path.includes('/health')) {
+    timeout = 5000; // 5 seconds
+  }
+
+  // Set request timeout
+  req.setTimeout(timeout, () => {
+    if (!res.headersSent) {
+      logger.warn('Request timeout', {
+        method: req.method,
+        path: req.path,
+        timeoutMs: timeout,
+        ip: req.ip,
+      });
+      res.status(503).json({
+        status: 'error',
+        message: 'Request timeout - the server took too long to respond',
+        code: 'REQUEST_TIMEOUT',
+      });
+    }
+  });
+
+  // Also set socket timeout for long-running connections
+  if (req.socket) {
+    req.socket.setTimeout(timeout + 5000); // Socket timeout slightly longer
+  }
+
+  next();
+});
+
+// HTTP Request Logger (pino-http)
+app.use(httpLogger);
 
 // Body parser, reading data from body into req.body
 app.use(express.json({ limit: '10kb' }));
@@ -144,8 +214,19 @@ app.use(securitySanitizer());
 // Prevent parameter pollution
 app.use(hpp());
 
-// Compress all responses
-app.use(compression());
+// Compress all responses (skip SSE streaming endpoints to avoid buffering)
+app.use(
+  compression({
+    filter: (req, res) => {
+      // SSE endpoints must not be compressed - compression buffers writes
+      // which breaks real-time event delivery
+      if (req.path === '/api/v1/rag/stream') {
+        return false;
+      }
+      return compression.filter(req, res);
+    },
+  })
+);
 
 // CSRF Protection (after cookie parser, before routes)
 // Disabled by default for API-first approach, enable with CSRF_ENABLED=true
@@ -184,6 +265,8 @@ app.use('/api/v1/notifications', notificationRoutes);
 app.use('/api/v1/activity', activityRoutes);
 app.use('/api/v1/presence', presenceRoutes);
 app.use('/api/v1/memory', memoryRoutes);
+app.use('/api/v1/embeddings', embeddingRoutes);
+app.use('/api/v1/pipeline', pipelineRoutes);
 
 // OpenAPI/Swagger documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));

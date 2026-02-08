@@ -118,6 +118,7 @@ describe('Context Formatter', () => {
           pageContent: 'Content',
           rrfScore: 0.8567,
           metadata: {
+            sourceId: 'doc-123',
             documentTitle: 'Test Doc',
             documentUrl: 'https://example.com/doc',
             section: 'Section 1',
@@ -132,9 +133,15 @@ describe('Context Formatter', () => {
       const result = formatSources(docs);
 
       expect(result[0]).toEqual({
-        sourceNumber: 1,
+        // Frontend-compatible fields
+        id: 'doc-123',
         title: 'Test Doc',
+        content: 'Content',
         url: 'https://example.com/doc',
+        pageId: 'doc-123',
+        score: 0.8567,
+        // Extended metadata
+        sourceNumber: 1,
         section: 'Section 1',
         type: 'page',
         relevanceScore: '0.8567',
@@ -173,9 +180,15 @@ describe('Context Formatter', () => {
       const result = formatSources(docs);
 
       expect(result[0]).toEqual({
-        sourceNumber: 1,
+        // Frontend-compatible fields
+        id: 'source-1',
         title: 'Untitled',
+        content: 'Content',
         url: '',
+        pageId: null,
+        score: null,
+        // Extended metadata
+        sourceNumber: 1,
         section: null,
         type: 'page',
         relevanceScore: null,
@@ -301,6 +314,30 @@ describe('Context Formatter', () => {
       const result = deduplicateDocuments(docs);
 
       expect(result).toHaveLength(2);
+    });
+
+    it('should use contentFingerprint from metadata when present', () => {
+      const docs = [
+        {
+          pageContent: 'Completely different text A',
+          metadata: { contentFingerprint: 'same-fingerprint' },
+        },
+        {
+          pageContent: 'Completely different text B',
+          metadata: { contentFingerprint: 'same-fingerprint' },
+        },
+        {
+          pageContent: 'Third document',
+          metadata: { contentFingerprint: 'unique-fingerprint' },
+        },
+      ];
+
+      const result = deduplicateDocuments(docs);
+
+      // Two docs share the same contentFingerprint, so only the first is kept
+      expect(result).toHaveLength(2);
+      expect(result[0].pageContent).toBe('Completely different text A');
+      expect(result[1].pageContent).toBe('Third document');
     });
   });
 });

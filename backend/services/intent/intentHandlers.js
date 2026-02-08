@@ -20,18 +20,39 @@ export const CHITCHAT_RESPONSES = [
 ];
 
 /**
- * Out of scope response
+ * Build a workspace-aware "not found" response
+ * @param {Object} options - Response options
+ * @param {string} [options.query] - The user's query
+ * @param {string[]} [options.suggestedTopics] - Topics the system can help with
+ * @param {boolean} [options.offerGeneralKnowledge] - Whether to offer general knowledge fallback
+ * @returns {string} Formatted response
  */
-export const OUT_OF_SCOPE_RESPONSE = `I apologize, but that query appears to be outside the scope of what I can help with based on your knowledge base.
+export function buildNotFoundResponse(options = {}) {
+  const { query, suggestedTopics = [], offerGeneralKnowledge = true } = options;
 
-I'm designed to help you find information from your indexed documents. Here are some things I can help with:
-- Answering questions about your documents
-- Comparing information across different sources
-- Explaining concepts from your knowledge base
-- Summarizing document contents
-- Finding specific information
+  let response = `I searched your connected Notion workspace but couldn't find information about "${query || 'this topic'}".`;
 
-Is there something from your documents you'd like me to help you find?`;
+  response += `\n\nThis could mean:
+- This topic isn't covered in your Notion pages yet
+- The information might be in pages that haven't been synced
+- Try rephrasing with different keywords`;
+
+  if (suggestedTopics.length > 0) {
+    response += `\n\nHere are some topics I found in your workspace:\n${suggestedTopics.slice(0, 5).map((t) => `- ${t}`).join('\n')}`;
+  }
+
+  if (offerGeneralKnowledge) {
+    response += `\n\nWould you like me to provide a general explanation instead, or would you prefer to rephrase your question?`;
+  }
+
+  return response;
+}
+
+/**
+ * Legacy out of scope response (for backward compatibility)
+ * @deprecated Use buildNotFoundResponse instead
+ */
+export const OUT_OF_SCOPE_RESPONSE = buildNotFoundResponse({ offerGeneralKnowledge: true });
 
 /**
  * Handle non-RAG intents (chitchat, out-of-scope, clarification)
@@ -121,17 +142,15 @@ export async function handleNonRAGIntent(question, routing, options, deps) {
  * @returns {Promise<Object>} Intent-aware result
  */
 export async function handleNoDocuments(question, routing, options, deps) {
-  const { conversationId, startTime } = options;
+  const { conversationId, startTime, suggestedTopics = [] } = options;
   const { saveMessages, answerFormatter } = deps;
 
-  const response = `I couldn't find relevant information in your knowledge base to answer that question.
-
-This could mean:
-- The topic isn't covered in your indexed documents
-- Try rephrasing with different keywords
-- The information might be in documents that haven't been indexed yet
-
-Would you like to try asking in a different way?`;
+  // Use workspace-aware response
+  const response = buildNotFoundResponse({
+    query: question,
+    suggestedTopics,
+    offerGeneralKnowledge: true,
+  });
 
   await saveMessages(conversationId, question, response);
 
@@ -141,11 +160,12 @@ Would you like to try asking in a different way?`;
     answer: response,
     formattedAnswer,
     sources: [],
+    provenance: 'notion_search_empty', // Indicates we searched Notion but found nothing
     validation: {
-      isLowQuality: true,
-      confidence: 0.3,
-      issues: ['No documents found'],
-      isGrounded: false,
+      isLowQuality: false, // Not finding is a valid outcome, not low quality
+      confidence: 0.8, // We're confident in the "not found" result
+      issues: ['No matching documents in connected Notion workspace'],
+      isGrounded: true,
       hasHallucinations: false,
     },
     citedSources: [],
@@ -161,6 +181,7 @@ Would you like to try asking in a different way?`;
     metrics: {
       strategy: routing.strategy,
       documentsFound: 0,
+      searchedNotion: true,
     },
     conversationId,
     totalTime: Date.now() - startTime,
@@ -184,16 +205,12 @@ export async function handleOutOfScope(question, contextInfo, options, deps) {
   const { conversationId, startTime } = options;
   const { saveMessages, answerFormatter } = deps;
 
-  const suggestedStr =
-    contextInfo.suggestedTopics?.length > 0
-      ? `\n\nHere are some topics I can help with:\n${contextInfo.suggestedTopics.map((t) => `- ${t}`).join('\n')}`
-      : '';
-
-  const response = `I apologize, but that question appears to be outside the scope of this knowledge base.
-
-${contextInfo.scopeReason || 'This topic is not covered in the indexed documents.'}${suggestedStr}
-
-Is there something else I can help you with?`;
+  // Use workspace-aware response instead of refusing
+  const response = buildNotFoundResponse({
+    query: question,
+    suggestedTopics: contextInfo.suggestedTopics || [],
+    offerGeneralKnowledge: true,
+  });
 
   await saveMessages(conversationId, question, response);
 
@@ -203,10 +220,11 @@ Is there something else I can help you with?`;
     answer: response,
     formattedAnswer,
     sources: [],
+    provenance: 'notion_search_empty', // We searched but didn't find
     validation: {
       isLowQuality: false,
-      confidence: 0.9,
-      issues: ['Query out of scope'],
+      confidence: 0.8, // Confident in the "not found" result
+      issues: ['Topic not found in connected Notion workspace'],
       isGrounded: true,
       hasHallucinations: false,
     },
@@ -214,20 +232,22 @@ Is there something else I can help you with?`;
     intent: {
       type: IntentType.OUT_OF_SCOPE,
       confidence: contextInfo.scopeConfidence,
-      reasoning: contextInfo.scopeReason,
+      reasoning: `Searched Notion workspace: ${contextInfo.scopeReason || 'No matching content found'}`,
     },
     routing: {
-      strategy: 'no_retrieval',
+      strategy: 'workspace_search',
       skipRAG: true,
     },
     context: {
       originalQuery: question,
       inScope: false,
+      searchedNotion: true,
       suggestedTopics: contextInfo.suggestedTopics,
     },
     metrics: {
       strategy: 'scope_check',
       contextBuildMs: contextInfo.processingTimeMs,
+      searchedNotion: true,
     },
     conversationId,
     totalTime: Date.now() - startTime,

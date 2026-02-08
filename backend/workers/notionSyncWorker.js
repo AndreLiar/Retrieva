@@ -2,8 +2,9 @@ import { Worker } from 'bullmq';
 import { redisConnection } from '../config/redis.js';
 import { NotionWorkspace } from '../models/NotionWorkspace.js';
 import { SyncJob } from '../models/SyncJob.js';
+import { DocumentSource } from '../models/DocumentSource.js';
 import { NotionAdapter } from '../adapters/NotionAdapter.js';
-import { documentIndexQueue } from '../config/queue.js';
+import { documentIndexQueue, notionSyncQueue } from '../config/queue.js';
 import logger from '../config/logger.js';
 import { connectDB } from '../config/database.js';
 import { documentRetryTracker } from '../utils/rag/documentRetryTracker.js';
@@ -16,6 +17,13 @@ import {
   emitSyncComplete,
   emitSyncError,
 } from '../services/realtimeEvents.js';
+import {
+  initSyncMetrics,
+  setTotalDocuments,
+  recordDocumentProcessed,
+  completeSyncMetrics,
+  clearSyncMetrics,
+} from '../services/metrics/syncMetrics.js';
 
 // Extracted helpers and notifications
 import {
@@ -31,13 +39,24 @@ import {
   logSyncActivity,
 } from './notionSyncNotifications.js';
 
+// Dead Letter Queue for failed jobs
+import { setupDLQListener } from '../services/deadLetterQueue.js';
+
 /**
  * Rebuild vocabulary asynchronously after full sync
+ * Fetches documents from Qdrant and rebuilds vocabulary + sparse vectors
  */
 async function rebuildVocabularyAsync(workspaceId) {
   try {
-    await sparseVectorManager.buildVocabulary(workspaceId);
-    logger.info('Vocabulary rebuilt after full sync', { service: 'notion-sync', workspaceId });
+    // Use the new method that fetches documents from Qdrant
+    // This properly builds vocabulary and re-indexes sparse vectors
+    const result = await sparseVectorManager.rebuildVocabularyFromQdrant(workspaceId);
+    logger.info('Vocabulary rebuilt after full sync', {
+      service: 'notion-sync',
+      workspaceId,
+      vocabularySize: result.vocabularySize,
+      documentsIndexed: result.totalDocuments,
+    });
   } catch (err) {
     logger.warn('Vocabulary rebuild failed (non-critical)', {
       service: 'notion-sync',
@@ -55,10 +74,38 @@ async function processSyncJob(job) {
 
   logger.info(`Starting ${syncType} sync for workspace ${workspaceId}, job ${job.id}`);
 
+  // CRITICAL: Check for already running sync to prevent concurrent syncs
+  const existingActiveJobs = await SyncJob.find({
+    workspaceId,
+    status: 'processing',
+    jobId: { $ne: job.id }, // Exclude current job
+  });
+
+  if (existingActiveJobs.length > 0) {
+    const existingJob = existingActiveJobs[0];
+    logger.warn(`Aborting job ${job.id} - another sync already processing for workspace`, {
+      service: 'notion-sync',
+      workspaceId,
+      currentJobId: job.id,
+      existingJobId: existingJob.jobId,
+      existingJobStartedAt: existingJob.startedAt,
+    });
+
+    // Don't throw - just return to mark job as complete (prevents retries)
+    return {
+      aborted: true,
+      reason: 'concurrent_sync_detected',
+      existingJobId: existingJob.jobId,
+    };
+  }
+
+  // Phase 4: Initialize sync metrics
+  initSyncMetrics(workspaceId, job.id);
+
   emitSyncStart(workspaceId, triggeredBy, { jobId: job.id, syncType });
 
   const syncJob = await SyncJob.findOneAndUpdate(
-    { jobId: job.id },
+    { jobId: job.id, workspaceId }, // Include workspaceId to avoid cross-workspace collisions
     {
       jobId: job.id,
       workspaceId,
@@ -66,6 +113,7 @@ async function processSyncJob(job) {
       status: 'processing',
       triggeredBy,
       startedAt: new Date(),
+      createdAt: new Date(), // Always update createdAt so job appears in recent history
     },
     { upsert: true, new: true }
   );
@@ -111,6 +159,9 @@ async function processSyncJob(job) {
       currentDocument: 'Analyzing documents...',
     });
 
+    // Phase 4: Set total documents for metrics
+    setTotalDocuments(workspaceId, notionDocuments.length);
+
     const filteredDocuments = filterDocuments(notionDocuments, workspace, options);
     logger.info(`Processing ${filteredDocuments.length} documents after filtering`);
 
@@ -119,7 +170,7 @@ async function processSyncJob(job) {
     const documentsToSync = await determineDocumentsToSync(filteredDocuments, workspace, syncType);
     logger.info(`${documentsToSync.length} documents need syncing`);
 
-    const BATCH_SIZE = parseInt(process.env.BATCH_SIZE) || 10;
+    const BATCH_SIZE = parseInt(process.env.BATCH_SIZE) || 30; // Increased for faster sync
     logger.info(`Processing in batches of ${BATCH_SIZE} documents`);
 
     for (let i = 0; i < documentsToSync.length; i += BATCH_SIZE) {
@@ -153,7 +204,7 @@ async function processSyncJob(job) {
             continue;
           }
 
-          const existingDoc = await require('../models/DocumentSource.js').DocumentSource.findOne({
+          const existingDoc = await DocumentSource.findOne({
             workspaceId,
             sourceId: doc.id,
           });
@@ -181,6 +232,7 @@ async function processSyncJob(job) {
             sourceId: doc.id,
             documentContent,
             operation: existingDoc ? 'update' : 'add',
+            skipM3: true, // Skip M3 processing during sync for speed
           });
 
           if (existingDoc) {
@@ -197,7 +249,7 @@ async function processSyncJob(job) {
             await existingDoc.save();
             results.documentsUpdated++;
           } else {
-            await require('../models/DocumentSource.js').DocumentSource.findOneAndUpdate(
+            await DocumentSource.findOneAndUpdate(
               { workspaceId, sourceId: doc.id },
               {
                 workspaceId,
@@ -221,6 +273,14 @@ async function processSyncJob(job) {
           }
 
           batchSuccessCount++;
+
+          // Phase 4: Record document success
+          recordDocumentProcessed(workspaceId, {
+            success: true,
+            documentTitle: documentContent.title,
+            chunksCreated: 1, // Actual chunk count recorded by index worker
+          });
+
           emitSyncPageFetched(workspaceId, {
             pageId: doc.id,
             title: documentContent.title,
@@ -250,6 +310,14 @@ async function processSyncJob(job) {
           });
 
           batchErrorCount++;
+
+          // Phase 4: Record document error
+          recordDocumentProcessed(workspaceId, {
+            success: false,
+            documentTitle: doc.id,
+            error: { code: error.code || 'UnknownError', name: error.name, message: error.message },
+          });
+
           results.errors.push({
             documentId: doc.id,
             error: error.message,
@@ -368,10 +436,25 @@ async function processSyncJob(job) {
 
     await sendCompletionNotification(workspace, results, syncDuration, notionDocuments.length);
 
+    // Phase 4: Complete sync metrics and log final stats
+    const finalMetrics = completeSyncMetrics(workspaceId);
+    if (finalMetrics) {
+      logger.info(`Sync metrics for workspace ${workspaceId}:`, {
+        service: 'sync-metrics',
+        docsPerMinute: finalMetrics.docsPerMinute,
+        successRate: finalMetrics.successRate,
+        syncMode: finalMetrics.syncMode,
+        estimatedCost: finalMetrics.estimatedCost,
+      });
+    }
+
     logger.info(`Sync completed for workspace ${workspaceId}:`, results);
     return results;
   } catch (error) {
     logger.error(`Sync failed for workspace ${workspaceId}:`, error);
+
+    // Phase 4: Clear sync metrics on error
+    clearSyncMetrics(workspaceId);
 
     emitSyncError(workspaceId, error, { jobId: job.id, phase: 'sync', recoverable: true });
 
@@ -391,8 +474,10 @@ async function processSyncJob(job) {
 export const notionSyncWorker = new Worker('notionSync', processSyncJob, {
   connection: redisConnection,
   concurrency: 2,
-  lockDuration: 600000,
-  lockRenewTime: 240000,
+  lockDuration: 600000,      // 10 minutes - max time for a single operation
+  lockRenewTime: 240000,     // 4 minutes - renew lock every 4 min
+  maxStalledCount: 3,        // Allow 3 stall detections before failing
+  stalledInterval: 300000,   // Check for stalled jobs every 5 minutes
 });
 
 notionSyncWorker.on('completed', (job) => {
@@ -407,9 +492,220 @@ notionSyncWorker.on('error', (err) => {
   logger.error('Worker error:', err);
 });
 
+// Setup Dead Letter Queue listener for final failures
+setupDLQListener(notionSyncWorker, 'notionSync');
+
+// ISSUE #16 FIX: Improved stale job timeout with automatic recovery
+const STALE_JOB_TIMEOUT_HOURS = parseInt(process.env.STALE_JOB_TIMEOUT_HOURS) || 2; // Reduced from 12 to 2 hours
+const MAX_RECOVERY_ATTEMPTS = parseInt(process.env.MAX_SYNC_RECOVERY_ATTEMPTS) || 2;
+
+/**
+ * Clean up stale sync jobs that have been processing for too long
+ * ISSUE #16 FIX: Improved detection with automatic recovery
+ *
+ * Features:
+ * - Shorter default timeout (2 hours vs 12)
+ * - Automatic re-queue for recoverable jobs
+ * - Workspace notification on recovery/failure
+ * - Progress-based staleness detection
+ */
+async function cleanupStaleJobs() {
+  try {
+    const timeoutMs = STALE_JOB_TIMEOUT_HOURS * 60 * 60 * 1000;
+    const cutoffTime = new Date(Date.now() - timeoutMs);
+
+    // Find stale jobs (processing for too long)
+    const staleJobs = await SyncJob.find({
+      status: 'processing',
+      startedAt: { $lt: cutoffTime },
+    });
+
+    if (staleJobs.length === 0) {
+      return;
+    }
+
+    logger.warn(`Found ${staleJobs.length} stale sync jobs`, {
+      service: 'notion-sync',
+      timeoutHours: STALE_JOB_TIMEOUT_HOURS,
+    });
+
+    for (const staleJob of staleJobs) {
+      try {
+        await recoverStaleJob(staleJob);
+      } catch (err) {
+        logger.error(`Failed to recover stale job ${staleJob.jobId}:`, {
+          service: 'notion-sync',
+          error: err.message,
+        });
+      }
+    }
+  } catch (error) {
+    logger.error('Failed to cleanup stale jobs:', { error: error.message });
+  }
+}
+
+/**
+ * Attempt to recover a stale sync job
+ * Re-queues if under retry limit, otherwise marks as failed
+ */
+async function recoverStaleJob(staleJob) {
+  const { workspaceId, jobId, jobType, retryCount = 0, progress } = staleJob;
+
+  // Check if we can recover (under retry limit)
+  const canRecover = retryCount < MAX_RECOVERY_ATTEMPTS;
+
+  // Calculate how much progress was made
+  const progressPercent = progress?.totalDocuments > 0
+    ? Math.round((progress.processedDocuments / progress.totalDocuments) * 100)
+    : 0;
+
+  logger.warn(`Processing stale job for recovery`, {
+    service: 'notion-sync',
+    jobId,
+    workspaceId,
+    retryCount,
+    maxRetries: MAX_RECOVERY_ATTEMPTS,
+    canRecover,
+    progressPercent,
+    processedDocs: progress?.processedDocuments || 0,
+    totalDocs: progress?.totalDocuments || 0,
+  });
+
+  // Update the stale job status
+  staleJob.status = canRecover ? 'queued' : 'failed';
+  staleJob.completedAt = new Date();
+  staleJob.duration = staleJob.completedAt - staleJob.startedAt;
+  staleJob.error = {
+    message: canRecover
+      ? `Job stalled after ${STALE_JOB_TIMEOUT_HOURS} hours at ${progressPercent}% - recovering (attempt ${retryCount + 1}/${MAX_RECOVERY_ATTEMPTS})`
+      : `Job timed out after ${STALE_JOB_TIMEOUT_HOURS} hours with ${retryCount} recovery attempts - max retries exceeded`,
+    timestamp: new Date(),
+  };
+  staleJob.retryCount = retryCount + 1;
+  await staleJob.save();
+
+  // Update workspace status
+  const workspace = await NotionWorkspace.findOne({ workspaceId });
+
+  if (canRecover) {
+    // Re-queue the sync job
+    const syncType = jobType === 'full_sync' ? 'full' : 'incremental';
+
+    await notionSyncQueue.add(
+      'sync',
+      {
+        workspaceId,
+        syncType,
+        triggeredBy: 'auto',
+        options: {
+          recoveryAttempt: retryCount + 1,
+          previousJobId: jobId,
+          resumeFrom: progress?.processedDocuments || 0,
+        },
+      },
+      {
+        jobId: `recovery-${jobId}-${retryCount + 1}`,
+        delay: 30000, // Wait 30 seconds before retry
+      }
+    );
+
+    logger.info(`Stale job ${jobId} re-queued for recovery`, {
+      service: 'notion-sync',
+      workspaceId,
+      newAttempt: retryCount + 1,
+      syncType,
+    });
+
+    // Update workspace - sync is being recovered
+    if (workspace) {
+      await workspace.updateSyncStatus('syncing');
+    }
+
+    // Emit recovery event for real-time notification
+    emitSyncError(workspaceId, new Error('Sync job stalled - automatic recovery in progress'), {
+      jobId,
+      phase: 'recovery',
+      recoverable: true,
+      recoveryAttempt: retryCount + 1,
+    });
+  } else {
+    // Max retries exceeded - mark as permanently failed
+    logger.error(`Stale job ${jobId} exceeded max recovery attempts`, {
+      service: 'notion-sync',
+      workspaceId,
+      totalAttempts: retryCount + 1,
+    });
+
+    if (workspace) {
+      await workspace.updateSyncStatus('error');
+      workspace.stats.errorCount = (workspace.stats.errorCount || 0) + 1;
+      await workspace.save();
+    }
+
+    // Emit permanent failure event
+    emitSyncError(workspaceId, new Error('Sync job failed after multiple recovery attempts'), {
+      jobId,
+      phase: 'sync',
+      recoverable: false,
+      totalAttempts: retryCount + 1,
+    });
+
+    // Send error alert for operations visibility
+    await sendErrorAlerts(workspaceId, new Error(`Sync job timed out after ${retryCount + 1} attempts`), staleJob);
+  }
+}
+
+/**
+ * Check for progress staleness (no progress for extended period)
+ * This catches jobs that are running but not making progress
+ */
+async function checkProgressStaleness() {
+  try {
+    const progressTimeoutMinutes = parseInt(process.env.SYNC_PROGRESS_TIMEOUT_MINUTES) || 30;
+    const cutoffTime = new Date(Date.now() - progressTimeoutMinutes * 60 * 1000);
+
+    // Find jobs that haven't updated progress recently
+    const stalledJobs = await SyncJob.find({
+      status: 'processing',
+      updatedAt: { $lt: cutoffTime },
+      // Only check jobs that have started processing documents
+      'progress.totalDocuments': { $gt: 0 },
+    });
+
+    for (const job of stalledJobs) {
+      logger.warn(`Job ${job.jobId} has not made progress in ${progressTimeoutMinutes} minutes`, {
+        service: 'notion-sync',
+        workspaceId: job.workspaceId,
+        lastUpdate: job.updatedAt,
+        progress: job.progress,
+      });
+
+      // Mark for recovery in next cleanup cycle
+      job.startedAt = new Date(Date.now() - (STALE_JOB_TIMEOUT_HOURS + 1) * 60 * 60 * 1000);
+      await job.save();
+    }
+  } catch (error) {
+    logger.error('Failed to check progress staleness:', { error: error.message });
+  }
+}
+
 (async () => {
   await connectDB();
-  logger.info('Notion sync worker started');
+
+  // ISSUE #16 FIX: Clean up any stale jobs on startup
+  await cleanupStaleJobs();
+
+  // Schedule periodic cleanup every 15 minutes (reduced from 30)
+  setInterval(cleanupStaleJobs, 15 * 60 * 1000);
+
+  // Check for progress staleness every 10 minutes
+  setInterval(checkProgressStaleness, 10 * 60 * 1000);
+
+  logger.info('Notion sync worker started', {
+    service: 'notion-sync',
+    staleJobTimeoutHours: STALE_JOB_TIMEOUT_HOURS,
+    maxRecoveryAttempts: MAX_RECOVERY_ATTEMPTS,
+  });
 })();
 
 export default notionSyncWorker;

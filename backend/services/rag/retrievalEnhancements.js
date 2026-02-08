@@ -9,7 +9,7 @@
 import { StringOutputParser } from '@langchain/core/output_parsers';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { createHash } from 'crypto';
-import { llm } from '../../config/llm.js';
+import { getDefaultLLM } from '../../config/llm.js';
 import logger from '../../config/logger.js';
 
 /**
@@ -51,6 +51,17 @@ import logger from '../../config/logger.js';
 let queryExpansionChain = null;
 let hydeChain = null;
 let compressionChain = null;
+let cachedLLM = null;
+
+/**
+ * Get the LLM instance (cached after first fetch)
+ */
+async function getLLMInstance() {
+  if (!cachedLLM) {
+    cachedLLM = await getDefaultLLM();
+  }
+  return cachedLLM;
+}
 
 /**
  * Simple LRU Cache for query expansion and HyDE results
@@ -147,19 +158,26 @@ const hydeCache = new ExpansionCache(500, 5 * 60 * 1000); // 5 min TTL
 /**
  * Initialize the query expansion chain
  */
-function initQueryExpansionChain() {
+async function initQueryExpansionChain() {
   if (queryExpansionChain) return queryExpansionChain;
 
+  const llm = await getLLMInstance();
   const queryExpansionPrompt = ChatPromptTemplate.fromMessages([
     [
       'system',
       `Generate 2 alternative phrasings of the following question to improve search coverage.
+Generate alternatives in the SAME LANGUAGE as the original question.
 Return ONLY the alternative questions, one per line, without numbering or explanations.
 
-Example:
+Example (English):
 Original: "What are AI agents?"
 Alternative 1: "Define AI agent systems"
-Alternative 2: "Characteristics of autonomous agents"`,
+Alternative 2: "Characteristics of autonomous agents"
+
+Example (French):
+Original: "Liste de document demande titre de séjour"
+Alternative 1: "Documents nécessaires pour un titre de séjour"
+Alternative 2: "Pièces justificatives demande carte de séjour"`,
     ],
     ['user', '{question}'],
   ]);
@@ -171,14 +189,16 @@ Alternative 2: "Characteristics of autonomous agents"`,
 /**
  * Initialize the HyDE chain
  */
-function initHydeChain() {
+async function initHydeChain() {
   if (hydeChain) return hydeChain;
 
+  const llm = await getLLMInstance();
   const hydePrompt = ChatPromptTemplate.fromMessages([
     [
       'system',
       `Generate a hypothetical answer to the following question as if you were answering from a technical document.
 Write a concise, factual paragraph (2-3 sentences) that would appear in documentation.
+Write the answer in the SAME LANGUAGE as the question.
 Do not say "I don't know" - write what a real answer would look like.`,
     ],
     ['user', '{question}'],
@@ -191,9 +211,10 @@ Do not say "I don't know" - write what a real answer would look like.`,
 /**
  * Initialize the contextual compression chain
  */
-function initCompressionChain() {
+async function initCompressionChain() {
   if (compressionChain) return compressionChain;
 
+  const llm = await getLLMInstance();
   const compressionPrompt = ChatPromptTemplate.fromMessages([
     [
       'system',
@@ -215,10 +236,10 @@ Document:
  * Initialize all retrieval enhancement chains
  * Call this during system warm-up for better first-request performance
  */
-export function initChains() {
-  initQueryExpansionChain();
-  initHydeChain();
-  initCompressionChain();
+export async function initChains() {
+  await initQueryExpansionChain();
+  await initHydeChain();
+  await initCompressionChain();
   logger.info('Retrieval enhancement chains initialized', { service: 'rag' });
 }
 
@@ -270,7 +291,7 @@ export async function expandQuery(query) {
   }
 
   try {
-    const chain = initQueryExpansionChain();
+    const chain = await initQueryExpansionChain();
     const alternativeQs = await chain.invoke({ question: query });
     const variations = alternativeQs
       .split('\n')
@@ -318,7 +339,7 @@ export async function generateHypotheticalDocument(query) {
   }
 
   try {
-    const chain = initHydeChain();
+    const chain = await initHydeChain();
     const hypotheticalAnswer = await chain.invoke({ question: query });
 
     // Cache the result
@@ -349,28 +370,54 @@ export async function generateHypotheticalDocument(query) {
  * @returns {Promise<Document[]>} Compressed documents with metadata about compression
  */
 export async function compressDocuments(docs, query) {
+  // Patterns that indicate LLM returned a disclaimer instead of actual extracted content
+  const LLM_DISCLAIMER_PATTERNS = [
+    /trained on data/i,
+    /knowledge cutoff/i,
+    /i don'?t have (access|information)/i,
+    /cannot (find|extract|identify)/i,
+    /no relevant (sentences|information|content)/i,
+    /as an ai/i,
+  ];
+
+  /**
+   * Check if compressed content is a valid extraction (not an LLM disclaimer)
+   */
+  function isValidCompression(compressed, original) {
+    if (!compressed || compressed.trim().length < 20) return false;
+    // Reject LLM disclaimers
+    if (LLM_DISCLAIMER_PATTERNS.some((p) => p.test(compressed))) return false;
+    // Reject if compressed is significantly longer than original (shouldn't happen)
+    if (compressed.length > original.length * 1.2) return false;
+    return true;
+  }
+
   try {
-    const chain = initCompressionChain();
+    const chain = await initCompressionChain();
     const compressedDocs = await Promise.all(
       docs.slice(0, 5).map(async (doc) => {
         // Only compress top 5 to save time
+        const originalContent = doc.pageContent;
+
         try {
           const compressed = await chain.invoke({
             query,
-            document: doc.pageContent.substring(0, 1500), // Limit input length
+            document: originalContent.substring(0, 1500), // Limit input length
           });
 
-          // If compression resulted in content, use it; otherwise keep original
-          const finalContent =
-            compressed && compressed.trim().length > 20 ? compressed : doc.pageContent;
+          // Validate compression result - reject LLM disclaimers
+          const useCompressed = isValidCompression(compressed, originalContent);
+          const finalContent = useCompressed ? compressed : originalContent;
 
           return {
             ...doc,
             pageContent: finalContent,
             metadata: {
               ...doc.metadata,
-              compressed: compressed && compressed.trim().length > 20,
-              originalLength: doc.pageContent.length,
+              // Always preserve original for source display
+              _originalContent: originalContent,
+              compressed: useCompressed,
+              originalLength: originalContent.length,
               compressedLength: finalContent.length,
             },
           };
@@ -379,7 +426,13 @@ export async function compressDocuments(docs, query) {
             service: 'rag',
             error: err.message,
           });
-          return doc;
+          return {
+            ...doc,
+            metadata: {
+              ...doc.metadata,
+              _originalContent: originalContent,
+            },
+          };
         }
       })
     );

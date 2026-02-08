@@ -6,6 +6,8 @@ import {
   getSourceStats,
   getCacheStats,
   getFeedbackSummary,
+  getUsageData,
+  getFeedbackDistribution,
   submitFeedback,
   clearCache,
 } from '../controllers/analyticsController.js';
@@ -27,8 +29,10 @@ const router = express.Router();
 // Note: Query validation temporarily disabled for Express 5 compatibility
 // Controllers handle defaults/parsing internally
 router.get('/summary', authenticate, getAnalyticsSummary);
+router.get('/usage', authenticate, getUsageData);
 router.get('/popular-questions', authenticate, getPopularQuestions);
 router.get('/feedback-trends', authenticate, getFeedbackTrends);
+router.get('/feedback-distribution', authenticate, getFeedbackDistribution);
 router.get('/source-stats', authenticate, getSourceStats);
 router.get('/cache-stats', authenticate, getCacheStats);
 router.get('/feedback-summary', authenticate, getFeedbackSummary);

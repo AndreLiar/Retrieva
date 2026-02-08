@@ -13,13 +13,20 @@ const isProduction = process.env.NODE_ENV === 'production';
 const isDevelopment = process.env.NODE_ENV === 'development';
 
 /**
+ * SameSite configuration
+ * - 'strict' in production for CSRF protection
+ * - 'lax' in development for cross-port requests (localhost:3000 -> localhost:3007)
+ */
+const sameSitePolicy = isProduction ? 'strict' : 'lax';
+
+/**
  * Cookie configuration for access token
  * Short-lived token for API authentication
  */
 export const ACCESS_TOKEN_COOKIE_OPTIONS = {
   httpOnly: true, // Not accessible via JavaScript (XSS protection)
   secure: isProduction, // HTTPS only in production
-  sameSite: 'strict', // CSRF protection
+  sameSite: sameSitePolicy, // CSRF protection (lax in dev for cross-port)
   maxAge: 15 * 60 * 1000, // 15 minutes
   path: '/', // Available for all routes
 };
@@ -31,7 +38,7 @@ export const ACCESS_TOKEN_COOKIE_OPTIONS = {
 export const REFRESH_TOKEN_COOKIE_OPTIONS = {
   httpOnly: true,
   secure: isProduction,
-  sameSite: 'strict',
+  sameSite: sameSitePolicy, // CSRF protection (lax in dev for cross-port)
   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   path: '/api/v1/auth', // Only sent to auth routes
 };

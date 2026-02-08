@@ -8,6 +8,9 @@ import { syncCooldownService } from '../services/syncCooldownService.js';
 import { createAuthenticatedNotionAdapter } from '../services/adapterFactory.js';
 import { catchAsync, sendSuccess, sendError } from '../utils/index.js';
 import logger from '../config/logger.js';
+import { getDetailedSyncMetrics, getGlobalMetrics } from '../services/metrics/syncMetrics.js';
+
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 
 /**
  * Get Notion OAuth authorization URL
@@ -27,79 +30,110 @@ export const getAuthorizationUrl = catchAsync(async (req, res) => {
 /**
  * Handle Notion OAuth callback
  * GET /api/v1/notion/callback
+ *
+ * After processing OAuth, redirects to frontend with workspace info
  */
 export const handleOAuthCallback = catchAsync(async (req, res) => {
-  const { code, state } = req.query;
+  const { code, state, error, error_description } = req.query;
 
-  if (!code || !state) {
-    return sendError(res, 400, 'Missing code or state parameter');
+  // Handle OAuth errors from Notion
+  if (error) {
+    logger.warn('Notion OAuth error', { error, error_description });
+    const errorUrl = new URL('/workspaces', FRONTEND_URL);
+    errorUrl.searchParams.set('error', error);
+    if (error_description) {
+      errorUrl.searchParams.set('error_description', error_description);
+    }
+    return res.redirect(errorUrl.toString());
   }
 
-  const stateData = notionOAuthService.validateState(state);
-  const tokenData = await notionOAuthService.exchangeCodeForToken(code);
+  if (!code || !state) {
+    const errorUrl = new URL('/workspaces', FRONTEND_URL);
+    errorUrl.searchParams.set('error', 'missing_params');
+    errorUrl.searchParams.set('error_description', 'Missing code or state parameter');
+    return res.redirect(errorUrl.toString());
+  }
 
-  let workspace = await NotionWorkspace.findOne({ workspaceId: tokenData.workspaceId });
+  try {
+    const stateData = notionOAuthService.validateState(state);
+    const tokenData = await notionOAuthService.exchangeCodeForToken(code);
 
-  if (workspace) {
-    // Update existing workspace with new token
-    workspace.accessToken = tokenData.accessToken;
-    workspace.workspaceName = tokenData.workspaceName;
-    workspace.workspaceIcon = tokenData.workspaceIcon;
-    workspace.botId = tokenData.botId;
-    workspace.owner = tokenData.owner;
-    workspace.syncStatus = 'active';
-    await workspace.save();
+    let workspace = await NotionWorkspace.findOne({ workspaceId: tokenData.workspaceId });
+    let isNew = false;
 
-    logger.info('Notion workspace reconnected', {
-      userId: stateData.userId,
-      workspaceId: workspace.workspaceId,
-    });
+    if (workspace) {
+      // Update existing workspace with new token
+      workspace.accessToken = tokenData.accessToken;
+      workspace.workspaceName = tokenData.workspaceName;
+      workspace.workspaceIcon = tokenData.workspaceIcon;
+      workspace.botId = tokenData.botId;
+      workspace.owner = tokenData.owner;
+      workspace.syncStatus = 'active';
+      await workspace.save();
 
-    sendSuccess(res, 200, 'Notion workspace already connected - credentials updated', {
-      workspace: {
-        id: workspace._id,
+      // Ensure user has membership (in case it was missing)
+      const existingMembership = await WorkspaceMember.findOne({
+        workspaceId: workspace._id,
+        userId: stateData.userId,
+      });
+
+      if (!existingMembership) {
+        await WorkspaceMember.addOwner(workspace._id, stateData.userId);
+        logger.info('Created missing workspace membership on reconnect', {
+          workspaceId: workspace._id,
+          userId: stateData.userId,
+        });
+      }
+
+      logger.info('Notion workspace reconnected', {
+        userId: stateData.userId,
         workspaceId: workspace.workspaceId,
-        workspaceName: workspace.workspaceName,
-        syncStatus: workspace.syncStatus,
-        createdAt: workspace.createdAt,
-      },
-    });
-  } else {
-    workspace = await NotionWorkspace.create({
-      userId: stateData.userId,
-      workspaceId: tokenData.workspaceId,
-      workspaceName: tokenData.workspaceName,
-      workspaceIcon: tokenData.workspaceIcon,
-      accessToken: tokenData.accessToken,
-      botId: tokenData.botId,
-      owner: tokenData.owner,
-    });
+      });
+    } else {
+      isNew = true;
+      workspace = await NotionWorkspace.create({
+        userId: stateData.userId,
+        workspaceId: tokenData.workspaceId,
+        workspaceName: tokenData.workspaceName,
+        workspaceIcon: tokenData.workspaceIcon,
+        accessToken: tokenData.accessToken,
+        botId: tokenData.botId,
+        owner: tokenData.owner,
+      });
 
-    // AUTO-ADD OWNER AS WORKSPACE MEMBER
-    // The user who connects the workspace becomes the owner with full permissions
-    await WorkspaceMember.addOwner(workspace._id, stateData.userId);
+      // AUTO-ADD OWNER AS WORKSPACE MEMBER
+      // The user who connects the workspace becomes the owner with full permissions
+      await WorkspaceMember.addOwner(workspace._id, stateData.userId);
 
-    logger.info('Workspace owner membership created', {
-      workspaceId: workspace._id,
-      ownerId: stateData.userId,
-    });
+      logger.info('Workspace owner membership created', {
+        workspaceId: workspace._id,
+        ownerId: stateData.userId,
+      });
 
-    await syncScheduler.scheduleWorkspaceSync(workspace.workspaceId);
+      await syncScheduler.scheduleWorkspaceSync(workspace.workspaceId);
 
-    logger.info('Notion workspace connected', {
-      userId: stateData.userId,
-      workspaceId: workspace.workspaceId,
-    });
-
-    sendSuccess(res, 201, 'Notion workspace connected successfully', {
-      workspace: {
-        id: workspace._id,
+      logger.info('Notion workspace connected', {
+        userId: stateData.userId,
         workspaceId: workspace.workspaceId,
-        workspaceName: workspace.workspaceName,
-        syncStatus: workspace.syncStatus,
-        createdAt: workspace.createdAt,
-      },
-    });
+      });
+    }
+
+    // Redirect to frontend workspaces page with success info
+    const successUrl = new URL('/workspaces', FRONTEND_URL);
+    successUrl.searchParams.set('connected', 'true');
+    successUrl.searchParams.set('workspace_id', workspace._id.toString());
+    successUrl.searchParams.set('workspace_name', workspace.workspaceName || 'Notion Workspace');
+    if (isNew) {
+      successUrl.searchParams.set('new', 'true');
+    }
+
+    return res.redirect(successUrl.toString());
+  } catch (err) {
+    logger.error('OAuth callback processing failed', { error: err.message });
+    const errorUrl = new URL('/workspaces', FRONTEND_URL);
+    errorUrl.searchParams.set('error', 'processing_failed');
+    errorUrl.searchParams.set('error_description', err.message);
+    return res.redirect(errorUrl.toString());
   }
 });
 
@@ -110,9 +144,55 @@ export const handleOAuthCallback = catchAsync(async (req, res) => {
 export const getWorkspaces = catchAsync(async (req, res) => {
   const userId = req.user?.userId || 'default-user';
 
-  const workspaces = await NotionWorkspace.find({ userId })
+  // ISSUE #22 FIX: Use .lean() for read-only query
+  const rawWorkspaces = await NotionWorkspace.find({ userId })
     .sort({ createdAt: -1 })
-    .select('-accessToken');
+    .select('-accessToken')
+    .lean();
+
+  // Get user's membership for each workspace to include role and permissions
+  const workspaceIds = rawWorkspaces.map((ws) => ws._id);
+  const memberships = await WorkspaceMember.find({
+    workspaceId: { $in: workspaceIds },
+    userId,
+  }).lean();
+
+  // Create a map for quick lookup
+  const membershipMap = new Map();
+  memberships.forEach((m) => {
+    membershipMap.set(m.workspaceId.toString(), m);
+  });
+
+  // Transform to frontend expected format with membership info
+  const workspaces = rawWorkspaces.map((ws) => {
+    const membership = membershipMap.get(ws._id.toString());
+    // If user created this workspace, they're the owner
+    const isCreator = ws.userId === userId;
+    const role = membership?.role || (isCreator ? 'owner' : 'member');
+    const permissions = membership?.permissions || {
+      canQuery: true,
+      canViewSources: true,
+      canInvite: role === 'owner',
+    };
+
+    return {
+      id: ws._id.toString(),
+      notionWorkspaceId: ws.workspaceId,
+      workspaceId: ws.workspaceId,
+      name: ws.workspaceName,
+      icon: ws.workspaceIcon,
+      syncStatus: ws.syncStatus || 'idle',
+      lastSyncAt: ws.lastSyncAt,
+      lastSyncError: ws.lastSyncError,
+      pagesCount: ws.stats?.totalPages || 0,
+      createdAt: ws.createdAt,
+      updatedAt: ws.updatedAt,
+      // Add membership info for frontend permission checks
+      myRole: role,
+      role: role,
+      permissions,
+    };
+  });
 
   logger.info('Retrieved workspaces', { userId, count: workspaces.length });
 
@@ -140,8 +220,23 @@ export const getWorkspace = catchAsync(async (req, res) => {
 
   logger.info('Retrieved workspace details', { workspaceId: workspace.workspaceId });
 
+  // Transform to frontend expected format
+  const transformedWorkspace = {
+    id: workspace._id.toString(),
+    notionWorkspaceId: workspace.workspaceId,
+    workspaceId: workspace.workspaceId,
+    name: workspace.workspaceName,
+    icon: workspace.workspaceIcon,
+    syncStatus: workspace.syncStatus || 'idle',
+    lastSyncAt: workspace.lastSyncAt,
+    lastSyncError: workspace.lastSyncError,
+    pagesCount: workspace.stats?.totalPages || 0,
+    createdAt: workspace.createdAt,
+    updatedAt: workspace.updatedAt,
+  };
+
   sendSuccess(res, 200, 'Workspace retrieved successfully', {
-    workspace,
+    workspace: transformedWorkspace,
     stats: { ...workspace.stats, totalDocuments, syncedDocuments },
   });
 });
@@ -208,7 +303,33 @@ export const deleteWorkspace = catchAsync(async (req, res) => {
  */
 export const triggerSync = catchAsync(async (req, res) => {
   const workspace = req.workspace;
-  const { syncType = 'incremental', documentIds } = req.body;
+  // Support both 'fullSync: true' (frontend) and 'syncType: full' (API) formats
+  const { fullSync, syncType: explicitSyncType, documentIds } = req.body;
+  const syncType = fullSync === true ? 'full' : (explicitSyncType || 'incremental');
+
+  // Check if there's already an active sync job for this workspace
+  const activeJobs = await SyncJob.getActiveJobs(workspace.workspaceId);
+  if (activeJobs && activeJobs.length > 0) {
+    const activeJob = activeJobs[0];
+    logger.warn('Sync request blocked - job already in progress', {
+      workspaceId: workspace.workspaceId,
+      activeJobId: activeJob.jobId,
+      activeJobStatus: activeJob.status,
+      startedAt: activeJob.startedAt,
+    });
+
+    return sendError(
+      res,
+      409,
+      'A sync job is already in progress for this workspace.',
+      {
+        activeJobId: activeJob.jobId,
+        status: activeJob.status,
+        progress: activeJob.progress,
+        startedAt: activeJob.startedAt,
+      }
+    );
+  }
 
   // Check if workspace is in cooldown period
   const cooldownStatus = await syncCooldownService.checkCooldown(workspace.workspaceId);
@@ -266,6 +387,9 @@ export const getSyncStatus = catchAsync(async (req, res) => {
     SyncJob.findOne({ workspaceId: workspace.workspaceId }).sort({ createdAt: -1 }).limit(1),
   ]);
 
+  // Get detailed metrics if available
+  const detailedMetrics = getDetailedSyncMetrics(workspace.workspaceId);
+
   sendSuccess(res, 200, 'Sync status retrieved', {
     workspace: {
       workspaceId: workspace.workspaceId,
@@ -290,6 +414,33 @@ export const getSyncStatus = catchAsync(async (req, res) => {
           result: lastJob.result,
         }
       : null,
+    // Phase 4: Detailed sync metrics
+    metrics: detailedMetrics,
+  });
+});
+
+/**
+ * Get detailed sync metrics for workspace
+ * GET /api/v1/notion/workspaces/:id/sync-metrics
+ * Requires: loadWorkspaceSafe middleware
+ */
+export const getSyncMetricsEndpoint = catchAsync(async (req, res) => {
+  const workspace = req.workspace;
+
+  const detailedMetrics = getDetailedSyncMetrics(workspace.workspaceId);
+  const globalMetrics = getGlobalMetrics();
+
+  if (!detailedMetrics) {
+    return sendSuccess(res, 200, 'No active sync', {
+      hasActiveSync: false,
+      globalMetrics,
+    });
+  }
+
+  sendSuccess(res, 200, 'Sync metrics retrieved', {
+    hasActiveSync: true,
+    metrics: detailedMetrics,
+    globalMetrics,
   });
 });
 
@@ -304,19 +455,34 @@ export const getSyncHistory = catchAsync(async (req, res) => {
 
   const syncJobs = await SyncJob.getJobHistory(workspace.workspaceId, limit);
 
+  // Sort: processing/queued jobs first, then by createdAt descending
+  const sortedJobs = [...syncJobs].sort((a, b) => {
+    const aActive = ['processing', 'queued'].includes(a.status);
+    const bActive = ['processing', 'queued'].includes(b.status);
+    if (aActive && !bActive) return -1;
+    if (!aActive && bActive) return 1;
+    return new Date(b.createdAt) - new Date(a.createdAt);
+  });
+
+  // Transform to match frontend SyncJob type expectations
   sendSuccess(res, 200, 'Sync history retrieved', {
     workspaceId: workspace.workspaceId,
-    syncJobs: syncJobs.map((job) => ({
+    syncJobs: sortedJobs.map((job) => ({
+      id: job.jobId,
       jobId: job.jobId,
+      notionWorkspaceId: job.workspaceId,
       jobType: job.jobType,
-      status: job.status,
+      status: job.status === 'queued' ? 'pending' : job.status,
       triggeredBy: job.triggeredBy,
+      pagesProcessed: job.progress?.processedDocuments || 0,
+      totalPages: job.progress?.totalDocuments || 0,
       startedAt: job.startedAt,
       completedAt: job.completedAt,
       duration: job.duration,
       progress: job.progress,
       result: job.result,
-      error: job.error,
+      error: job.error?.message || null,
+      createdAt: job.createdAt,
     })),
   });
 });
@@ -373,4 +539,56 @@ export const listDatabases = catchAsync(async (req, res) => {
  */
 export const disconnectWorkspace = catchAsync(async (req, res) => {
   return deleteWorkspace(req, res);
+});
+
+/**
+ * Get token health for all user workspaces
+ * GET /api/v1/notion/token-health
+ */
+export const getTokenHealth = catchAsync(async (req, res) => {
+  const userId = req.user?.userId;
+
+  // Dynamic import to avoid circular dependency
+  const { notionTokenMonitor } = await import('../services/notionTokenMonitor.js');
+  const tokenHealth = await notionTokenMonitor.getUserTokenHealth(userId);
+
+  sendSuccess(res, 200, 'Token health retrieved', {
+    workspaces: tokenHealth,
+    hasIssues: tokenHealth.some((ws) => ws.needsReconnect),
+  });
+});
+
+/**
+ * Check token for a specific workspace
+ * POST /api/v1/notion/workspaces/:id/check-token
+ */
+export const checkWorkspaceToken = catchAsync(async (req, res) => {
+  const workspace = req.workspace;
+
+  // Dynamic import to avoid circular dependency
+  const { notionTokenMonitor } = await import('../services/notionTokenMonitor.js');
+  const result = await notionTokenMonitor.checkWorkspace(workspace._id.toString());
+
+  sendSuccess(res, 200, 'Token check completed', result);
+});
+
+/**
+ * Update user's token handling preference
+ * PATCH /api/v1/notion/token-preference
+ */
+export const updateTokenPreference = catchAsync(async (req, res) => {
+  const userId = req.user?.userId;
+  const { preference } = req.body;
+
+  if (!preference || !['notify', 'auto_reconnect'].includes(preference)) {
+    return sendError(res, 400, 'Invalid preference. Must be "notify" or "auto_reconnect"');
+  }
+
+  // Dynamic import to avoid circular dependency
+  const { User } = await import('../models/User.js');
+  await User.updateOne({ _id: userId }, { $set: { notionTokenPreference: preference } });
+
+  logger.info('Updated token preference', { userId, preference });
+
+  sendSuccess(res, 200, 'Token preference updated', { preference });
 });

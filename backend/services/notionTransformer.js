@@ -3,6 +3,9 @@
  * Converts all Notion block types to searchable text while preserving structure
  */
 
+import { sha256 } from '../utils/security/crypto.js';
+import { estimateTokens } from '../utils/rag/tokenEstimation.js';
+
 /**
  * Extract plain text from rich text array
  * @param {Array} richTextArray - Notion rich text array
@@ -232,9 +235,8 @@ export const extractPageMetadata = (properties) => {
  * @param {string} content - Document content
  * @returns {string} SHA-256 hash of content
  */
-export const calculateContentHash = async (content) => {
-  const crypto = await import('crypto');
-  return crypto.createHash('sha256').update(content).digest('hex');
+export const calculateContentHash = (content) => {
+  return sha256(content);
 };
 
 /**
@@ -328,14 +330,7 @@ const getBlockCategory = (block) => {
   return 'paragraph';
 };
 
-/**
- * Estimate token count (rough: ~4 chars per token)
- * @param {string} text - Text content
- * @returns {number} Estimated token count
- */
-const estimateTokens = (text) => {
-  return Math.ceil(text.length / 4);
-};
+// Token estimation is now imported from utils/rag/tokenEstimation.js
 
 /**
  * Flatten nested blocks into a single array
@@ -375,11 +370,16 @@ const flattenBlocks = (blocks, parentPath = []) => {
  * 5. Code block → standalone group
  * 6. Consecutive table rows → one group
  *
- * Target: 300-700 tokens per group
+ * Target: 200-400 tokens per group (configurable via MAX_GROUP_TOKENS)
  *
  * @param {Array} blocks - Array of Notion blocks
  * @returns {Array} Array of block groups
  */
+const MAX_GROUP_TOKENS = parseInt(process.env.MAX_GROUP_TOKENS) || 400;
+const MIN_GROUP_TOKENS = parseInt(process.env.MIN_GROUP_TOKENS) || 200;
+const MAX_LIST_ITEMS = parseInt(process.env.MAX_LIST_ITEMS) || 15;
+const FLUSH_THRESHOLD = Math.floor(MAX_GROUP_TOKENS * 0.8); // 320 tokens at default
+
 export const groupBlocksSemantically = (blocks) => {
   const flatBlocks = flattenBlocks(blocks);
   const groups = [];
@@ -473,8 +473,8 @@ export const groupBlocksSemantically = (blocks) => {
       continue;
     }
 
-    // If we have a heading group, add content until 700 tokens
-    if (currentGroup.category === 'heading_group' && currentTokens < 700) {
+    // If we have a heading group, add content until MAX_GROUP_TOKENS
+    if (currentGroup.category === 'heading_group' && currentTokens < MAX_GROUP_TOKENS) {
       // Keep adding paragraphs, quotes to heading group
       if (['paragraph', 'quote'].includes(category)) {
         addBlockToGroup(block, i);
@@ -482,9 +482,28 @@ export const groupBlocksSemantically = (blocks) => {
       }
     }
 
-    // List grouping: keep consecutive list items together
+    // List grouping: keep consecutive list items together, max MAX_LIST_ITEMS items
     if (category === 'list') {
-      if (currentGroup.category === 'list' && currentTokens < 700) {
+      const currentListItemCount = currentGroup.blocks.filter((b) =>
+        ['bulleted_list_item', 'numbered_list_item', 'to_do'].includes(b.type)
+      ).length;
+
+      // Check if adding this item would exceed limits
+      const wouldExceedItemLimit = currentListItemCount >= MAX_LIST_ITEMS;
+      const wouldExceedTokenLimit = currentTokens >= MAX_GROUP_TOKENS;
+
+      // Check list type consistency (don't merge bullets with numbered)
+      const lastBlock = currentGroup.blocks[currentGroup.blocks.length - 1];
+      const sameListType = !lastBlock || lastBlock.type === block.type;
+
+      // Check if we can continue the current list
+      const canContinueList =
+        currentGroup.category === 'list' &&
+        !wouldExceedTokenLimit &&
+        !wouldExceedItemLimit &&
+        sameListType;
+
+      if (canContinueList) {
         addBlockToGroup(block, i);
       } else {
         flushGroup();
@@ -496,7 +515,7 @@ export const groupBlocksSemantically = (blocks) => {
 
     // Table grouping: keep consecutive table rows together
     if (category === 'table') {
-      if (currentGroup.category === 'table' && currentTokens < 700) {
+      if (currentGroup.category === 'table' && currentTokens < MAX_GROUP_TOKENS) {
         addBlockToGroup(block, i);
       } else {
         flushGroup();
@@ -534,7 +553,8 @@ export const groupBlocksSemantically = (blocks) => {
     }
 
     // Default: paragraph-like content
-    if (currentTokens >= 700) {
+    // Use 80% threshold to avoid oversized groups
+    if (currentTokens >= FLUSH_THRESHOLD) {
       flushGroup();
     }
 
@@ -547,7 +567,92 @@ export const groupBlocksSemantically = (blocks) => {
   // Flush final group
   flushGroup();
 
-  return groups;
+  // Merge tiny groups into their nearest same-headingPath predecessor
+  return mergeSmallGroups(groups);
+};
+
+/**
+ * Check deep equality of two arrays (used for headingPath comparison)
+ * @param {Array} a
+ * @param {Array} b
+ * @returns {boolean}
+ */
+const arraysEqual = (a, b) => {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+};
+
+const MIN_STANDALONE_TOKENS = parseInt(process.env.MIN_STANDALONE_TOKENS) || 50;
+
+/**
+ * Merge small groups (< MIN_GROUP_TOKENS) into their nearest
+ * previous group with the same full headingPath.
+ * Code blocks are exempt — even small code has retrieval value.
+ *
+ * Phase 5: Changed threshold from MIN_STANDALONE_TOKENS (50) to MIN_GROUP_TOKENS (200)
+ * to reduce chunk variance and ensure chunks are in 200-400 token range.
+ *
+ * @param {Array} groups - Semantic groups from groupBlocksSemantically
+ * @returns {Array} Groups with tiny chunks merged
+ */
+export const mergeSmallGroups = (groups) => {
+  const merged = [];
+  let mergeCount = 0;
+
+  for (let i = 0; i < groups.length; i++) {
+    const group = groups[i];
+
+    // Skip merging for code blocks, list groups, or groups above threshold
+    // Phase 5: Use MIN_GROUP_TOKENS (200) instead of MIN_STANDALONE_TOKENS (50)
+    // List groups are not merged to preserve intentional splits at MAX_LIST_ITEMS
+    if (
+      group.tokens >= MIN_GROUP_TOKENS ||
+      group.category === 'code' ||
+      group.category === 'code_split' ||
+      group.category === 'list' ||
+      group.category === 'list_split'
+    ) {
+      merged.push(group);
+      continue;
+    }
+
+    // Find nearest previous group with same full headingPath
+    let target = null;
+    for (let j = merged.length - 1; j >= 0; j--) {
+      if (arraysEqual(merged[j].headingPath, group.headingPath)) {
+        target = merged[j];
+        break;
+      }
+    }
+
+    if (target) {
+      // Merge into target
+      target.content = target.content + '\n\n' + group.content;
+      target.tokens = estimateTokens(target.content);
+      target.blocks = [...(target.blocks || []), ...(group.blocks || [])];
+      target.blockCount = (target.blocks || []).length;
+
+      // Merge blockTypes
+      const mergedTypes = new Set([...target.blockTypes, ...group.blockTypes]);
+      target.blockTypes = Array.from(mergedTypes);
+
+      mergeCount++;
+    } else {
+      // No suitable target — keep as-is
+      merged.push(group);
+    }
+  }
+
+  if (mergeCount > 0) {
+    // Log is done at the call-site level (notionDocumentLoader), but we
+    // attach the count so the caller can read it.
+    merged._mergeCount = mergeCount;
+  }
+
+  return merged;
 };
 
 export default {
@@ -555,4 +660,5 @@ export default {
   extractPageMetadata,
   calculateContentHash,
   groupBlocksSemantically,
+  mergeSmallGroups,
 };

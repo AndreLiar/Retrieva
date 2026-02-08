@@ -1,0 +1,218 @@
+[
+  {
+    "id": "def-fr-01",
+    "query": "Qu'est-ce qu'une facture proforma ?",
+    "language": "fr",
+    "category": "definition",
+    "expectedSourceIds": [],
+    "expectedHeadingPaths": [],
+    "notes": "Basic definition query in French"
+  },
+  {
+    "id": "def-fr-02",
+    "query": "Quelle est la definition du taux de marge ?",
+    "language": "fr",
+    "category": "definition",
+    "expectedSourceIds": [],
+    "expectedHeadingPaths": [],
+    "notes": "Financial term definition"
+  },
+  {
+    "id": "def-fr-03",
+    "query": "Qu'est-ce que le rapprochement bancaire ?",
+    "language": "fr",
+    "category": "definition",
+    "expectedSourceIds": [],
+    "expectedHeadingPaths": [],
+    "notes": "Accounting concept definition"
+  },
+  {
+    "id": "def-en-01",
+    "query": "What is a purchase order?",
+    "language": "en",
+    "category": "definition",
+    "expectedSourceIds": [],
+    "expectedHeadingPaths": [],
+    "notes": "Basic definition query in English"
+  },
+  {
+    "id": "def-en-02",
+    "query": "What does accounts receivable mean?",
+    "language": "en",
+    "category": "definition",
+    "expectedSourceIds": [],
+    "expectedHeadingPaths": [],
+    "notes": "Accounting term definition"
+  },
+  {
+    "id": "where-fr-01",
+    "query": "Ou se trouve la procedure de validation des depenses ?",
+    "language": "fr",
+    "category": "where_is_x",
+    "expectedSourceIds": [],
+    "expectedHeadingPaths": [],
+    "notes": "Locating a specific procedure"
+  },
+  {
+    "id": "where-fr-02",
+    "query": "Dans quelle page trouve-t-on les regles de remboursement ?",
+    "language": "fr",
+    "category": "where_is_x",
+    "expectedSourceIds": [],
+    "expectedHeadingPaths": [],
+    "notes": "Finding a specific document"
+  },
+  {
+    "id": "where-fr-03",
+    "query": "Ou est decrite la politique de conges ?",
+    "language": "fr",
+    "category": "where_is_x",
+    "expectedSourceIds": [],
+    "expectedHeadingPaths": [],
+    "notes": "Locating policy documentation"
+  },
+  {
+    "id": "where-en-01",
+    "query": "Where can I find the onboarding checklist?",
+    "language": "en",
+    "category": "where_is_x",
+    "expectedSourceIds": [],
+    "expectedHeadingPaths": [],
+    "notes": "Locating a specific document"
+  },
+  {
+    "id": "where-en-02",
+    "query": "Where is the IT security policy documented?",
+    "language": "en",
+    "category": "where_is_x",
+    "expectedSourceIds": [],
+    "expectedHeadingPaths": [],
+    "notes": "Finding policy location"
+  },
+  {
+    "id": "list-fr-01",
+    "query": "Quelles sont les etapes pour soumettre une note de frais ?",
+    "language": "fr",
+    "category": "list_rules",
+    "expectedSourceIds": [],
+    "expectedHeadingPaths": [],
+    "notes": "Step-by-step process retrieval"
+  },
+  {
+    "id": "list-fr-02",
+    "query": "Quels sont les criteres d'approbation des achats de plus de 5000 euros ?",
+    "language": "fr",
+    "category": "list_rules",
+    "expectedSourceIds": [],
+    "expectedHeadingPaths": [],
+    "notes": "Rules with a specific threshold"
+  },
+  {
+    "id": "list-fr-03",
+    "query": "Quelles sont les regles de nommage des fichiers comptables ?",
+    "language": "fr",
+    "category": "list_rules",
+    "expectedSourceIds": [],
+    "expectedHeadingPaths": [],
+    "notes": "Naming convention rules"
+  },
+  {
+    "id": "list-fr-04",
+    "query": "Enumere les documents requis pour un audit interne.",
+    "language": "fr",
+    "category": "list_rules",
+    "expectedSourceIds": [],
+    "expectedHeadingPaths": [],
+    "notes": "Enumeration request"
+  },
+  {
+    "id": "list-en-01",
+    "query": "What are the steps to request a budget increase?",
+    "language": "en",
+    "category": "list_rules",
+    "expectedSourceIds": [],
+    "expectedHeadingPaths": [],
+    "notes": "Process retrieval in English"
+  },
+  {
+    "id": "list-en-02",
+    "query": "List the required documents for vendor onboarding.",
+    "language": "en",
+    "category": "list_rules",
+    "expectedSourceIds": [],
+    "expectedHeadingPaths": [],
+    "notes": "Enumeration request in English"
+  },
+  {
+    "id": "ambig-fr-01",
+    "query": "Comment ca marche les validations ?",
+    "language": "fr",
+    "category": "ambiguous",
+    "expectedSourceIds": [],
+    "expectedHeadingPaths": [],
+    "notes": "Ambiguous - validations could refer to many processes"
+  },
+  {
+    "id": "ambig-fr-02",
+    "query": "Parle-moi du processus",
+    "language": "fr",
+    "category": "ambiguous",
+    "expectedSourceIds": [],
+    "expectedHeadingPaths": [],
+    "notes": "Very vague query - no specific topic"
+  },
+  {
+    "id": "ambig-fr-03",
+    "query": "C'est quoi la regle ?",
+    "language": "fr",
+    "category": "ambiguous",
+    "expectedSourceIds": [],
+    "expectedHeadingPaths": [],
+    "notes": "Ambiguous - which rule?"
+  },
+  {
+    "id": "ambig-en-01",
+    "query": "How does the approval work?",
+    "language": "en",
+    "category": "ambiguous",
+    "expectedSourceIds": [],
+    "expectedHeadingPaths": [],
+    "notes": "Ambiguous - which approval process?"
+  },
+  {
+    "id": "long-fr-01",
+    "query": "Je voudrais comprendre comment fonctionne le processus complet de validation des factures fournisseurs, depuis la reception de la facture jusqu'a son paiement final, en incluant toutes les etapes intermediaires d'approbation et les seuils de montant applicables.",
+    "language": "fr",
+    "category": "long_query",
+    "expectedSourceIds": [],
+    "expectedHeadingPaths": [],
+    "notes": "Long multi-part query about invoice validation"
+  },
+  {
+    "id": "long-fr-02",
+    "query": "Peux-tu m'expliquer les differences entre une commande d'achat standard et une commande cadre, et dans quels cas on utilise chacune selon les procedures internes de l'entreprise ?",
+    "language": "fr",
+    "category": "long_query",
+    "expectedSourceIds": [],
+    "expectedHeadingPaths": [],
+    "notes": "Long comparative query"
+  },
+  {
+    "id": "long-en-01",
+    "query": "Can you explain the complete expense reimbursement workflow from initial submission through manager approval, finance review, and final payment, including any special rules for international travel expenses?",
+    "language": "en",
+    "category": "long_query",
+    "expectedSourceIds": [],
+    "expectedHeadingPaths": [],
+    "notes": "Long multi-part query about expense workflow"
+  },
+  {
+    "id": "long-fr-03",
+    "query": "Quels sont les differents niveaux d'autorisation pour les achats et comment le montant determine-t-il quel responsable doit approuver la depense selon l'organigramme de delegation ?",
+    "language": "fr",
+    "category": "long_query",
+    "expectedSourceIds": [],
+    "expectedHeadingPaths": [],
+    "notes": "Long query about authorization levels"
+  }
+]

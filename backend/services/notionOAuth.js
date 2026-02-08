@@ -3,6 +3,7 @@ import axios from 'axios';
 import crypto from 'crypto';
 import { z } from 'zod';
 import logger from '../config/logger.js';
+import { generateToken } from '../utils/security/crypto.js';
 
 /**
  * SECURITY FIX (API10:2023): Schema validation for Notion OAuth token response
@@ -56,7 +57,7 @@ export class NotionOAuthService {
   getAuthorizationUrl(userId, redirectUrl = null) {
     try {
       // Generate random state for CSRF protection
-      const state = crypto.randomBytes(16).toString('hex');
+      const state = generateToken(16);
 
       // Store userId in state (you may want to use a more secure method like Redis)
       const stateData = JSON.stringify({ state, userId, timestamp: Date.now() });
@@ -195,6 +196,122 @@ export class NotionOAuthService {
     // User must revoke access through Notion UI
     logger.warn('Notion does not support programmatic token revocation');
     return false;
+  }
+
+  /**
+   * SECURITY FIX: Verify Notion webhook signature
+   * Notion signs webhook payloads using HMAC-SHA256 with the signing secret.
+   * The signature is sent in the 'X-Notion-Signature' header.
+   *
+   * @param {string|Buffer} payload - Raw request body
+   * @param {string} signature - Signature from X-Notion-Signature header
+   * @param {string} signingSecret - Webhook signing secret from Notion
+   * @returns {boolean} True if signature is valid
+   */
+  verifyWebhookSignature(payload, signature, signingSecret = process.env.NOTION_WEBHOOK_SECRET) {
+    if (!signingSecret) {
+      logger.error('NOTION_WEBHOOK_SECRET not configured for webhook verification');
+      return false;
+    }
+
+    if (!signature) {
+      logger.warn('Missing X-Notion-Signature header in webhook request');
+      return false;
+    }
+
+    try {
+      // Notion uses HMAC-SHA256 for signing
+      const expectedSignature = crypto
+        .createHmac('sha256', signingSecret)
+        .update(typeof payload === 'string' ? payload : JSON.stringify(payload))
+        .digest('hex');
+
+      // Use timing-safe comparison to prevent timing attacks
+      const signatureBuffer = Buffer.from(signature, 'hex');
+      const expectedBuffer = Buffer.from(expectedSignature, 'hex');
+
+      if (signatureBuffer.length !== expectedBuffer.length) {
+        logger.warn('Webhook signature length mismatch');
+        return false;
+      }
+
+      const isValid = crypto.timingSafeEqual(signatureBuffer, expectedBuffer);
+
+      if (!isValid) {
+        logger.warn('Invalid webhook signature', {
+          receivedLength: signature.length,
+          expectedLength: expectedSignature.length,
+        });
+      }
+
+      return isValid;
+    } catch (error) {
+      logger.error('Webhook signature verification error', { error: error.message });
+      return false;
+    }
+  }
+
+  /**
+   * SECURITY FIX: Verify webhook with timestamp to prevent replay attacks
+   * Notion includes a timestamp in webhooks that should be checked.
+   *
+   * @param {Object} webhookBody - Parsed webhook body
+   * @param {number} maxAgeSeconds - Maximum age of webhook in seconds (default 5 minutes)
+   * @returns {boolean} True if webhook is fresh enough
+   */
+  verifyWebhookTimestamp(webhookBody, maxAgeSeconds = 300) {
+    const timestamp = webhookBody?.timestamp || webhookBody?.created_time;
+
+    if (!timestamp) {
+      logger.warn('Missing timestamp in webhook body');
+      return false;
+    }
+
+    const webhookTime = new Date(timestamp).getTime();
+    const now = Date.now();
+    const ageSeconds = (now - webhookTime) / 1000;
+
+    if (ageSeconds > maxAgeSeconds) {
+      logger.warn('Webhook timestamp too old (potential replay attack)', {
+        ageSeconds,
+        maxAgeSeconds,
+      });
+      return false;
+    }
+
+    if (ageSeconds < -60) {
+      // Allow 60 seconds clock skew
+      logger.warn('Webhook timestamp in the future (clock skew or manipulation)', {
+        ageSeconds,
+      });
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * SECURITY FIX: Complete webhook verification
+   * Verifies both signature and timestamp for a Notion webhook.
+   *
+   * @param {string|Buffer} rawBody - Raw request body (before JSON parsing)
+   * @param {string} signature - X-Notion-Signature header value
+   * @param {Object} parsedBody - Parsed JSON body (for timestamp check)
+   * @returns {Object} { valid: boolean, error?: string }
+   */
+  verifyWebhook(rawBody, signature, parsedBody) {
+    // Verify signature
+    if (!this.verifyWebhookSignature(rawBody, signature)) {
+      return { valid: false, error: 'Invalid webhook signature' };
+    }
+
+    // Verify timestamp (prevents replay attacks)
+    if (!this.verifyWebhookTimestamp(parsedBody)) {
+      return { valid: false, error: 'Webhook timestamp validation failed' };
+    }
+
+    logger.info('Webhook verification successful');
+    return { valid: true };
   }
 }
 

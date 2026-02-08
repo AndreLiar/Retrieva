@@ -12,8 +12,18 @@
 
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { StringOutputParser } from '@langchain/core/output_parsers';
-import { judgeLlm } from '../../config/llm.js';
+import { getJudgeLLM } from '../../config/llm.js';
 import logger from '../../config/logger.js';
+
+// Cached judge LLM instance
+let cachedJudgeLLM = null;
+
+async function getJudgeLLMInstance() {
+  if (!cachedJudgeLLM) {
+    cachedJudgeLLM = await getJudgeLLM();
+  }
+  return cachedJudgeLLM;
+}
 
 /**
  * @typedef {Object} JudgeEvaluation
@@ -166,6 +176,7 @@ export async function evaluateAnswer(question, answer, sources, context = '') {
       sourcesCount: sources.length,
     });
 
+    const judgeLlm = await getJudgeLLMInstance();
     const chain = JUDGE_PROMPT.pipe(judgeLlm).pipe(new StringOutputParser());
 
     const response = await chain.invoke({
@@ -241,7 +252,7 @@ export function extractCitedSources(evaluation, sources) {
   }
 
   return evaluation.citedSourceNumbers
-    .map((num) => sources.find((s) => s.sourceNumber === num))
+    .map((num) => sources.find((s) => s.id === String(num) || s.sourceNumber === num))
     .filter(Boolean);
 }
 

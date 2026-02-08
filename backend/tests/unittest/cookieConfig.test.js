@@ -31,9 +31,11 @@ describe('Cookie Configuration', () => {
       expect(REFRESH_TOKEN_COOKIE_OPTIONS.httpOnly).toBe(true);
     });
 
-    it('should have sameSite strict for CSRF protection', () => {
-      expect(ACCESS_TOKEN_COOKIE_OPTIONS.sameSite).toBe('strict');
-      expect(REFRESH_TOKEN_COOKIE_OPTIONS.sameSite).toBe('strict');
+    it('should have sameSite lax in non-production (strict in production)', () => {
+      // In test/dev environments sameSite is 'lax' to allow cross-port requests;
+      // production uses 'strict' for full CSRF protection.
+      expect(ACCESS_TOKEN_COOKIE_OPTIONS.sameSite).toBe('lax');
+      expect(REFRESH_TOKEN_COOKIE_OPTIONS.sameSite).toBe('lax');
     });
 
     it('should have correct maxAge for access token (15 minutes)', () => {

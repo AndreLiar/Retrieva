@@ -1,4 +1,3 @@
-import crypto from 'crypto';
 import { User } from '../models/User.js';
 import {
   generateTokenPair,
@@ -7,6 +6,8 @@ import {
   generateRefreshToken,
   hashRefreshToken,
 } from '../utils/security/jwt.js';
+import { sha256 } from '../utils/security/crypto.js';
+import { safeDecrypt } from '../utils/security/fieldEncryption.js';
 import { sendSuccess, sendError } from '../utils/core/responseFormatter.js';
 import {
   setAuthCookies,
@@ -16,6 +17,8 @@ import {
 import { emailService } from '../services/emailService.js';
 import { authAuditService } from '../services/authAuditService.js';
 import logger from '../config/logger.js';
+
+const RESEND_VERIFICATION_COOLDOWN_MS = 60 * 1000;
 
 /**
  * Get device info from request for token tracking
@@ -68,7 +71,7 @@ export const register = async (req, res) => {
     emailService
       .sendEmailVerification({
         toEmail: user.email,
-        toName: user.name,
+        toName: name, // Use original name from request (user.name is encrypted after save)
         verificationToken,
       })
       .catch((err) => {
@@ -98,7 +101,7 @@ export const register = async (req, res) => {
         user: {
           id: user._id,
           email: user.email,
-          name: user.name,
+          name, // Use original name from request (user.name is encrypted after save)
           role: user.role,
           isEmailVerified: false,
         },
@@ -111,9 +114,12 @@ export const register = async (req, res) => {
       error: error.message,
       stack: error.stack,
     });
-    // Debug: log full error for tests
+    // ISSUE #30 FIX: Use logger instead of console.error
     if (process.env.NODE_ENV === 'test') {
-      console.error('REGISTRATION ERROR:', error.message, error.stack);
+      logger.debug('Registration error details', {
+        error: error.message,
+        stack: error.stack,
+      });
     }
     sendError(res, 500, 'Registration failed');
   }
@@ -203,8 +209,9 @@ export const login = async (req, res) => {
       user: {
         id: user._id,
         email: user.email,
-        name: user.name,
+        name: safeDecrypt(user.name),
         role: user.role,
+        isEmailVerified: user.isEmailVerified,
       },
       // Tokens also returned in body for API clients (mobile apps, etc.)
       ...tokens,
@@ -389,7 +396,7 @@ export const getMe = async (req, res) => {
       user: {
         id: user._id,
         email: user.email,
-        name: user.name,
+        name: safeDecrypt(user.name),
         role: user.role,
         isEmailVerified: user.isEmailVerified,
         createdAt: user.createdAt,
@@ -402,6 +409,59 @@ export const getMe = async (req, res) => {
       userId: req.user?.userId,
     });
     sendError(res, 500, 'Failed to get user profile');
+  }
+};
+
+/**
+ * Update current user profile (name only)
+ * PATCH /api/v1/auth/profile
+ */
+export const updateProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId);
+
+    if (!user) {
+      return sendError(res, 404, 'User not found');
+    }
+
+    const { name, email } = req.body;
+
+    if (!name && !email) {
+      return sendError(res, 400, 'No profile changes provided');
+    }
+
+    if (email && email !== user.email) {
+      return sendError(res, 400, 'Email cannot be changed via profile update');
+    }
+
+    if (name) {
+      user.name = name;
+    }
+
+    await user.save();
+
+    logger.info('User profile updated', { userId: user._id });
+
+    // Manually decrypt name field if it's encrypted (after save hook encrypts it)
+    const displayName = user.decryptField ? user.decryptField('name') : user.name;
+
+    sendSuccess(res, 200, 'Profile updated successfully', {
+      user: {
+        id: user._id,
+        email: user.email,
+        name: displayName,
+        role: user.role,
+        isEmailVerified: user.isEmailVerified,
+        createdAt: user.createdAt,
+        lastLogin: user.lastLogin,
+      },
+    });
+  } catch (error) {
+    logger.error('Failed to update user profile', {
+      error: error.message,
+      userId: req.user?.userId,
+    });
+    sendError(res, 500, 'Failed to update profile');
   }
 };
 
@@ -473,7 +533,7 @@ export const resetPassword = async (req, res) => {
     const { token, password } = req.body;
 
     // Hash the token to compare with stored hash
-    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+    const hashedToken = sha256(token);
 
     // Find user with valid reset token
     const user = await User.findOne({
@@ -527,7 +587,7 @@ export const verifyEmail = async (req, res) => {
     const { token } = req.body;
 
     // Hash the token to compare with stored hash
-    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+    const hashedToken = sha256(token);
 
     // Find user with valid verification token
     const user = await User.findOne({
@@ -580,6 +640,21 @@ export const resendVerification = async (req, res) => {
 
     if (user.isEmailVerified) {
       return sendError(res, 400, 'Email is already verified');
+    }
+
+    if (user.emailVerificationLastSentAt) {
+      const elapsedMs = Date.now() - user.emailVerificationLastSentAt.getTime();
+      if (elapsedMs < RESEND_VERIFICATION_COOLDOWN_MS) {
+        logger.warn('Resend verification blocked due to cooldown', {
+          userId: user._id,
+        });
+        const waitSeconds = Math.ceil((RESEND_VERIFICATION_COOLDOWN_MS - elapsedMs) / 1000);
+        return sendError(
+          res,
+          429,
+          `Please wait ${waitSeconds}s before requesting another verification email.`
+        );
+      }
     }
 
     // Generate new verification token

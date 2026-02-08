@@ -29,7 +29,7 @@ Ensure you have:
 # Ollama running with required models
 ollama serve
 ollama pull llama3.2
-ollama pull nomic-embed-text
+ollama pull bge-m3
 
 # Qdrant running (Docker recommended)
 docker run -p 6333:6333 qdrant/qdrant

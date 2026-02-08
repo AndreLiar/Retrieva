@@ -28,7 +28,7 @@ export const getMyWorkspaces = catchAsync(async (req, res) => {
   const workspaces = memberships
     .filter((m) => m.workspaceId)
     .map((m) => ({
-      id: m.workspaceId._id,
+      id: m.workspaceId._id.toString(),
       workspaceName: m.workspaceId.workspaceName,
       workspaceIcon: m.workspaceId.workspaceIcon,
       syncStatus: m.workspaceId.syncStatus,
@@ -36,6 +36,8 @@ export const getMyWorkspaces = catchAsync(async (req, res) => {
       myRole: m.role,
       permissions: m.permissions,
       joinedAt: m.invitedAt,
+      createdAt: m.workspaceId.createdAt,
+      updatedAt: m.workspaceId.updatedAt,
     }));
 
   sendSuccess(res, 200, 'Workspaces retrieved', { workspaces });
@@ -62,10 +64,11 @@ export const getWorkspaceMembers = catchAsync(async (req, res) => {
   const members = await WorkspaceMember.getWorkspaceMembers(workspaceId);
 
   const memberList = members.map((m) => ({
-    id: m._id,
+    id: m._id.toString(),
+    userId: m.userId?._id?.toString(),
     user: m.userId
       ? {
-          id: m.userId._id,
+          id: m.userId._id.toString(),
           name: m.userId.name,
           email: m.userId.email,
         }

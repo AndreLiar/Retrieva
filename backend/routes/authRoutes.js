@@ -5,6 +5,7 @@ import {
   refreshToken,
   logout,
   getMe,
+  updateProfile,
   forgotPassword,
   resetPassword,
   verifyEmail,
@@ -20,6 +21,7 @@ import {
   forgotPasswordSchema,
   resetPasswordSchema,
   verifyEmailSchema,
+  updateProfileSchema,
   changePasswordSchema,
 } from '../validators/schemas.js';
 
@@ -60,6 +62,13 @@ router.post('/logout', authenticate, logout);
  * @access  Private
  */
 router.get('/me', authenticate, getMe);
+
+/**
+ * @route   PATCH /api/v1/auth/profile
+ * @desc    Update current user profile
+ * @access  Private
+ */
+router.patch('/profile', authenticate, validateBody(updateProfileSchema), updateProfile);
 
 /**
  * @route   POST /api/v1/auth/forgot-password

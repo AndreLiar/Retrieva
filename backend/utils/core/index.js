@@ -12,7 +12,20 @@
  */
 
 // Async Helpers
-export { catchAsync, withRetry, timeout } from './asyncHelpers.js';
+export {
+  sleep,
+  retryWithBackoff,
+  batchProcess,
+  promiseWithTimeout,
+  debounce,
+  rateLimit,
+  LLMTimeoutError,
+  invokeWithTimeout,
+  streamWithTimeout,
+} from './asyncHelpers.js';
+
+// Legacy exports for backwards compatibility
+export { catchAsync } from './errorHandler.js';
 
 // Circuit Breaker
 export { CircuitBreaker, createCircuitBreaker } from './circuitBreaker.js';
@@ -34,3 +47,14 @@ export { formatDate, parseDate, getRelativeTime } from './dateHelpers.js';
 
 // Notion Rate Limiter
 export { notionRateLimiter, NotionRateLimiter } from './notionRateLimiter.js';
+
+// Request Helpers
+export {
+  getUserId,
+  isAuthenticated,
+  parsePagination,
+  parsePagePagination,
+  buildPaginationMeta,
+  parseSort,
+  verifyOwnership,
+} from './requestHelpers.js';
