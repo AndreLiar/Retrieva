@@ -12,8 +12,6 @@
 #   - Redis Cloud    (Free 30MB) → REDIS_URL in backend/.env
 #   - Qdrant Cloud   (Free 1GB)  → QDRANT_URL in backend/.env
 
-version: '3.8'
-
 services:
   # ---------------------------------------------------------------------------
   # Frontend (Next.js)
