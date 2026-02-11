@@ -61,3 +61,26 @@ backend/.husky/
 # Claude Code generated docs
 AGENTS.md
 PRODUCTION_READINESS_ANALYSIS.md
+
+# =============================================================================
+# Secrets - NEVER commit plaintext production/staging env files
+# =============================================================================
+**/.env.production
+**/.env.staging
+
+# Encrypted env files are SAFE to commit
+# (they contain only encrypted values)
+
+# =============================================================================
+# Terraform
+# =============================================================================
+**/terraform.tfvars
+**/terraform.tfstate
+**/terraform.tfstate.backup
+**/.terraform/
+**/.terraform.lock.hcl
+
+# =============================================================================
+# Age private keys
+# =============================================================================
+*.age.key

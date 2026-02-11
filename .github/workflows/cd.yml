@@ -1,8 +1,12 @@
 # =============================================================================
 # Continuous Deployment Pipeline
 # =============================================================================
-# Runs on successful merge to main branch
-# Builds and deploys both services
+# Builds Docker images, pushes to GHCR, deploys to DigitalOcean via SSH.
+#
+# Required GitHub Secrets:
+#   DEPLOY_HOST      - Droplet IP (e.g. 164.90.211.155)
+#   DEPLOY_SSH_KEY   - Private SSH key content (~/.ssh/retrieva_deploy)
+#   GHCR_PAT         - GitHub PAT with read:packages scope (for server pull)
 
 name: CD
 
@@ -10,22 +14,10 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
-    inputs:
-      environment:
-        description: 'Deployment environment'
-        required: true
-        default: 'staging'
-        type: choice
-        options:
-          - staging
-          - production
 
 env:
-  NODE_VERSION: '20.x'
-  PYTHON_VERSION: '3.11'
   REGISTRY: ghcr.io
-  BACKEND_IMAGE_NAME: ${{ github.repository }}/backend
-  RAGAS_IMAGE_NAME: ${{ github.repository }}/ragas-service
+  IMAGE_PREFIX: ghcr.io/andreliar/retrieva
 
 jobs:
   # ===========================================================================
@@ -36,18 +28,29 @@ jobs:
     uses: ./.github/workflows/ci.yml
 
   # ===========================================================================
-  # Build Backend Docker Image
+  # Build & Push Docker Images to GHCR
   # ===========================================================================
-  build-backend:
-    name: Build Backend Image
+  build-and-push:
+    name: Build & Push (${{ matrix.service }})
     needs: ci
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
 
-    outputs:
-      image-tag: ${{ steps.meta.outputs.tags }}
+    strategy:
+      matrix:
+        include:
+          - service: backend
+            context: ./backend
+          - service: ragas-service
+            context: ./ragas-service
+          - service: frontend
+            context: ./frontend
+            build-args: |
+              NEXT_PUBLIC_API_URL=https://devandre.sbs/api/v1
+              NEXT_PUBLIC_WS_URL=https://devandre.sbs
+              NEXT_PUBLIC_APP_NAME=Retrieva
 
     steps:
       - name: Checkout code
@@ -56,207 +59,87 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Log in to Container Registry
+      - name: Login to GHCR
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata for Docker
+      - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}
+          images: ${{ env.IMAGE_PREFIX }}/${{ matrix.service }}
           tags: |
             type=sha,prefix=
-            type=ref,event=branch
-            type=semver,pattern={{version}}
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
 
-      - name: Create Backend Dockerfile
-        run: |
-          cat > ./backend/Dockerfile << 'EOF'
-          FROM node:20-alpine AS base
-          WORKDIR /app
-
-          # Install dependencies
-          FROM base AS deps
-          COPY package*.json ./
-          RUN npm ci --legacy-peer-deps --only=production
-
-          # Build stage
-          FROM base AS runner
-          ENV NODE_ENV=production
-
-          # Create non-root user
-          RUN addgroup --system --gid 1001 nodejs
-          RUN adduser --system --uid 1001 expressjs
-
-          COPY --from=deps /app/node_modules ./node_modules
-          COPY . .
-
-          USER expressjs
-
-          EXPOSE 3007
-
-          CMD ["node", "index.js"]
-          EOF
-
-      - name: Build and push Backend image
+      - name: Build and push
         uses: docker/build-push-action@v5
         with:
-          context: ./backend
+          context: ${{ matrix.context }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: ${{ matrix.build-args || '' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
   # ===========================================================================
-  # Build RAGAS Service Docker Image
+  # Deploy to Production via SSH
   # ===========================================================================
-  build-ragas:
-    name: Build RAGAS Service Image
-    needs: ci
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-
-    outputs:
-      image-tag: ${{ steps.meta.outputs.tags }}
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract metadata for Docker
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.RAGAS_IMAGE_NAME }}
-          tags: |
-            type=sha,prefix=
-            type=ref,event=branch
-            type=semver,pattern={{version}}
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
-
-      - name: Build and push RAGAS image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./ragas-service
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  # ===========================================================================
-  # Deploy to Staging
-  # ===========================================================================
-  deploy-staging:
-    name: Deploy to Staging
-    needs: [build-backend, build-ragas]
-    runs-on: ubuntu-latest
-    environment: staging
-    if: github.ref == 'refs/heads/main' || github.event.inputs.environment == 'staging'
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Deploy to Staging
-        run: |
-          echo "=========================================="
-          echo "Deploying to Staging Environment"
-          echo "=========================================="
-          echo "Backend Image: ${{ needs.build-backend.outputs.image-tag }}"
-          echo "RAGAS Image: ${{ needs.build-ragas.outputs.image-tag }}"
-          echo ""
-          echo "TODO: Add your deployment commands here"
-          echo "Examples:"
-          echo "  - kubectl apply -f k8s/staging/"
-          echo "  - docker-compose -f docker-compose.staging.yml up -d"
-          echo "  - aws ecs update-service ..."
-          echo "  - fly deploy ..."
-          echo "=========================================="
-
-      # Uncomment and configure for your deployment target:
-
-      # Option 1: Deploy to Kubernetes
-      # - name: Set up kubectl
-      #   uses: azure/setup-kubectl@v3
-      # - name: Deploy to K8s
-      #   run: |
-      #     kubectl set image deployment/backend backend=${{ needs.build-backend.outputs.image-tag }}
-      #     kubectl set image deployment/ragas ragas=${{ needs.build-ragas.outputs.image-tag }}
-
-      # Option 2: Deploy to Railway/Render/Fly.io
-      # - name: Deploy to Railway
-      #   uses: bervProject/railway-deploy@main
-      #   with:
-      #     railway_token: ${{ secrets.RAILWAY_TOKEN }}
-
-      # Option 3: Deploy to AWS ECS
-      # - name: Deploy to ECS
-      #   uses: aws-actions/amazon-ecs-deploy-task-definition@v1
-
-  # ===========================================================================
-  # Deploy to Production (Manual Approval Required)
-  # ===========================================================================
-  deploy-production:
+  deploy:
     name: Deploy to Production
-    needs: [deploy-staging]
+    needs: build-and-push
     runs-on: ubuntu-latest
     environment: production
-    if: github.event.inputs.environment == 'production'
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: deploy
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script_stop: true
+          script: |
+            set -e
+            cd /opt/rag
 
-      - name: Deploy to Production
-        run: |
-          echo "=========================================="
-          echo "Deploying to Production Environment"
-          echo "=========================================="
-          echo "WARNING: This is a production deployment!"
-          echo ""
-          echo "TODO: Add your production deployment commands here"
-          echo "=========================================="
+            # Pull latest code
+            git pull origin main
 
-  # ===========================================================================
-  # Deployment Notification
-  # ===========================================================================
-  notify:
-    name: Send Notification
-    needs: [deploy-staging]
-    runs-on: ubuntu-latest
-    if: always()
+            # Login to GHCR to pull private images
+            echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u AndreLiar --password-stdin
 
-    steps:
-      - name: Notify on Success
-        if: needs.deploy-staging.result == 'success'
-        run: |
-          echo "Deployment successful!"
-          # Add Slack/Discord/Email notification here
-          # curl -X POST -H 'Content-type: application/json' \
-          #   --data '{"text":"Deployment to staging successful!"}' \
-          #   ${{ secrets.SLACK_WEBHOOK_URL }}
+            # Decrypt secrets with SOPS
+            SOPS_AGE_KEY_FILE=~/.age/key.txt sops --decrypt backend/.env.production.enc > backend/.env
+            SOPS_AGE_KEY_FILE=~/.age/key.txt sops --decrypt ragas-service/.env.production.enc > ragas-service/.env
 
-      - name: Notify on Failure
-        if: needs.deploy-staging.result == 'failure'
-        run: |
-          echo "Deployment failed!"
-          # Add failure notification here
+            # Pull new images
+            docker compose -f docker-compose.production.yml pull
+
+            # Restart services (zero-downtime: remove old containers after new ones are healthy)
+            docker compose -f docker-compose.production.yml up -d --remove-orphans
+
+            # Clean up old images
+            docker image prune -f
+
+            # Show status
+            echo "=== Deployment complete ==="
+            docker compose -f docker-compose.production.yml ps
+
+      - name: Health check
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: deploy
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            # Wait for services to start
+            sleep 15
+            # Check backend health
+            curl -sf http://localhost:3007/health || echo "WARNING: Backend health check failed"
+            # Check frontend
+            curl -sf http://localhost:3000 > /dev/null || echo "WARNING: Frontend health check failed"

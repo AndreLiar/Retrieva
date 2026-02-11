@@ -1,0 +1,147 @@
+# =============================================================================
+# Docker Compose - Staging Environment
+# =============================================================================
+# Usage:
+#   docker-compose -f docker-compose.staging.yml up -d
+#   docker-compose -f docker-compose.staging.yml logs -f backend
+#   docker-compose -f docker-compose.staging.yml down
+#
+# NOTE: This configuration uses EXTERNAL managed services:
+# - MongoDB Atlas for database
+# - External Redis (or local for cost savings)
+# - External Qdrant (or local for cost savings)
+#
+# Configure via .env file with staging values.
+# =============================================================================
+
+version: '3.8'
+
+services:
+  # ===========================================================================
+  # Backend Service (Node.js/Express) - Staging
+  # ===========================================================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: runner  # Use production stage
+    container_name: rag-backend-staging
+    ports:
+      - "3007:3007"
+    env_file:
+      - ./backend/.env
+    environment:
+      - NODE_ENV=staging
+    depends_on:
+      redis:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+    networks:
+      - rag-network-staging
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 2G
+        reservations:
+          cpus: '0.25'
+          memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3007/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 10s
+      retries: 3
+
+  # ===========================================================================
+  # RAGAS Evaluation Service (Python) - Staging
+  # ===========================================================================
+  ragas-service:
+    build:
+      context: ./ragas-service
+      dockerfile: Dockerfile
+    container_name: rag-ragas-staging
+    ports:
+      - "8001:8001"
+    env_file:
+      - ./ragas-service/.env
+    networks:
+      - rag-network-staging
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 1G
+
+  # ===========================================================================
+  # Redis (Local for staging - can use managed service instead)
+  # ===========================================================================
+  # For cost-effective staging, run Redis locally
+  # For production-like staging, use managed Redis and remove this service
+  redis:
+    image: redis:7-alpine
+    container_name: rag-redis-staging
+    ports:
+      - "6378:6379"
+    volumes:
+      - redis_staging_data:/data
+    command: ["redis-server", "--appendonly", "yes"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - rag-network-staging
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+
+  # ===========================================================================
+  # Qdrant Vector Database (Local for staging)
+  # ===========================================================================
+  # For cost-effective staging, run Qdrant locally
+  # For production-like staging, use Qdrant Cloud and remove this service
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: rag-qdrant-staging
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_staging_data:/qdrant/storage
+    environment:
+      - QDRANT__SERVICE__GRPC_PORT=6334
+    networks:
+      - rag-network-staging
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 1G
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  rag-network-staging:
+    driver: bridge
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  redis_staging_data:
+  qdrant_staging_data:

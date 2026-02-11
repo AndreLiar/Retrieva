@@ -28,14 +28,15 @@ describe('Encryption Utilities', () => {
   });
 
   describe('encrypt', () => {
-    it('should encrypt text to format iv:authTag:encrypted', () => {
+    it('should encrypt text to versioned format v{n}:iv:authTag:encrypted', () => {
       const encrypted = encrypt('test message');
       const parts = encrypted.split(':');
 
-      expect(parts).toHaveLength(3);
-      expect(parts[0]).toHaveLength(32); // 16 bytes IV = 32 hex chars
-      expect(parts[1]).toHaveLength(32); // 16 bytes auth tag = 32 hex chars
-      expect(parts[2].length).toBeGreaterThan(0); // encrypted data
+      expect(parts).toHaveLength(4); // Versioned format: v1:iv:authTag:encrypted
+      expect(parts[0]).toMatch(/^v\d+$/); // Version prefix (e.g., v1)
+      expect(parts[1]).toHaveLength(32); // 16 bytes IV = 32 hex chars
+      expect(parts[2]).toHaveLength(32); // 16 bytes auth tag = 32 hex chars
+      expect(parts[3].length).toBeGreaterThan(0); // encrypted data
     });
 
     it('should produce different ciphertext for same plaintext (random IV)', () => {
@@ -51,7 +52,7 @@ describe('Encryption Utilities', () => {
       const encrypted = encrypt(plaintext);
 
       expect(encrypted).toBeTruthy();
-      expect(encrypted.split(':')).toHaveLength(3);
+      expect(encrypted.split(':')).toHaveLength(4); // Versioned format
     });
 
     it('should handle long strings', () => {
@@ -105,8 +106,8 @@ describe('Encryption Utilities', () => {
     it('should throw error for tampered data', () => {
       const encrypted = encrypt('test');
       const parts = encrypted.split(':');
-      // Tamper with the encrypted data
-      parts[2] = 'tampered' + parts[2].slice(8);
+      // Tamper with the encrypted data (index 3 in versioned format v1:iv:authTag:encrypted)
+      parts[3] = 'tampered' + parts[3].slice(8);
       const tampered = parts.join(':');
 
       expect(() => decrypt(tampered)).toThrow();

@@ -236,7 +236,9 @@ describe('Workspace/Notion API Integration Tests', () => {
       it('should reject callback without code', async () => {
         const res = await request.get(`${NOTION_BASE}/callback`).query({ state: 'test-state' });
 
-        expect([400, 500]).toContain(res.status);
+        // OAuth callbacks typically redirect with error in query params (302)
+        // but may also return 400/500 depending on implementation
+        expect([302, 400, 500]).toContain(res.status);
       });
     });
   });

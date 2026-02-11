@@ -1,0 +1,100 @@
+# =============================================================================
+# Docker Compose - Production (DigitalOcean Single Droplet)
+# =============================================================================
+# Usage:
+#   docker compose -f docker-compose.production.yml pull
+#   docker compose -f docker-compose.production.yml up -d
+#   docker compose -f docker-compose.production.yml logs -f backend
+#   docker compose -f docker-compose.production.yml down
+#
+# External Managed Services (NOT in this compose):
+#   - MongoDB Atlas  (Free M0)  → MONGODB_URI in backend/.env
+#   - Redis Cloud    (Free 30MB) → REDIS_URL in backend/.env
+#   - Qdrant Cloud   (Free 1GB)  → QDRANT_URL in backend/.env
+
+version: '3.8'
+
+services:
+  # ---------------------------------------------------------------------------
+  # Frontend (Next.js)
+  # ---------------------------------------------------------------------------
+  frontend:
+    image: ghcr.io/andreliar/retrieva/frontend:latest
+    container_name: retrieva-frontend
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - rag-network
+
+  # ---------------------------------------------------------------------------
+  # Backend (Node.js/Express)
+  # ---------------------------------------------------------------------------
+  # MongoDB, Redis, Qdrant connection strings come from backend/.env
+  # (decrypted from backend/.env.production.enc at deploy time)
+  backend:
+    image: ghcr.io/andreliar/retrieva/backend:latest
+    container_name: retrieva-backend
+    ports:
+      - "127.0.0.1:3007:3007"
+    env_file:
+      - ./backend/.env
+    environment:
+      - NODE_ENV=production
+      - RAGAS_SERVICE_URL=http://ragas-service:8001
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1536M
+        reservations:
+          cpus: '0.25'
+          memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - rag-network
+
+  # ---------------------------------------------------------------------------
+  # RAGAS Evaluation Service (Python/FastAPI)
+  # ---------------------------------------------------------------------------
+  ragas-service:
+    image: ghcr.io/andreliar/retrieva/ragas-service:latest
+    container_name: retrieva-ragas
+    ports:
+      - "127.0.0.1:8001:8001"
+    env_file:
+      - ./ragas-service/.env
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 768M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - rag-network
+
+networks:
+  rag-network:
+    driver: bridge

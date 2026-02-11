@@ -8,7 +8,11 @@ import mongoose from 'mongoose';
 import { ragPrompt } from '../prompts/ragPrompt.js';
 
 // LLM timeout protection
-import { invokeWithTimeout, streamWithTimeout, LLMTimeoutError } from '../utils/core/asyncHelpers.js';
+import {
+  invokeWithTimeout,
+  streamWithTimeout,
+  LLMTimeoutError,
+} from '../utils/core/asyncHelpers.js';
 
 // Extracted modules
 import { rerankDocuments } from './rag/documentRanking.js';
@@ -21,10 +25,7 @@ import { scanOutputForSensitiveInfo } from '../utils/security/piiMasker.js';
 import { applyConfidenceHandling } from '../utils/security/confidenceHandler.js';
 import { processCitations, analyzeCitationCoverage } from '../utils/rag/citationValidator.js';
 import { processOutput } from '../utils/rag/outputValidator.js';
-import {
-  buildQdrantFilter,
-  retrieveAdditionalDocuments,
-} from './rag/queryRetrieval.js';
+import { buildQdrantFilter, retrieveAdditionalDocuments } from './rag/queryRetrieval.js';
 import { trackQueryAnalytics, buildRAGResult } from './rag/analyticsTracker.js';
 import { guardrailsConfig } from '../config/guardrails.js';
 
@@ -504,7 +505,7 @@ class RAGService {
     if (cached) {
       if (onEvent) {
         emit('status', { message: 'Found cached answer...' });
-        for (const char of (cached.answer || '')) {
+        for (const char of cached.answer || '') {
           emit('chunk', { text: char });
         }
         if (cached.sources) emit('sources', { sources: cached.sources });
@@ -520,9 +521,11 @@ class RAGService {
     const history = this._convertToHistory(messages);
 
     // Intent-aware routing — use caller-provided routing or classify here
-    const routing = externalRouting || await queryRouter.route(question, {
-      conversationHistory: messages.map((m) => ({ role: m.role, content: m.content })),
-    });
+    const routing =
+      externalRouting ||
+      (await queryRouter.route(question, {
+        conversationHistory: messages.map((m) => ({ role: m.role, content: m.content })),
+      }));
 
     this.logger.info('Query routed', {
       service: 'rag',
@@ -623,7 +626,8 @@ class RAGService {
         sourceId: doc.metadata?.sourceId || null,
         documentTitle: doc.metadata?.documentTitle || null,
         headingPath: doc.metadata?.heading_path || [],
-        estimatedTokens: doc.metadata?.estimatedTokens || Math.ceil((doc.pageContent?.length || 0) / 4),
+        estimatedTokens:
+          doc.metadata?.estimatedTokens || Math.ceil((doc.pageContent?.length || 0) / 4),
         rrfScore: doc.rrfScore || doc.score || null,
         block_type: doc.metadata?.block_type || null,
       }));
@@ -874,6 +878,7 @@ class RAGService {
     history,
     sources,
     conversationId,
+    workspaceId,
     startTime,
     requestId,
     retryTimeout = guardrailsConfig.generation.retry.retryTimeoutMs,
@@ -1014,7 +1019,10 @@ class RAGService {
     return (type, data) => {
       // Validate event type
       if (!validEventTypes.has(type)) {
-        this.logger.warn('Invalid streaming event type', { type, validTypes: [...validEventTypes] });
+        this.logger.warn('Invalid streaming event type', {
+          type,
+          validTypes: [...validEventTypes],
+        });
         return;
       }
 
@@ -1056,14 +1064,12 @@ class RAGService {
     try {
       await session.withTransaction(async () => {
         // Create both messages within the transaction
-        await this.Message.create(
-          [{ conversationId, role: 'user', content: question }],
-          { session }
-        );
-        await this.Message.create(
-          [{ conversationId, role: 'assistant', content: response }],
-          { session }
-        );
+        await this.Message.create([{ conversationId, role: 'user', content: question }], {
+          session,
+        });
+        await this.Message.create([{ conversationId, role: 'assistant', content: response }], {
+          session,
+        });
 
         // Update conversation metadata
         await this.Conversation.findByIdAndUpdate(
@@ -1088,7 +1094,6 @@ class RAGService {
       await session.endSession();
     }
   }
-
 }
 
 export async function createRAGService(dependencies = {}) {

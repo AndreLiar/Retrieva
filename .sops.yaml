@@ -1,0 +1,11 @@
+# =============================================================================
+# SOPS Configuration - defines which keys encrypt which files
+# =============================================================================
+creation_rules:
+  # Production env files
+  - path_regex: \.env\.production$
+    age: "age1ankklkq3280x4a3wgnq52mrkuumaj0t3q87snhwrgmh4l2lw0d8qydxk9d"
+
+  # Staging env files (if needed later)
+  - path_regex: \.env\.staging$
+    age: "age1ankklkq3280x4a3wgnq52mrkuumaj0t3q87snhwrgmh4l2lw0d8qydxk9d"

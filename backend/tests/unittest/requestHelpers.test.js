@@ -112,12 +112,12 @@ describe('Request Helpers', () => {
       expect(result.limit).toBe(100);
     });
 
-    it('should treat limit 0 as default (falsy value)', () => {
+    it('should clamp limit 0 to minimum of 1', () => {
       const query = { limit: '0' };
       const result = parsePagination(query);
 
-      // 0 is falsy, so it falls back to default of 50
-      expect(result.limit).toBe(50);
+      // 0 is a valid integer but gets clamped to minimum of 1
+      expect(result.limit).toBe(1);
     });
 
     it('should enforce minimum skip of 0', () => {

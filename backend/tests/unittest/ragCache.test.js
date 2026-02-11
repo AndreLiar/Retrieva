@@ -32,6 +32,9 @@ vi.mock('../../config/redis.js', () => ({
 // Import after mocking
 import { ragCache } from '../../utils/rag/ragCache.js';
 
+// Test workspace ID for tenant isolation
+const TEST_WORKSPACE_ID = 'test-workspace-123';
+
 describe('RAG Cache', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -42,38 +45,55 @@ describe('RAG Cache', () => {
   // ============================================================================
   describe('getCacheKey', () => {
     it('should generate consistent key for same question', () => {
-      const key1 = ragCache.getCacheKey('What is RAG?');
-      const key2 = ragCache.getCacheKey('What is RAG?');
+      const key1 = ragCache.getCacheKey('What is RAG?', TEST_WORKSPACE_ID);
+      const key2 = ragCache.getCacheKey('What is RAG?', TEST_WORKSPACE_ID);
       expect(key1).toBe(key2);
     });
 
     it('should normalize question to lowercase', () => {
-      const key1 = ragCache.getCacheKey('What is RAG?');
-      const key2 = ragCache.getCacheKey('WHAT IS RAG?');
+      const key1 = ragCache.getCacheKey('What is RAG?', TEST_WORKSPACE_ID);
+      const key2 = ragCache.getCacheKey('WHAT IS RAG?', TEST_WORKSPACE_ID);
       expect(key1).toBe(key2);
     });
 
     it('should trim whitespace', () => {
-      const key1 = ragCache.getCacheKey('What is RAG?');
-      const key2 = ragCache.getCacheKey('  What is RAG?  ');
+      const key1 = ragCache.getCacheKey('What is RAG?', TEST_WORKSPACE_ID);
+      const key2 = ragCache.getCacheKey('  What is RAG?  ', TEST_WORKSPACE_ID);
       expect(key1).toBe(key2);
     });
 
+    it('should include workspace ID in key for tenant isolation', () => {
+      const key = ragCache.getCacheKey('Question', TEST_WORKSPACE_ID);
+      expect(key).toContain(`rag:ws:${TEST_WORKSPACE_ID}:`);
+    });
+
     it('should include conversation ID when provided', () => {
-      const key1 = ragCache.getCacheKey('Question', 'conv-123');
+      const key1 = ragCache.getCacheKey('Question', TEST_WORKSPACE_ID, 'conv-123');
       expect(key1).toContain('conv:conv-123');
     });
 
     it('should not include conversation ID when not provided', () => {
-      const key = ragCache.getCacheKey('Question');
+      const key = ragCache.getCacheKey('Question', TEST_WORKSPACE_ID);
       expect(key).not.toContain('conv:');
-      expect(key).toMatch(/^rag:/);
+      expect(key).toMatch(/^rag:ws:/);
     });
 
     it('should generate different keys for different questions', () => {
-      const key1 = ragCache.getCacheKey('What is RAG?');
-      const key2 = ragCache.getCacheKey('How does RAG work?');
+      const key1 = ragCache.getCacheKey('What is RAG?', TEST_WORKSPACE_ID);
+      const key2 = ragCache.getCacheKey('How does RAG work?', TEST_WORKSPACE_ID);
       expect(key1).not.toBe(key2);
+    });
+
+    it('should generate different keys for different workspaces', () => {
+      const key1 = ragCache.getCacheKey('What is RAG?', 'workspace-1');
+      const key2 = ragCache.getCacheKey('What is RAG?', 'workspace-2');
+      expect(key1).not.toBe(key2);
+    });
+
+    it('should throw error when workspaceId is not provided', () => {
+      expect(() => ragCache.getCacheKey('Question')).toThrow(
+        'workspaceId is required for cache key generation'
+      );
     });
   });
 
@@ -106,7 +126,7 @@ describe('RAG Cache', () => {
     it('should return null when cache is disabled', async () => {
       ragCache.enabled = false;
 
-      const result = await ragCache.get('Test question');
+      const result = await ragCache.get('Test question', TEST_WORKSPACE_ID);
 
       expect(result).toBeNull();
       expect(mockRedisClient.get).not.toHaveBeenCalled();
@@ -117,7 +137,7 @@ describe('RAG Cache', () => {
     it('should return null when cache miss', async () => {
       mockRedisClient.get.mockResolvedValue(null);
 
-      const result = await ragCache.get('Test question');
+      const result = await ragCache.get('Test question', TEST_WORKSPACE_ID);
 
       expect(result).toBeNull();
     });
@@ -129,7 +149,7 @@ describe('RAG Cache', () => {
       };
       mockRedisClient.get.mockResolvedValue(JSON.stringify(cachedData));
 
-      const result = await ragCache.get('Test question');
+      const result = await ragCache.get('Test question', TEST_WORKSPACE_ID);
 
       expect(result.answer).toBe('Cached answer');
       expect(result.metadata.cacheHit).toBe(true);
@@ -138,17 +158,33 @@ describe('RAG Cache', () => {
     it('should return null on Redis error', async () => {
       mockRedisClient.get.mockRejectedValue(new Error('Redis error'));
 
-      const result = await ragCache.get('Test question');
+      const result = await ragCache.get('Test question', TEST_WORKSPACE_ID);
 
       expect(result).toBeNull();
+    });
+
+    it('should use workspace ID in cache key', async () => {
+      mockRedisClient.get.mockResolvedValue(null);
+
+      await ragCache.get('Question', TEST_WORKSPACE_ID);
+
+      expect(mockRedisClient.get).toHaveBeenCalledWith(
+        expect.stringContaining(`rag:ws:${TEST_WORKSPACE_ID}:`)
+      );
     });
 
     it('should use conversation ID in cache key when provided', async () => {
       mockRedisClient.get.mockResolvedValue(null);
 
-      await ragCache.get('Question', 'conv-123');
+      await ragCache.get('Question', TEST_WORKSPACE_ID, 'conv-123');
 
       expect(mockRedisClient.get).toHaveBeenCalledWith(expect.stringContaining('conv:conv-123'));
+    });
+
+    it('should return null when workspaceId is not provided', async () => {
+      const result = await ragCache.get('Question', null);
+      expect(result).toBeNull();
+      expect(mockRedisClient.get).not.toHaveBeenCalled();
     });
   });
 
@@ -159,7 +195,7 @@ describe('RAG Cache', () => {
     it('should not cache when disabled', async () => {
       ragCache.enabled = false;
 
-      await ragCache.set('Question', { answer: 'Answer' });
+      await ragCache.set('Question', { answer: 'Answer' }, TEST_WORKSPACE_ID);
 
       expect(mockRedisClient.setex).not.toHaveBeenCalled();
 
@@ -169,10 +205,10 @@ describe('RAG Cache', () => {
     it('should cache answer with TTL', async () => {
       mockRedisClient.setex.mockResolvedValue('OK');
 
-      await ragCache.set('Question', { answer: 'Answer' });
+      await ragCache.set('Question', { answer: 'Answer' }, TEST_WORKSPACE_ID);
 
       expect(mockRedisClient.setex).toHaveBeenCalledWith(
-        expect.stringMatching(/^rag:/),
+        expect.stringMatching(/^rag:ws:/),
         ragCache.ttl,
         expect.stringContaining('Answer')
       );
@@ -181,7 +217,7 @@ describe('RAG Cache', () => {
     it('should add cachedAt timestamp', async () => {
       mockRedisClient.setex.mockResolvedValue('OK');
 
-      await ragCache.set('Question', { answer: 'Answer' });
+      await ragCache.set('Question', { answer: 'Answer' }, TEST_WORKSPACE_ID);
 
       const setexCall = mockRedisClient.setex.mock.calls[0];
       const cachedValue = JSON.parse(setexCall[2]);
@@ -192,19 +228,26 @@ describe('RAG Cache', () => {
       mockRedisClient.setex.mockRejectedValue(new Error('Redis error'));
 
       // Should not throw
-      await expect(ragCache.set('Question', { answer: 'Answer' })).resolves.toBeUndefined();
+      await expect(
+        ragCache.set('Question', { answer: 'Answer' }, TEST_WORKSPACE_ID)
+      ).resolves.toBeUndefined();
     });
 
-    it('should include conversation ID in key when provided', async () => {
+    it('should include workspace and conversation ID in key when provided', async () => {
       mockRedisClient.setex.mockResolvedValue('OK');
 
-      await ragCache.set('Question', { answer: 'Answer' }, 'conv-123');
+      await ragCache.set('Question', { answer: 'Answer' }, TEST_WORKSPACE_ID, 'conv-123');
 
       expect(mockRedisClient.setex).toHaveBeenCalledWith(
-        expect.stringContaining('conv:conv-123'),
+        expect.stringContaining(`rag:ws:${TEST_WORKSPACE_ID}:conv:conv-123`),
         expect.any(Number),
         expect.any(String)
       );
+    });
+
+    it('should skip caching when workspaceId is not provided', async () => {
+      await ragCache.set('Question', { answer: 'Answer' }, null);
+      expect(mockRedisClient.setex).not.toHaveBeenCalled();
     });
   });
 
@@ -215,7 +258,7 @@ describe('RAG Cache', () => {
     it('should not delete when disabled', async () => {
       ragCache.enabled = false;
 
-      await ragCache.invalidate('Question');
+      await ragCache.invalidate('Question', TEST_WORKSPACE_ID);
 
       expect(mockRedisClient.del).not.toHaveBeenCalled();
 
@@ -225,7 +268,7 @@ describe('RAG Cache', () => {
     it('should delete cached entry', async () => {
       mockRedisClient.del.mockResolvedValue(1);
 
-      await ragCache.invalidate('Question');
+      await ragCache.invalidate('Question', TEST_WORKSPACE_ID);
 
       expect(mockRedisClient.del).toHaveBeenCalled();
     });
@@ -234,7 +277,45 @@ describe('RAG Cache', () => {
       mockRedisClient.del.mockRejectedValue(new Error('Redis error'));
 
       // Should not throw
-      await expect(ragCache.invalidate('Question')).resolves.toBeUndefined();
+      await expect(ragCache.invalidate('Question', TEST_WORKSPACE_ID)).resolves.toBeUndefined();
+    });
+
+    it('should skip invalidation when workspaceId is not provided', async () => {
+      await ragCache.invalidate('Question', null);
+      expect(mockRedisClient.del).not.toHaveBeenCalled();
+    });
+  });
+
+  // ============================================================================
+  // clearByWorkspace tests
+  // ============================================================================
+  describe('clearByWorkspace', () => {
+    it('should not clear when disabled', async () => {
+      ragCache.enabled = false;
+
+      await ragCache.clearByWorkspace(TEST_WORKSPACE_ID);
+
+      expect(mockRedisClient.keys).not.toHaveBeenCalled();
+
+      ragCache.enabled = true;
+    });
+
+    it('should delete all cache keys for a specific workspace', async () => {
+      mockRedisClient.keys.mockResolvedValue([
+        `rag:ws:${TEST_WORKSPACE_ID}:key1`,
+        `rag:ws:${TEST_WORKSPACE_ID}:key2`,
+      ]);
+      mockRedisClient.del.mockResolvedValue(2);
+
+      await ragCache.clearByWorkspace(TEST_WORKSPACE_ID);
+
+      expect(mockRedisClient.keys).toHaveBeenCalledWith(`rag:ws:${TEST_WORKSPACE_ID}:*`);
+      expect(mockRedisClient.del).toHaveBeenCalled();
+    });
+
+    it('should skip when workspaceId is not provided', async () => {
+      await ragCache.clearByWorkspace(null);
+      expect(mockRedisClient.keys).not.toHaveBeenCalled();
     });
   });
 

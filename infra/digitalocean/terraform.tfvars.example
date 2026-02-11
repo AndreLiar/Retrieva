@@ -1,0 +1,8 @@
+# Copy to terraform.tfvars and fill in real values
+# terraform.tfvars is gitignored — NEVER commit it
+
+do_token            = "dop_v1_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+domain_name         = "devandre.sbs"
+region              = "fra1"
+droplet_size        = "s-2vcpu-4gb"
+ssh_public_key_path = "~/.ssh/retrieva_deploy.pub"

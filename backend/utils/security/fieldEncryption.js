@@ -17,7 +17,8 @@ import { encrypt, decrypt } from './encryption.js';
 import logger from '../../config/logger.js';
 
 /**
- * Check if a string looks like encrypted data (iv:authTag:encrypted format)
+ * Check if a string looks like encrypted data
+ * Supports both legacy (iv:authTag:encrypted) and versioned (v1:iv:authTag:encrypted) formats
  *
  * @param {string} value - Value to check
  * @returns {boolean} True if appears to be encrypted
@@ -25,7 +26,18 @@ import logger from '../../config/logger.js';
 export function isEncrypted(value) {
   if (typeof value !== 'string') return false;
   const parts = value.split(':');
-  // Check format: 32 hex chars (iv) : 32 hex chars (authTag) : encrypted data
+
+  // Check for versioned format: v{n}:iv:authTag:encrypted (4 parts)
+  if (parts.length === 4 && /^v\d+$/.test(parts[0])) {
+    return (
+      parts[1].length === 32 &&
+      parts[2].length === 32 &&
+      /^[a-f0-9]+$/i.test(parts[1]) &&
+      /^[a-f0-9]+$/i.test(parts[2])
+    );
+  }
+
+  // Check for legacy format: iv:authTag:encrypted (3 parts)
   return (
     parts.length === 3 &&
     parts[0].length === 32 &&

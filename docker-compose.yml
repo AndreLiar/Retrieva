@@ -61,15 +61,19 @@ services:
     restart: unless-stopped
 
   # ===========================================================================
-  # MongoDB Database
+  # MongoDB Database (Official MongoDB Community Server)
   # ===========================================================================
+  # Using mongodb/mongodb-community-server for faster updates and official support
+  # Alternative: mongo:7.0 (Docker Official Image)
   mongodb:
-    image: mongo:7.0
+    image: mongodb/mongodb-community-server:7.0-ubuntu2204
     container_name: rag-mongodb
     ports:
       - "27017:27017"
     volumes:
       - mongodb_data:/data/db
+    environment:
+      - MONGODB_INITDB_DATABASE=enterprise_rag
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.runCommand({ping:1})"]
       interval: 10s
