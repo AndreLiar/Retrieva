@@ -29,27 +29,29 @@ if (!isProduction) {
   });
 }
 
-// File transports with rotation
-targets.push(
-  {
-    target: 'pino-roll',
-    options: {
-      file: path.join(logsDir, 'combined'),
-      size: '5m',
-      limit: { count: 5 },
+// File transports with rotation (skip in Docker — log rotation handled by Docker json-file driver)
+if (!process.env.DOCKER_ENV) {
+  targets.push(
+    {
+      target: 'pino-roll',
+      options: {
+        file: path.join(logsDir, 'combined'),
+        size: '5m',
+        limit: { count: 5 },
+      },
+      level: 'info',
     },
-    level: 'info',
-  },
-  {
-    target: 'pino-roll',
-    options: {
-      file: path.join(logsDir, 'error'),
-      size: '5m',
-      limit: { count: 5 },
-    },
-    level: 'error',
-  }
-);
+    {
+      target: 'pino-roll',
+      options: {
+        file: path.join(logsDir, 'error'),
+        size: '5m',
+        limit: { count: 5 },
+      },
+      level: 'error',
+    }
+  );
+}
 
 // Create Pino logger with ECS-compatible base fields
 // Note: When using transports, we can't use ecsFormat() directly due to Pino limitations

@@ -53,6 +53,7 @@ services:
       - ./backend/.env
     environment:
       - NODE_ENV=production
+      - DOCKER_ENV=true
       - RAGAS_SERVICE_URL=http://ragas-service:8001
     restart: unless-stopped
     deploy:
