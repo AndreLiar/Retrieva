@@ -9,7 +9,7 @@ WORKDIR /app
 # Copy package files from root (monorepo lock file) and frontend
 COPY package*.json ./
 
-RUN npm ci --legacy-peer-deps
+RUN npm install --legacy-peer-deps
 
 # Stage 2: Build the application
 FROM node:20-alpine AS builder
