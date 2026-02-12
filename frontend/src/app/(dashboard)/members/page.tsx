@@ -59,7 +59,7 @@ export default function MembersPage() {
       <AlertTriangle className="h-12 w-12 text-yellow-500" />
       <h2 className="text-xl font-semibold">Access Restricted</h2>
       <p className="text-muted-foreground text-center max-w-md">
-        Only workspace owners can manage members. Your role in "{activeWorkspace.name}" is{' '}
+        Only workspace owners can manage members. Your role in &quot;{activeWorkspace.name}&quot; is{' '}
         <span className="font-medium">{activeWorkspace.membership?.role}</span>.
       </p>
       <Link href="/workspaces">

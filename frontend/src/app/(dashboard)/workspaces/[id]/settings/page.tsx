@@ -209,7 +209,7 @@ export default function WorkspaceSettingsPage({ params }: WorkspaceSettingsPageP
                   <AlertDialogTitle>Delete Workspace?</AlertDialogTitle>
                   <AlertDialogDescription>
                     This action cannot be undone. This will permanently delete the
-                    workspace "{workspace.name}" and all associated data including
+                    workspace &quot;{workspace.name}&quot; and all associated data including
                     conversations, documents, and member access.
                   </AlertDialogDescription>
                 </AlertDialogHeader>

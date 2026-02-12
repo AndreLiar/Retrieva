@@ -43,7 +43,7 @@
       "prettier --write --config backend/.prettierrc"
     ],
     "frontend/**/*.{ts,tsx}": [
-      "eslint --fix"
+      "eslint --fix --config frontend/eslint.config.mjs"
     ],
     "ragas-service/**/*.py": [
       "echo 'Python files staged - linting handled in CI'"

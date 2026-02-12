@@ -25,19 +25,19 @@ function createAxiosError(
       status,
       statusText: 'Error',
       headers: {},
-      config: {} as any,
+      config: {} as unknown as import('axios').InternalAxiosRequestConfig,
       data: responseMessage ? { message: responseMessage } : undefined,
     };
   }
 
-  error.config = {} as any;
+  error.config = {} as unknown as import('axios').InternalAxiosRequestConfig;
   error.toJSON = () => ({});
 
   return error;
 }
 
 // Mock axios.isAxiosError
-vi.spyOn(axios, 'isAxiosError').mockImplementation((error: any) => {
+vi.spyOn(axios, 'isAxiosError').mockImplementation((error: unknown) => {
   return error?.isAxiosError === true;
 });
 
