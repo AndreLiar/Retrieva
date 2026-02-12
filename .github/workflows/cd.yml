@@ -113,9 +113,9 @@ jobs:
             # Login to GHCR to pull private images
             echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u AndreLiar --password-stdin
 
-            # Decrypt secrets with SOPS
-            SOPS_AGE_KEY_FILE=~/.age/key.txt sops --decrypt backend/.env.production.enc > backend/.env
-            SOPS_AGE_KEY_FILE=~/.age/key.txt sops --decrypt ragas-service/.env.production.enc > ragas-service/.env
+            # Decrypt secrets with SOPS (dotenv format needs explicit type flags)
+            SOPS_AGE_KEY_FILE=~/.age/key.txt sops --decrypt --input-type dotenv --output-type dotenv backend/.env.production.enc > backend/.env
+            SOPS_AGE_KEY_FILE=~/.age/key.txt sops --decrypt --input-type dotenv --output-type dotenv ragas-service/.env.production.enc > ragas-service/.env
 
             # Pull new images
             docker compose -f docker-compose.production.yml pull
