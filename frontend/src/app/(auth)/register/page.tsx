@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2, Eye, EyeOff, Check, X } from 'lucide-react';
+import { Loader2, Eye, EyeOff, Check, X, CheckCircle2, Mail } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -72,6 +73,7 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isSuccess, setIsSuccess] = useState(false);
 
   const form = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
@@ -91,11 +93,32 @@ export default function RegisterPage() {
     setError(null);
     try {
       await register(data.email, data.password, data.name);
-      router.push('/chat');
+      setIsSuccess(true);
+      toast.success('Account created! Check your email to verify your account.');
+      setTimeout(() => router.push('/chat'), 2000);
     } catch (err) {
       setError(getErrorMessage(err));
     }
   };
+
+  if (isSuccess) {
+    return (
+      <div className="space-y-6 text-center py-4">
+        <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto" />
+        <div className="space-y-2">
+          <h2 className="text-2xl font-semibold tracking-tight">Account created!</h2>
+          <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+            <Mail className="h-4 w-4" />
+            <p>A verification email has been sent to your inbox.</p>
+          </div>
+        </div>
+        <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <p>Redirecting...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
