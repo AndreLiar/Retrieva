@@ -1,8 +1,8 @@
 # =============================================================================
 # Continuous Integration Pipeline
 # =============================================================================
-# Runs on pull requests and pushes to main/develop branches
-# Tests both backend (Node.js) and ragas-service (Python)
+# Runs on pull requests and pushes to main/dev/staging branches
+# Tests backend (Node.js), frontend (Next.js), and ragas-service (Python)
 
 name: CI
 
@@ -89,6 +89,44 @@ jobs:
         with:
           directory: ./backend/coverage
           flags: backend
+          fail_ci_if_error: false
+
+  # ===========================================================================
+  # Frontend (Next.js/React) Tests
+  # ===========================================================================
+  frontend-test:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: './package-lock.json'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps --ignore-scripts
+        working-directory: .
+
+      - name: Run linting
+        run: npm run lint --if-present
+        working-directory: ./frontend
+
+      - name: Run tests
+        run: npm run test:run
+        working-directory: ./frontend
+
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v4
+        if: always()
+        with:
+          directory: ./frontend/coverage
+          flags: frontend
           fail_ci_if_error: false
 
   # ===========================================================================
@@ -203,7 +241,7 @@ jobs:
   # ===========================================================================
   ci-success:
     name: CI Success
-    needs: [backend-test, backend-security, ragas-test, docker-build]
+    needs: [backend-test, frontend-test, backend-security, ragas-test, docker-build]
     runs-on: ubuntu-latest
     if: always()
     steps:
@@ -211,6 +249,10 @@ jobs:
         run: |
           if [[ "${{ needs.backend-test.result }}" != "success" ]]; then
             echo "Backend tests failed"
+            exit 1
+          fi
+          if [[ "${{ needs.frontend-test.result }}" != "success" ]]; then
+            echo "Frontend tests failed"
             exit 1
           fi
           echo "All CI checks passed!"

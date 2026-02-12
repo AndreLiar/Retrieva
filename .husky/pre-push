@@ -14,7 +14,17 @@ echo "📌 Pushing to branch: $branch"
 echo "🔬 Running backend tests..."
 cd backend && npm test -- --run || {
   echo ""
-  echo "❌ Tests failed! Push aborted."
+  echo "❌ Backend tests failed! Push aborted."
+  echo "Please fix failing tests before pushing."
+  exit 1
+}
+cd ..
+
+# Run frontend tests
+echo "🔬 Running frontend tests..."
+cd frontend && npm run test:run || {
+  echo ""
+  echo "❌ Frontend tests failed! Push aborted."
   echo "Please fix failing tests before pushing."
   exit 1
 }

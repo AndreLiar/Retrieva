@@ -12,7 +12,17 @@ npx lint-staged
 if git diff --cached --name-only | grep -q "^backend/"; then
   echo "📝 Linting backend code..."
   cd backend && npm run lint --if-present || {
-    echo "❌ Linting failed. Please fix errors before committing."
+    echo "❌ Backend linting failed. Please fix errors before committing."
+    exit 1
+  }
+  cd ..
+fi
+
+# Check if frontend has changes
+if git diff --cached --name-only | grep -q "^frontend/"; then
+  echo "📝 Linting frontend code..."
+  cd frontend && npm run lint --if-present || {
+    echo "❌ Frontend linting failed. Please fix errors before committing."
     exit 1
   }
   cd ..
