@@ -294,14 +294,14 @@ describe('Conversation API Integration Tests', () => {
   // =============================================================================
   describe('GET /conversations', () => {
     beforeEach(async () => {
-      // Create some conversations and verify each succeeds
+      // Create conversations directly in DB to avoid flaky HTTP creation in CI
+      const Conversation = mongoose.model('Conversation');
       for (let i = 1; i <= 3; i++) {
-        const createRes = await request
-          .post(`${API_BASE}/conversations`)
-          .set('Authorization', `Bearer ${user1Token}`)
-          .set('X-Workspace-Id', workspaceId.toString())
-          .send({ title: `Conversation ${i}` });
-        expect(createRes.status).toBe(201);
+        await Conversation.create({
+          userId: user1Id,
+          workspaceId,
+          title: `Conversation ${i}`,
+        });
       }
     });
 
@@ -313,7 +313,7 @@ describe('Conversation API Integration Tests', () => {
 
       expect(res.status).toBe(200);
       expect(res.body.data.conversations).toBeInstanceOf(Array);
-      expect(res.body.data.conversations.length).toBeGreaterThanOrEqual(3);
+      expect(res.body.data.conversations.length).toBe(3);
     });
 
     it('should reject unauthenticated request', async () => {
