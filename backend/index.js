@@ -48,8 +48,13 @@ const startServer = async () => {
     // Start memory decay worker
     startMemoryDecayWorker({ concurrency: 1 });
 
-    // Schedule memory decay job (runs every 24 hours by default)
-    await scheduleMemoryDecayJob();
+    // Schedule memory decay job in background (non-blocking)
+    scheduleMemoryDecayJob().catch((err) => {
+      logger.error('Memory decay job scheduling failed (non-critical):', {
+        service: 'rag-backend',
+        error: err.message,
+      });
+    });
 
     // Start pipeline workers if enabled (Phase 3)
     const pipelineEnabled = isPipelineEnabled();
@@ -64,10 +69,14 @@ const startServer = async () => {
     logger.info('='.repeat(60));
     logger.info('BullMQ Workers Started', { service: 'rag-backend' });
     logger.info('  - Notion Sync Worker: Active', { service: 'rag-backend' });
-    logger.info(`  - Document Index Worker: Active (concurrency: ${indexConcurrency})`, { service: 'rag-backend' });
+    logger.info(`  - Document Index Worker: Active (concurrency: ${indexConcurrency})`, {
+      service: 'rag-backend',
+    });
     logger.info('  - Memory Decay Worker: Active (scheduled daily)', { service: 'rag-backend' });
     if (pipelineEnabled) {
-      logger.info('  - Pipeline Workers: Active (FETCH, CHUNK, PII_SCAN, EMBED, INDEX, ENRICH)', { service: 'rag-backend' });
+      logger.info('  - Pipeline Workers: Active (FETCH, CHUNK, PII_SCAN, EMBED, INDEX, ENRICH)', {
+        service: 'rag-backend',
+      });
     }
     logger.info(`  - Batch size: ${batchSize} documents per batch`, { service: 'rag-backend' });
     logger.info(`  - API rate limit: ${process.env.NOTION_API_RATE_LIMIT || 2} req/sec`, {
@@ -98,15 +107,24 @@ const startServer = async () => {
 
     // Initialize existing Notion workspace connections
     startupInitService.initialize().catch((err) => {
-      logger.error('Startup init failed (non-critical):', { service: 'rag-backend', error: err.message });
+      logger.error('Startup init failed (non-critical):', {
+        service: 'rag-backend',
+        error: err.message,
+      });
     });
 
     // Initialize Notion workspace sync schedules
-    syncScheduler.initializeAllSchedules().then(() => {
-      logger.info('Notion workspace sync schedules initialized');
-    }).catch((err) => {
-      logger.error('Sync scheduler init failed (non-critical):', { service: 'rag-backend', error: err.message });
-    });
+    syncScheduler
+      .initializeAllSchedules()
+      .then(() => {
+        logger.info('Notion workspace sync schedules initialized');
+      })
+      .catch((err) => {
+        logger.error('Sync scheduler init failed (non-critical):', {
+          service: 'rag-backend',
+          error: err.message,
+        });
+      });
 
     // Start Notion token health monitor (checks token validity periodically)
     if (process.env.NOTION_TOKEN_MONITOR_ENABLED !== 'false') {
@@ -116,30 +134,52 @@ const startServer = async () => {
 
     // Pre-warm RAG system in background
     logger.info('Pre-warming RAG system (background)...', { service: 'rag-backend' });
-    ragService.init().then(() => {
-      logger.info('RAG system ready', { service: 'rag-backend' });
+    ragService
+      .init()
+      .then(() => {
+        logger.info('RAG system ready', { service: 'rag-backend' });
 
-      // Post-Phase 1: warn operator if existing chunks are stale
-      if (process.env.PENDING_REINDEX === 'true') {
-        logger.warn('='.repeat(60), { service: 'rag-backend' });
-        logger.warn('PENDING RE-INDEX: Chunking parameters have changed (Phase 1).', { service: 'rag-backend' });
-        logger.warn('Existing vectors in Qdrant use the old chunking strategy.', { service: 'rag-backend' });
-        logger.warn('Trigger a full Notion re-sync to apply new chunk sizes,', { service: 'rag-backend' });
-        logger.warn('quality gates, and embedding prefixes to all documents.', { service: 'rag-backend' });
-        logger.warn('Set PENDING_REINDEX=false after re-indexing is complete.', { service: 'rag-backend' });
-        logger.warn('='.repeat(60), { service: 'rag-backend' });
-      }
-    }).catch((err) => {
-      logger.error('RAG pre-warm failed (will lazy-init on first request):', { service: 'rag-backend', error: err.message });
-    });
+        // Post-Phase 1: warn operator if existing chunks are stale
+        if (process.env.PENDING_REINDEX === 'true') {
+          logger.warn('='.repeat(60), { service: 'rag-backend' });
+          logger.warn('PENDING RE-INDEX: Chunking parameters have changed (Phase 1).', {
+            service: 'rag-backend',
+          });
+          logger.warn('Existing vectors in Qdrant use the old chunking strategy.', {
+            service: 'rag-backend',
+          });
+          logger.warn('Trigger a full Notion re-sync to apply new chunk sizes,', {
+            service: 'rag-backend',
+          });
+          logger.warn('quality gates, and embedding prefixes to all documents.', {
+            service: 'rag-backend',
+          });
+          logger.warn('Set PENDING_REINDEX=false after re-indexing is complete.', {
+            service: 'rag-backend',
+          });
+          logger.warn('='.repeat(60), { service: 'rag-backend' });
+        }
+      })
+      .catch((err) => {
+        logger.error('RAG pre-warm failed (will lazy-init on first request):', {
+          service: 'rag-backend',
+          error: err.message,
+        });
+      });
 
     // Pre-warm answer formatter in background
     logger.info('Pre-warming answer formatter (background)...', { service: 'rag-backend' });
-    answerFormatter.init().then(() => {
-      logger.info('Answer formatter ready', { service: 'rag-backend' });
-    }).catch((err) => {
-      logger.error('Answer formatter pre-warm failed (non-critical):', { service: 'rag-backend', error: err.message });
-    });
+    answerFormatter
+      .init()
+      .then(() => {
+        logger.info('Answer formatter ready', { service: 'rag-backend' });
+      })
+      .catch((err) => {
+        logger.error('Answer formatter pre-warm failed (non-critical):', {
+          service: 'rag-backend',
+          error: err.message,
+        });
+      });
   } catch (error) {
     logger.error('Failed to start server:', { service: 'rag-backend', error: error.message });
     process.exit(1);

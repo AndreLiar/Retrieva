@@ -77,30 +77,48 @@ export const memoryDecayQueue = new Queue('memoryDecay', {
 });
 
 /**
+ * Helper: wrap a promise with a timeout
+ */
+function withTimeout(promise, ms) {
+  let timer;
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error(`Operation timed out after ${ms}ms`)), ms);
+    }),
+  ]).finally(() => clearTimeout(timer));
+}
+
+const QUEUE_OP_TIMEOUT = parseInt(process.env.QUEUE_OP_TIMEOUT_MS) || 10000;
+
+/**
  * Schedule recurring memory decay job
  * Runs every 24 hours by default
  */
 export async function scheduleMemoryDecayJob() {
   const jobName = 'scheduled-memory-decay';
 
-  // Remove existing repeatable job if any
-  const existingJobs = await memoryDecayQueue.getRepeatableJobs();
+  // Remove existing repeatable job if any (with timeout to prevent hanging)
+  const existingJobs = await withTimeout(memoryDecayQueue.getRepeatableJobs(), QUEUE_OP_TIMEOUT);
   for (const job of existingJobs) {
     if (job.name === jobName) {
-      await memoryDecayQueue.removeRepeatableByKey(job.key);
+      await withTimeout(memoryDecayQueue.removeRepeatableByKey(job.key), QUEUE_OP_TIMEOUT);
     }
   }
 
   // Schedule new repeatable job
-  await memoryDecayQueue.add(
-    jobName,
-    { scheduled: true, timestamp: new Date().toISOString() },
-    {
-      repeat: {
-        every: MEMORY_DECAY_INTERVAL_HOURS * 60 * 60 * 1000, // Convert hours to ms
-      },
-      jobId: 'memory-decay-scheduled',
-    }
+  await withTimeout(
+    memoryDecayQueue.add(
+      jobName,
+      { scheduled: true, timestamp: new Date().toISOString() },
+      {
+        repeat: {
+          every: MEMORY_DECAY_INTERVAL_HOURS * 60 * 60 * 1000, // Convert hours to ms
+        },
+        jobId: 'memory-decay-scheduled',
+      }
+    ),
+    QUEUE_OP_TIMEOUT
   );
 
   logger.info('Memory decay job scheduled', {
