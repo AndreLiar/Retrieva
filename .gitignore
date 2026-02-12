@@ -61,6 +61,8 @@ backend/.husky/
 # Claude Code generated docs
 AGENTS.md
 PRODUCTION_READINESS_ANALYSIS.md
+CLAUDE.md
+**/CLAUDE.md
 
 # =============================================================================
 # Secrets - NEVER commit plaintext production/staging env files
