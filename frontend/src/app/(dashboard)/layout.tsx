@@ -76,7 +76,7 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen overflow-hidden isolate">
       {/* Desktop Sidebar */}
       {!isMobile && <Sidebar />}
 
