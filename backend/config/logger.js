@@ -29,8 +29,8 @@ if (!isProduction) {
   });
 }
 
-// File transports with rotation (skip in Docker — log rotation handled by Docker json-file driver)
-if (!process.env.DOCKER_ENV) {
+// File transports with rotation (skip in Docker and CI/test — log rotation handled by Docker json-file driver)
+if (!process.env.DOCKER_ENV && process.env.NODE_ENV !== 'test') {
   targets.push(
     {
       target: 'pino-roll',

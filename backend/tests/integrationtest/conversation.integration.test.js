@@ -295,12 +295,14 @@ describe('Conversation API Integration Tests', () => {
   describe('GET /conversations', () => {
     beforeEach(async () => {
       // Create conversations directly in DB to avoid flaky HTTP creation in CI
+      // Must provide unique idempotencyKey — sparse unique index treats null as a real value
       const Conversation = mongoose.model('Conversation');
       for (let i = 1; i <= 3; i++) {
         await Conversation.create({
           userId: user1Id,
           workspaceId,
           title: `Conversation ${i}`,
+          metadata: { idempotencyKey: `test-list-${i}-${Date.now()}` },
         });
       }
     });
