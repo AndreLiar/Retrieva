@@ -1,7 +1,7 @@
 /**
  * Email Service
  *
- * Handles sending emails using Nodemailer with Gmail SMTP
+ * Handles sending emails using Resend HTTP API
  * - Workspace invitation emails
  * - Welcome emails
  * - Notification emails
@@ -9,82 +9,45 @@
  * @module services/emailService
  */
 
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import logger from '../config/logger.js';
 
 /**
  * Email configuration from environment variables
  */
 const EMAIL_CONFIG = {
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: parseInt(process.env.SMTP_PORT) || 587,
-  secure: process.env.SMTP_SECURE === 'true',
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASSWORD,
-  },
+  apiKey: process.env.RESEND_API_KEY,
   from: {
     name: process.env.SMTP_FROM_NAME || 'RAG Platform',
-    email: process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER,
+    email: process.env.RESEND_FROM_EMAIL || 'noreply@devandre.sbs',
   },
 };
 
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 
 /**
- * Create Nodemailer transporter
+ * Create Resend client (singleton)
  */
-let transporter = null;
+let resendClient = null;
 
-function getTransporter() {
-  if (!transporter) {
-    if (!EMAIL_CONFIG.auth.user || !EMAIL_CONFIG.auth.pass) {
-      logger.warn('Email service not configured - missing SMTP credentials', {
+function getResendClient() {
+  if (!resendClient) {
+    if (!EMAIL_CONFIG.apiKey) {
+      logger.warn('Email service not configured - missing RESEND_API_KEY', {
         service: 'email',
-        hasUser: !!EMAIL_CONFIG.auth.user,
-        hasPass: !!EMAIL_CONFIG.auth.pass,
+        hasApiKey: !!EMAIL_CONFIG.apiKey,
       });
       return null;
     }
 
-    // Auto-correct secure flag based on port to prevent misconfiguration:
-    //   Port 465 → always use direct TLS (secure: true)
-    //   Port 587 → always use STARTTLS (secure: false, Nodemailer upgrades automatically)
-    //   Other ports → use env var as-is
-    let secure = EMAIL_CONFIG.secure;
-    if (EMAIL_CONFIG.port === 465) {
-      secure = true;
-    } else if (EMAIL_CONFIG.port === 587) {
-      secure = false;
-    }
+    resendClient = new Resend(EMAIL_CONFIG.apiKey);
 
-    if (secure !== EMAIL_CONFIG.secure) {
-      logger.warn('Auto-corrected SMTP_SECURE based on port', {
-        service: 'email',
-        port: EMAIL_CONFIG.port,
-        configuredSecure: EMAIL_CONFIG.secure,
-        correctedSecure: secure,
-      });
-    }
-
-    transporter = nodemailer.createTransport({
-      host: EMAIL_CONFIG.host,
-      port: EMAIL_CONFIG.port,
-      secure,
-      auth: EMAIL_CONFIG.auth,
-      connectionTimeout: 10000, // 10s to establish TCP connection
-      greetTimeout: 10000, // 10s for SMTP greeting
-      socketTimeout: 15000, // 15s for socket inactivity
-    });
-
-    logger.info('Email transporter created', {
+    logger.info('Resend client created', {
       service: 'email',
-      host: EMAIL_CONFIG.host,
-      port: EMAIL_CONFIG.port,
-      secure,
+      from: EMAIL_CONFIG.from.email,
     });
   }
-  return transporter;
+  return resendClient;
 }
 
 /**
@@ -98,30 +61,40 @@ function getTransporter() {
  * @returns {Promise<Object>} - Send result
  */
 async function sendEmail({ to, subject, html, text }) {
-  const transport = getTransporter();
+  const client = getResendClient();
 
-  if (!transport) {
-    logger.warn('Email not sent - transporter not configured', { to, subject });
+  if (!client) {
+    logger.warn('Email not sent - Resend client not configured', { to, subject });
     return { success: false, reason: 'Email service not configured' };
   }
 
   try {
-    const info = await transport.sendMail({
-      from: `"${EMAIL_CONFIG.from.name}" <${EMAIL_CONFIG.from.email}>`,
+    const { data, error } = await client.emails.send({
+      from: `${EMAIL_CONFIG.from.name} <${EMAIL_CONFIG.from.email}>`,
       to,
       subject,
       html,
-      text: text || html.replace(/<[^>]*>/g, ''), // Strip HTML for plain text
+      text: text || html.replace(/<[^>]*>/g, ''),
     });
+
+    if (error) {
+      logger.error('Failed to send email', {
+        service: 'email',
+        to,
+        subject,
+        error: error.message,
+      });
+      return { success: false, error: error.message };
+    }
 
     logger.info('Email sent successfully', {
       service: 'email',
-      messageId: info.messageId,
+      messageId: data.id,
       to,
       subject,
     });
 
-    return { success: true, messageId: info.messageId };
+    return { success: true, messageId: data.id };
   } catch (error) {
     logger.error('Failed to send email', {
       service: 'email',
@@ -462,19 +435,19 @@ async function sendEmailVerification({ toEmail, toName, verificationToken }) {
 }
 
 /**
- * Verify email configuration
+ * Verify email configuration by checking Resend API connectivity
  *
  * @returns {Promise<boolean>} - Whether config is valid
  */
 async function verifyConnection() {
-  const transport = getTransporter();
+  const client = getResendClient();
 
-  if (!transport) {
+  if (!client) {
     return false;
   }
 
   try {
-    await transport.verify();
+    await client.domains.list();
     logger.info('Email service connection verified', { service: 'email' });
     return true;
   } catch (error) {

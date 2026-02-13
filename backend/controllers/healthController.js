@@ -21,13 +21,10 @@ export const basicHealth = async (req, res) => {
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     email: {
-      configured: !!(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASSWORD),
-      host: process.env.SMTP_HOST ? 'set' : 'missing',
-      port: process.env.SMTP_PORT || 'default',
-      user: process.env.SMTP_USER ? 'set' : 'missing',
-      pass: process.env.SMTP_PASSWORD ? 'set' : 'missing',
-      secure: process.env.SMTP_SECURE,
-      from: process.env.SMTP_FROM_EMAIL ? 'set' : 'missing',
+      configured: !!process.env.RESEND_API_KEY,
+      provider: 'resend',
+      apiKey: process.env.RESEND_API_KEY ? 'set' : 'missing',
+      from: process.env.RESEND_FROM_EMAIL ? 'set' : 'missing',
     },
   });
 };
@@ -170,12 +167,11 @@ export const detailedHealth = async (req, res) => {
     logger.warn('Queue health check failed', { error: error.message });
   }
 
-  // ISSUE #29 FIX: Check SMTP Configuration
-  const smtpConfigured = !!(process.env.SMTP_HOST && process.env.SMTP_USER);
-  health.services.smtp = {
-    status: smtpConfigured ? 'configured' : 'not_configured',
-    host: process.env.SMTP_HOST ? 'set' : 'not_set',
-    // Don't expose actual host for security
+  // Email provider (Resend HTTP API)
+  const emailConfigured = !!process.env.RESEND_API_KEY;
+  health.services.email = {
+    status: emailConfigured ? 'configured' : 'not_configured',
+    provider: 'resend',
   };
 
   // System metrics
