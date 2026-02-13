@@ -47,8 +47,25 @@ function getTransporter() {
       return null;
     }
 
-    // Port 587 uses STARTTLS (secure: false), port 465 uses direct TLS (secure: true)
-    const secure = EMAIL_CONFIG.port === 465 ? true : EMAIL_CONFIG.secure;
+    // Auto-correct secure flag based on port to prevent misconfiguration:
+    //   Port 465 → always use direct TLS (secure: true)
+    //   Port 587 → always use STARTTLS (secure: false, Nodemailer upgrades automatically)
+    //   Other ports → use env var as-is
+    let secure = EMAIL_CONFIG.secure;
+    if (EMAIL_CONFIG.port === 465) {
+      secure = true;
+    } else if (EMAIL_CONFIG.port === 587) {
+      secure = false;
+    }
+
+    if (secure !== EMAIL_CONFIG.secure) {
+      logger.warn('Auto-corrected SMTP_SECURE based on port', {
+        service: 'email',
+        port: EMAIL_CONFIG.port,
+        configuredSecure: EMAIL_CONFIG.secure,
+        correctedSecure: secure,
+      });
+    }
 
     transporter = nodemailer.createTransport({
       host: EMAIL_CONFIG.host,
