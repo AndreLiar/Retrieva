@@ -238,7 +238,7 @@ export function getErrorMessage(error: unknown): string {
     const responseData = axiosError.response?.data;
     if (responseData?.message) {
       // If there are detailed validation errors, include the first field message
-      const errors = (responseData as Record<string, unknown>).errors;
+      const errors = (responseData as unknown as Record<string, unknown>).errors;
       if (Array.isArray(errors) && errors.length > 0 && errors[0]?.message) {
         return errors[0].message;
       }
