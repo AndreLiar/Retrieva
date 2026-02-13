@@ -20,6 +20,15 @@ export const basicHealth = async (req, res) => {
     status: 'up',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
+    email: {
+      configured: !!(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASSWORD),
+      host: process.env.SMTP_HOST ? 'set' : 'missing',
+      port: process.env.SMTP_PORT || 'default',
+      user: process.env.SMTP_USER ? 'set' : 'missing',
+      pass: process.env.SMTP_PASSWORD ? 'set' : 'missing',
+      secure: process.env.SMTP_SECURE,
+      from: process.env.SMTP_FROM_EMAIL ? 'set' : 'missing',
+    },
   });
 };
 
