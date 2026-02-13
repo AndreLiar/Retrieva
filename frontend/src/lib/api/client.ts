@@ -234,9 +234,15 @@ export function getErrorMessage(error: unknown): string {
       return 'Too many requests. Please wait a moment and try again.';
     }
 
-    // Check for backend error message first
-    if (axiosError.response?.data?.message) {
-      return axiosError.response.data.message;
+    // Check for backend error message with field-level validation errors
+    const responseData = axiosError.response?.data;
+    if (responseData?.message) {
+      // If there are detailed validation errors, include the first field message
+      const errors = (responseData as Record<string, unknown>).errors;
+      if (Array.isArray(errors) && errors.length > 0 && errors[0]?.message) {
+        return errors[0].message;
+      }
+      return responseData.message;
     }
 
     // Check for known error patterns and return user-friendly message

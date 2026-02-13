@@ -74,8 +74,8 @@ describe('Validation Schemas', () => {
     const validData = {
       name: 'John Doe',
       email: 'john@example.com',
-      password: 'Password123',
-      confirmPassword: 'Password123',
+      password: 'Password123!',
+      confirmPassword: 'Password123!',
     };
 
     it('should validate correct registration data', () => {
@@ -146,6 +146,19 @@ describe('Validation Schemas', () => {
       }
     });
 
+    it('should reject password without special character', () => {
+      const result = registerSchema.safeParse({
+        ...validData,
+        password: 'Password123',
+        confirmPassword: 'Password123',
+      });
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.issues[0].message).toContain('special character');
+      }
+    });
+
     it('should reject password shorter than 8 characters', () => {
       const result = registerSchema.safeParse({
         ...validData,
@@ -162,7 +175,7 @@ describe('Validation Schemas', () => {
     it('should reject mismatched passwords', () => {
       const result = registerSchema.safeParse({
         ...validData,
-        password: 'Password123',
+        password: 'Password123!',
         confirmPassword: 'Password456',
       });
 
@@ -200,8 +213,8 @@ describe('Validation Schemas', () => {
   describe('resetPasswordSchema', () => {
     it('should validate correct reset password data', () => {
       const result = resetPasswordSchema.safeParse({
-        password: 'NewPassword123',
-        confirmPassword: 'NewPassword123',
+        password: 'NewPassword123!!',
+        confirmPassword: 'NewPassword123!!',
       });
 
       expect(result.success).toBe(true);
@@ -218,8 +231,8 @@ describe('Validation Schemas', () => {
 
     it('should reject mismatched passwords', () => {
       const result = resetPasswordSchema.safeParse({
-        password: 'NewPassword123',
-        confirmPassword: 'DifferentPassword123',
+        password: 'NewPassword123!!',
+        confirmPassword: 'DifferentPassword123!!',
       });
 
       expect(result.success).toBe(false);
@@ -235,9 +248,9 @@ describe('Validation Schemas', () => {
   describe('changePasswordSchema', () => {
     it('should validate correct change password data', () => {
       const result = changePasswordSchema.safeParse({
-        currentPassword: 'CurrentPass123',
-        newPassword: 'NewPassword123',
-        confirmPassword: 'NewPassword123',
+        currentPassword: 'CurrentPass123!',
+        newPassword: 'NewPassword123!!',
+        confirmPassword: 'NewPassword123!!',
       });
 
       expect(result.success).toBe(true);
@@ -246,8 +259,8 @@ describe('Validation Schemas', () => {
     it('should reject empty current password', () => {
       const result = changePasswordSchema.safeParse({
         currentPassword: '',
-        newPassword: 'NewPassword123',
-        confirmPassword: 'NewPassword123',
+        newPassword: 'NewPassword123!!',
+        confirmPassword: 'NewPassword123!!',
       });
 
       expect(result.success).toBe(false);
@@ -258,7 +271,7 @@ describe('Validation Schemas', () => {
 
     it('should reject weak new password', () => {
       const result = changePasswordSchema.safeParse({
-        currentPassword: 'CurrentPass123',
+        currentPassword: 'CurrentPass123!',
         newPassword: 'weak',
         confirmPassword: 'weak',
       });

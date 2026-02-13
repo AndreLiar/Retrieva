@@ -86,6 +86,28 @@ describe('API Client', () => {
         // Actually in the implementation, status codes are checked first
         expect(getErrorMessage(error)).toBe('Invalid email or password. Please try again.');
       });
+
+      it('should return field-level error message from validation errors array', () => {
+        const error = new Error('Request failed') as AxiosError;
+        error.isAxiosError = true;
+        error.name = 'AxiosError';
+        error.response = {
+          status: 400,
+          statusText: 'Bad Request',
+          headers: {},
+          config: {} as unknown as import('axios').InternalAxiosRequestConfig,
+          data: {
+            status: 'error',
+            message: 'Validation failed',
+            errors: [
+              { field: 'password', message: 'Password must contain at least one special character' },
+            ],
+          },
+        };
+        error.config = {} as unknown as import('axios').InternalAxiosRequestConfig;
+        error.toJSON = () => ({});
+        expect(getErrorMessage(error)).toBe('Password must contain at least one special character');
+      });
     });
 
     // Network Error Tests
