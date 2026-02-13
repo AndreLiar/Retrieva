@@ -39,14 +39,21 @@ let transporter = null;
 function getTransporter() {
   if (!transporter) {
     if (!EMAIL_CONFIG.auth.user || !EMAIL_CONFIG.auth.pass) {
-      logger.warn('Email service not configured - missing SMTP credentials');
+      logger.warn('Email service not configured - missing SMTP credentials', {
+        service: 'email',
+        hasUser: !!EMAIL_CONFIG.auth.user,
+        hasPass: !!EMAIL_CONFIG.auth.pass,
+      });
       return null;
     }
+
+    // Port 587 uses STARTTLS (secure: false), port 465 uses direct TLS (secure: true)
+    const secure = EMAIL_CONFIG.port === 465 ? true : EMAIL_CONFIG.secure;
 
     transporter = nodemailer.createTransport({
       host: EMAIL_CONFIG.host,
       port: EMAIL_CONFIG.port,
-      secure: EMAIL_CONFIG.secure,
+      secure,
       auth: EMAIL_CONFIG.auth,
     });
 
@@ -54,6 +61,7 @@ function getTransporter() {
       service: 'email',
       host: EMAIL_CONFIG.host,
       port: EMAIL_CONFIG.port,
+      secure,
     });
   }
   return transporter;

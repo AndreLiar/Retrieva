@@ -498,11 +498,16 @@ export const forgotPassword = async (req, res) => {
     if (!emailResult.success) {
       logger.error('Failed to send password reset email', {
         userId: user._id,
-        error: emailResult.error,
+        error: emailResult.error || emailResult.reason,
+        reason: emailResult.reason,
       });
       // Clear the token since email failed
       await user.clearPasswordResetToken();
-      return sendError(res, 500, 'Failed to send password reset email. Please try again.');
+      return sendError(
+        res,
+        503,
+        'Email service is temporarily unavailable. Please try again later or contact support.'
+      );
     }
 
     logger.info('Password reset email sent', { userId: user._id, email: user.email });
@@ -670,9 +675,14 @@ export const resendVerification = async (req, res) => {
     if (!emailResult.success) {
       logger.error('Failed to resend verification email', {
         userId: user._id,
-        error: emailResult.error,
+        error: emailResult.error || emailResult.reason,
+        reason: emailResult.reason,
       });
-      return sendError(res, 500, 'Failed to send verification email. Please try again.');
+      return sendError(
+        res,
+        503,
+        'Email service is temporarily unavailable. Please try again later or contact support.'
+      );
     }
 
     logger.info('Verification email resent', { userId: user._id, email: user.email });
