@@ -1,18 +1,14 @@
 /**
  * Email Service Unit Tests
  *
- * Tests for email sending functionality
+ * Tests for email sending functionality using Resend
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import nodemailer from 'nodemailer';
 
-// Mock nodemailer
-vi.mock('nodemailer', () => ({
-  default: {
-    createTransport: vi.fn(),
-  },
-}));
+// Mock functions shared across tests
+const mockSend = vi.fn();
+const mockDomainsList = vi.fn();
 
 vi.mock('../../config/logger.js', () => ({
   default: {
@@ -26,40 +22,37 @@ vi.mock('../../config/logger.js', () => ({
 describe('Email Service', () => {
   let emailService;
   let originalEnv;
-  let mockTransporter;
 
   beforeEach(async () => {
-    // Store original env
     originalEnv = { ...process.env };
 
-    // Create mock transporter
-    mockTransporter = {
-      sendMail: vi.fn().mockResolvedValue({ messageId: 'test-message-id' }),
-      verify: vi.fn().mockResolvedValue(true),
-    };
-
-    // Set up nodemailer mock
-    nodemailer.createTransport.mockReturnValue(mockTransporter);
+    // Reset and set up mock return values
+    mockSend.mockReset();
+    mockDomainsList.mockReset();
+    mockSend.mockResolvedValue({ data: { id: 'test-message-id' }, error: null });
+    mockDomainsList.mockResolvedValue({ data: [], error: null });
 
     // Set up test environment
-    process.env.SMTP_HOST = 'smtp.test.com';
-    process.env.SMTP_PORT = '587';
-    process.env.SMTP_USER = 'test@example.com';
-    process.env.SMTP_PASSWORD = 'test-password';
+    process.env.RESEND_API_KEY = 're_test_key_123';
     process.env.SMTP_FROM_NAME = 'Test Platform';
-    process.env.SMTP_FROM_EMAIL = 'noreply@test.com';
+    process.env.RESEND_FROM_EMAIL = 'noreply@test.com';
     process.env.FRONTEND_URL = 'http://localhost:3000';
 
-    // Clear module cache and reimport
+    // Clear module cache and set up mock before reimport
     vi.resetModules();
+    vi.doMock('resend', () => ({
+      Resend: vi.fn().mockImplementation(() => ({
+        emails: { send: mockSend },
+        domains: { list: mockDomainsList },
+      })),
+    }));
+
     const module = await import('../../services/emailService.js');
     emailService = module.emailService;
   });
 
   afterEach(() => {
-    // Restore original env
     process.env = originalEnv;
-    vi.clearAllMocks();
   });
 
   describe('sendEmail', () => {
@@ -86,7 +79,7 @@ describe('Email Service', () => {
     });
 
     it('should handle send failure', async () => {
-      mockTransporter.sendMail.mockRejectedValueOnce(new Error('SMTP error'));
+      mockSend.mockRejectedValueOnce(new Error('API error'));
 
       const result = await emailService.sendEmail({
         to: 'recipient@example.com',
@@ -95,7 +88,23 @@ describe('Email Service', () => {
       });
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('SMTP error');
+      expect(result.error).toBe('API error');
+    });
+
+    it('should handle Resend API error response', async () => {
+      mockSend.mockResolvedValueOnce({
+        data: null,
+        error: { message: 'Invalid API key' },
+      });
+
+      const result = await emailService.sendEmail({
+        to: 'recipient@example.com',
+        subject: 'Test Subject',
+        html: '<p>Test content</p>',
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Invalid API key');
     });
   });
 
@@ -111,7 +120,7 @@ describe('Email Service', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(mockTransporter.sendMail).toHaveBeenCalledWith(
+      expect(mockSend).toHaveBeenCalledWith(
         expect.objectContaining({
           to: 'invitee@example.com',
           subject: expect.stringContaining('Jane Smith invited you'),
@@ -140,7 +149,7 @@ describe('Email Service', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(mockTransporter.sendMail).toHaveBeenCalledWith(
+      expect(mockSend).toHaveBeenCalledWith(
         expect.objectContaining({
           to: 'newuser@example.com',
           subject: expect.stringContaining('Welcome'),
@@ -166,7 +175,7 @@ describe('Email Service', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(mockTransporter.sendMail).toHaveBeenCalledWith(
+      expect(mockSend).toHaveBeenCalledWith(
         expect.objectContaining({
           to: 'user@example.com',
           subject: expect.stringContaining('Reset'),
@@ -182,7 +191,7 @@ describe('Email Service', () => {
       });
 
       expect(result.success).toBe(true);
-      const callArgs = mockTransporter.sendMail.mock.calls[0][0];
+      const callArgs = mockSend.mock.calls[0][0];
       expect(callArgs.html).toContain('my-reset-token');
     });
   });
@@ -206,7 +215,7 @@ describe('Email Service', () => {
       });
 
       expect(result.success).toBe(true);
-      const callArgs = mockTransporter.sendMail.mock.calls[0][0];
+      const callArgs = mockSend.mock.calls[0][0];
       expect(callArgs.html).toContain('my-verify-token');
     });
   });
@@ -216,11 +225,11 @@ describe('Email Service', () => {
       const result = await emailService.verifyConnection();
 
       expect(result).toBe(true);
-      expect(mockTransporter.verify).toHaveBeenCalled();
+      expect(mockDomainsList).toHaveBeenCalled();
     });
 
     it('should return false on verification failure', async () => {
-      mockTransporter.verify.mockRejectedValueOnce(new Error('Connection failed'));
+      mockDomainsList.mockRejectedValueOnce(new Error('Connection failed'));
 
       const result = await emailService.verifyConnection();
 
@@ -236,18 +245,23 @@ describe('Email Service - Not Configured', () => {
   beforeEach(async () => {
     originalEnv = { ...process.env };
 
-    // Remove SMTP credentials
-    delete process.env.SMTP_USER;
-    delete process.env.SMTP_PASSWORD;
+    // Remove Resend API key
+    delete process.env.RESEND_API_KEY;
 
     vi.resetModules();
+    vi.doMock('resend', () => ({
+      Resend: vi.fn().mockImplementation(() => ({
+        emails: { send: mockSend },
+        domains: { list: mockDomainsList },
+      })),
+    }));
+
     const module = await import('../../services/emailService.js');
     emailService = module.emailService;
   });
 
   afterEach(() => {
     process.env = originalEnv;
-    vi.clearAllMocks();
   });
 
   it('should return failure when not configured', async () => {
