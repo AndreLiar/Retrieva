@@ -115,6 +115,11 @@ jobs:
 
             # Decrypt secrets with SOPS (dotenv format needs explicit type flags)
             SOPS_AGE_KEY_FILE=~/.age/key.txt sops --decrypt --input-type dotenv --output-type dotenv backend/.env.production.enc > backend/.env
+            # Append SMTP config (stored in separate encrypted file)
+            if [ -f backend/.env.smtp.production.enc ]; then
+              echo "" >> backend/.env
+              SOPS_AGE_KEY_FILE=~/.age/key.txt sops --decrypt --input-type dotenv --output-type dotenv backend/.env.smtp.production.enc >> backend/.env
+            fi
             SOPS_AGE_KEY_FILE=~/.age/key.txt sops --decrypt --input-type dotenv --output-type dotenv ragas-service/.env.production.enc > ragas-service/.env
 
             # Pull new images
