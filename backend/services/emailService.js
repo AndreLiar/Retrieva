@@ -72,6 +72,9 @@ function getTransporter() {
       port: EMAIL_CONFIG.port,
       secure,
       auth: EMAIL_CONFIG.auth,
+      connectionTimeout: 10000, // 10s to establish TCP connection
+      greetTimeout: 10000, // 10s for SMTP greeting
+      socketTimeout: 15000, // 15s for socket inactivity
     });
 
     logger.info('Email transporter created', {
