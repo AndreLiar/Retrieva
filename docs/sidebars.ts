@@ -60,6 +60,8 @@ const sidebars: SidebarsConfig = {
         'deployment/docker',
         'deployment/environment-variables',
         'deployment/production-checklist',
+        'deployment/ci-cd',
+        'deployment/email-service',
       ],
     },
     'contributing',

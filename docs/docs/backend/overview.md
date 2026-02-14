@@ -70,7 +70,9 @@ backend/
 │   ├── rag/            # RAG sub-modules
 │   ├── memory/         # Conversation memory
 │   ├── context/        # Context management
-│   └── metrics/        # Observability
+│   ├── metrics/        # Observability
+│   ├── emailService.js # Resend email sending
+│   └── notificationService.js # Dual-channel notifications
 ├── utils/              # Utilities
 │   ├── core/           # Core utilities
 │   ├── rag/            # RAG utilities

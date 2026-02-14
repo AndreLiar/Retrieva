@@ -197,6 +197,18 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 | `FRONTEND_URL` | Frontend URL for OAuth redirects |
 | `ALLOWED_ORIGINS` | Comma-separated allowed origins |
 
+### Email Configuration
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `RESEND_API_KEY` | - | Resend API key for sending emails |
+| `SMTP_FROM_NAME` | `RAG Platform` | Display name in the "From" field |
+| `RESEND_FROM_EMAIL` | `noreply@devandre.sbs` | Sender email address (must match a verified Resend domain) |
+
+:::note
+The email service uses the **Resend HTTP API** over HTTPS (port 443). No SMTP ports (25, 465, 587) are needed — this is important because DigitalOcean blocks outbound SMTP traffic.
+:::
+
 ### Logging
 
 | Variable | Default | Description |
@@ -245,6 +257,11 @@ ENCRYPTION_KEY=
 NOTION_CLIENT_ID=
 NOTION_CLIENT_SECRET=
 NOTION_REDIRECT_URI=http://localhost:3007/api/v1/notion/callback
+
+# Email (optional for local dev - emails will be skipped if not set)
+RESEND_API_KEY=
+SMTP_FROM_NAME=RAG Platform
+RESEND_FROM_EMAIL=noreply@yourdomain.com
 
 # Frontend
 FRONTEND_URL=http://localhost:3000

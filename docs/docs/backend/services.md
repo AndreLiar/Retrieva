@@ -317,6 +317,60 @@ export function tenantIsolationPlugin(schema) {
 }
 ```
 
+## Email & Notification Services
+
+### Email Service (`services/emailService.js`)
+
+Sends transactional emails via the **Resend HTTP API**.
+
+```javascript
+export const emailService = {
+  sendEmail,                // Generic email sending
+  sendWorkspaceInvitation,  // Workspace invite with branded template
+  sendWelcomeEmail,         // New user onboarding
+  sendPasswordResetEmail,   // Password reset link (1h expiry)
+  sendEmailVerification,    // Email verification link (24h expiry)
+  verifyConnection,         // Test Resend API connectivity
+};
+```
+
+**Configuration:**
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `RESEND_API_KEY` | - | Resend API key (required for sending) |
+| `SMTP_FROM_NAME` | `RAG Platform` | Display name in "From" field |
+| `RESEND_FROM_EMAIL` | `noreply@devandre.sbs` | Sender address (must match verified domain) |
+
+:::note
+If `RESEND_API_KEY` is not set, the service logs a warning and skips sending. This makes email optional for local development.
+:::
+
+### Notification Service (`services/notificationService.js`)
+
+Dual-channel delivery: **WebSocket** (real-time) + **email** (important events).
+
+```javascript
+export const notificationService = {
+  createAndDeliver,              // Create + deliver via best channel
+  notifyWorkspaceInvitation,     // Invitation with WebSocket + email
+  notifyPermissionChange,        // Role change notification
+  notifyWorkspaceRemoval,        // Member removal notification
+  notifySyncCompleted,           // Sync success summary
+  notifySyncFailed,              // Sync failure (urgent, always emails)
+  notifyWorkspaceMembers,        // Broadcast to all workspace members
+};
+```
+
+**Delivery logic:**
+
+1. Persist notification in MongoDB
+2. If user is online, deliver via WebSocket (`socket.io`)
+3. If user has email enabled for the notification type **and** priority is not LOW, send email
+4. Urgent/high-priority notifications always attempt email delivery
+
+User preferences are checked per notification type and channel (`inApp`, `email`, `push`).
+
 ## Service Dependencies
 
 Services use dependency injection for testability:
