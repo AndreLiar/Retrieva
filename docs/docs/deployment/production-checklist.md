@@ -24,6 +24,8 @@ Essential tasks before deploying to production.
 
 - [ ] **Azure OpenAI key secured** - Never commit to version control
 
+- [ ] **Resend API key secured** - Store in encrypted `.env.resend.production.enc`
+
 - [ ] **Environment files excluded** - `.env` in `.gitignore`
 
 ### Authentication
@@ -93,6 +95,13 @@ Essential tasks before deploying to production.
 - [ ] **Timeouts configured** - LLM and streaming timeouts
 - [ ] **Guardrails enabled** - Hallucination blocking active
 - [ ] **Fallback messages** - User-friendly error messages
+
+### Email Service
+
+- [ ] **Resend API key configured** - `RESEND_API_KEY` set in production env
+- [ ] **Domain verified in Resend** - DKIM, SPF, and DMARC DNS records configured for sender domain
+- [ ] **From email set** - `RESEND_FROM_EMAIL` matches a verified Resend domain
+- [ ] **Email flows tested** - Password reset, email verification, workspace invitation, welcome emails all sending correctly
 
 ### Sync & Workers
 

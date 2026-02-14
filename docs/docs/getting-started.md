@@ -100,6 +100,11 @@ FRONTEND_URL=http://localhost:3000
 NOTION_CLIENT_ID=your-notion-client-id
 NOTION_CLIENT_SECRET=your-notion-client-secret
 NOTION_REDIRECT_URI=http://localhost:3007/api/v1/notion/callback
+
+# Email (optional for local dev)
+RESEND_API_KEY=
+SMTP_FROM_NAME=RAG Platform
+RESEND_FROM_EMAIL=noreply@yourdomain.com
 ```
 
 ### 3. Start Development Server
