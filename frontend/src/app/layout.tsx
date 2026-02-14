@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'RAG Platform',
+  title: 'Retrieva',
   description: 'Knowledge retrieval powered by AI',
 };
 

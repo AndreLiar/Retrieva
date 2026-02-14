@@ -356,7 +356,7 @@ class NotionTokenMonitor {
           <li>Click "Connect Notion" to authorize again</li>
         </ol>
         <p>If you have any questions, please contact support.</p>
-        <p>Best regards,<br>The RAG Platform Team</p>
+        <p>Best regards,<br>The Retrieva Team</p>
       `,
       text: `
 Notion Connection Issue
@@ -378,7 +378,7 @@ Or follow these steps:
 If you have any questions, please contact support.
 
 Best regards,
-The RAG Platform Team
+The Retrieva Team
       `,
     };
 

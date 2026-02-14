@@ -1,14 +1,14 @@
 # =============================================================================
 # Continuous Integration Pipeline
 # =============================================================================
-# Runs on pull requests and pushes to main/dev/staging branches
+# Runs on pushes to dev/staging, PRs to main/dev/staging, and called by CD
 # Tests backend (Node.js), frontend (Next.js), and ragas-service (Python)
 
 name: CI
 
 on:
   push:
-    branches: [main, dev, staging]
+    branches: [dev, staging]
   pull_request:
     branches: [main, dev, staging]
   workflow_call:

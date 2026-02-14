@@ -78,7 +78,7 @@ export function MobileSidebar() {
         <SheetHeader className="border-b px-4 py-3">
           <SheetTitle className="flex items-center gap-2">
             <MessageSquare className="h-5 w-5 text-primary" />
-            RAG Platform
+            Retrieva
           </SheetTitle>
         </SheetHeader>
 

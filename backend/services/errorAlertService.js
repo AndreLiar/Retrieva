@@ -203,7 +203,7 @@ function generateAlertEmailHtml(alert, userName) {
 
     <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
     <p style="font-size: 12px; color: #9ca3af; margin: 0;">
-      This is an automated alert from RAG Platform. You received this because you're the workspace owner.
+      This is an automated alert from Retrieva. You received this because you're the workspace owner.
     </p>
   </div>
 

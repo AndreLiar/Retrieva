@@ -52,7 +52,7 @@ export default function LandingPage() {
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Sparkles className="h-6 w-6 text-primary" />
-            <span className="font-bold text-xl">RAG Platform</span>
+            <span className="font-bold text-xl">Retrieva</span>
           </div>
           <div className="flex items-center gap-4">
             <ThemeToggle />
@@ -160,7 +160,7 @@ export default function LandingPage() {
           Ready to get started?
         </h2>
         <p className="text-muted-foreground mb-8 max-w-xl mx-auto">
-          Join teams who are already using RAG Platform to unlock insights from their knowledge base.
+          Join teams who are already using Retrieva to unlock insights from their knowledge base.
         </p>
         <Link href="/register">
           <Button size="lg" className="gap-2">
@@ -172,7 +172,7 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className="border-t py-8">
         <div className="container mx-auto px-4 text-center text-muted-foreground text-sm">
-          <p>&copy; {new Date().getFullYear()} RAG Platform. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} Retrieva. All rights reserved.</p>
         </div>
       </footer>
     </div>
