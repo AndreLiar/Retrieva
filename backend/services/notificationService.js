@@ -295,7 +295,7 @@ function generateNotificationEmailHtml({
     <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
 
     <p style="font-size: 12px; color: #9ca3af; text-align: center;">
-      This notification was sent by RAG Platform.<br>
+      This notification was sent by Retrieva.<br>
       <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/settings/notifications" style="color: #667eea;">
         Manage notification preferences
       </a>

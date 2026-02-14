@@ -18,7 +18,7 @@ import logger from '../config/logger.js';
 const EMAIL_CONFIG = {
   apiKey: process.env.RESEND_API_KEY,
   from: {
-    name: process.env.SMTP_FROM_NAME || 'RAG Platform',
+    name: process.env.SMTP_FROM_NAME || 'Retrieva',
     email: process.env.RESEND_FROM_EMAIL || 'noreply@devandre.sbs',
   },
 };
@@ -187,7 +187,7 @@ async function sendWorkspaceInvitation({
     <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 25px 0;">
 
     <p style="font-size: 12px; color: #9ca3af; text-align: center;">
-      This invitation was sent by ${inviterName} via RAG Platform.<br>
+      This invitation was sent by ${inviterName} via Retrieva.<br>
       If you didn't expect this email, you can safely ignore it.
     </p>
 
@@ -209,7 +209,7 @@ async function sendWorkspaceInvitation({
  * @returns {Promise<Object>} - Send result
  */
 async function sendWelcomeEmail({ toEmail, toName }) {
-  const subject = 'Welcome to RAG Platform!';
+  const subject = 'Welcome to Retrieva!';
 
   const html = `
 <!DOCTYPE html>
@@ -222,7 +222,7 @@ async function sendWelcomeEmail({ toEmail, toName }) {
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
 
   <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
-    <h1 style="color: white; margin: 0; font-size: 24px;">Welcome to RAG Platform!</h1>
+    <h1 style="color: white; margin: 0; font-size: 24px;">Welcome to Retrieva!</h1>
   </div>
 
   <div style="background: #f9fafb; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 10px 10px;">
@@ -422,7 +422,7 @@ async function sendEmailVerification({ toEmail, toName, verificationToken }) {
     <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 25px 0;">
 
     <p style="font-size: 12px; color: #9ca3af; text-align: center;">
-      This email was sent by RAG Platform.
+      This email was sent by Retrieva.
     </p>
 
   </div>

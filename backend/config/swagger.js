@@ -6,10 +6,10 @@
 export const swaggerDocument = {
   openapi: '3.0.0',
   info: {
-    title: 'RAG Platform API',
+    title: 'Retrieva API',
     version: '1.0.0',
     description: `
-# RAG Platform API Documentation
+# Retrieva API Documentation
 
 A production-ready Retrieval-Augmented Generation (RAG) platform API built with Express 5, LangChain, Ollama, and Qdrant.
 
@@ -270,7 +270,7 @@ Authorization: Bearer <access_token>
       patch: {
         tags: ['Authentication'],
         summary: 'Update profile',
-        description: 'Update the authenticated user\'s profile (name only)',
+        description: "Update the authenticated user's profile (name only)",
         security: [{ bearerAuth: [] }],
         requestBody: {
           required: true,
@@ -846,9 +846,7 @@ Authorization: Bearer <access_token>
         summary: 'Get Notion workspace',
         description: 'Get details of a connected Notion workspace',
         security: [{ bearerAuth: [] }],
-        parameters: [
-          { name: 'id', in: 'path', required: true, schema: { type: 'string' } },
-        ],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
         responses: {
           200: {
             description: 'Notion workspace details',
@@ -865,9 +863,7 @@ Authorization: Bearer <access_token>
         summary: 'Update Notion workspace',
         description: 'Update Notion workspace settings',
         security: [{ bearerAuth: [] }],
-        parameters: [
-          { name: 'id', in: 'path', required: true, schema: { type: 'string' } },
-        ],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
         requestBody: {
           content: {
             'application/json': {
@@ -891,9 +887,7 @@ Authorization: Bearer <access_token>
         summary: 'Delete Notion workspace',
         description: 'Disconnect and delete a Notion workspace',
         security: [{ bearerAuth: [] }],
-        parameters: [
-          { name: 'id', in: 'path', required: true, schema: { type: 'string' } },
-        ],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
         responses: {
           200: { description: 'Workspace deleted' },
         },
@@ -905,9 +899,7 @@ Authorization: Bearer <access_token>
         summary: 'Trigger sync',
         description: 'Manually trigger a sync for the Notion workspace',
         security: [{ bearerAuth: [] }],
-        parameters: [
-          { name: 'id', in: 'path', required: true, schema: { type: 'string' } },
-        ],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
         requestBody: {
           content: {
             'application/json': {
@@ -932,9 +924,7 @@ Authorization: Bearer <access_token>
         summary: 'Get sync status',
         description: 'Get current sync status for the workspace',
         security: [{ bearerAuth: [] }],
-        parameters: [
-          { name: 'id', in: 'path', required: true, schema: { type: 'string' } },
-        ],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
         responses: {
           200: {
             description: 'Sync status',
@@ -978,9 +968,7 @@ Authorization: Bearer <access_token>
         summary: 'List Notion pages',
         description: 'Get available Notion pages for syncing',
         security: [{ bearerAuth: [] }],
-        parameters: [
-          { name: 'id', in: 'path', required: true, schema: { type: 'string' } },
-        ],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
         responses: {
           200: { description: 'List of pages' },
         },
@@ -992,9 +980,7 @@ Authorization: Bearer <access_token>
         summary: 'List Notion databases',
         description: 'Get available Notion databases for syncing',
         security: [{ bearerAuth: [] }],
-        parameters: [
-          { name: 'id', in: 'path', required: true, schema: { type: 'string' } },
-        ],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
         responses: {
           200: { description: 'List of databases' },
         },
@@ -1767,7 +1753,8 @@ Authorization: Bearer <access_token>
           },
           chat_history: {
             type: 'array',
-            description: 'Optional chat history for context. Provides conversation context for follow-up questions.',
+            description:
+              'Optional chat history for context. Provides conversation context for follow-up questions.',
             maxItems: 50,
             items: {
               type: 'object',
@@ -1878,7 +1865,10 @@ Authorization: Bearer <access_token>
           comment: { type: 'string', maxLength: 1000 },
           tags: {
             type: 'array',
-            items: { type: 'string', enum: ['helpful', 'accurate', 'incomplete', 'incorrect', 'irrelevant'] },
+            items: {
+              type: 'string',
+              enum: ['helpful', 'accurate', 'incomplete', 'incorrect', 'irrelevant'],
+            },
           },
         },
       },

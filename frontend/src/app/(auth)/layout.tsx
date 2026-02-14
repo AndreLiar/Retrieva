@@ -12,7 +12,7 @@ export default function AuthLayout({
         <div className="text-center">
           <Link href="/" className="inline-block">
             <h1 className="text-3xl font-bold text-foreground">
-              RAG Platform
+              Retrieva
             </h1>
           </Link>
           <p className="mt-2 text-sm text-muted-foreground">

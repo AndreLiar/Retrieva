@@ -117,7 +117,7 @@ export function Sidebar() {
         {!sidebarCollapsed && (
           <Link href="/chat" className="flex items-center gap-2 font-semibold">
             <MessageSquare className="h-6 w-6 text-primary" />
-            <span>RAG Platform</span>
+            <span>Retrieva</span>
           </Link>
         )}
         {/* A11Y FIX: Added aria-label and aria-expanded for screen readers */}
