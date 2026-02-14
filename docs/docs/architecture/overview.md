@@ -51,7 +51,7 @@ The RAG Platform follows a modular, layered architecture designed for scalabilit
 │  │ Analytics       │  │  Notification   │  │   Real-Time Services    │ │
 │  │   Service       │  │    Service      │  │                         │ │
 │  │                 │  │                 │  │ - Socket.io Service     │ │
-│  │ - Query Metrics │  │ - Email (SMTP)  │  │ - Presence Tracking     │ │
+│  │ - Query Metrics │  │ - Email (Resend)│  │ - Presence Tracking     │ │
 │  │ - Cost Tracking │  │ - In-App Alerts │  │ - Live Analytics        │ │
 │  │ - RAGAS Eval    │  │ - Token Expiry  │  │ - Activity Feed         │ │
 │  │ - LangSmith     │  │                 │  │ - Real-Time Events      │ │
@@ -287,7 +287,7 @@ rag/
 │   │   ├── notionTransformer.js # Notion → Markdown
 │   │   ├── notionTokenMonitor.js # Token health checks
 │   │   ├── socketService.js   # Socket.io real-time
-│   │   ├── emailService.js    # SMTP email sending
+│   │   ├── emailService.js    # Resend email sending
 │   │   ├── notificationService.js
 │   │   ├── deadLetterQueue.js # Failed job handling
 │   │   ├── tenantIsolation.js # Multi-tenant security

@@ -11,11 +11,13 @@ const config: Config = {
     v4: true,
   },
 
-  url: 'https://rag-docs.example.com',
-  baseUrl: '/',
+  url: 'https://andreliar.github.io',
+  baseUrl: '/Retrieva/',
 
-  organizationName: 'your-org',
-  projectName: 'rag-platform',
+  organizationName: 'AndreLiar',
+  projectName: 'Retrieva',
+  trailingSlash: false,
+  deploymentBranch: 'gh-pages',
 
   onBrokenLinks: 'throw',
 
@@ -66,7 +68,7 @@ const config: Config = {
           label: 'API Reference',
         },
         {
-          href: 'https://github.com/your-org/rag-platform',
+          href: 'https://github.com/AndreLiar/Retrieva',
           label: 'GitHub',
           position: 'right',
         },
