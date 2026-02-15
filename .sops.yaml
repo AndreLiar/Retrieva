@@ -6,8 +6,8 @@ creation_rules:
   - path_regex: \.env\.production$
     age: "age1ankklkq3280x4a3wgnq52mrkuumaj0t3q87snhwrgmh4l2lw0d8qydxk9d"
 
-  # SMTP config (separate encrypted file)
-  - path_regex: \.env\.smtp\.production$
+  # Email config (separate encrypted file)
+  - path_regex: \.env\.resend\.production$
     age: "age1ankklkq3280x4a3wgnq52mrkuumaj0t3q87snhwrgmh4l2lw0d8qydxk9d"
 
   # Staging env files (if needed later)

@@ -205,7 +205,7 @@ Nginx handles TLS termination and routing. Configuration: `nginx/rag.conf`
 | `/health` | `backend:3007` | Health check endpoint |
 | `/*` | `frontend:3000` | Catch-all for Next.js pages |
 
-**TLS** is managed by **Certbot** (Let's Encrypt) with automatic renewal. Certificates are stored at `/etc/letsencrypt/live/devandre.sbs/`.
+**TLS** is managed by **Certbot** (Let's Encrypt) with automatic renewal. Certificates are stored at `/etc/letsencrypt/live/retrieva.online/`.
 
 ## Health Check
 

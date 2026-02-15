@@ -204,7 +204,7 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 |----------|---------|-------------|
 | `RESEND_API_KEY` | - | Resend API key for sending emails |
 | `SMTP_FROM_NAME` | `RAG Platform` | Display name in the "From" field |
-| `RESEND_FROM_EMAIL` | `noreply@devandre.sbs` | Sender email address (must match a verified Resend domain) |
+| `RESEND_FROM_EMAIL` | `noreply@retrieva.online` | Sender email address (must match a verified Resend domain) |
 
 :::note
 The email service uses the **Resend HTTP API** over HTTPS (port 443). No SMTP ports (25, 465, 587) are needed — this is important because DigitalOcean blocks outbound SMTP traffic.

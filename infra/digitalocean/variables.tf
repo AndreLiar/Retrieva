@@ -25,7 +25,7 @@ variable "droplet_size" {
 variable "domain_name" {
   description = "Your domain name"
   type        = string
-  default     = "devandre.sbs"
+  default     = "retrieva.online"
 }
 
 variable "ssh_public_key_path" {
