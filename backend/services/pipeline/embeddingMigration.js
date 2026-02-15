@@ -285,7 +285,8 @@ async function migrateDocument(workspaceId, sourceId) {
       const { QdrantClient } = await import('@qdrant/js-client-rest');
       const qdrantUrl = process.env.QDRANT_URL || 'http://localhost:6333';
       const collectionName = process.env.QDRANT_COLLECTION_NAME || 'langchain-rag';
-      const client = new QdrantClient({ url: qdrantUrl });
+      const apiKey = process.env.QDRANT_API_KEY;
+      const client = new QdrantClient({ url: qdrantUrl, ...(apiKey && { apiKey }) });
 
       await client.delete(collectionName, {
         filter: {

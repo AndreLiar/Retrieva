@@ -64,13 +64,16 @@ export async function detectDesyncedDocuments(workspaceId) {
       workspaceId,
       chunkCount: { $gt: 0 },
       syncStatus: { $ne: 'deleted' },
-    }).select('sourceId chunkCount').lean();
+    })
+      .select('sourceId chunkCount')
+      .lean();
 
     if (docsWithChunks.length === 0) {
       return desyncedIds;
     }
 
-    const client = new QdrantClient({ url: QDRANT_URL });
+    const apiKey = process.env.QDRANT_API_KEY;
+    const client = new QdrantClient({ url: QDRANT_URL, ...(apiKey && { apiKey }) });
 
     // Check each document in Qdrant (batch for efficiency)
     // Process in batches of 50 to avoid overwhelming Qdrant

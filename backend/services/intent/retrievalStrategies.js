@@ -77,31 +77,30 @@ export async function focusedRetrieval(query, retriever, vectorStore, config, op
       // For sparse-only results, we need to fetch content from Qdrant
       // Use vectorStoreId (Qdrant point ID) for fetching
       const sparseOnlyResults = hybridResults.filter((r) => !r.doc && r.sparseRank);
-      const sparseOnlyVectorIds = sparseOnlyResults
-        .map((r) => r.vectorStoreId)
-        .filter(Boolean);
+      const sparseOnlyVectorIds = sparseOnlyResults.map((r) => r.vectorStoreId).filter(Boolean);
 
       logger.info('Sparse-only results to fetch', {
         service: 'retrieval-strategies',
         sparseOnlyCount: sparseOnlyResults.length,
         vectorIdsCount: sparseOnlyVectorIds.length,
         sampleIds: sparseOnlyVectorIds.slice(0, 3),
-        sampleResults: sparseOnlyResults.slice(0, 2).map(r => ({
+        sampleResults: sparseOnlyResults.slice(0, 2).map((r) => ({
           id: r.id,
           vectorStoreId: r.vectorStoreId,
           sparseRank: r.sparseRank,
-          hasDoc: !!r.doc
+          hasDoc: !!r.doc,
         })),
       });
 
-      let sparseOnlyDocs = new Map();
+      const sparseOnlyDocs = new Map();
       if (sparseOnlyVectorIds.length > 0) {
         try {
           // Fetch content from Qdrant for sparse-only matches
           const { QdrantClient } = await import('@qdrant/js-client-rest');
           const qdrantUrl = process.env.QDRANT_URL || 'http://localhost:6333';
           const collectionName = process.env.QDRANT_COLLECTION_NAME || 'langchain-rag';
-          const client = new QdrantClient({ url: qdrantUrl });
+          const apiKey = process.env.QDRANT_API_KEY;
+          const client = new QdrantClient({ url: qdrantUrl, ...(apiKey && { apiKey }) });
 
           // Fetch points by vectorStoreId (Qdrant UUID)
           const points = await client.retrieve(collectionName, {
@@ -173,7 +172,10 @@ export async function focusedRetrieval(query, retriever, vectorStore, config, op
       // Log top 5 results with ranking details
       const topResultsDebug = hybridResults.slice(0, 5).map((r, i) => ({
         rank: i + 1,
-        title: r.doc?.metadata?.documentTitle || sparseOnlyDocs.get(r.id)?.metadata?.documentTitle || 'unknown',
+        title:
+          r.doc?.metadata?.documentTitle ||
+          sparseOnlyDocs.get(r.id)?.metadata?.documentTitle ||
+          'unknown',
         rrfScore: r.rrfScore?.toFixed(4),
         denseRank: r.denseRank || '-',
         sparseRank: r.sparseRank || '-',
