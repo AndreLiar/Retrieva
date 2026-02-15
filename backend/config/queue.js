@@ -19,11 +19,11 @@ export const notionSyncQueue = new Queue('notionSync', {
       delay: 60000, // Start with 1 minute
     },
     removeOnComplete: {
-      count: 100, // Keep last 100 completed jobs
-      age: 7 * 24 * 60 * 60, // Remove after 7 days
+      count: 20,
+      age: 3 * 24 * 60 * 60, // Remove after 3 days
     },
     removeOnFail: {
-      count: 500, // Keep last 500 failed jobs for debugging
+      count: 50,
     },
   },
 });
@@ -42,11 +42,11 @@ export const documentIndexQueue = new Queue('documentIndex', {
       delay: 30000, // Start with 30 seconds, then 60s, then 120s
     },
     removeOnComplete: {
-      count: 1000,
-      age: 3 * 24 * 60 * 60, // Remove after 3 days
+      count: 50,
+      age: 24 * 60 * 60, // Remove after 1 day
     },
     removeOnFail: {
-      count: 1000,
+      count: 100,
     },
   },
 });
@@ -67,11 +67,11 @@ export const memoryDecayQueue = new Queue('memoryDecay', {
       delay: 60000, // Start with 1 minute
     },
     removeOnComplete: {
-      count: 50,
-      age: 7 * 24 * 60 * 60, // Keep for 7 days
+      count: 10,
+      age: 24 * 60 * 60, // Keep for 1 day
     },
     removeOnFail: {
-      count: 100,
+      count: 20,
     },
   },
 });
