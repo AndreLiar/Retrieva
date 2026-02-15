@@ -64,11 +64,13 @@
          │  └──────────────┬──────────────────┘  │
          │                 │                     │
          │  ┌──────────────┼──────────────────┐  │
-         │  │     Docker Compose (3 svc)      │  │
+         │  │     Docker Compose (5 svc)      │  │
          │  │                                 │  │
          │  │  frontend   (Next.js)    :3000  │  │
          │  │  backend    (Express)    :3007  │  │
          │  │  ragas      (FastAPI)    :8001  │  │
+         │  │  redis      (Redis 7)    :6379  │  │
+         │  │  qdrant     (Qdrant)     :6333  │  │
          │  └─────────────────────────────────┘  │
          └───────────────────────────────────────┘
                          │
@@ -78,8 +80,6 @@
          │       External Managed Services       │
          │                                       │
          │  MongoDB Atlas    (Free M0)           │
-         │  Redis Cloud      (Free 30MB)         │
-         │  Qdrant Cloud     (Free 1GB)          │
          │  Azure OpenAI     (LLM + Embed)       │
          └───────────────────────────────────────┘
 ```
@@ -98,9 +98,8 @@ https://retrieva.online/socket.io/  → backend   :3007 (WebSocket upgrade)
 ghcr.io/<owner>/retrieva/backend        ← custom image (Node.js)
 ghcr.io/<owner>/retrieva/frontend       ← custom image (Next.js)
 ghcr.io/<owner>/retrieva/ragas-service   ← custom image (Python)
-mongodb/mongodb-community-server:7.0     ← public image
 redis:7-alpine                           ← public image
-qdrant/qdrant:latest                     ← public image
+qdrant/qdrant:v1.13.2                    ← public image (self-hosted)
 ```
 
 ---
@@ -121,8 +120,6 @@ Before starting, you must have:
 | 8 | **DigitalOcean API token** | DO Dashboard → API → Generate New Token |
 | 9 | **SSH key pair** | `ssh-keygen -t ed25519 -f ~/.ssh/retrieva_deploy` |
 | 10 | **MongoDB Atlas account** | https://cloud.mongodb.com — create free M0 cluster |
-| 11 | **Redis Cloud account** | https://redis.io/cloud — create free database |
-| 12 | **Qdrant Cloud account** | https://cloud.qdrant.io — create free cluster |
 
 ---
 
@@ -574,8 +571,8 @@ cp backend/.env.production.example backend/.env.production
 #   ALLOWED_ORIGINS=https://retrieva.online
 #   MONGODB_URI=mongodb+srv://<user>:<pwd>@<cluster>.mongodb.net/enterprise_rag
 #   REDIS_URL=redis://:<password>@<host>:<port>
-#   QDRANT_URL=https://<cluster-id>.qdrant.io
-#   QDRANT_API_KEY=<your-qdrant-api-key>
+#   QDRANT_URL=http://qdrant:6333
+#   QDRANT_API_KEY=                          (not needed, self-hosted)
 
 # Encrypt it
 sops --encrypt --age age1xxxxxxx... backend/.env.production > backend/.env.production.enc
@@ -1604,8 +1601,7 @@ ls -la /opt/rag/backend/.env
 ├───────────────────────────────┼─────────────┼───────────────────┼───────────────────┤
 │ MONGODB_URI (Atlas)           │      -      │       Yes         │   Decrypted       │
 │ REDIS_URL (Redis Cloud)       │      -      │       Yes         │   Decrypted       │
-│ QDRANT_URL (Qdrant Cloud)     │      -      │       Yes         │   Decrypted       │
-│ QDRANT_API_KEY (Qdrant Cloud) │      -      │       Yes         │   Decrypted       │
+│ QDRANT_URL (self-hosted)      │      -      │       Yes         │   Decrypted       │
 └───────────────────────────────┴─────────────┴───────────────────┴───────────────────┘
 ```
 
@@ -1615,30 +1611,32 @@ ls -la /opt/rag/backend/.env
 
 **Droplet: s-2vcpu-4gb (~$24/mo)**
 
-MongoDB, Redis, and Qdrant run as **external managed services** (free tiers),
-not on the droplet. Only 3 containers run locally.
+Redis and Qdrant run as **self-hosted Docker containers** on the droplet.
+MongoDB Atlas runs as an external managed service (free tier).
+5 containers run locally.
 
 ```
 ┌─────────────────────────┬───────────┬───────────┐
 │        Service          │ RAM Limit │ CPU Limit │
 ├─────────────────────────┼───────────┼───────────┤
 │ Frontend (Next.js)      │   512 MB  │    0.5    │
+│ Redis (BullMQ + Cache)  │   768 MB  │    0.25   │
+│ Qdrant (Vector DB)      │  1024 MB  │    0.5    │
 │ Backend (Node.js)       │  1536 MB  │    1.0    │
 │ RAGAS (Python)          │   768 MB  │    0.5    │
 ├─────────────────────────┼───────────┼───────────┤
-│ Containers Total        │  2816 MB  │    2.0    │
-│ OS + Nginx overhead     │ ~1184 MB  │    0.0    │
-├─────────────────────────┼───────────┼───────────┤
-│ TOTAL                   │  4000 MB  │    2.0    │
+│ Containers Total        │  4608 MB  │    2.75   │
+│ (actual usage ~1.5-2GB) │           │           │
 └─────────────────────────┴───────────┴───────────┘
+
+Note: Docker limits are upper bounds, not reservations.
+Actual RAM usage is well under limits (~1.5-2GB total).
 
 External Managed Services (FREE tiers):
 ┌─────────────────────────┬───────────────────────────┬────────┐
 │        Service          │       Plan                │  Cost  │
 ├─────────────────────────┼───────────────────────────┼────────┤
 │ MongoDB Atlas           │ M0 Free (512MB storage)   │  $0/mo │
-│ Redis Cloud             │ Free (30MB, 30 conns)     │  $0/mo │
-│ Qdrant Cloud            │ Free (1GB, 1 cluster)     │  $0/mo │
 └─────────────────────────┴───────────────────────────┴────────┘
 ```
 
@@ -1649,8 +1647,6 @@ External Managed Services (FREE tiers):
 | DigitalOcean Droplet (4GB) | ~$24/mo |
 | Azure OpenAI (embeddings + LLM) | ~$11-15/mo |
 | MongoDB Atlas (M0 Free) | $0 |
-| Redis Cloud (Free) | $0 |
-| Qdrant Cloud (Free) | $0 |
 | Domain name (retrieva.online) | $1.74/year |
 | **Total** | **~$36-40/mo** |
 

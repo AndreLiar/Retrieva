@@ -46,13 +46,15 @@ Container-based deployment using Docker and Docker Compose.
 │   │  Port: 3000  │     │  Port: 3007  │     │  Port: 8001  │           │
 │   └──────────────┘     └──────┬───────┘     └──────────────┘           │
 │                               │                                          │
-│                        ┌──────┴──────┐                                   │
-│                        │    Redis    │                                   │
-│                        │  Port: 6379 │                                   │
-│                        │  256MB AOF  │                                   │
-│                        └─────────────┘                                   │
+│                  ┌────────────┼────────────┐                             │
+│                  │            │            │                             │
+│           ┌──────┴─────┐ ┌───┴────┐                                     │
+│           │   Qdrant   │ │ Redis  │                                     │
+│           │ Port: 6333 │ │Port:6379│                                     │
+│           │  1G limit  │ │256MB AOF│                                     │
+│           └────────────┘ └────────┘                                     │
 │                                                                          │
-│   External: MongoDB Atlas (M0) + Qdrant Cloud (Free 1GB)                │
+│   External: MongoDB Atlas (M0)                                           │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -159,7 +161,7 @@ services:
 
   # Qdrant Vector Database
   qdrant:
-    image: qdrant/qdrant:latest
+    image: qdrant/qdrant:v1.13.2
     container_name: rag-qdrant
     ports:
       - "6333:6333"
@@ -418,7 +420,42 @@ Generate a Redis password:
 openssl rand -base64 32
 ```
 
-### 4. Resource Limits
+### 4. Qdrant (Production — Self-Hosted)
+
+In production, Qdrant runs as a Docker service on the same droplet (see `docker-compose.production.yml`):
+
+```yaml
+qdrant:
+  image: qdrant/qdrant:v1.13.2
+  container_name: retrieva-qdrant
+  ports:
+    - "127.0.0.1:6333:6333"
+    - "127.0.0.1:6334:6334"
+  volumes:
+    - qdrant_data:/qdrant/storage
+  environment:
+    - QDRANT__SERVICE__GRPC_PORT=6334
+  healthcheck:
+    test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:6333/readyz"]
+    interval: 10s
+    timeout: 5s
+    retries: 5
+  restart: unless-stopped
+  deploy:
+    resources:
+      limits:
+        cpus: '0.5'
+        memory: 1G
+```
+
+Key configuration choices:
+- **Pinned version** (`v1.13.2`): Matches development for consistency. Avoids surprise breaking changes from `:latest`.
+- **1G memory limit**: Sufficient for ~3,200 documents with dense + sparse vectors. Actual usage ~200-400MB.
+- **Volume persistence** (`qdrant_data`): Data survives container restarts.
+- **Health check** via `/readyz` endpoint: Backend depends on this to start only after Qdrant is ready.
+- **No API key needed**: Ports bind to `127.0.0.1` only — no external access possible.
+
+### 5. Resource Limits
 
 ```yaml
 backend:
@@ -432,7 +469,7 @@ backend:
         memory: 512M
 ```
 
-### 5. Logging Driver
+### 6. Logging Driver
 
 ```yaml
 backend:

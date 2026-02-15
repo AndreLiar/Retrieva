@@ -22,7 +22,8 @@ Complete reference for all configuration options.
 | `MONGODB_URI` | `mongodb://localhost:27017/enterprise_rag` | MongoDB connection string |
 | `REDIS_URL` | `redis://localhost:6378` | Redis connection URL (production: `redis://:password@redis:6379`) |
 | `REDIS_PASSWORD` | - | Redis authentication password (production only, used by docker-compose) |
-| `QDRANT_URL` | `http://localhost:6333` | Qdrant vector database URL |
+| `QDRANT_URL` | `http://localhost:6333` | Qdrant vector database URL (production: `http://qdrant:6333`) |
+| `QDRANT_API_KEY` | - | Qdrant API key (only needed for Qdrant Cloud; not needed for self-hosted) |
 | `QDRANT_COLLECTION_NAME` | `documents` | Qdrant collection name |
 
 ### Azure OpenAI Configuration
