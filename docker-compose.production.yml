@@ -51,8 +51,7 @@ services:
       --maxmemory-policy noeviction
       --appendonly yes
       --appendfsync everysec
-      --save 900 1
-      --save 300 10
+      --save ""
       --requirepass ${REDIS_PASSWORD}
     ports:
       - "127.0.0.1:6379:6379"
@@ -68,7 +67,7 @@ services:
       resources:
         limits:
           cpus: '0.25'
-          memory: 300M
+          memory: 768M
     logging:
       driver: "json-file"
       options:
