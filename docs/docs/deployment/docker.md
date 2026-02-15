@@ -436,10 +436,11 @@ qdrant:
   environment:
     - QDRANT__SERVICE__GRPC_PORT=6334
   healthcheck:
-    test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:6333/readyz"]
+    test: ["CMD-SHELL", "bash -c ':>/dev/tcp/0.0.0.0/6333' || exit 1"]
     interval: 10s
     timeout: 5s
     retries: 5
+    start_period: 30s
   restart: unless-stopped
   deploy:
     resources:
@@ -452,7 +453,7 @@ Key configuration choices:
 - **Pinned version** (`v1.13.2`): Matches development for consistency. Avoids surprise breaking changes from `:latest`.
 - **1G memory limit**: Sufficient for ~3,200 documents with dense + sparse vectors. Actual usage ~200-400MB.
 - **Volume persistence** (`qdrant_data`): Data survives container restarts.
-- **Health check** via `/readyz` endpoint: Backend depends on this to start only after Qdrant is ready.
+- **Health check** via bash TCP probe on port 6333: Backend depends on this to start only after Qdrant is ready. Uses `start_period: 30s` for first-boot initialization.
 - **No API key needed**: Ports bind to `127.0.0.1` only — no external access possible.
 
 ### 5. Resource Limits
