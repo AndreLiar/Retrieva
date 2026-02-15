@@ -40,6 +40,8 @@ services:
     container_name: rag-backend
     ports:
       - "3007:3007"
+    env_file:
+      - ./backend/.env
     environment:
       - NODE_ENV=development
       - PORT=3007
@@ -74,6 +76,8 @@ services:
     container_name: rag-ragas
     ports:
       - "8001:8001"
+    env_file:
+      - ./ragas-service/.env
     environment:
       - OLLAMA_BASE_URL=http://host.docker.internal:11434
     networks:
