@@ -35,7 +35,7 @@ RESEND_FROM_EMAIL=noreply@yourdomain.com
 |----------|---------|-------------|
 | `RESEND_API_KEY` | - | Resend API key (required) |
 | `SMTP_FROM_NAME` | `RAG Platform` | Display name in the "From" field |
-| `RESEND_FROM_EMAIL` | `noreply@devandre.sbs` | Sender email (must match a verified Resend domain) |
+| `RESEND_FROM_EMAIL` | `noreply@retrieva.online` | Sender email (must match a verified Resend domain) |
 
 :::note
 If `RESEND_API_KEY` is not set, the service gracefully degrades — emails are skipped with a warning log. This means email is optional for local development.
@@ -47,16 +47,16 @@ To send from your own domain (instead of Resend's shared domain), you must verif
 
 ### Required DNS Records
 
-After adding your domain in the Resend dashboard, you'll be given records to create. For the `devandre.sbs` domain, these are:
+After adding your domain in the Resend dashboard, you'll be given records to create. For the `retrieva.online` domain, these are:
 
 | Type | Name | Value | Purpose |
 |------|------|-------|---------|
-| TXT | `resend._domainkey.devandre.sbs` | `p=MIGfMA0GCSq...` | DKIM signature (record 1) |
-| TXT | `resend2._domainkey.devandre.sbs` | `p=MIGfMA0GCSq...` | DKIM signature (record 2) |
-| TXT | `resend3._domainkey.devandre.sbs` | `p=MIGfMA0GCSq...` | DKIM signature (record 3) |
-| MX | `send.devandre.sbs` | `feedback-smtp.us-east-1.amazonses.com` | SPF return path |
-| TXT | `send.devandre.sbs` | `v=spf1 include:amazonses.com ~all` | SPF authorization |
-| TXT | `_dmarc.devandre.sbs` | `v=DMARC1; p=none;` | DMARC policy |
+| TXT | `resend._domainkey.retrieva.online` | `p=MIGfMA0GCSq...` | DKIM signature (record 1) |
+| TXT | `resend2._domainkey.retrieva.online` | `p=MIGfMA0GCSq...` | DKIM signature (record 2) |
+| TXT | `resend3._domainkey.retrieva.online` | `p=MIGfMA0GCSq...` | DKIM signature (record 3) |
+| MX | `send.retrieva.online` | `feedback-smtp.us-east-1.amazonses.com` | SPF return path |
+| TXT | `send.retrieva.online` | `v=spf1 include:amazonses.com ~all` | SPF authorization |
+| TXT | `_dmarc.retrieva.online` | `v=DMARC1; p=none;` | DMARC policy |
 
 ### DNS Management
 
@@ -151,9 +151,9 @@ The backend health endpoint at `GET /api/v1/health` includes email service statu
 1. Double-check all 6 DNS records are created in DigitalOcean
 2. Use `dig` to verify records have propagated:
    ```bash
-   dig TXT resend._domainkey.devandre.sbs
-   dig MX send.devandre.sbs
-   dig TXT _dmarc.devandre.sbs
+   dig TXT resend._domainkey.retrieva.online
+   dig MX send.retrieva.online
+   dig TXT _dmarc.retrieva.online
    ```
 3. Wait up to 48 hours for full propagation
 4. Click "Verify" again in the Resend dashboard

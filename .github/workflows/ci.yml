@@ -215,8 +215,8 @@ jobs:
           - service: frontend
             context: ./frontend
             build-args: |
-              NEXT_PUBLIC_API_URL=https://devandre.sbs/api/v1
-              NEXT_PUBLIC_WS_URL=https://devandre.sbs
+              NEXT_PUBLIC_API_URL=https://retrieva.online/api/v1
+              NEXT_PUBLIC_WS_URL=https://retrieva.online
               NEXT_PUBLIC_APP_NAME=Retrieva
 
     steps:

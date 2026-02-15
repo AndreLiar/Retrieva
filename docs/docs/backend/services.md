@@ -340,7 +340,7 @@ export const emailService = {
 |----------|---------|-------------|
 | `RESEND_API_KEY` | - | Resend API key (required for sending) |
 | `SMTP_FROM_NAME` | `RAG Platform` | Display name in "From" field |
-| `RESEND_FROM_EMAIL` | `noreply@devandre.sbs` | Sender address (must match verified domain) |
+| `RESEND_FROM_EMAIL` | `noreply@retrieva.online` | Sender address (must match verified domain) |
 
 :::note
 If `RESEND_API_KEY` is not set, the service logs a warning and skips sending. This makes email optional for local development.

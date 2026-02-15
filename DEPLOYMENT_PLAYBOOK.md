@@ -87,9 +87,9 @@
 **Routing:**
 
 ```
-https://devandre.sbs/            → frontend  :3000
-https://devandre.sbs/api/        → backend   :3007
-https://devandre.sbs/socket.io/  → backend   :3007 (WebSocket upgrade)
+https://retrieva.online/            → frontend  :3000
+https://retrieva.online/api/        → backend   :3007
+https://retrieva.online/socket.io/  → backend   :3007 (WebSocket upgrade)
 ```
 
 **Container Images (GHCR):**
@@ -112,7 +112,7 @@ Before starting, you must have:
 | # | Requirement | How to Get It |
 |---|-------------|---------------|
 | 1 | **DigitalOcean account** | https://cloud.digitalocean.com |
-| 2 | **Domain name** | `devandre.sbs` (purchased on Namecheap) |
+| 2 | **Domain name** | `retrieva.online` (purchased on Namecheap) |
 | 3 | **Azure OpenAI credentials** | You already have: endpoint, API key, deployment names |
 | 4 | **Notion OAuth app** | https://developers.notion.com — get client ID + secret |
 | 5 | **GitHub repo** | Where your code lives (for GHCR + Actions) |
@@ -412,7 +412,7 @@ upstream backend {
 server {
     listen 80;
     listen [::]:80;
-    server_name devandre.sbs www.devandre.sbs;
+    server_name retrieva.online www.retrieva.online;
     return 301 https://$server_name$request_uri;
 }
 
@@ -420,11 +420,11 @@ server {
 server {
     listen 443 ssl http2;
     listen [::]:443 ssl http2;
-    server_name devandre.sbs www.devandre.sbs;
+    server_name retrieva.online www.retrieva.online;
 
     # --- SSL (managed by Certbot) ---
-    ssl_certificate     /etc/letsencrypt/live/devandre.sbs/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/devandre.sbs/privkey.pem;
+    ssl_certificate     /etc/letsencrypt/live/retrieva.online/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/retrieva.online/privkey.pem;
     ssl_protocols       TLSv1.2 TLSv1.3;
     ssl_ciphers         HIGH:!aNULL:!MD5;
     ssl_prefer_server_ciphers on;
@@ -569,9 +569,9 @@ cp backend/.env.production.example backend/.env.production
 #   AZURE_OPENAI_ENDPOINT=<your endpoint>
 #   NOTION_CLIENT_ID=<your id>
 #   NOTION_CLIENT_SECRET=<your secret>
-#   NOTION_REDIRECT_URI=https://devandre.sbs/api/v1/notion/callback
-#   FRONTEND_URL=https://devandre.sbs
-#   ALLOWED_ORIGINS=https://devandre.sbs
+#   NOTION_REDIRECT_URI=https://retrieva.online/api/v1/notion/callback
+#   FRONTEND_URL=https://retrieva.online
+#   ALLOWED_ORIGINS=https://retrieva.online
 #   MONGODB_URI=mongodb+srv://<user>:<pwd>@<cluster>.mongodb.net/enterprise_rag
 #   REDIS_URL=redis://:<password>@<host>:<port>
 #   QDRANT_URL=https://<cluster-id>.qdrant.io
@@ -582,8 +582,8 @@ sops --encrypt --age age1xxxxxxx... backend/.env.production > backend/.env.produ
 
 # --- Frontend ---
 cat > frontend/.env.production << 'EOF'
-NEXT_PUBLIC_API_URL=https://devandre.sbs/api/v1
-NEXT_PUBLIC_WS_URL=https://devandre.sbs
+NEXT_PUBLIC_API_URL=https://retrieva.online/api/v1
+NEXT_PUBLIC_WS_URL=https://retrieva.online
 NEXT_PUBLIC_APP_NAME=Retrieva
 EOF
 
@@ -698,7 +698,7 @@ variable "droplet_size" {
 variable "domain_name" {
   description = "Your domain name"
   type        = string
-  default     = "devandre.sbs"
+  default     = "retrieva.online"
 }
 
 variable "ssh_public_key_path" {
@@ -949,7 +949,7 @@ echo "=== Cloud-init complete ==="
 # terraform.tfvars is gitignored — NEVER commit it
 
 do_token            = "dop_v1_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-domain_name         = "devandre.sbs"  # Already purchased on Namecheap
+domain_name         = "retrieva.online"  # Already purchased on Namecheap
 region              = "fra1"
 droplet_size        = "s-4vcpu-8gb"
 ssh_public_key_path = "~/.ssh/retrieva_deploy.pub"
@@ -1445,7 +1445,7 @@ docker compose -f docker-compose.production.yml logs -f backend
 # On the server
 sudo cp /opt/rag/nginx/rag.conf /etc/nginx/sites-available/retrieva
 
-# Edit: replace devandre.sbs with your actual domain
+# Edit: replace retrieva.online with your actual domain
 sudo vim /etc/nginx/sites-available/retrieva
 
 # Enable the site
@@ -1463,7 +1463,7 @@ sudo vim /etc/nginx/sites-available/retrieva
 # Temporary config for cert generation:
 # server {
 #     listen 80;
-#     server_name devandre.sbs www.devandre.sbs;
+#     server_name retrieva.online www.retrieva.online;
 #     location / { return 200 'ok'; }
 # }
 
@@ -1471,7 +1471,7 @@ sudo nginx -t
 sudo systemctl reload nginx
 
 # Get the cert
-sudo certbot --nginx -d devandre.sbs -d www.devandre.sbs
+sudo certbot --nginx -d retrieva.online -d www.retrieva.online
 
 # Certbot will auto-modify the nginx config to add SSL
 # Restore the full config from the repo and reload:
@@ -1494,9 +1494,9 @@ sudo systemctl list-timers | grep certbot
 ### 6.4 Verify HTTPS
 
 ```bash
-curl -I https://devandre.sbs           # Should return 200
-curl -I https://devandre.sbs/api/v1    # Should return from backend
-curl -I http://devandre.sbs            # Should redirect to HTTPS (301)
+curl -I https://retrieva.online           # Should return 200
+curl -I https://retrieva.online/api/v1    # Should return from backend
+curl -I http://retrieva.online            # Should redirect to HTTPS (301)
 ```
 
 ---
@@ -1506,9 +1506,9 @@ curl -I http://devandre.sbs            # Should redirect to HTTPS (301)
 Run through this checklist after the first deployment:
 
 ```
-[ ] https://devandre.sbs loads the frontend
-[ ] https://devandre.sbs/api/v1 returns API response
-[ ] https://devandre.sbs/health returns { status: "ok" }
+[ ] https://retrieva.online loads the frontend
+[ ] https://retrieva.online/api/v1 returns API response
+[ ] https://retrieva.online/health returns { status: "ok" }
 [ ] Register a new user account
 [ ] Login with the new account
 [ ] Create a workspace
@@ -1651,7 +1651,7 @@ External Managed Services (FREE tiers):
 | MongoDB Atlas (M0 Free) | $0 |
 | Redis Cloud (Free) | $0 |
 | Qdrant Cloud (Free) | $0 |
-| Domain name (devandre.sbs) | $1.74/year |
+| Domain name (retrieva.online) | $1.74/year |
 | **Total** | **~$36-40/mo** |
 
 ---
