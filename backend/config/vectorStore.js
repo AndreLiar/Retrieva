@@ -1,7 +1,13 @@
 import { QdrantVectorStore } from '@langchain/qdrant';
 import { QdrantClient } from '@qdrant/js-client-rest';
 import { randomUUID } from 'crypto';
-import { embeddings, BATCH_CONFIG, getEmbeddingMetrics, isCloudAvailable, createEmbeddingContext } from './embeddings.js';
+import {
+  embeddings,
+  BATCH_CONFIG,
+  getEmbeddingMetrics,
+  isCloudAvailable,
+  createEmbeddingContext,
+} from './embeddings.js';
 import { selectProvider, EmbeddingProvider } from './embeddingProvider.js';
 import { recordEmbeddingUsage } from '../services/metrics/syncMetrics.js';
 import { wrapWithTenantIsolation } from '../services/security/tenantIsolation.js';
@@ -18,6 +24,7 @@ const EMBEDDING_TIMEOUT_MS = parseInt(process.env.EMBEDDING_TIMEOUT_MS) || 12000
 const ENFORCE_TENANT_ISOLATION = process.env.ENFORCE_TENANT_ISOLATION !== 'false';
 
 const QDRANT_URL = process.env.QDRANT_URL || 'http://localhost:6333';
+const QDRANT_API_KEY = process.env.QDRANT_API_KEY;
 const COLLECTION_NAME = process.env.QDRANT_COLLECTION_NAME || 'langchain-rag';
 
 // Qdrant client for direct operations
@@ -25,7 +32,11 @@ let qdrantClient = null;
 
 function getQdrantClient() {
   if (!qdrantClient) {
-    qdrantClient = new QdrantClient({ url: QDRANT_URL });
+    const options = { url: QDRANT_URL };
+    if (QDRANT_API_KEY) {
+      options.apiKey = QDRANT_API_KEY;
+    }
+    qdrantClient = new QdrantClient(options);
   }
   return qdrantClient;
 }
@@ -52,12 +63,13 @@ export const getVectorStore = async (docs, options = {}) => {
   try {
     vectorStore = await QdrantVectorStore.fromExistingCollection(embeddings, {
       url: QDRANT_URL,
+      apiKey: QDRANT_API_KEY,
       collectionName: COLLECTION_NAME,
-      contentPayloadKey: 'pageContent',  // Match the key used during indexing
+      contentPayloadKey: 'pageContent', // Match the key used during indexing
     });
   } catch (error) {
     // Provide meaningful error messages for common issues
-    if (error.message?.includes('Not found') || error.message?.includes('doesn\'t exist')) {
+    if (error.message?.includes('Not found') || error.message?.includes("doesn't exist")) {
       logger.error('Qdrant collection not found', {
         service: 'vector-store',
         collection: COLLECTION_NAME,
@@ -66,7 +78,7 @@ export const getVectorStore = async (docs, options = {}) => {
       });
       throw new Error(
         `Vector store collection "${COLLECTION_NAME}" not found. ` +
-        `Ensure Qdrant is running at ${QDRANT_URL} and documents have been indexed.`
+          `Ensure Qdrant is running at ${QDRANT_URL} and documents have been indexed.`
       );
     }
 
@@ -77,8 +89,7 @@ export const getVectorStore = async (docs, options = {}) => {
         error: error.message,
       });
       throw new Error(
-        `Cannot connect to Qdrant at ${QDRANT_URL}. ` +
-        `Ensure Qdrant is running and accessible.`
+        `Cannot connect to Qdrant at ${QDRANT_URL}. ` + `Ensure Qdrant is running and accessible.`
       );
     }
 
@@ -161,7 +172,7 @@ export async function indexDocumentsBatched(docs, options = {}) {
       }),
       EMBEDDING_TIMEOUT_MS,
       `Embedding operation timed out after ${EMBEDDING_TIMEOUT_MS / 1000}s. ` +
-      `Consider reducing batch size or checking embedding service health.`
+        `Consider reducing batch size or checking embedding service health.`
     );
   } catch (error) {
     // Log and re-throw with context
@@ -212,7 +223,10 @@ export async function indexDocumentsBatched(docs, options = {}) {
   const sanitizeText = (text) => {
     if (typeof text !== 'string') return text;
     // Remove lone surrogates that cause JSON encoding issues
-    return text.replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, '\uFFFD');
+    return text.replace(
+      /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g,
+      '\uFFFD'
+    );
   };
 
   // Create points for Qdrant with sanitized content
@@ -269,8 +283,9 @@ export async function indexDocumentsBatched(docs, options = {}) {
   // IMPORTANT: contentPayloadKey must match how we store documents (payload.pageContent)
   let vectorStore = await QdrantVectorStore.fromExistingCollection(embeddings, {
     url: QDRANT_URL,
+    apiKey: QDRANT_API_KEY,
     collectionName: COLLECTION_NAME,
-    contentPayloadKey: 'pageContent',  // Match the key used during indexing
+    contentPayloadKey: 'pageContent', // Match the key used during indexing
   });
 
   // DEFENSE-IN-DEPTH: Wrap with tenant isolation enforcement
