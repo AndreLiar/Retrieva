@@ -100,7 +100,7 @@ jobs:
     environment: production
 
     steps:
-      - name: Deploy via SSH
+      - name: Deploy and verify
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.DEPLOY_HOST }}
@@ -111,15 +111,14 @@ jobs:
             set -e
             cd /opt/rag
 
-            # Pull latest code
+            # ── Pull latest code ──────────────────────────────────────────
             git pull origin main
 
-            # Login to GHCR to pull private images
+            # ── Login to GHCR ─────────────────────────────────────────────
             echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u AndreLiar --password-stdin
 
-            # Decrypt secrets with SOPS (dotenv format needs explicit type flags)
+            # ── Decrypt secrets with SOPS ─────────────────────────────────
             SOPS_AGE_KEY_FILE=~/.age/key.txt sops --decrypt --input-type dotenv --output-type dotenv backend/.env.production.enc > backend/.env
-            # Append email config (Resend API key, stored in separate encrypted file)
             if [ -f backend/.env.resend.production.enc ]; then
               echo "" >> backend/.env
               SOPS_AGE_KEY_FILE=~/.age/key.txt sops --decrypt --input-type dotenv --output-type dotenv backend/.env.resend.production.enc >> backend/.env
@@ -129,29 +128,60 @@ jobs:
             # Extract Redis password for docker-compose interpolation
             grep '^REDIS_PASSWORD=' backend/.env > .env 2>/dev/null || true
 
-            # Pull new images
+            # ── Tag current images as :rollback (pre-deploy safety net) ───
+            for svc in backend frontend ragas-service; do
+              img="ghcr.io/andreliar/retrieva/${svc}:latest"
+              if docker image inspect "$img" > /dev/null 2>&1; then
+                docker tag "$img" "ghcr.io/andreliar/retrieva/${svc}:rollback"
+                echo "Tagged ${svc}:latest → ${svc}:rollback"
+              fi
+            done
+
+            # ── Qdrant snapshot (best-effort, non-blocking) ───────────────
+            curl -sf -X POST http://localhost:6333/collections/documents/snapshots \
+              --connect-timeout 5 --max-time 30 || echo "WARN: Qdrant snapshot skipped"
+
+            # ── Pull new images ───────────────────────────────────────────
             docker compose -f docker-compose.production.yml pull
 
-            # Restart services (zero-downtime: remove old containers after new ones are healthy)
+            # ── Deploy ────────────────────────────────────────────────────
             docker compose -f docker-compose.production.yml up -d --remove-orphans
 
-            # Clean up old images
+            # ── Health check with retries (6 × 15s = 90s max) ────────────
+            healthy=false
+            for i in $(seq 1 6); do
+              sleep 15
+              if curl -sf http://localhost:3007/health > /dev/null && \
+                 curl -sf http://localhost:3000 > /dev/null; then
+                healthy=true
+                echo "Health check passed on attempt $i"
+                break
+              fi
+              echo "Health check attempt $i/6 failed, retrying..."
+            done
+
+            # ── Rollback on failure ───────────────────────────────────────
+            if [ "$healthy" != "true" ]; then
+              echo "CRITICAL: Health checks failed after 6 attempts. Rolling back..."
+              for svc in backend frontend ragas-service; do
+                rb="ghcr.io/andreliar/retrieva/${svc}:rollback"
+                if docker image inspect "$rb" > /dev/null 2>&1; then
+                  docker tag "$rb" "ghcr.io/andreliar/retrieva/${svc}:latest"
+                  echo "Restored ${svc}:rollback → ${svc}:latest"
+                fi
+              done
+              docker compose -f docker-compose.production.yml up -d --remove-orphans
+              sleep 15
+              if curl -sf http://localhost:3007/health > /dev/null; then
+                echo "Rollback successful — previous version restored"
+              else
+                echo "CRITICAL: Rollback also failed — manual intervention needed"
+              fi
+              exit 1
+            fi
+
+            # ── Cleanup ──────────────────────────────────────────────────
             docker image prune -f
 
-            # Show status
-            echo "=== Deployment complete ==="
+            echo "=== Deployment successful ==="
             docker compose -f docker-compose.production.yml ps
-
-      - name: Health check
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: deploy
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          script: |
-            # Wait for services to start
-            sleep 15
-            # Check backend health
-            curl -sf http://localhost:3007/health || echo "WARNING: Backend health check failed"
-            # Check frontend
-            curl -sf http://localhost:3000 > /dev/null || echo "WARNING: Frontend health check failed"
