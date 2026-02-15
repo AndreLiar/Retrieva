@@ -9,10 +9,10 @@
 #
 # External Managed Services (NOT in this compose):
 #   - MongoDB Atlas  (Free M0)  → MONGODB_URI in backend/.env
-#   - Qdrant Cloud   (Free 1GB)  → QDRANT_URL in backend/.env
 #
 # Self-Hosted Services (IN this compose):
 #   - Redis 7 (256MB, AOF persistence) → REDIS_URL in backend/.env
+#   - Qdrant v1.13.2 (vector database)  → QDRANT_URL in backend/.env
 
 services:
   # ---------------------------------------------------------------------------
@@ -77,10 +77,42 @@ services:
       - rag-network
 
   # ---------------------------------------------------------------------------
+  # Qdrant (Vector Database)
+  # ---------------------------------------------------------------------------
+  qdrant:
+    image: qdrant/qdrant:v1.13.2
+    container_name: retrieva-qdrant
+    ports:
+      - "127.0.0.1:6333:6333"
+      - "127.0.0.1:6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    environment:
+      - QDRANT__SERVICE__GRPC_PORT=6334
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:6333/readyz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 1G
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - rag-network
+
+  # ---------------------------------------------------------------------------
   # Backend (Node.js/Express)
   # ---------------------------------------------------------------------------
-  # MongoDB, Qdrant connection strings come from backend/.env
-  # Redis runs as a sibling container (see redis service above)
+  # MongoDB connection string comes from backend/.env
+  # Redis and Qdrant run as sibling containers (see services above)
   # (decrypted from backend/.env.production.enc at deploy time)
   backend:
     image: ghcr.io/andreliar/retrieva/backend:latest
@@ -91,6 +123,8 @@ services:
       - ./backend/.env
     depends_on:
       redis:
+        condition: service_healthy
+      qdrant:
         condition: service_healthy
     environment:
       - NODE_ENV=production
@@ -139,6 +173,7 @@ services:
 
 volumes:
   redis_data:
+  qdrant_data:
 
 networks:
   rag-network:

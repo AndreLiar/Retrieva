@@ -625,7 +625,7 @@ Separate Python service (`ragas-service/`) for RAG quality evaluation:
 |--------|-------------|---------|------------|
 | **MongoDB** | Docker local | Atlas M0/M2 | Atlas M10+ |
 | **Redis** | Docker local | Docker/Managed | Self-hosted Docker (same droplet) |
-| **Qdrant** | Docker local | Qdrant Cloud Free | Qdrant Cloud Paid |
+| **Qdrant** | Docker local | Qdrant Cloud Free | Self-hosted Docker (same droplet) |
 | **LLM** | Azure OpenAI | Azure OpenAI | Azure OpenAI |
 | **Logging** | Debug level | Debug level | Info level |
 | **Rate Limits** | Relaxed | Moderate | Strict |
