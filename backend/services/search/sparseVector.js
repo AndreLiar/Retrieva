@@ -614,7 +614,9 @@ class SparseVectorManager {
         sparseRank: entry.sparseRank,
         denseScore: entry.denseScore,
         sparseScore: entry.sparseScore,
-        normalizedSparseScore: entry.sparseScore ? (entry.sparseScore / maxSparseScore).toFixed(3) : null,
+        normalizedSparseScore: entry.sparseScore
+          ? (entry.sparseScore / maxSparseScore).toFixed(3)
+          : null,
         doc: entry.doc,
       });
     }
@@ -622,8 +624,12 @@ class SparseVectorManager {
     merged.sort((a, b) => b.rrfScore - a.rrfScore);
 
     // Debug logging
-    const sparseOnlyWithVectorId = merged.filter(m => m.sparseRank && !m.denseRank && m.vectorStoreId);
-    const sparseOnlyWithoutVectorId = merged.filter(m => m.sparseRank && !m.denseRank && !m.vectorStoreId);
+    const sparseOnlyWithVectorId = merged.filter(
+      (m) => m.sparseRank && !m.denseRank && m.vectorStoreId
+    );
+    const sparseOnlyWithoutVectorId = merged.filter(
+      (m) => m.sparseRank && !m.denseRank && !m.vectorStoreId
+    );
 
     logger.info('Hybrid search completed', {
       service: 'sparse-vector',
@@ -718,7 +724,8 @@ class SparseVectorManager {
       const qdrantUrl = process.env.QDRANT_URL || 'http://localhost:6333';
       const collectionName = process.env.QDRANT_COLLECTION_NAME || 'langchain-rag';
 
-      const client = new QdrantClient({ url: qdrantUrl });
+      const apiKey = process.env.QDRANT_API_KEY;
+      const client = new QdrantClient({ url: qdrantUrl, ...(apiKey && { apiKey }) });
 
       // Fetch all documents for this workspace from Qdrant
       const documents = [];

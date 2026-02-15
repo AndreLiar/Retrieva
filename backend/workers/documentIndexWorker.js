@@ -31,6 +31,7 @@ import { NotionWorkspace } from '../models/NotionWorkspace.js';
 // Qdrant client for verification
 import { QdrantClient } from '@qdrant/js-client-rest';
 const QDRANT_URL = process.env.QDRANT_URL || 'http://localhost:6333';
+const QDRANT_API_KEY = process.env.QDRANT_API_KEY;
 const COLLECTION_NAME = process.env.QDRANT_COLLECTION_NAME || 'langchain-rag';
 
 // ISSUE #35 FIX: Shared Qdrant client instance with cleanup support
@@ -42,7 +43,9 @@ let sharedQdrantClient = null;
  */
 function getQdrantClient() {
   if (!sharedQdrantClient) {
-    sharedQdrantClient = new QdrantClient({ url: QDRANT_URL });
+    const options = { url: QDRANT_URL };
+    if (QDRANT_API_KEY) options.apiKey = QDRANT_API_KEY;
+    sharedQdrantClient = new QdrantClient(options);
   }
   return sharedQdrantClient;
 }
@@ -126,7 +129,14 @@ async function verifyQdrantIndexing(workspaceId, sourceId, expectedCount) {
  * @returns {Promise<Object>} Indexing results
  */
 async function processIndexJob(job) {
-  const { workspaceId, sourceId, documentContent, operation, vectorStoreIds, skipM3 = false } = job.data;
+  const {
+    workspaceId,
+    sourceId,
+    documentContent,
+    operation,
+    vectorStoreIds,
+    skipM3 = false,
+  } = job.data;
 
   logger.info(
     `Processing ${operation} operation for document ${sourceId} in workspace ${workspaceId}`
@@ -139,7 +149,14 @@ async function processIndexJob(job) {
     if (operation === 'delete') {
       return await handleDelete(workspaceId, sourceId, vectorStoreIds, job);
     } else if (operation === 'add' || operation === 'update') {
-      return await handleAddOrUpdate(workspaceId, sourceId, documentContent, operation, skipM3, job);
+      return await handleAddOrUpdate(
+        workspaceId,
+        sourceId,
+        documentContent,
+        operation,
+        skipM3,
+        job
+      );
     } else {
       throw new Error(`Unknown operation: ${operation}`);
     }
@@ -184,7 +201,14 @@ async function processIndexJob(job) {
  * @param {Object} job - BullMQ job object for progress reporting
  * @returns {Promise<Object>} Results
  */
-async function handleAddOrUpdate(workspaceId, sourceId, documentContent, operation, skipM3 = false, job = null) {
+async function handleAddOrUpdate(
+  workspaceId,
+  sourceId,
+  documentContent,
+  operation,
+  skipM3 = false,
+  job = null
+) {
   logger.info(
     `${operation === 'add' ? 'Adding' : 'Updating'} document ${sourceId} to vector store`
   );
@@ -211,11 +235,14 @@ async function handleAddOrUpdate(workspaceId, sourceId, documentContent, operati
     if (docSource && docSource.vectorStoreIds && docSource.vectorStoreIds.length > 0) {
       oldVectorStoreIds = [...docSource.vectorStoreIds];
       oldChunkCount = docSource.chunkCount || oldVectorStoreIds.length;
-      logger.debug(`Update operation: will replace ${oldChunkCount} old chunks after successful indexing`, {
-        service: 'document-index',
-        workspaceId,
-        sourceId,
-      });
+      logger.debug(
+        `Update operation: will replace ${oldChunkCount} old chunks after successful indexing`,
+        {
+          service: 'document-index',
+          workspaceId,
+          sourceId,
+        }
+      );
     }
   }
 
@@ -434,7 +461,8 @@ async function handleAddOrUpdate(workspaceId, sourceId, documentContent, operati
 
   if (!verification.verified) {
     // Check if this is a partial success (some chunks indexed)
-    const isPartialSuccess = verification.actualCount > 0 && verification.actualCount < expectedNewChunks;
+    const isPartialSuccess =
+      verification.actualCount > 0 && verification.actualCount < expectedNewChunks;
 
     const errorMessage = `Qdrant verification failed: expected ${expectedNewChunks} vectors, found ${verification.actualCount}`;
     logger.error(errorMessage, {
@@ -833,10 +861,10 @@ const WORKER_CONCURRENCY = parseInt(process.env.INDEX_WORKER_CONCURRENCY) || 3;
 export const documentIndexWorker = new Worker('documentIndex', processIndexJob, {
   connection: redisConnection,
   concurrency: WORKER_CONCURRENCY, // Controls parallel Azure OpenAI embedding requests
-  lockDuration: 600000,      // 10 minutes - max time for a single operation
-  lockRenewTime: 240000,     // Renew lock every 4 minutes
-  maxStalledCount: 3,        // Allow 3 stall detections before failing
-  stalledInterval: 300000,   // Check for stalled jobs every 5 minutes
+  lockDuration: 600000, // 10 minutes - max time for a single operation
+  lockRenewTime: 240000, // Renew lock every 4 minutes
+  maxStalledCount: 3, // Allow 3 stall detections before failing
+  stalledInterval: 300000, // Check for stalled jobs every 5 minutes
 });
 
 documentIndexWorker.on('completed', (job, result) => {

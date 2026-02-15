@@ -40,7 +40,8 @@ class VectorStoreBackupManager {
    */
   async _ensureClient() {
     if (!this.client) {
-      this.client = new QdrantClient({ url: this.qdrantUrl });
+      const apiKey = process.env.QDRANT_API_KEY;
+      this.client = new QdrantClient({ url: this.qdrantUrl, ...(apiKey && { apiKey }) });
     }
     return this.client;
   }

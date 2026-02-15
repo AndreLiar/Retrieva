@@ -19,7 +19,8 @@ let qdrantClient = null;
 
 function getQdrantClient() {
   if (!qdrantClient) {
-    qdrantClient = new QdrantClient({ url: QDRANT_URL });
+    const apiKey = process.env.QDRANT_API_KEY;
+    qdrantClient = new QdrantClient({ url: QDRANT_URL, ...(apiKey && { apiKey }) });
   }
   return qdrantClient;
 }
@@ -91,13 +92,16 @@ export async function fetchSiblingChunks(workspaceId, sourceId, position, window
     // Filter to siblings within position range
     const siblings = result.points
       .filter((point) => {
-        const chunkPosition = point.payload?.metadata?.chunkIndex ??
-                              point.payload?.metadata?.position ??
-                              extractPositionFromId(point.payload?.metadata?.vectorStoreId);
-        return chunkPosition !== null &&
-               chunkPosition >= minPosition &&
-               chunkPosition <= maxPosition &&
-               chunkPosition !== position; // Exclude the original
+        const chunkPosition =
+          point.payload?.metadata?.chunkIndex ??
+          point.payload?.metadata?.position ??
+          extractPositionFromId(point.payload?.metadata?.vectorStoreId);
+        return (
+          chunkPosition !== null &&
+          chunkPosition >= minPosition &&
+          chunkPosition <= maxPosition &&
+          chunkPosition !== position
+        ); // Exclude the original
       })
       .map((point) => ({
         pageContent: point.payload?.pageContent || point.payload?.content || '',
@@ -169,9 +173,11 @@ export async function fetchParentDocumentChunks(workspaceId, sourceId, limit = 1
       .map((point) => ({
         pageContent: point.payload?.pageContent || point.payload?.content || '',
         metadata: point.payload?.metadata || {},
-        position: point.payload?.metadata?.chunkIndex ??
-                  point.payload?.metadata?.position ??
-                  extractPositionFromId(point.payload?.metadata?.vectorStoreId) ?? 0,
+        position:
+          point.payload?.metadata?.chunkIndex ??
+          point.payload?.metadata?.position ??
+          extractPositionFromId(point.payload?.metadata?.vectorStoreId) ??
+          0,
         id: point.id,
       }))
       .sort((a, b) => a.position - b.position);
@@ -227,9 +233,10 @@ export async function expandDocumentContext(documents, workspaceId, options = {}
 
   for (const doc of documents) {
     const sourceId = doc.metadata?.sourceId;
-    const position = doc.metadata?.chunkIndex ??
-                     doc.metadata?.position ??
-                     extractPositionFromId(doc.metadata?.vectorStoreId);
+    const position =
+      doc.metadata?.chunkIndex ??
+      doc.metadata?.position ??
+      extractPositionFromId(doc.metadata?.vectorStoreId);
     const score = doc.metadata?.score ?? doc.score ?? 1;
 
     // Add original chunk
@@ -256,13 +263,15 @@ export async function expandDocumentContext(documents, workspaceId, options = {}
 
     for (const sibling of siblings) {
       // Avoid duplicates
-      const siblingPosition = sibling.metadata?.chunkIndex ??
-                               sibling.metadata?.position ??
-                               extractPositionFromId(sibling.metadata?.vectorStoreId);
+      const siblingPosition =
+        sibling.metadata?.chunkIndex ??
+        sibling.metadata?.position ??
+        extractPositionFromId(sibling.metadata?.vectorStoreId);
 
       const isDuplicate = expandedChunks.some(
-        (ec) => ec.metadata?.sourceId === sourceId &&
-                (ec.position === siblingPosition || ec.pageContent === sibling.pageContent)
+        (ec) =>
+          ec.metadata?.sourceId === sourceId &&
+          (ec.position === siblingPosition || ec.pageContent === sibling.pageContent)
       );
 
       if (!isDuplicate && sourceChunkCount < maxChunksPerSource) {
@@ -330,9 +339,7 @@ export function mergeExpandedChunks(chunks) {
     sourceChunks.sort((a, b) => (a.position || 0) - (b.position || 0));
 
     // Combine content
-    const combinedContent = sourceChunks
-      .map((c) => c.pageContent)
-      .join('\n\n');
+    const combinedContent = sourceChunks.map((c) => c.pageContent).join('\n\n');
 
     // Use metadata from first original chunk
     const originalChunk = sourceChunks.find((c) => c.isOriginal) || sourceChunks[0];
@@ -343,9 +350,7 @@ export function mergeExpandedChunks(chunks) {
         ...originalChunk.metadata,
         isExpanded: sourceChunks.length > 1,
         chunkCount: sourceChunks.length,
-        originalPositions: sourceChunks
-          .filter((c) => c.isOriginal)
-          .map((c) => c.position),
+        originalPositions: sourceChunks.filter((c) => c.isOriginal).map((c) => c.position),
       },
     });
   }
