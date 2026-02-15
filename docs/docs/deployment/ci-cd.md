@@ -39,7 +39,8 @@ Push/PR to main/dev/staging
 │  1. Run CI ──► 2. Build & Push  ──► 3. Deploy via SSH           │
 │                  to GHCR               to DigitalOcean          │
 │                                                                 │
-│                                    4. Health Check               │
+│                                    4. Health Check (6×15s)       │
+│                                    5. Auto-Rollback on failure   │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -89,8 +90,13 @@ env:
 
 1. **Run CI** — calls the CI workflow as a reusable workflow
 2. **Build & Push** — builds Docker images for `backend`, `frontend`, and `ragas-service`, then pushes to GHCR
-3. **Deploy via SSH** — connects to the production droplet and runs the deployment script
-4. **Health Check** — verifies backend (`/health`) and frontend are responding
+3. **Deploy via SSH** — connects to the production droplet and runs the deployment script:
+   - Pull latest code and decrypt secrets (SOPS)
+   - Tag current `:latest` images as `:rollback` (pre-deploy safety net)
+   - Create Qdrant collection snapshot (best-effort, non-blocking)
+   - Pull new images and restart services
+4. **Health Check** — retry loop: 6 attempts × 15s = 90s max wait, checking backend `/health` and frontend
+5. **Auto-Rollback** — if health checks fail, restore `:rollback` images and restart services. The workflow step exits with code 1, failing the GitHub Actions run
 
 ### Docker Images
 
@@ -209,33 +215,60 @@ Nginx handles TLS termination and routing. Configuration: `nginx/rag.conf`
 
 ## Health Check
 
-After deployment, the CD workflow waits 15 seconds then verifies:
+After deploying new containers, the CD workflow runs a health check retry loop:
+
+- **6 attempts** with **15-second intervals** (90 seconds max wait)
+- Checks both `http://localhost:3007/health` (backend) and `http://localhost:3000` (frontend)
+- If both respond successfully on any attempt, the deploy is considered healthy
 
 ```bash
-curl -sf http://localhost:3007/health   # Backend API
-curl -sf http://localhost:3000           # Frontend
+# The CD script runs this loop internally:
+for i in $(seq 1 6); do
+  sleep 15
+  curl -sf http://localhost:3007/health && curl -sf http://localhost:3000
+done
 ```
 
 The backend `/health` endpoint returns service status including database connectivity and email configuration state.
 
 ## Rollback
 
-To roll back to a previous version:
+### Automatic Rollback (CD Pipeline)
+
+Before pulling new images, the CD pipeline tags the current `:latest` images as `:rollback`:
+
+```bash
+docker tag ghcr.io/andreliar/retrieva/backend:latest   ghcr.io/andreliar/retrieva/backend:rollback
+docker tag ghcr.io/andreliar/retrieva/frontend:latest   ghcr.io/andreliar/retrieva/frontend:rollback
+docker tag ghcr.io/andreliar/retrieva/ragas-service:latest ghcr.io/andreliar/retrieva/ragas-service:rollback
+```
+
+If health checks fail after deployment, the pipeline automatically:
+1. Restores `:rollback` images back to `:latest`
+2. Restarts all services with the previous images
+3. Verifies the rollback succeeded
+4. Exits with code 1 to fail the GitHub Actions workflow
+
+### Manual Rollback
+
+If you need to roll back manually (e.g., the automatic rollback also failed):
 
 ```bash
 # SSH into the production server
 ssh deploy@<DEPLOY_HOST>
 cd /opt/rag
 
-# Find the previous image SHA
-docker images ghcr.io/andreliar/retrieva/backend --format "{{.Tag}}"
+# Option 1: Use rollback images (if still available)
+for svc in backend frontend ragas-service; do
+  docker tag "ghcr.io/andreliar/retrieva/${svc}:rollback" "ghcr.io/andreliar/retrieva/${svc}:latest"
+done
+docker compose -f docker-compose.production.yml up -d --remove-orphans
 
-# Update docker-compose.production.yml to pin the previous SHA
-# Or pull a specific tag:
+# Option 2: Pull a specific commit SHA from GHCR
 docker pull ghcr.io/andreliar/retrieva/backend:<previous-sha>
 docker pull ghcr.io/andreliar/retrieva/frontend:<previous-sha>
-
-# Restart with the pinned images
+docker tag ghcr.io/andreliar/retrieva/backend:<previous-sha> ghcr.io/andreliar/retrieva/backend:latest
+docker tag ghcr.io/andreliar/retrieva/frontend:<previous-sha> ghcr.io/andreliar/retrieva/frontend:latest
 docker compose -f docker-compose.production.yml up -d
 ```
 

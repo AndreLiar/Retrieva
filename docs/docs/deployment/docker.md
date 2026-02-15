@@ -456,7 +456,37 @@ Key configuration choices:
 - **Health check** via bash TCP probe on port 6333: Backend depends on this to start only after Qdrant is ready. Uses `start_period: 30s` for first-boot initialization.
 - **No API key needed**: Ports bind to `127.0.0.1` only — no external access possible.
 
-### 5. Resource Limits
+### 5. Compose-Level Healthchecks (Production)
+
+In production, all five services have compose-level healthchecks in `docker-compose.production.yml`. These are separate from Dockerfile `HEALTHCHECK` directives — compose-level healthchecks enable `depends_on: condition: service_healthy` and allow the CD pipeline to verify readiness via `docker inspect`.
+
+| Service | Command | Interval | Timeout | Retries | Start Period |
+|---------|---------|----------|---------|---------|--------------|
+| Backend | `wget --spider http://localhost:3007/health` | 10s | 5s | 5 | 30s |
+| Frontend | `wget --spider http://127.0.0.1:3000` | 10s | 5s | 3 | 20s |
+| RAGAS | `curl -f http://localhost:8001/health` | 10s | 5s | 3 | 20s |
+| Redis | `redis-cli -a $REDIS_PASSWORD ping` | 10s | 5s | 5 | — |
+| Qdrant | `bash -c ':>/dev/tcp/0.0.0.0/6333'` | 10s | 5s | 5 | 30s |
+
+```yaml
+# Example: backend healthcheck in docker-compose.production.yml
+backend:
+  healthcheck:
+    test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3007/health"]
+    interval: 10s
+    timeout: 5s
+    retries: 5
+    start_period: 30s
+```
+
+Check container health status:
+```bash
+docker compose -f docker-compose.production.yml ps
+# Or inspect a specific container:
+docker inspect --format='{{.State.Health.Status}}' retrieva-backend
+```
+
+### 6. Resource Limits
 
 ```yaml
 backend:
@@ -470,7 +500,7 @@ backend:
         memory: 512M
 ```
 
-### 6. Logging Driver
+### 7. Logging Driver
 
 ```yaml
 backend:

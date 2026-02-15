@@ -1288,61 +1288,83 @@ jobs:
     environment: production
 
     steps:
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v0.1.10
+      - name: Deploy and verify
+        uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
+          username: deploy
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script_stop: true
           script: |
-            set -euo pipefail
-
+            set -e
             cd /opt/rag
 
-            # --- Pull latest code (for compose file + encrypted envs) ---
+            # --- Pull latest code ---
             git pull origin main
 
-            # --- Decrypt env files using SOPS + age ---
-            export SOPS_AGE_KEY_FILE=/opt/rag/.age.key
-            sops --decrypt backend/.env.production.enc > backend/.env
-            sops --decrypt ragas-service/.env.production.enc > ragas-service/.env
-            chmod 600 backend/.env ragas-service/.env
-
             # --- Login to GHCR ---
-            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u AndreLiar --password-stdin
 
-            # --- Pull new images ---
+            # --- Decrypt secrets with SOPS ---
+            SOPS_AGE_KEY_FILE=~/.age/key.txt sops --decrypt --input-type dotenv --output-type dotenv backend/.env.production.enc > backend/.env
+            if [ -f backend/.env.resend.production.enc ]; then
+              echo "" >> backend/.env
+              SOPS_AGE_KEY_FILE=~/.age/key.txt sops --decrypt --input-type dotenv --output-type dotenv backend/.env.resend.production.enc >> backend/.env
+            fi
+            SOPS_AGE_KEY_FILE=~/.age/key.txt sops --decrypt --input-type dotenv --output-type dotenv ragas-service/.env.production.enc > ragas-service/.env
+            grep '^REDIS_PASSWORD=' backend/.env > .env 2>/dev/null || true
+
+            # --- Tag current images as :rollback (pre-deploy safety net) ---
+            for svc in backend frontend ragas-service; do
+              img="ghcr.io/andreliar/retrieva/${svc}:latest"
+              if docker image inspect "$img" > /dev/null 2>&1; then
+                docker tag "$img" "ghcr.io/andreliar/retrieva/${svc}:rollback"
+              fi
+            done
+
+            # --- Qdrant snapshot (best-effort) ---
+            curl -sf -X POST http://localhost:6333/collections/documents/snapshots \
+              --connect-timeout 5 --max-time 30 || echo "WARN: Qdrant snapshot skipped"
+
+            # --- Pull new images and deploy ---
             docker compose -f docker-compose.production.yml pull
-
-            # --- Deploy with zero-downtime restart ---
             docker compose -f docker-compose.production.yml up -d --remove-orphans
 
-            # --- Wait for health checks ---
-            echo "Waiting for services to be healthy..."
-            sleep 15
+            # --- Health check with retries (6 × 15s = 90s max) ---
+            healthy=false
+            for i in $(seq 1 6); do
+              sleep 15
+              if curl -sf http://localhost:3007/health > /dev/null && \
+                 curl -sf http://localhost:3000 > /dev/null; then
+                healthy=true
+                echo "Health check passed on attempt $i"
+                break
+              fi
+              echo "Health check attempt $i/6 failed, retrying..."
+            done
 
-            # --- Verify backend health ---
-            if curl -sf http://localhost:3007/health > /dev/null; then
-              echo "Backend: HEALTHY"
-            else
-              echo "Backend: UNHEALTHY — rolling back"
-              docker compose -f docker-compose.production.yml rollback 2>/dev/null || true
+            # --- Rollback on failure ---
+            if [ "$healthy" != "true" ]; then
+              echo "CRITICAL: Health checks failed. Rolling back..."
+              for svc in backend frontend ragas-service; do
+                rb="ghcr.io/andreliar/retrieva/${svc}:rollback"
+                if docker image inspect "$rb" > /dev/null 2>&1; then
+                  docker tag "$rb" "ghcr.io/andreliar/retrieva/${svc}:latest"
+                fi
+              done
+              docker compose -f docker-compose.production.yml up -d --remove-orphans
+              sleep 15
+              if curl -sf http://localhost:3007/health > /dev/null; then
+                echo "Rollback successful — previous version restored"
+              else
+                echo "CRITICAL: Rollback also failed — manual intervention needed"
+              fi
               exit 1
             fi
 
-            # --- Verify frontend health ---
-            if curl -sf http://localhost:3000 > /dev/null; then
-              echo "Frontend: HEALTHY"
-            else
-              echo "Frontend: UNHEALTHY"
-              exit 1
-            fi
-
-            # --- Cleanup old images ---
             docker image prune -f
-
             echo "=== Deployment successful ==="
+            docker compose -f docker-compose.production.yml ps
 ```
 
 > **Note:** Set `DOMAIN_NAME` as a GitHub Actions **Variable** (not secret) under Settings → Variables.
@@ -1372,9 +1394,13 @@ Developer pushes to main
 │  │ SSH into droplet                      │
 │  │ git pull (compose + encrypted envs)   │
 │  │ sops decrypt → .env                   │
-│  │ docker compose pull                   │
-│  │ docker compose up -d                  │
-│  │ health check → rollback on failure    │
+│  │ tag :latest → :rollback               │
+│  │ qdrant snapshot (best-effort)         │
+│  │ docker compose pull + up -d           │
+│  │ health check (6×15s retry loop)       │
+│  │ ✓ healthy → prune + done             │
+│  │ ✗ unhealthy → restore :rollback      │
+│  │              → restart → exit 1       │
 │  └───────────────────────────────────    │
 └──────────────────────────────────────────┘
 ```
@@ -1654,7 +1680,33 @@ External Managed Services (FREE tiers):
 
 ## Appendix C — Rollback Procedures
 
-### Rollback to previous images
+### Automatic Rollback (CD Pipeline)
+
+The CD pipeline handles rollback automatically. Before pulling new images, it tags the current `:latest` images as `:rollback`. If health checks fail after deployment (6 attempts × 15s), the pipeline:
+
+1. Restores `:rollback` images back to `:latest`
+2. Restarts all services with the previous version
+3. Verifies rollback health
+4. Exits with code 1 (fails the GitHub Actions workflow)
+
+No manual action is needed for most deploy failures.
+
+### Manual Rollback (using :rollback images)
+
+If the automatic rollback failed or you need to roll back manually:
+
+```bash
+ssh deploy@<droplet-ip>
+cd /opt/rag
+
+# Restore rollback images
+for svc in backend frontend ragas-service; do
+  docker tag "ghcr.io/andreliar/retrieva/${svc}:rollback" "ghcr.io/andreliar/retrieva/${svc}:latest"
+done
+docker compose -f docker-compose.production.yml up -d --remove-orphans
+```
+
+### Rollback to a specific commit SHA
 
 ```bash
 ssh deploy@<droplet-ip>
@@ -1663,10 +1715,11 @@ cd /opt/rag
 # List available image tags
 docker images | grep ghcr.io
 
-# Edit compose to pin a specific SHA tag instead of :latest
-# Or pull a specific tag:
-docker pull ghcr.io/<owner>/retrieva/backend:<previous-sha>
-docker tag ghcr.io/<owner>/retrieva/backend:<previous-sha> ghcr.io/<owner>/retrieva/backend:latest
+# Pull and tag a specific SHA
+docker pull ghcr.io/andreliar/retrieva/backend:<previous-sha>
+docker pull ghcr.io/andreliar/retrieva/frontend:<previous-sha>
+docker tag ghcr.io/andreliar/retrieva/backend:<previous-sha> ghcr.io/andreliar/retrieva/backend:latest
+docker tag ghcr.io/andreliar/retrieva/frontend:<previous-sha> ghcr.io/andreliar/retrieva/frontend:latest
 
 # Restart
 docker compose -f docker-compose.production.yml up -d
@@ -1682,8 +1735,7 @@ git log --oneline backend/.env.production.enc
 git checkout <commit-sha> -- backend/.env.production.enc
 
 # Decrypt and restart
-export SOPS_AGE_KEY_FILE=/opt/rag/.age.key
-sops --decrypt backend/.env.production.enc > backend/.env
+SOPS_AGE_KEY_FILE=~/.age/key.txt sops --decrypt --input-type dotenv --output-type dotenv backend/.env.production.enc > backend/.env
 docker compose -f docker-compose.production.yml restart backend
 ```
 
