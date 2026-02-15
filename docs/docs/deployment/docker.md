@@ -8,9 +8,11 @@ Container-based deployment using Docker and Docker Compose.
 
 ## Architecture
 
+### Development Stack
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                        Docker Compose Stack                              │
+│                    Docker Compose Stack (Development)                     │
 ├─────────────────────────────────────────────────────────────────────────┤
 │                                                                          │
 │   ┌──────────────┐     ┌──────────────┐     ┌──────────────┐           │
@@ -28,6 +30,29 @@ Container-based deployment using Docker and Docker Compose.
 │   │ Port:27017 │ │Port:6378│   │Port: 6333 │                            │
 │   └────────────┘ └────────┘   └───────────┘                            │
 │                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### Production Stack
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    Docker Compose Stack (Production)                      │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│   ┌──────────────┐     ┌──────────────┐     ┌──────────────┐           │
+│   │   Frontend   │     │   Backend    │     │ RAGAS Service│           │
+│   │  (Next.js)   │     │  (Node.js)   │     │   (Python)   │           │
+│   │  Port: 3000  │     │  Port: 3007  │     │  Port: 8001  │           │
+│   └──────────────┘     └──────┬───────┘     └──────────────┘           │
+│                               │                                          │
+│                        ┌──────┴──────┐                                   │
+│                        │    Redis    │                                   │
+│                        │  Port: 6379 │                                   │
+│                        │  256MB AOF  │                                   │
+│                        └─────────────┘                                   │
+│                                                                          │
+│   External: MongoDB Atlas (M0) + Qdrant Cloud (Free 1GB)                │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -348,12 +373,49 @@ mongodb:
   command: ["--auth"]
 ```
 
-### 3. Redis Password
+### 3. Redis (Production — Self-Hosted)
+
+In production, Redis runs as a Docker service on the same droplet (see `docker-compose.production.yml`):
 
 ```yaml
 redis:
   image: redis:7-alpine
-  command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}"]
+  container_name: retrieva-redis
+  command: >
+    redis-server
+    --maxmemory 256mb
+    --maxmemory-policy noeviction
+    --appendonly yes
+    --appendfsync everysec
+    --save 900 1
+    --save 300 10
+    --requirepass ${REDIS_PASSWORD}
+  ports:
+    - "127.0.0.1:6379:6379"
+  volumes:
+    - redis_data:/data
+  healthcheck:
+    test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+    interval: 10s
+    timeout: 5s
+    retries: 5
+  restart: unless-stopped
+  deploy:
+    resources:
+      limits:
+        cpus: '0.25'
+        memory: 300M
+```
+
+Key configuration choices:
+- **`noeviction`** policy: BullMQ keys have no TTL, so `volatile-lru` would deadlock. With `noeviction`, writes fail with OOM errors instead of silently dropping jobs.
+- **256MB maxmemory**: Enough for ~3,000+ doc syncs with BullMQ job queues and RAG response caching.
+- **AOF + RDB persistence**: AOF (`appendfsync everysec`) for durability, RDB snapshots as backup.
+- **`${REDIS_PASSWORD}`**: Interpolated from a root `.env` file extracted during CD deployment.
+
+Generate a Redis password:
+```bash
+openssl rand -base64 32
 ```
 
 ### 4. Resource Limits

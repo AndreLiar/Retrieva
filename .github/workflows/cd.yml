@@ -126,6 +126,9 @@ jobs:
             fi
             SOPS_AGE_KEY_FILE=~/.age/key.txt sops --decrypt --input-type dotenv --output-type dotenv ragas-service/.env.production.enc > ragas-service/.env
 
+            # Extract Redis password for docker-compose interpolation
+            grep '^REDIS_PASSWORD=' backend/.env > .env 2>/dev/null || true
+
             # Pull new images
             docker compose -f docker-compose.production.yml pull
 

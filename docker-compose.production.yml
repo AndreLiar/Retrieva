@@ -9,8 +9,10 @@
 #
 # External Managed Services (NOT in this compose):
 #   - MongoDB Atlas  (Free M0)  → MONGODB_URI in backend/.env
-#   - Redis Cloud    (Free 30MB) → REDIS_URL in backend/.env
 #   - Qdrant Cloud   (Free 1GB)  → QDRANT_URL in backend/.env
+#
+# Self-Hosted Services (IN this compose):
+#   - Redis 7 (256MB, AOF persistence) → REDIS_URL in backend/.env
 
 services:
   # ---------------------------------------------------------------------------
@@ -38,9 +40,48 @@ services:
       - rag-network
 
   # ---------------------------------------------------------------------------
+  # Redis (Caching & BullMQ Job Queues)
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: retrieva-redis
+    command: >
+      redis-server
+      --maxmemory 256mb
+      --maxmemory-policy noeviction
+      --appendonly yes
+      --appendfsync everysec
+      --save 900 1
+      --save 300 10
+      --requirepass ${REDIS_PASSWORD}
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 300M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - rag-network
+
+  # ---------------------------------------------------------------------------
   # Backend (Node.js/Express)
   # ---------------------------------------------------------------------------
-  # MongoDB, Redis, Qdrant connection strings come from backend/.env
+  # MongoDB, Qdrant connection strings come from backend/.env
+  # Redis runs as a sibling container (see redis service above)
   # (decrypted from backend/.env.production.enc at deploy time)
   backend:
     image: ghcr.io/andreliar/retrieva/backend:latest
@@ -49,6 +90,9 @@ services:
       - "127.0.0.1:3007:3007"
     env_file:
       - ./backend/.env
+    depends_on:
+      redis:
+        condition: service_healthy
     environment:
       - NODE_ENV=production
       - DOCKER_ENV=true
@@ -93,6 +137,9 @@ services:
         max-file: "3"
     networks:
       - rag-network
+
+volumes:
+  redis_data:
 
 networks:
   rag-network:

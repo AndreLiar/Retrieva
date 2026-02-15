@@ -38,6 +38,38 @@ vi.mock('../../config/redis.js', () => ({
   },
 }));
 
+// Mock BullMQ queues to prevent real Redis connections from leaking into the
+// event loop.  Without this, BullMQ's internal IORedis reconnect loop starves
+// later requests and causes non-deterministic 30 s timeouts (see queue.js).
+vi.mock('../../config/queue.js', () => {
+  const mockQueue = {
+    add: vi.fn().mockResolvedValue({ id: 'mock-job-1' }),
+    getWaiting: vi.fn().mockResolvedValue([]),
+    getActive: vi.fn().mockResolvedValue([]),
+    getCompleted: vi.fn().mockResolvedValue([]),
+    getFailed: vi.fn().mockResolvedValue([]),
+    getRepeatableJobs: vi.fn().mockResolvedValue([]),
+    removeRepeatableByKey: vi.fn().mockResolvedValue(undefined),
+    on: vi.fn(),
+    off: vi.fn(),
+    close: vi.fn().mockResolvedValue(undefined),
+  };
+  return {
+    notionSyncQueue: { ...mockQueue },
+    documentIndexQueue: { ...mockQueue },
+    memoryDecayQueue: { ...mockQueue },
+    scheduleMemoryDecayJob: vi.fn().mockResolvedValue(undefined),
+    closeQueues: vi.fn().mockResolvedValue(undefined),
+    default: {
+      notionSyncQueue: { ...mockQueue },
+      documentIndexQueue: { ...mockQueue },
+      memoryDecayQueue: { ...mockQueue },
+      scheduleMemoryDecayJob: vi.fn().mockResolvedValue(undefined),
+      closeQueues: vi.fn().mockResolvedValue(undefined),
+    },
+  };
+});
+
 vi.mock('../../config/logger.js', () => ({
   default: {
     info: vi.fn(),
