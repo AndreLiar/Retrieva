@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -21,7 +21,6 @@ import { authApi, getErrorMessage } from '@/lib/api';
 import { resetPasswordSchema, type ResetPasswordFormData } from '@/lib/utils/validation';
 
 function ResetPasswordForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
 
@@ -74,8 +73,8 @@ function ResetPasswordForm() {
   if (isSuccess) {
     return (
       <div className="space-y-6 text-center">
-        <div className="mx-auto w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
-          <Check className="h-6 w-6 text-green-600 dark:text-green-400" />
+        <div className="mx-auto w-12 h-12 bg-success-muted rounded-full flex items-center justify-center">
+          <Check className="h-6 w-6 text-success" />
         </div>
         <div className="space-y-2">
           <h2 className="text-2xl font-semibold tracking-tight">Password reset!</h2>

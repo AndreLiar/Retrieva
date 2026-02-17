@@ -3,6 +3,7 @@
 import { Loader2, CheckCircle2, XCircle, Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { syncStatusColors } from '@/lib/styles/status-colors';
 import type { NotionWorkspace, SyncJob } from '@/types';
 
 interface SyncStatusProps {
@@ -24,7 +25,7 @@ export function SyncStatus({
         return {
           icon: Loader2,
           label: currentJob ? 'Syncing' : 'Starting sync...',
-          color: 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400',
+          color: syncStatusColors.syncing,
           iconClass: 'animate-spin',
         };
       case 'completed':
@@ -32,14 +33,14 @@ export function SyncStatus({
         return {
           icon: CheckCircle2,
           label: 'Synced',
-          color: 'bg-green-500/10 text-green-600 dark:text-green-400',
+          color: syncStatusColors.completed,
           iconClass: '',
         };
       case 'error':
         return {
           icon: XCircle,
           label: 'Error',
-          color: 'bg-red-500/10 text-red-600 dark:text-red-400',
+          color: syncStatusColors.error,
           iconClass: '',
         };
       case 'idle':
@@ -47,7 +48,7 @@ export function SyncStatus({
         return {
           icon: Clock,
           label: 'Idle',
-          color: 'bg-muted text-muted-foreground',
+          color: syncStatusColors.idle,
           iconClass: '',
         };
     }

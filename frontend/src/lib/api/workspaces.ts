@@ -1,7 +1,6 @@
 import apiClient from './client';
 import type {
   ApiResponse,
-  PaginatedResponse,
   Workspace,
   WorkspaceWithMembership,
   WorkspaceMembership,

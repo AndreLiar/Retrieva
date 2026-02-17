@@ -19,7 +19,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,6 +31,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { conversationsApi } from '@/lib/api';
 import { useActiveWorkspace, useWorkspaceStore } from '@/lib/stores/workspace-store';
+import { destructiveActionClasses } from '@/lib/styles/status-colors';
 import { toast } from 'sonner';
 import type { Conversation } from '@/types';
 
@@ -129,11 +129,6 @@ export default function ConversationsPage() {
     } else if (selectedIds.size > 0) {
       bulkDeleteMutation.mutate(Array.from(selectedIds));
     }
-  };
-
-  const cancelSelection = () => {
-    setSelectedIds(new Set());
-    setIsSelectionMode(false);
   };
 
   // Show loading while workspaces are still being fetched
@@ -334,7 +329,7 @@ export default function ConversationsPage() {
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className={destructiveActionClasses}
             >
               {(deleteMutation.isPending || bulkDeleteMutation.isPending) ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />

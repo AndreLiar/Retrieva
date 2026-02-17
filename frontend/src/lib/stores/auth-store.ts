@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { User, GlobalRole } from '@/types';
+import type { User } from '@/types';
 import { authApi } from '@/lib/api';
 // ISSUE #40 FIX: Import secure auth event validation
 import { AUTH_EVENT_CONFIG, validateLogoutEvent } from '@/lib/auth-events';

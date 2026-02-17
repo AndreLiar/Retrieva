@@ -15,7 +15,6 @@ import Link from 'next/link';
 export default function MembersPage() {
   const router = useRouter();
   const activeWorkspace = useActiveWorkspace();
-  const workspaces = useWorkspaceStore((state) => state.workspaces);
   const isLoading = useWorkspaceStore((state) => state.isLoading);
 
   useEffect(() => {

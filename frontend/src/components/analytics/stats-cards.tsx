@@ -2,6 +2,7 @@
 
 import { MessageSquare, BarChart3, Clock, ThumbsUp, Database } from 'lucide-react';
 
+import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { AnalyticsSummary } from '@/types';
@@ -24,14 +25,14 @@ export function StatsCards({ data, cacheStats, isLoading }: StatsCardsProps) {
       value: data?.totalQuestions ?? 0,
       icon: MessageSquare,
       description: 'Questions asked',
-      color: 'text-blue-500',
+      color: 'text-info',
     },
     {
       title: 'Conversations',
       value: data?.totalConversations ?? 0,
       icon: BarChart3,
       description: 'Active conversations',
-      color: 'text-purple-500',
+      color: 'text-primary',
     },
     {
       title: 'Avg Response Time',
@@ -40,7 +41,7 @@ export function StatsCards({ data, cacheStats, isLoading }: StatsCardsProps) {
         : '-',
       icon: Clock,
       description: 'Average latency',
-      color: 'text-orange-500',
+      color: 'text-warning',
     },
     {
       title: 'Satisfaction Rate',
@@ -49,7 +50,7 @@ export function StatsCards({ data, cacheStats, isLoading }: StatsCardsProps) {
         : '-',
       icon: ThumbsUp,
       description: 'Positive feedback',
-      color: 'text-green-500',
+      color: 'text-success',
     },
     {
       title: 'Cache Hit Rate',
@@ -58,7 +59,7 @@ export function StatsCards({ data, cacheStats, isLoading }: StatsCardsProps) {
         : '-',
       icon: Database,
       description: `${cacheStats?.totalHits ?? 0} hits / ${cacheStats?.totalMisses ?? 0} misses`,
-      color: 'text-cyan-500',
+      color: 'text-chart-2',
     },
   ];
 
@@ -89,7 +90,7 @@ export function StatsCards({ data, cacheStats, isLoading }: StatsCardsProps) {
           <Card key={stat.title}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-              <Icon className={`h-4 w-4 ${stat.color}`} />
+              <Icon className={cn('h-4 w-4', stat.color)} />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stat.value}</div>

@@ -19,7 +19,7 @@ import {
   getRoleBadgeColor,
   PERMISSIONS,
 } from '@/lib/utils/permissions';
-import type { User, WorkspaceMembership, GlobalRole, WorkspaceRole } from '@/types';
+import type { User, WorkspaceMembership } from '@/types';
 
 // Mock data factories
 const createUser = (overrides: Partial<User> = {}): User => ({
@@ -292,19 +292,19 @@ describe('Permissions Utilities', () => {
   // getRoleBadgeColor Tests
   // ===========================================================================
   describe('getRoleBadgeColor', () => {
-    it('should return purple classes for owner', () => {
+    it('should return primary classes for owner', () => {
       const color = getRoleBadgeColor('owner');
-      expect(color).toContain('purple');
+      expect(color).toContain('primary');
     });
 
-    it('should return blue classes for member', () => {
+    it('should return info classes for member', () => {
       const color = getRoleBadgeColor('member');
-      expect(color).toContain('blue');
+      expect(color).toContain('info');
     });
 
-    it('should return gray classes for viewer', () => {
+    it('should return muted classes for viewer', () => {
       const color = getRoleBadgeColor('viewer');
-      expect(color).toContain('gray');
+      expect(color).toContain('muted');
     });
   });
 

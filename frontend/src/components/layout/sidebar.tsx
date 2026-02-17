@@ -2,18 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import {
-  MessageSquare,
-  FolderOpen,
-  Link2,
-  BarChart3,
-  Bell,
-  Settings,
-  PanelLeftClose,
-  PanelLeft,
-  Building2,
-  Users,
-} from 'lucide-react';
+import { MessageSquare, PanelLeftClose, PanelLeft } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -21,63 +10,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { WorkspaceSwitcher } from './workspace-switcher';
 import { useUIStore } from '@/lib/stores/ui-store';
 import { usePermissions } from '@/lib/hooks/use-permissions';
-
-interface NavItem {
-  title: string;
-  href: string;
-  icon: React.ComponentType<{ className?: string }>;
-  requiredPermission?: 'canViewAnalytics' | 'canTriggerSync';
-  workspaceRoles?: Array<'owner' | 'member' | 'viewer'>;
-}
-
-const mainNavItems: NavItem[] = [
-  {
-    title: 'Chat',
-    href: '/chat',
-    icon: MessageSquare,
-  },
-  {
-    title: 'Conversations',
-    href: '/conversations',
-    icon: FolderOpen,
-  },
-  {
-    title: 'Workspaces',
-    href: '/workspaces',
-    icon: Building2,
-  },
-  {
-    title: 'Members',
-    href: '/members',
-    icon: Users,
-    workspaceRoles: ['owner'],
-  },
-  {
-    title: 'Notion',
-    href: '/notion',
-    icon: Link2,
-    workspaceRoles: ['owner', 'member'],
-  },
-  {
-    title: 'Analytics',
-    href: '/analytics',
-    icon: BarChart3,
-    workspaceRoles: ['owner', 'member'],
-  },
-];
-
-const bottomNavItems: NavItem[] = [
-  {
-    title: 'Notifications',
-    href: '/notifications',
-    icon: Bell,
-  },
-  {
-    title: 'Settings',
-    href: '/settings',
-    icon: Settings,
-  },
-];
+import { desktopMainNavItems, bottomNavItems, type NavItem } from '@/lib/constants/nav-items';
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -102,7 +35,7 @@ export function Sidebar() {
     });
   };
 
-  const visibleMainNav = filterNavItems(mainNavItems);
+  const visibleMainNav = filterNavItems(desktopMainNavItems);
   const visibleBottomNav = filterNavItems(bottomNavItems);
 
   return (

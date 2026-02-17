@@ -22,8 +22,8 @@ interface FeedbackChartProps {
 }
 
 const COLORS = {
-  positive: 'hsl(142, 76%, 36%)', // Green
-  negative: 'hsl(0, 84%, 60%)', // Red
+  positive: 'hsl(var(--success))',
+  negative: 'hsl(var(--destructive))',
 };
 
 export function FeedbackChart({ data, isLoading }: FeedbackChartProps) {
@@ -90,7 +90,7 @@ export function FeedbackChart({ data, isLoading }: FeedbackChartProps) {
                   contentStyle={{
                     backgroundColor: 'hsl(var(--card))',
                     borderColor: 'hsl(var(--border))',
-                    borderRadius: '8px',
+                    borderRadius: 'var(--radius)',
                   }}
                   labelStyle={{ color: 'hsl(var(--foreground))' }}
                 />
@@ -105,8 +105,8 @@ export function FeedbackChart({ data, isLoading }: FeedbackChartProps) {
             {/* Summary stats */}
             <div className="flex justify-center gap-8 mt-4 pt-4 border-t">
               <div className="flex items-center gap-2">
-                <div className="flex items-center justify-center h-8 w-8 rounded-full bg-green-500/10">
-                  <ThumbsUp className="h-4 w-4 text-green-500" />
+                <div className="flex items-center justify-center h-8 w-8 rounded-full bg-success/10">
+                  <ThumbsUp className="h-4 w-4 text-success" />
                 </div>
                 <div>
                   <p className="text-sm font-medium">{positiveCount}</p>
@@ -116,8 +116,8 @@ export function FeedbackChart({ data, isLoading }: FeedbackChartProps) {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <div className="flex items-center justify-center h-8 w-8 rounded-full bg-red-500/10">
-                  <ThumbsDown className="h-4 w-4 text-red-500" />
+                <div className="flex items-center justify-center h-8 w-8 rounded-full bg-destructive/10">
+                  <ThumbsDown className="h-4 w-4 text-destructive" />
                 </div>
                 <div>
                   <p className="text-sm font-medium">{negativeCount}</p>

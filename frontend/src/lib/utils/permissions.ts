@@ -114,9 +114,9 @@ export function getRoleDisplayName(role: WorkspaceRole): string {
  */
 export function getRoleBadgeColor(role: WorkspaceRole): string {
   const colors: Record<WorkspaceRole, string> = {
-    owner: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
-    member: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-    viewer: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200',
+    owner: 'bg-primary/10 text-primary',
+    member: 'bg-info/10 text-info',
+    viewer: 'bg-muted text-muted-foreground',
   };
   return colors[role];
 }

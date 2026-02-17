@@ -147,9 +147,11 @@ export function containsSuspiciousContent(content: string): boolean {
   return suspiciousPatterns.some((pattern) => pattern.test(content));
 }
 
-export default {
+const sanitize = {
   sanitizeContent,
   sanitizeMessageContent,
   escapeHtml,
   containsSuspiciousContent,
 };
+
+export default sanitize;

@@ -1,30 +1,36 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useSyncExternalStore, useCallback } from 'react';
 import { Info, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useActiveWorkspace } from '@/lib/stores/workspace-store';
+
+const BANNER_KEY = 'viewer-banner-dismissed';
+const subscribe = (cb: () => void) => {
+  window.addEventListener('storage', cb);
+  return () => window.removeEventListener('storage', cb);
+};
 
 /**
  * Banner displayed to viewers with limited access.
  * Dismissible, shows once per session.
  */
 export function ViewerBanner() {
-  const [dismissed, setDismissed] = useState(true); // Start dismissed to prevent flash
   const activeWorkspace = useActiveWorkspace();
   const isViewer = activeWorkspace?.membership?.role === 'viewer';
 
-  // Check session storage on mount
-  useEffect(() => {
-    const isDismissed = sessionStorage.getItem('viewer-banner-dismissed') === 'true';
-    setDismissed(isDismissed);
-  }, []);
+  const dismissed = useSyncExternalStore(
+    subscribe,
+    () => sessionStorage.getItem(BANNER_KEY) === 'true',
+    () => true // SSR: assume dismissed to prevent flash
+  );
 
-  const handleDismiss = () => {
-    setDismissed(true);
-    sessionStorage.setItem('viewer-banner-dismissed', 'true');
-  };
+  const handleDismiss = useCallback(() => {
+    sessionStorage.setItem(BANNER_KEY, 'true');
+    // Force re-render via storage event
+    window.dispatchEvent(new StorageEvent('storage'));
+  }, []);
 
   // Don't show if not a viewer or already dismissed
   if (!isViewer || dismissed) {
@@ -32,18 +38,18 @@ export function ViewerBanner() {
   }
 
   return (
-    <Alert className="rounded-none border-x-0 border-t-0 bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+    <Alert className="rounded-none border-x-0 border-t-0 bg-info-muted border-info/20">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-          <AlertDescription className="text-blue-800 dark:text-blue-200">
+          <Info className="h-4 w-4 text-info" />
+          <AlertDescription className="text-info">
             You have view-only access to this workspace. Contact the workspace owner for full access.
           </AlertDescription>
         </div>
         <Button
           variant="ghost"
           size="icon"
-          className="h-6 w-6 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200"
+          className="h-6 w-6 text-info hover:text-info/80"
           onClick={handleDismiss}
         >
           <X className="h-4 w-4" />

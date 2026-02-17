@@ -12,7 +12,6 @@ import {
   ArrowRight,
   Sparkles,
   BookOpen,
-  Users
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';

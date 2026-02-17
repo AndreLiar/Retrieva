@@ -10,7 +10,6 @@ import {
   MoreHorizontal,
   Trash2,
   PinOff,
-  Edit2,
   Plus,
   Loader2,
   Search,
@@ -40,6 +39,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { conversationsApi } from '@/lib/api';
 import { useActiveWorkspace } from '@/lib/stores/workspace-store';
+import { destructiveActionClasses } from '@/lib/styles/status-colors';
 import type { Conversation } from '@/types';
 
 interface ConversationListProps {
@@ -252,7 +252,7 @@ export function ConversationList({
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className={destructiveActionClasses}
             >
               {deleteMutation.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

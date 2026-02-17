@@ -19,7 +19,7 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -70,8 +70,9 @@ import { useAuthStore } from '@/lib/stores/auth-store';
 import { workspacesApi } from '@/lib/api';
 import { inviteMemberSchema, type InviteMemberFormData } from '@/lib/utils/validation';
 import { usePermissions } from '@/lib/hooks/use-permissions';
+import { destructiveActionClasses } from '@/lib/styles/status-colors';
 import { getRoleDisplayName, getRoleBadgeColor } from '@/lib/utils/permissions';
-import type { WorkspaceMembership, WorkspaceRole } from '@/types';
+import type { WorkspaceRole } from '@/types';
 
 interface MembersPageProps {
   params: Promise<{ id: string }>;
@@ -483,7 +484,7 @@ export default function MembersPage({ params }: MembersPageProps) {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => memberToRemove && removeMutation.mutate(memberToRemove)}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className={destructiveActionClasses}
             >
               {removeMutation.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

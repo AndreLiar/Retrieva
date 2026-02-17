@@ -6,7 +6,6 @@ import {
   Settings,
   LogOut,
   Shield,
-  CreditCard,
 } from 'lucide-react';
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';

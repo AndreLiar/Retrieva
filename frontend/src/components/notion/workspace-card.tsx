@@ -8,7 +8,6 @@ import {
   RefreshCw,
   Trash2,
   ExternalLink,
-  FileText,
   Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -40,7 +39,9 @@ import {
 } from '@/components/ui/alert-dialog';
 import { SyncStatus } from './sync-status';
 import { TokenHealthStatus } from './TokenHealthBanner';
+import { WorkspaceIcon } from './workspace-icon';
 import { notionApi } from '@/lib/api';
+import { destructiveActionClasses } from '@/lib/styles/status-colors';
 import type { NotionWorkspace } from '@/types';
 
 interface NotionWorkspaceCardProps {
@@ -90,9 +91,7 @@ export function NotionWorkspaceCard({ workspace }: NotionWorkspaceCardProps) {
         <CardHeader className="pb-2">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 flex items-center justify-center text-lg">
-                {workspace.icon || '📝'}
-              </div>
+              <WorkspaceIcon icon={workspace.icon} size="sm" />
               <div>
                 <CardTitle className="text-base">{workspace.name}</CardTitle>
                 <CardDescription className="text-xs">
@@ -219,7 +218,7 @@ export function NotionWorkspaceCard({ workspace }: NotionWorkspaceCardProps) {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => disconnectMutation.mutate()}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className={destructiveActionClasses}
             >
               {disconnectMutation.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

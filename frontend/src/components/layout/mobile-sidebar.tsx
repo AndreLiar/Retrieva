@@ -3,39 +3,14 @@
 import { useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import {
-  MessageSquare,
-  FolderOpen,
-  Link2,
-  BarChart3,
-  Bell,
-  Settings,
-} from 'lucide-react';
+import { MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { WorkspaceSwitcher } from './workspace-switcher';
 import { useUIStore } from '@/lib/stores/ui-store';
 import { usePermissions } from '@/lib/hooks/use-permissions';
-
-interface NavItem {
-  title: string;
-  href: string;
-  icon: React.ComponentType<{ className?: string }>;
-  workspaceRoles?: Array<'owner' | 'member' | 'viewer'>;
-}
-
-const mainNavItems: NavItem[] = [
-  { title: 'Chat', href: '/chat', icon: MessageSquare },
-  { title: 'Conversations', href: '/conversations', icon: FolderOpen },
-  { title: 'Notion', href: '/notion', icon: Link2, workspaceRoles: ['owner', 'member'] },
-  { title: 'Analytics', href: '/analytics', icon: BarChart3, workspaceRoles: ['owner', 'member'] },
-];
-
-const bottomNavItems: NavItem[] = [
-  { title: 'Notifications', href: '/notifications', icon: Bell },
-  { title: 'Settings', href: '/settings', icon: Settings },
-];
+import { mobileMainNavItems, bottomNavItems, type NavItem } from '@/lib/constants/nav-items';
 
 export function MobileSidebar() {
   const pathname = usePathname();
@@ -67,7 +42,7 @@ export function MobileSidebar() {
     });
   };
 
-  const visibleMainNav = filterNavItems(mainNavItems);
+  const visibleMainNav = filterNavItems(mobileMainNavItems);
   const visibleBottomNav = filterNavItems(bottomNavItems);
 
   if (!isMobile) return null;

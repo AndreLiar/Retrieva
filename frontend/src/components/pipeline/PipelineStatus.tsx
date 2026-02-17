@@ -43,6 +43,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { pipelineApi, type StageMetrics, type QueueStatus } from '@/lib/api/pipeline';
+import { destructiveActionClasses } from '@/lib/styles/status-colors';
 
 /**
  * Phase 3: Pipeline Status Component
@@ -65,10 +66,10 @@ function StageCard({ stage, metrics, queue, onRetry, onDrain, isRetrying }: Stag
     : 100;
 
   const getStatusColor = () => {
-    if (queue.active > 0) return 'bg-blue-500';
-    if (queue.failed > 10) return 'bg-red-500';
-    if (successRate < 90) return 'bg-yellow-500';
-    return 'bg-green-500';
+    if (queue.active > 0) return 'bg-info';
+    if (queue.failed > 10) return 'bg-destructive';
+    if (successRate < 90) return 'bg-warning';
+    return 'bg-success';
   };
 
   const formatDuration = (ms: number) => {
@@ -106,7 +107,7 @@ function StageCard({ stage, metrics, queue, onRetry, onDrain, isRetrying }: Stag
         <div className="space-y-1">
           <div className="flex justify-between text-xs">
             <span className="text-muted-foreground">Success Rate</span>
-            <span className={successRate < 90 ? 'text-yellow-600' : 'text-green-600'}>
+            <span className={successRate < 90 ? 'text-warning' : 'text-success'}>
               {successRate}%
             </span>
           </div>
@@ -121,7 +122,7 @@ function StageCard({ stage, metrics, queue, onRetry, onDrain, isRetrying }: Stag
           </div>
           <div>
             <span className="text-muted-foreground">Failed</span>
-            <p className={`font-medium ${metrics.failedJobs > 0 ? 'text-red-600' : ''}`}>
+            <p className={`font-medium ${metrics.failedJobs > 0 ? 'text-destructive' : ''}`}>
               {metrics.failedJobs.toLocaleString()}
             </p>
           </div>
@@ -140,7 +141,7 @@ function StageCard({ stage, metrics, queue, onRetry, onDrain, isRetrying }: Stag
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="flex items-center gap-1 text-xs text-red-600 cursor-help">
+                <div className="flex items-center gap-1 text-xs text-destructive cursor-help">
                   <AlertTriangle className="h-3 w-3" />
                   <span className="truncate">Error</span>
                 </div>
@@ -304,7 +305,7 @@ export function PipelineStatus() {
                 <Badge variant="destructive" className="ml-2">Unhealthy</Badge>
               )}
               {healthData?.healthy === true && (
-                <Badge variant="outline" className="ml-2 text-green-600 border-green-600">
+                <Badge variant="outline" className="ml-2 text-success border-success">
                   <CheckCircle className="h-3 w-3 mr-1" />
                   Healthy
                 </Badge>
@@ -347,14 +348,14 @@ export function PipelineStatus() {
               </div>
             </div>
             <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-              <CheckCircle className="h-5 w-5 text-green-600" />
+              <CheckCircle className="h-5 w-5 text-success" />
               <div>
                 <p className="text-xs text-muted-foreground">Completed</p>
                 <p className="text-lg font-semibold">{aggregated.completedJobs.toLocaleString()}</p>
               </div>
             </div>
             <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-              <AlertTriangle className="h-5 w-5 text-red-600" />
+              <AlertTriangle className="h-5 w-5 text-destructive" />
               <div>
                 <p className="text-xs text-muted-foreground">Failed</p>
                 <p className="text-lg font-semibold">{aggregated.failedJobs.toLocaleString()}</p>
@@ -433,7 +434,7 @@ export function PipelineStatus() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => resetMutation.mutate()}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className={destructiveActionClasses}
             >
               {resetMutation.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

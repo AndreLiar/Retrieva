@@ -88,6 +88,7 @@ export default function RegisterPage() {
 
   // ISSUE #53 FIX: Track both isSubmitting and isValid to disable button appropriately
   const { isSubmitting, isValid, isDirty } = form.formState;
+  // eslint-disable-next-line react-hooks/incompatible-library
   const watchPassword = form.watch('password');
 
   const onSubmit = async (data: RegisterFormData) => {

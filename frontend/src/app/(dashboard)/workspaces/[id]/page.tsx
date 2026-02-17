@@ -72,14 +72,14 @@ export default function WorkspacePage({ params }: WorkspacePageProps) {
       description: 'Ask questions about your knowledge base',
       icon: MessageSquare,
       href: '/',
-      color: 'bg-blue-500/10 text-blue-500',
+      color: 'bg-info/10 text-info',
     },
     {
       title: 'View Analytics',
       description: 'See usage statistics and insights',
       icon: BarChart3,
       href: '/analytics',
-      color: 'bg-green-500/10 text-green-500',
+      color: 'bg-success/10 text-success',
       hidden: !canViewAnalytics,
     },
     {
@@ -87,7 +87,7 @@ export default function WorkspacePage({ params }: WorkspacePageProps) {
       description: 'Connect and sync your Notion workspace',
       icon: Link2,
       href: '/notion',
-      color: 'bg-orange-500/10 text-orange-500',
+      color: 'bg-warning/10 text-warning',
       hidden: !canTriggerSync,
     },
     {
@@ -95,7 +95,7 @@ export default function WorkspacePage({ params }: WorkspacePageProps) {
       description: 'Invite and manage team members',
       icon: Users,
       href: `/workspaces/${id}/members`,
-      color: 'bg-purple-500/10 text-purple-500',
+      color: 'bg-primary/10 text-primary',
       hidden: !isWorkspaceOwner,
     },
   ].filter((action) => !action.hidden);
@@ -130,10 +130,10 @@ export default function WorkspacePage({ params }: WorkspacePageProps) {
                   <span
                     className={`h-2 w-2 rounded-full mr-1.5 ${
                       workspace.syncStatus === 'syncing'
-                        ? 'bg-yellow-500 animate-pulse'
+                        ? 'bg-warning animate-pulse'
                         : workspace.syncStatus === 'error'
-                        ? 'bg-red-500'
-                        : 'bg-green-500'
+                        ? 'bg-destructive'
+                        : 'bg-success'
                     }`}
                   />
                   {workspace.syncStatus === 'syncing'

@@ -11,7 +11,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import type { Message, Source } from '@/types';
+import type { Message } from '@/types';
 import { SourceCitations } from './source-citations';
 // ISSUE #39 FIX: Import sanitization utility for XSS protection
 import { sanitizeMessageContent, containsSuspiciousContent } from '@/lib/utils/sanitize';

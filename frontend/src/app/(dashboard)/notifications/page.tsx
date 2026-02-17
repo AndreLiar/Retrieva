@@ -28,7 +28,8 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { notificationsApi } from '@/lib/api';
-import type { Notification, NotificationType } from '@/types';
+import { notificationTypeColors } from '@/lib/styles/status-colors';
+import type { NotificationType } from '@/types';
 
 const notificationIcons: Record<NotificationType, React.ComponentType<{ className?: string }>> = {
   sync_complete: Link2,
@@ -39,14 +40,7 @@ const notificationIcons: Record<NotificationType, React.ComponentType<{ classNam
   system: Info,
 };
 
-const notificationColors: Record<NotificationType, string> = {
-  sync_complete: 'bg-green-500/10 text-green-600 dark:text-green-400',
-  sync_failed: 'bg-red-500/10 text-red-600 dark:text-red-400',
-  member_invited: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
-  member_joined: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
-  workspace_created: 'bg-purple-500/10 text-purple-600 dark:text-purple-400',
-  system: 'bg-muted text-muted-foreground',
-};
+const notificationColors = notificationTypeColors;
 
 export default function NotificationsPage() {
   const queryClient = useQueryClient();

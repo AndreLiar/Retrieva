@@ -3,8 +3,6 @@
 import { useMemo } from 'react';
 import { useAuthStore } from '@/lib/stores/auth-store';
 import { useActiveWorkspace } from '@/lib/stores/workspace-store';
-import type { WorkspacePermissions } from '@/types';
-
 interface PermissionState {
   // Global checks
   isAdmin: boolean;

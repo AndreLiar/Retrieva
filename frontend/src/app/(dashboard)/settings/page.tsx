@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -55,12 +55,16 @@ export default function SettingsPage() {
   });
   const [resendCooldownEnd, setResendCooldownEnd] = useState<Date | null>(null);
   const [cooldownRemaining, setCooldownRemaining] = useState(0);
+  const cooldownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    if (!resendCooldownEnd) {
-      setCooldownRemaining(0);
-      return;
+    // Clear any existing interval
+    if (cooldownIntervalRef.current) {
+      clearInterval(cooldownIntervalRef.current);
+      cooldownIntervalRef.current = null;
     }
+
+    if (!resendCooldownEnd) return;
 
     const updateRemaining = () => {
       const remainingMs = resendCooldownEnd.getTime() - Date.now();
@@ -73,8 +77,12 @@ export default function SettingsPage() {
     };
 
     updateRemaining();
-    const interval = setInterval(updateRemaining, 1000);
-    return () => clearInterval(interval);
+    cooldownIntervalRef.current = setInterval(updateRemaining, 1000);
+    return () => {
+      if (cooldownIntervalRef.current) {
+        clearInterval(cooldownIntervalRef.current);
+      }
+    };
   }, [resendCooldownEnd]);
 
   const startResendCooldown = () => {
@@ -242,12 +250,12 @@ export default function SettingsPage() {
 
       {/* Email Verification Status */}
       {!user?.isEmailVerified && (
-        <Card className="mb-6 border-amber-200 dark:border-amber-800">
+        <Card className="mb-6 border-warning/30">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Mail className="h-5 w-5" />
               Email Verification
-              <Badge variant="outline" className="ml-2 text-amber-600 border-amber-300">
+              <Badge variant="outline" className="ml-2 text-warning border-warning/50">
                 <AlertCircle className="h-3 w-3 mr-1" />
                 Not Verified
               </Badge>
@@ -290,7 +298,7 @@ export default function SettingsPage() {
             <CardTitle className="flex items-center gap-2">
               <Mail className="h-5 w-5" />
               Email Verification
-              <Badge variant="default" className="ml-2 bg-green-600">
+              <Badge variant="default" className="ml-2 bg-success">
                 <CheckCircle className="h-3 w-3 mr-1" />
                 Verified
               </Badge>
