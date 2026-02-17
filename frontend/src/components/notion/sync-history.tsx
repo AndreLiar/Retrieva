@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { syncStatusColors } from '@/lib/styles/status-colors';
 import type { SyncJob } from '@/types';
 
 interface ActiveJobProgress {
@@ -34,38 +35,38 @@ export function SyncHistory({ jobs, isLoading, activeJobProgress }: SyncHistoryP
         return {
           icon: CheckCircle2,
           label: 'Completed',
-          color: 'bg-green-500/10 text-green-600 dark:text-green-400',
+          color: syncStatusColors.completed,
         };
       case 'failed':
         return {
           icon: XCircle,
           label: 'Failed',
-          color: 'bg-red-500/10 text-red-600 dark:text-red-400',
+          color: syncStatusColors.failed,
         };
       case 'processing':
         return {
           icon: Loader2,
           label: 'Processing',
-          color: 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400',
+          color: syncStatusColors.processing,
           iconClass: 'animate-spin',
         };
       case 'cancelled':
         return {
           icon: XCircle,
           label: 'Cancelled',
-          color: 'bg-gray-500/10 text-gray-600 dark:text-gray-400',
+          color: syncStatusColors.cancelled,
         };
       case 'pending':
         return {
           icon: Clock,
           label: 'Pending',
-          color: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
+          color: syncStatusColors.pending,
         };
       default:
         return {
           icon: Clock,
           label: status || 'Unknown',
-          color: 'bg-muted text-muted-foreground',
+          color: syncStatusColors.idle,
         };
     }
   };

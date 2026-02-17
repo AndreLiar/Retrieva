@@ -81,7 +81,7 @@ export default function NotionConnectPage() {
       setConnectionState('processing');
       callbackMutation.mutate({ code, state });
     }
-  }, [searchParams]);
+  }, [searchParams, callbackMutation]);
 
   // Start OAuth flow
   const startOAuth = async () => {
@@ -111,9 +111,9 @@ export default function NotionConnectPage() {
 
       <Card>
         <CardHeader className="text-center">
-          <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 flex items-center justify-center">
+          <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-gradient-to-br from-muted to-muted/60 flex items-center justify-center">
             {connectionState === 'success' ? (
-              <CheckCircle2 className="h-8 w-8 text-green-500" />
+              <CheckCircle2 className="h-8 w-8 text-success" />
             ) : connectionState === 'error' ? (
               <XCircle className="h-8 w-8 text-destructive" />
             ) : connectionState === 'connecting' || connectionState === 'processing' ? (
@@ -152,8 +152,8 @@ export default function NotionConnectPage() {
                   <li>3. Your pages will be synced and indexed automatically</li>
                 </ul>
               </div>
-              <div className="rounded-lg border border-yellow-500/20 bg-yellow-500/10 p-4">
-                <p className="text-sm text-yellow-600 dark:text-yellow-400">
+              <div className="rounded-lg border border-warning/20 bg-warning/10 p-4">
+                <p className="text-sm text-warning">
                   <strong>Note:</strong> We only read your Notion content. We never
                   modify or delete anything in your Notion workspace.
                 </p>
@@ -183,8 +183,8 @@ export default function NotionConnectPage() {
 
           {connectionState === 'success' && (
             <div className="text-center py-4">
-              <CheckCircle2 className="h-12 w-12 mx-auto mb-2 text-green-500" />
-              <p className="text-green-600 dark:text-green-400">
+              <CheckCircle2 className="h-12 w-12 mx-auto mb-2 text-success" />
+              <p className="text-success">
                 Workspace connected! Redirecting...
               </p>
             </div>

@@ -2,7 +2,6 @@
 
 import { useMemo } from 'react';
 import { Bot, Loader2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { SourceCitations } from './source-citations';
 import type { Source } from '@/types';

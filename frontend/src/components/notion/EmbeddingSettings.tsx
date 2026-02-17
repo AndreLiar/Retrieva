@@ -40,6 +40,7 @@ import {
 } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { embeddingsApi } from '@/lib/api';
+import { trustLevelColors } from '@/lib/styles/status-colors';
 
 interface EmbeddingSettingsProps {
   workspaceId: string;
@@ -50,22 +51,22 @@ const TRUST_LEVEL_CONFIG = {
     label: 'Public',
     description: 'Non-sensitive data, standard processing',
     icon: ShieldCheck,
-    color: 'text-green-600',
-    bgColor: 'bg-green-100 dark:bg-green-900/30',
+    color: trustLevelColors.public.text,
+    bgColor: trustLevelColors.public.bg,
   },
   internal: {
     label: 'Internal',
     description: 'Company data, requires data consent',
     icon: Shield,
-    color: 'text-yellow-600',
-    bgColor: 'bg-yellow-100 dark:bg-yellow-900/30',
+    color: trustLevelColors.internal.text,
+    bgColor: trustLevelColors.internal.bg,
   },
   regulated: {
     label: 'Regulated',
     description: 'Sensitive/HIPAA/GDPR data, compliance review required',
     icon: ShieldAlert,
-    color: 'text-red-600',
-    bgColor: 'bg-red-100 dark:bg-red-900/30',
+    color: trustLevelColors.regulated.text,
+    bgColor: trustLevelColors.regulated.bg,
   },
 };
 
@@ -126,20 +127,6 @@ export function EmbeddingSettings({ workspaceId }: EmbeddingSettingsProps) {
       return response.data;
     },
     enabled: consentDialogOpen,
-  });
-
-  // Update settings mutation
-  const updateSettingsMutation = useMutation({
-    mutationFn: async (newSettings: Parameters<typeof embeddingsApi.updateSettings>[1]) => {
-      return embeddingsApi.updateSettings(workspaceId, newSettings);
-    },
-    onSuccess: () => {
-      toast.success('Settings updated');
-      queryClient.invalidateQueries({ queryKey: ['embedding-settings', workspaceId] });
-    },
-    onError: () => {
-      toast.error('Failed to update settings');
-    },
   });
 
   // Grant consent mutation
@@ -372,7 +359,7 @@ export function EmbeddingSettings({ workspaceId }: EmbeddingSettingsProps) {
                 <ul className="text-sm text-muted-foreground space-y-1">
                   {disclosure.dataProcessed.map((item, i) => (
                     <li key={i} className="flex items-center gap-2">
-                      <Check className="h-3 w-3 text-green-600" />
+                      <Check className="h-3 w-3 text-success" />
                       {item}
                     </li>
                   ))}
@@ -385,7 +372,7 @@ export function EmbeddingSettings({ workspaceId }: EmbeddingSettingsProps) {
                 <ul className="text-sm text-muted-foreground space-y-1">
                   {disclosure.benefits.map((item, i) => (
                     <li key={i} className="flex items-center gap-2">
-                      <Check className="h-3 w-3 text-blue-600" />
+                      <Check className="h-3 w-3 text-info" />
                       {item}
                     </li>
                   ))}

@@ -8,6 +8,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { notionApi } from '@/lib/api';
 import { useWorkspaceRole } from '@/lib/stores';
+import { tokenStatusColors } from '@/lib/styles/status-colors';
 import type { TokenHealthWorkspace } from '@/types';
 
 interface TokenHealthBannerProps {
@@ -90,9 +91,9 @@ export function TokenHealthBanner({ workspaceId, compact = false }: TokenHealthB
       case 'revoked':
         return <XCircle className="h-4 w-4 text-destructive" />;
       case 'valid':
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
+        return <CheckCircle className="h-4 w-4 text-success" />;
       default:
-        return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
+        return <AlertTriangle className="h-4 w-4 text-warning" />;
     }
   };
 
@@ -194,18 +195,10 @@ export function TokenHealthStatus({ workspaceId }: { workspaceId: string }) {
     return null;
   }
 
-  const statusColors: Record<string, string> = {
-    valid: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-    expired: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
-    revoked: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
-    invalid: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
-    unknown: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
-  };
-
   return (
     <span
       className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-        statusColors[workspace.tokenStatus] || statusColors.unknown
+        tokenStatusColors[workspace.tokenStatus as keyof typeof tokenStatusColors] || tokenStatusColors.unknown
       }`}
     >
       {workspace.tokenStatus === 'valid' ? (

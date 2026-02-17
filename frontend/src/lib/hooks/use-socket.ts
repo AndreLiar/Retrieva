@@ -103,20 +103,24 @@ export function useSocket(options: UseSocketOptions = {}) {
     setState((prev) => ({ ...prev, socket }));
 
     // ISSUE #45 FIX: Proper cleanup on unmount
+    // Capture ref values for cleanup
+    const currentJoinedRooms = joinedRoomsRef.current;
     return () => {
       // Leave all joined rooms before disconnecting
-      const socket = socketRef.current;
-      if (socket?.connected) {
-        joinedRoomsRef.current.forEach((roomId) => {
-          socket.emit('leave-workspace', roomId);
+      const currentSocket = socketRef.current;
+      if (currentSocket?.connected) {
+        currentJoinedRooms.forEach((roomId) => {
+          currentSocket.emit('leave-workspace', roomId);
         });
       }
-      joinedRoomsRef.current.clear();
+      currentJoinedRooms.clear();
 
-      socket?.disconnect();
+      currentSocket?.disconnect();
       socketRef.current = null;
       setState({ socket: null, isConnected: false, error: null });
     };
+    // activeWorkspace.id intentionally excluded — handled in separate effect below
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoConnect, isAuthenticated]);
 
   // ISSUE #45 FIX: Handle workspace changes - join/leave rooms with proper cleanup
@@ -132,14 +136,15 @@ export function useSocket(options: UseSocketOptions = {}) {
       joinedRoomsRef.current.add(workspaceId);
     }
 
-    // Capture current workspace ID for cleanup
+    // Capture values for cleanup
     const currentWorkspaceId = workspaceId;
+    const currentJoinedRooms = joinedRoomsRef.current;
 
     return () => {
       // Only leave if socket is still connected and we have the room
-      if (currentWorkspaceId && socketRef.current?.connected && joinedRoomsRef.current.has(currentWorkspaceId)) {
+      if (currentWorkspaceId && socketRef.current?.connected && currentJoinedRooms.has(currentWorkspaceId)) {
         socketRef.current.emit('leave-workspace', currentWorkspaceId);
-        joinedRoomsRef.current.delete(currentWorkspaceId);
+        currentJoinedRooms.delete(currentWorkspaceId);
       }
     };
   }, [activeWorkspace?.id, state.isConnected]);

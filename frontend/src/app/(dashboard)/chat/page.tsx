@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { ChatInterface } from '@/components/chat';
 import { useActiveWorkspace, useWorkspaceStore } from '@/lib/stores/workspace-store';
 import { useAuthStore } from '@/lib/stores/auth-store';
@@ -12,7 +11,6 @@ import Link from 'next/link';
 import type { Conversation } from '@/types';
 
 export default function HomePage() {
-  const router = useRouter();
   const activeWorkspace = useActiveWorkspace();
   const workspaces = useWorkspaceStore((state) => state.workspaces);
   const activeWorkspaceId = useWorkspaceStore((state) => state.activeWorkspaceId);
@@ -20,17 +18,17 @@ export default function HomePage() {
   const setActiveWorkspace = useWorkspaceStore((state) => state.setActiveWorkspace);
   const fetchWorkspaces = useWorkspaceStore((state) => state.fetchWorkspaces);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  const [hasFetched, setHasFetched] = useState(false);
   const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
 
   // Fetch workspaces on mount if authenticated and not already loaded
+  // fetchWorkspaces sets isLoading=true synchronously, so calling it once
+  // is self-guarding — subsequent effect runs see isLoading=true and skip.
   useEffect(() => {
-    if (isAuthenticated && workspaces.length === 0 && !isLoading && !hasFetched) {
+    if (isAuthenticated && workspaces.length === 0 && !isLoading) {
       console.log('[Chat Page] Fetching workspaces...');
-      setHasFetched(true);
       fetchWorkspaces();
     }
-  }, [isAuthenticated, workspaces.length, isLoading, hasFetched, fetchWorkspaces]);
+  }, [isAuthenticated, workspaces.length, isLoading, fetchWorkspaces]);
 
   // Debug logging
   useEffect(() => {
@@ -72,7 +70,7 @@ export default function HomePage() {
   };
 
   // Show loading while fetching workspaces
-  if (isLoading || (isAuthenticated && workspaces.length === 0 && !hasFetched)) {
+  if (isLoading || (isAuthenticated && workspaces.length === 0)) {
     return (
       <div className="flex h-full items-center justify-center p-6">
         <div className="text-center">

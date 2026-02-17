@@ -69,7 +69,7 @@ export function UsageChart({ data, isLoading }: UsageChartProps) {
                 contentStyle={{
                   backgroundColor: 'hsl(var(--card))',
                   borderColor: 'hsl(var(--border))',
-                  borderRadius: '8px',
+                  borderRadius: 'var(--radius)',
                 }}
                 labelStyle={{ color: 'hsl(var(--foreground))' }}
               />
@@ -86,7 +86,7 @@ export function UsageChart({ data, isLoading }: UsageChartProps) {
               <Line
                 type="monotone"
                 dataKey="conversations"
-                stroke="hsl(217, 91%, 60%)"
+                stroke="hsl(var(--chart-2))"
                 strokeWidth={2}
                 dot={false}
                 activeDot={{ r: 6 }}

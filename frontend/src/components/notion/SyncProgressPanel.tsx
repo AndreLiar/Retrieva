@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Zap,
@@ -73,7 +73,14 @@ interface SyncProgressPanelProps {
 }
 
 export function SyncProgressPanel({ workspaceId, onSyncComplete }: SyncProgressPanelProps) {
-  const [previousProgress, setPreviousProgress] = useState(0);
+  const previousProgressRef = useRef(0);
+  const [now, setNow] = useState(() => Date.now());
+
+  // Update `now` every 5s so ETA calculation stays fresh
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 5000);
+    return () => clearInterval(id);
+  }, []);
 
   // Poll for sync status and metrics
   const { data, isLoading } = useQuery({
@@ -92,7 +99,7 @@ export function SyncProgressPanel({ workspaceId, onSyncComplete }: SyncProgressP
 
   // Detect sync completion
   useEffect(() => {
-    if (previousProgress > 0 && !isActive && onSyncComplete) {
+    if (previousProgressRef.current > 0 && !isActive && onSyncComplete) {
       onSyncComplete();
     }
     const jobProg = activeJob?.progress;
@@ -102,9 +109,9 @@ export function SyncProgressPanel({ workspaceId, onSyncComplete }: SyncProgressP
         : 0
     );
     if (currentProgress > 0) {
-      setPreviousProgress(currentProgress);
+      previousProgressRef.current = currentProgress;
     }
-  }, [isActive, metrics?.progressPercent, activeJob?.progress, previousProgress, onSyncComplete]);
+  }, [isActive, metrics?.progressPercent, activeJob?.progress, onSyncComplete]);
 
   if (isLoading) {
     return (
@@ -128,7 +135,7 @@ export function SyncProgressPanel({ workspaceId, onSyncComplete }: SyncProgressP
   let fallbackRate = 0;
   let fallbackEta = 'Calculating...';
   if (activeJob.startedAt && actualProcessed > 0) {
-    const elapsedMs = Date.now() - new Date(activeJob.startedAt).getTime();
+    const elapsedMs = now - new Date(activeJob.startedAt).getTime();
     const elapsedMinutes = elapsedMs / 60000;
     fallbackRate = elapsedMinutes > 0 ? Math.round((actualProcessed / elapsedMinutes) * 10) / 10 : 0;
     if (fallbackRate > 0 && totalDocs > actualProcessed) {

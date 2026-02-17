@@ -22,7 +22,6 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Separator } from '@/components/ui/separator';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,9 +34,9 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useWorkspaceStore } from '@/lib/stores/workspace-store';
-import { workspacesApi } from '@/lib/api';
 import { createWorkspaceSchema, type CreateWorkspaceFormData } from '@/lib/utils/validation';
 import { usePermissions } from '@/lib/hooks/use-permissions';
+import { destructiveActionClasses } from '@/lib/styles/status-colors';
 
 interface WorkspaceSettingsPageProps {
   params: Promise<{ id: string }>;
@@ -217,7 +216,7 @@ export default function WorkspaceSettingsPage({ params }: WorkspaceSettingsPageP
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
                   <AlertDialogAction
                     onClick={() => deleteMutation.mutate()}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    className={destructiveActionClasses}
                   >
                     {deleteMutation.isPending ? (
                       <Loader2 className="h-4 w-4 animate-spin" />

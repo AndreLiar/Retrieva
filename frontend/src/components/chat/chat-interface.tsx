@@ -48,12 +48,15 @@ export function ChatInterface({
 
   // ISSUE #44 FIX: Track last question for retry functionality
   const lastQuestionRef = useRef<{ question: string; conversationId: string } | null>(null);
+  const [hasLastQuestion, setHasLastQuestion] = useState(false);
 
   // Sync external messages only when they actually change
+  // localMessages.length intentionally excluded — including it causes infinite loop
   useEffect(() => {
     if (stableMessages.length > 0 || localMessages.length > 0) {
       setLocalMessages(stableMessages);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stableMessages]);
 
   // ISSUE #47 FIX: Track optimistic user message ID for cleanup on failure
@@ -197,6 +200,7 @@ export function ChatInterface({
     async (question: string, conversationId: string) => {
       // ISSUE #44 FIX: Store last question for retry
       lastQuestionRef.current = { question, conversationId };
+      setHasLastQuestion(true);
 
       // Add user message to local state
       const messageId = `user-${Date.now()}`;
@@ -322,7 +326,7 @@ export function ChatInterface({
           <AlertCircle className="h-4 w-4" />
           <AlertDescription className="flex items-center justify-between w-full">
             <span>{streamingError}</span>
-            {lastQuestionRef.current && (
+            {hasLastQuestion && (
               <Button
                 variant="outline"
                 size="sm"

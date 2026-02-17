@@ -282,7 +282,7 @@ export function useStreaming(options: UseStreamingOptions = {}) {
         if ((error as Error).name === 'AbortError') {
           // ISSUE #41 FIX: Distinguish between user abort and timeout
           // Check if we have any content - if so, this might be a timeout mid-stream
-          const state = setState((prev) => {
+          setState((prev) => {
             // If we have partial content, it was likely a timeout mid-stream
             if (prev.content.length > 0) {
               console.log('[useStreaming] Stream aborted with partial content - possible timeout');

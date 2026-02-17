@@ -34,9 +34,10 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { SyncStatus, SyncHistory, EmbeddingSettings, SyncProgressPanel } from '@/components/notion';
+import { SyncStatus, SyncHistory, EmbeddingSettings, SyncProgressPanel, WorkspaceIcon } from '@/components/notion';
 import { notionApi } from '@/lib/api';
 import { RequirePermission } from '@/components/common';
+import { destructiveActionClasses } from '@/lib/styles/status-colors';
 
 interface NotionWorkspacePageProps {
   params: Promise<{ id: string }>;
@@ -148,9 +149,7 @@ export default function NotionWorkspacePage({ params }: NotionWorkspacePageProps
       {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div className="flex items-center gap-4">
-          <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 flex items-center justify-center text-2xl">
-            {workspace.icon || '📝'}
-          </div>
+          <WorkspaceIcon icon={workspace.icon} size="md" />
           <div>
             <h1 className="text-2xl font-semibold">{workspace.name}</h1>
             <p className="text-muted-foreground">
@@ -335,7 +334,7 @@ export default function NotionWorkspacePage({ params }: NotionWorkspacePageProps
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => disconnectMutation.mutate()}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className={destructiveActionClasses}
             >
               {disconnectMutation.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

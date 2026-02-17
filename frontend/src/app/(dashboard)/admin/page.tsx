@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import {
@@ -48,12 +49,14 @@ export default function AdminDashboardPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const user = useAuthStore((state) => state.user);
+  const isAdmin = user?.role === 'admin';
 
   // Redirect non-admins
-  if (user && user.role !== 'admin') {
-    router.push('/chat');
-    return null;
-  }
+  useEffect(() => {
+    if (user && !isAdmin) {
+      router.push('/chat');
+    }
+  }, [user, isAdmin, router]);
 
   // Fetch system health
   const { data: health, isLoading: isLoadingHealth, refetch: refetchHealth } = useQuery({
@@ -62,6 +65,7 @@ export default function AdminDashboardPage() {
       const response = await adminApi.getSystemHealth();
       return response.data;
     },
+    enabled: isAdmin,
     refetchInterval: 30000,
   });
 
@@ -72,6 +76,7 @@ export default function AdminDashboardPage() {
       const response = await adminApi.getMemoryDashboard();
       return response.data;
     },
+    enabled: isAdmin,
   });
 
   // Fetch cache stats
@@ -81,6 +86,7 @@ export default function AdminDashboardPage() {
       const response = await adminApi.getCacheStats();
       return response.data as CacheStatsData;
     },
+    enabled: isAdmin,
   });
 
   // Fetch presence stats
@@ -90,6 +96,7 @@ export default function AdminDashboardPage() {
       const response = await adminApi.getPresenceStats();
       return response.data;
     },
+    enabled: isAdmin,
     refetchInterval: 10000,
   });
 
@@ -100,6 +107,7 @@ export default function AdminDashboardPage() {
       const response = await adminApi.getDecayStats();
       return response.data;
     },
+    enabled: isAdmin,
   });
 
   // Clear cache mutation
@@ -139,6 +147,14 @@ export default function AdminDashboardPage() {
     if (hours > 0) return `${hours}h ${minutes}m`;
     return `${minutes}m`;
   };
+
+  if (!isAdmin) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
