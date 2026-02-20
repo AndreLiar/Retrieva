@@ -14,9 +14,17 @@ The RAG Platform implements multiple security layers to protect user data and en
 ├─────────────────────────────────────────────────────────────────────────┤
 │                                                                          │
 │  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │  Layer 0: DevSecOps Pipeline (CI)                                │   │
+│  │  • Gitleaks — secret scanning on every push                      │   │
+│  │  • Semgrep SAST — OWASP Top 10, nodejs, secrets rulesets         │   │
+│  │  • Trivy — dependency CVE scanning (HIGH/CRITICAL)               │   │
+│  │  • npm audit — production dependency vulnerability gate          │   │
+│  └─────────────────────────────────────────────────────────────────┘   │
+│                                                                          │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
 │  │  Layer 1: Network Security                                       │   │
 │  │  • HTTPS/TLS encryption                                          │   │
-│  │  • CORS policy                                                   │   │
+│  │  • CORS policy (allowlist-based)                                 │   │
 │  │  • Rate limiting                                                  │   │
 │  │  • Helmet security headers                                        │   │
 │  └─────────────────────────────────────────────────────────────────┘   │
@@ -39,22 +47,35 @@ The RAG Platform implements multiple security layers to protect user data and en
 │                                                                          │
 │  ┌─────────────────────────────────────────────────────────────────┐   │
 │  │  Layer 4: Data Protection                                         │   │
-│  │  • Encryption at rest                                             │   │
-│  │  • Token encryption                                               │   │
+│  │  • AES-256-GCM encryption at rest (explicit 128-bit auth tag)    │   │
+│  │  • Token encryption with key versioning                          │   │
 │  │  • Multi-tenant isolation                                         │   │
 │  │  • PII masking                                                    │   │
 │  └─────────────────────────────────────────────────────────────────┘   │
 │                                                                          │
 │  ┌─────────────────────────────────────────────────────────────────┐   │
-│  │  Layer 5: LLM Guardrails                                          │   │
+│  │  Layer 5: Runtime Guardrails                                      │   │
+│  │  • Abuse detection (rate, spam, unusual hours)                   │   │
+│  │  • Token usage limits                                            │   │
 │  │  • Prompt injection prevention                                    │   │
-│  │  • Output sanitization                                            │   │
-│  │  • Hallucination detection                                        │   │
-│  │  • Confidence thresholds                                          │   │
+│  │  • Output sanitization & hallucination detection                 │   │
 │  └─────────────────────────────────────────────────────────────────┘   │
 │                                                                          │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
+
+## DevSecOps Pipeline
+
+Security checks run automatically on every push and pull request via GitHub Actions:
+
+| Tool | What it checks | Blocks merge |
+|------|---------------|-------------|
+| **Gitleaks** | Committed secrets, API keys, credentials in full git history | Yes |
+| **Semgrep** | SAST: OWASP Top 10, injection, insecure crypto, secrets patterns | Yes |
+| **Trivy** | HIGH/CRITICAL CVEs in npm/pip dependencies with available fixes | Yes |
+| **npm audit** | Production dependency vulnerabilities (`--omit=dev`) | Yes |
+
+Config files: `.gitleaks.toml` (secret scan allowlists), `.semgrepignore` (SAST exclusions).
 
 ## OWASP LLM Top 10 Mitigations
 
