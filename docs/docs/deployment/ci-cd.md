@@ -22,10 +22,16 @@ Push/PR to main/dev/staging
 │  │ + MongoDB     │  │ + Vitest     │  │ + Pytest              │ │
 │  │ + Redis       │  │              │  │                       │ │
 │  └──────────────┘  └──────────────┘  └───────────────────────┘ │
-│  ┌──────────────┐  ┌──────────────────────────────────────────┐ │
-│  │   Security   │  │          Docker Build Check              │ │
-│  │    Audit     │  │  backend / frontend / ragas-service      │ │
-│  └──────────────┘  └──────────────────────────────────────────┘ │
+│  ┌──────────────┐  ┌──────────────┐  ┌───────────────────────┐ │
+│  │   Security   │  │Secret Scanning│  │    SAST (Semgrep)    │ │
+│  │    Audit     │  │  (Gitleaks)  │  │  nodejs/js/owasp/     │ │
+│  │ npm audit    │  │              │  │  secrets rulesets     │ │
+│  └──────────────┘  └──────────────┘  └───────────────────────┘ │
+│  ┌─────────────────────────────────┐  ┌────────────────────────┐│
+│  │    Trivy Filesystem Scan         │  │  Docker Build Check   │ │
+│  │  backend / frontend / ragas     │  │  backend / frontend   │ │
+│  │  HIGH+CRITICAL, ignore-unfixed  │  │  ragas-service        │ │
+│  └─────────────────────────────────┘  └────────────────────────┘│
 │                           │                                     │
 │                    CI Success Gate                               │
 └─────────────────────────────────────────────────────────────────┘
@@ -59,10 +65,31 @@ Push/PR to main/dev/staging
 |-----|-------------|----------|
 | `backend-test` | Lint + run Vitest tests | MongoDB 7.0, Redis 7 |
 | `frontend-test` | Lint + run Vitest tests | None |
-| `backend-security` | `npm audit --audit-level=high` | None |
+| `backend-security` | `npm audit --audit-level=high --omit=dev` — fails on HIGH/CRITICAL production CVEs | None |
 | `ragas-test` | Flake8 lint + Pytest | None |
+| `secret-scan` | [Gitleaks](https://github.com/gitleaks/gitleaks) scans full git history for committed secrets | None |
+| `sast` | [Semgrep](https://semgrep.dev) static analysis with `p/nodejs`, `p/javascript`, `p/secrets`, `p/owasp-top-ten` rulesets | None |
+| `trivy-scan` | [Trivy](https://trivy.dev) filesystem scan for HIGH/CRITICAL CVEs with fixes available (3-way matrix: backend, frontend, ragas-service) | None |
 | `docker-build` | Build Docker images (no push) for backend, frontend, ragas-service | None |
-| `ci-success` | Gate job — fails if `backend-test` or `frontend-test` failed | None |
+| `ci-success` | Gate job — fails if any of the above jobs failed | None |
+
+### Security Scan Configuration
+
+**Gitleaks** allowlists are in `.gitleaks.toml`:
+- SOPS-encrypted files (`.env.*.enc`)
+- Test fixtures with fake keys
+- Lockfiles and CI workflow files
+
+**Semgrep** exclusions are in `.semgrepignore`:
+- `backend/tests/` and `frontend/src/tests/` — intentional test patterns
+- `nginx/` — reverse-proxy headers are intentional (not vulnerabilities)
+- `infra/` — scanned separately by tfsec
+- `mcp-servers/` — reference implementations
+
+**Trivy** settings:
+- `severity: HIGH,CRITICAL` — low/medium not blocking
+- `ignore-unfixed: true` — only fails on CVEs with available fixes
+- `--omit=dev` on npm audit — dev dependencies don't reach production images
 
 ### Backend Test Environment
 

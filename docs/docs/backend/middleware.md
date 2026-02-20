@@ -28,6 +28,26 @@ Request
          │
          ▼
 ┌─────────────────┐
+│ Audit Trail     │ createAuditMiddleware (all requests)
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│ PII Detection   │ piiDetectionMiddleware
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│ Abuse Detection │ detectAbuse (spam, rapid-fire, unusual hours)
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│ Token Limits    │ checkTokenLimits (authenticated users)
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
 │ Authentication  │ authenticate
 └────────┬────────┘
          │
@@ -274,6 +294,67 @@ export const registerSchema = Joi.object({
   name: Joi.string().min(2).max(100).required(),
 });
 ```
+
+## Guardrails Middleware
+
+Three middleware functions run globally on every request (mounted in `app.js` before routes):
+
+### detectAbuse
+
+Detects abusive usage patterns and blocks or flags offending users.
+
+```javascript
+// middleware/abuseDetection.js
+export function detectAbuse(req, res, next) {
+  const userId = req.user?.userId || req.ip;
+
+  // Block if user is flagged
+  if (isUserFlagged(userId)) {
+    return res.status(429).json({ message: 'Too many requests', guardrail: 'abuse_detection' });
+  }
+
+  // Check: rapid-fire requests, identical question spam, unusual hours (2–5 AM)
+  const detectedPatterns = [
+    checkRapidRequests(userId),
+    req.body?.question && checkIdenticalQuestions(userId, req.body.question),
+    checkUnusualHours(),
+  ].filter(Boolean);
+
+  if (detectedPatterns.length > 0) {
+    // Actions: temporary_block → 429, flag_and_captcha → continue + flag, flag_for_review → continue + flag
+  }
+
+  next();
+}
+```
+
+Patterns detected:
+- **Rapid requests** — too many requests within a sliding window
+- **Identical question spam** — same question asked repeatedly (MD5 hash comparison)
+- **Unusual hours** — requests between 2–5 AM flagged for review
+
+### checkTokenLimits
+
+Checks daily and monthly token usage for authenticated users. Unauthenticated requests pass through automatically.
+
+```javascript
+// middleware/abuseDetection.js
+export async function checkTokenLimits(req, res, next) {
+  const userId = req.user?.userId;
+  if (!userId) return next(); // skip unauthenticated
+
+  const limits = await TokenUsage.checkLimits(userId);
+  if (!limits.allowed) {
+    return res.status(429).json({ message: 'Token usage limit exceeded', guardrail: 'token_limits' });
+  }
+  req.tokenLimits = limits;
+  next();
+}
+```
+
+### createAuditMiddleware
+
+Logs every request with method, path, status code, response time, and user/workspace context. Excludes `/health`, `/api-docs`, `/favicon.ico`.
 
 ## Rate Limiting
 
