@@ -219,7 +219,7 @@ describe('Request Helpers', () => {
 
     it('should detect hasMore correctly', () => {
       const hasMore = buildPaginationMeta(100, 20, 80);
-      const noMore = buildPaginationMeta(100, 20, 80);
+      const _noMore = buildPaginationMeta(100, 20, 80);
 
       expect(hasMore.hasMore).toBe(false); // 80 + 20 = 100 (not < 100)
     });

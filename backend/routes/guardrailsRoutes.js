@@ -17,7 +17,7 @@ import { getAuditLogs, getAuditSummary } from '../middleware/auditTrail.js';
 import { getAbuseStats } from '../middleware/abuseDetection.js';
 import { TokenUsage } from '../models/TokenUsage.js';
 import { AuditLog } from '../models/AuditLog.js';
-import { guardrailsConfig, getGuardrail } from '../config/guardrails.js';
+import { guardrailsConfig } from '../config/guardrails.js';
 import { getPIIMaskingConfig } from '../utils/security/piiMasker.js';
 import logger from '../config/logger.js';
 

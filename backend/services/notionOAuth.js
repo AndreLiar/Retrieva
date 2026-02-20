@@ -54,7 +54,7 @@ export class NotionOAuthService {
    * @param {string} redirectUrl - Optional custom redirect URL
    * @returns {Object} Authorization URL and state
    */
-  getAuthorizationUrl(userId, redirectUrl = null) {
+  getAuthorizationUrl(userId, _redirectUrl = null) {
     try {
       // Generate random state for CSRF protection
       const state = generateToken(16);

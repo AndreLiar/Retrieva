@@ -100,7 +100,9 @@ async function createOpenAILLM(config) {
     });
   } catch (error) {
     if (error.code === 'ERR_MODULE_NOT_FOUND') {
-      throw new Error('OpenAI provider requires @langchain/openai package. Install with: npm install @langchain/openai');
+      throw new Error(
+        'OpenAI provider requires @langchain/openai package. Install with: npm install @langchain/openai'
+      );
     }
     throw error;
   }
@@ -127,7 +129,9 @@ async function createAnthropicLLM(config) {
     });
   } catch (error) {
     if (error.code === 'ERR_MODULE_NOT_FOUND') {
-      throw new Error('Anthropic provider requires @langchain/anthropic package. Install with: npm install @langchain/anthropic');
+      throw new Error(
+        'Anthropic provider requires @langchain/anthropic package. Install with: npm install @langchain/anthropic'
+      );
     }
     throw error;
   }
@@ -172,7 +176,9 @@ async function createAzureOpenAILLM(config) {
     });
   } catch (error) {
     if (error.code === 'ERR_MODULE_NOT_FOUND') {
-      throw new Error('Azure OpenAI provider requires @langchain/openai package. Install with: npm install @langchain/openai');
+      throw new Error(
+        'Azure OpenAI provider requires @langchain/openai package. Install with: npm install @langchain/openai'
+      );
     }
     throw error;
   }
@@ -244,13 +250,17 @@ export async function getDefaultLLM() {
 export async function getJudgeLLM() {
   if (!judgeLLM) {
     const provider = getCurrentProvider();
-    const judgeModel = process.env.JUDGE_LLM_MODEL || (
-      provider === LLM_PROVIDERS.OLLAMA ? 'mistral:latest' :
-      provider === LLM_PROVIDERS.OPENAI ? 'gpt-4-turbo-preview' :
-      provider === LLM_PROVIDERS.ANTHROPIC ? 'claude-3-haiku-20240307' :
-      provider === LLM_PROVIDERS.AZURE_OPENAI ? process.env.AZURE_OPENAI_LLM_DEPLOYMENT :
-      'mistral:latest'
-    );
+    const judgeModel =
+      process.env.JUDGE_LLM_MODEL ||
+      (provider === LLM_PROVIDERS.OLLAMA
+        ? 'mistral:latest'
+        : provider === LLM_PROVIDERS.OPENAI
+          ? 'gpt-4-turbo-preview'
+          : provider === LLM_PROVIDERS.ANTHROPIC
+            ? 'claude-3-haiku-20240307'
+            : provider === LLM_PROVIDERS.AZURE_OPENAI
+              ? process.env.AZURE_OPENAI_LLM_DEPLOYMENT
+              : 'mistral:latest');
 
     judgeLLM = await createLLM({
       provider,
@@ -386,7 +396,7 @@ export const judgeLlm = new ChatOllama({
   format: 'json',
 });
 
-export function createLLMWithTimeout(timeoutMs = generationConfig.timeout) {
+export function createLLMWithTimeout(_timeoutMs = generationConfig.timeout) {
   return createOllamaLLM({ maxTokens: generationConfig.maxTokens });
 }
 

@@ -5,7 +5,7 @@
  * Supports both Azure OpenAI (default) and local bge-m3 configurations.
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 
 // Helper: dynamically import a module with a fresh env snapshot.
 // Vitest forks isolate processes, but module caching within a process

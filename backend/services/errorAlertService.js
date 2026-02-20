@@ -14,7 +14,7 @@
 import { Notification, NotificationTypes, NotificationPriority } from '../models/Notification.js';
 import { NotionWorkspace } from '../models/NotionWorkspace.js';
 import { WorkspaceMember } from '../models/WorkspaceMember.js';
-import { emitToUser, emitToWorkspace } from './socketService.js';
+import { emitToUser } from './socketService.js';
 import { emailService } from './emailService.js';
 import logger from '../config/logger.js';
 

@@ -4,7 +4,6 @@ import {
   embedTexts as hybridEmbedTexts,
   createEmbeddingContext,
   isCloudAvailable,
-  getEmbeddingPrefixes,
 } from './embeddingProvider.js';
 
 // =============================================================================
@@ -17,11 +16,13 @@ const EMBEDDING_PROVIDER = process.env.EMBEDDING_PROVIDER || 'azure';
 // Azure OpenAI Configuration
 const AZURE_OPENAI_API_KEY = process.env.AZURE_OPENAI_API_KEY;
 const AZURE_OPENAI_ENDPOINT = process.env.AZURE_OPENAI_ENDPOINT;
-const AZURE_OPENAI_EMBEDDING_DEPLOYMENT = process.env.AZURE_OPENAI_EMBEDDING_DEPLOYMENT || 'text-embedding-3-small';
+const AZURE_OPENAI_EMBEDDING_DEPLOYMENT =
+  process.env.AZURE_OPENAI_EMBEDDING_DEPLOYMENT || 'text-embedding-3-small';
 const AZURE_OPENAI_API_VERSION = process.env.AZURE_OPENAI_API_VERSION || '2024-02-15-preview';
 
 // Extract instance name from endpoint URL (e.g., https://oai-rag-backend-wz5nh9.openai.azure.com/)
-const AZURE_OPENAI_INSTANCE_NAME = process.env.AZURE_OPENAI_INSTANCE_NAME ||
+const AZURE_OPENAI_INSTANCE_NAME =
+  process.env.AZURE_OPENAI_INSTANCE_NAME ||
   (AZURE_OPENAI_ENDPOINT ? AZURE_OPENAI_ENDPOINT.match(/https:\/\/([^.]+)\./)?.[1] : undefined);
 
 // Hybrid embeddings disabled - Azure-only mode
@@ -177,9 +178,8 @@ class BatchedEmbeddings {
   async embedWithRetry(text) {
     const truncationFactors = [1.0, 0.5, 0.25, 0.1];
     for (const factor of truncationFactors) {
-      const truncatedText = factor < 1.0
-        ? text.slice(0, Math.max(100, Math.floor(text.length * factor)))
-        : text;
+      const truncatedText =
+        factor < 1.0 ? text.slice(0, Math.max(100, Math.floor(text.length * factor))) : text;
 
       try {
         const result = await this.baseEmbeddings.embedQuery(truncatedText);
@@ -194,8 +194,8 @@ class BatchedEmbeddings {
         }
         return result;
       } catch (error) {
-        const isContextError = error.message?.includes('context length')
-          || error.message?.includes('input length');
+        const isContextError =
+          error.message?.includes('context length') || error.message?.includes('input length');
 
         if (!isContextError || factor === truncationFactors[truncationFactors.length - 1]) {
           metrics.errors++;
@@ -208,10 +208,13 @@ class BatchedEmbeddings {
           throw error;
         }
 
-        logger.debug(`Retrying with ${Math.round(truncationFactors[truncationFactors.indexOf(factor) + 1] * 100)}% of text`, {
-          service: 'embeddings',
-          currentLength: truncatedText.length,
-        });
+        logger.debug(
+          `Retrying with ${Math.round(truncationFactors[truncationFactors.indexOf(factor) + 1] * 100)}% of text`,
+          {
+            service: 'embeddings',
+            currentLength: truncatedText.length,
+          }
+        );
       }
     }
   }
@@ -337,8 +340,8 @@ class BatchedEmbeddings {
           onProgress(i + 1, batches.length, chunksProcessed);
         }
       } catch (error) {
-        const isContextLengthError = error.message?.includes('context length')
-          || error.message?.includes('input length');
+        const isContextLengthError =
+          error.message?.includes('context length') || error.message?.includes('input length');
 
         if (isContextLengthError && batch.length > 0) {
           // Context length exceeded - retry each text individually with progressive truncation

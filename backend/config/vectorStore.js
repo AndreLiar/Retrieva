@@ -8,7 +8,7 @@ import {
   isCloudAvailable,
   createEmbeddingContext,
 } from './embeddings.js';
-import { selectProvider, EmbeddingProvider } from './embeddingProvider.js';
+import { selectProvider } from './embeddingProvider.js';
 import { recordEmbeddingUsage } from '../services/metrics/syncMetrics.js';
 import { wrapWithTenantIsolation } from '../services/security/tenantIsolation.js';
 import { promiseWithTimeout } from '../utils/core/asyncHelpers.js';
@@ -53,7 +53,7 @@ export const getVectorStore = async (docs, options = {}) => {
   // If docs provided, use the optimized batch indexing
   // Note: Indexing doesn't need tenant isolation (workspaceId is in metadata)
   if (docs && docs.length > 0) {
-    return await indexDocumentsBatched(docs, options);
+    return indexDocumentsBatched(docs, options);
   }
 
   // Return existing store for queries - wrapped with tenant isolation
@@ -305,7 +305,7 @@ export async function indexDocumentsBatched(docs, options = {}) {
 async function ensureCollection(client, vectorSize) {
   try {
     await client.getCollection(COLLECTION_NAME);
-  } catch (error) {
+  } catch (_err) {
     // Collection doesn't exist, create it
     logger.info('Creating Qdrant collection', {
       service: 'vector-store',

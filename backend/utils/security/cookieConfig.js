@@ -10,7 +10,7 @@
  * Environment detection
  */
 const isProduction = process.env.NODE_ENV === 'production';
-const isDevelopment = process.env.NODE_ENV === 'development';
+const _isDevelopment = process.env.NODE_ENV === 'development';
 
 /**
  * SameSite configuration

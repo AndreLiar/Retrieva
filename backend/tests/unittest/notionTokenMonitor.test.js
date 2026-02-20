@@ -43,10 +43,7 @@ vi.mock('../../services/emailService.js', () => ({
 import axios from 'axios';
 import { NotionWorkspace } from '../../models/NotionWorkspace.js';
 import { User } from '../../models/User.js';
-import NotionTokenMonitor, {
-  TokenStatus,
-  notionTokenMonitor,
-} from '../../services/notionTokenMonitor.js';
+import { TokenStatus, notionTokenMonitor } from '../../services/notionTokenMonitor.js';
 
 describe('NotionTokenMonitor', () => {
   beforeEach(() => {

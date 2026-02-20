@@ -17,7 +17,7 @@ import {
   checkWorkspaceToken,
   updateTokenPreference,
 } from '../controllers/notionController.js';
-import { authenticate, optionalAuth } from '../middleware/auth.js';
+import { authenticate } from '../middleware/auth.js';
 import { loadWorkspace, loadWorkspaceSafe } from '../middleware/loadWorkspace.js';
 
 const router = express.Router();

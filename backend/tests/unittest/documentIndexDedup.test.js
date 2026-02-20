@@ -2,7 +2,7 @@
  * Document Index Deduplication Tests (Phase 5)
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 // Mock mongoose before importing the module
 vi.mock('mongoose', async () => {
@@ -289,9 +289,8 @@ describe('Document Index Deduplication', () => {
         vi.restoreAllMocks();
 
         // Re-import to get clean implementation
-        const { contentHashIndex: freshIndex } = await import(
-          '../../services/rag/indexDeduplication.js'
-        );
+        const { contentHashIndex: freshIndex } =
+          await import('../../services/rag/indexDeduplication.js');
         const result = await freshIndex.existsMany('workspace-1', []);
         expect(result).toBeInstanceOf(Set);
         expect(result.size).toBe(0);

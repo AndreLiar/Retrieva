@@ -504,7 +504,7 @@ export async function contextOnlyRetrieval(query, retriever, vectorStore, config
  * @param {Object} config - Strategy configuration
  * @returns {Promise<StrategyResult>}
  */
-export async function noRetrieval(query, config) {
+export async function noRetrieval(_query, _config) {
   return {
     documents: [],
     metrics: {

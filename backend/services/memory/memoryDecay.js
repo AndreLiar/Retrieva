@@ -10,12 +10,10 @@
  * @module services/memory/memoryDecay
  */
 
-import mongoose from 'mongoose';
 import { Message } from '../../models/Message.js';
 import { Conversation } from '../../models/Conversation.js';
 import { ConversationSummary } from '../../models/ConversationSummary.js';
 import { Entity } from '../../models/Entity.js';
-import { DocumentSummary } from '../../models/DocumentSummary.js';
 import { summarizeConversation } from './conversationSummarization.js';
 import logger from '../../config/logger.js';
 
@@ -411,7 +409,7 @@ export async function triggerMemoryDecay(options = {}) {
  * @deprecated Use BullMQ-based scheduling via queue.js scheduleMemoryDecayJob()
  * This function is kept for backward compatibility but does nothing.
  */
-export function scheduleMemoryDecay(options = {}) {
+export function scheduleMemoryDecay(_options = {}) {
   logger.warn('scheduleMemoryDecay is deprecated. Use BullMQ scheduling instead.', {
     service: 'memory-decay',
   });

@@ -9,7 +9,6 @@ import {
   isAlreadyProcessed,
   markAsProcessed,
   getPipelineQueue,
-  recordStageMetrics,
   getStageMetrics,
 } from './pipelineStages.js';
 import { stageHandlers } from './stageHandlers.js';
@@ -257,12 +256,7 @@ export async function startPipelineFromStage(stage, data) {
     throw new Error(`Invalid pipeline stage: ${stage}`);
   }
 
-  const idempotencyKey = generateIdempotencyKey(
-    workspaceId,
-    sourceId,
-    stage,
-    data.contentHash
-  );
+  const idempotencyKey = generateIdempotencyKey(workspaceId, sourceId, stage, data.contentHash);
 
   const queue = getPipelineQueue(stage);
   const job = await queue.add(stage, {

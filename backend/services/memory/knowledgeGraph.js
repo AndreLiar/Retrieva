@@ -11,7 +11,6 @@
  */
 
 import { Entity } from '../../models/Entity.js';
-import { DocumentSummary } from '../../models/DocumentSummary.js';
 import logger from '../../config/logger.js';
 
 /**

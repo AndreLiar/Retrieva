@@ -18,8 +18,6 @@ import dotenv from 'dotenv';
 import { connectDB } from '../config/database.js';
 import { sparseVectorManager } from '../services/search/sparseVector.js';
 import { NotionWorkspace } from '../models/NotionWorkspace.js';
-import logger from '../config/logger.js';
-
 dotenv.config();
 
 async function rebuildForWorkspace(workspaceId) {
@@ -28,16 +26,22 @@ async function rebuildForWorkspace(workspaceId) {
   try {
     // Get stats before rebuild
     const statsBefore = await sparseVectorManager.getStats(workspaceId);
-    console.log(`   Before: ${statsBefore.vocabularySize} vocabulary terms, ${statsBefore.indexedDocuments} sparse vectors`);
+    console.log(
+      `   Before: ${statsBefore.vocabularySize} vocabulary terms, ${statsBefore.indexedDocuments} sparse vectors`
+    );
 
     // Rebuild vocabulary from Qdrant
     const result = await sparseVectorManager.rebuildVocabularyFromQdrant(workspaceId);
 
     // Get stats after rebuild
     const statsAfter = await sparseVectorManager.getStats(workspaceId);
-    console.log(`   After:  ${statsAfter.vocabularySize} vocabulary terms, ${statsAfter.indexedDocuments} sparse vectors`);
+    console.log(
+      `   After:  ${statsAfter.vocabularySize} vocabulary terms, ${statsAfter.indexedDocuments} sparse vectors`
+    );
 
-    console.log(`   ✅ Rebuilt vocabulary: ${result.vocabularySize} terms from ${result.totalDocuments} documents`);
+    console.log(
+      `   ✅ Rebuilt vocabulary: ${result.vocabularySize} terms from ${result.totalDocuments} documents`
+    );
     return true;
   } catch (error) {
     console.error(`   ❌ Failed: ${error.message}`);
@@ -65,7 +69,9 @@ async function main() {
     // Rebuild for all workspaces
     console.log('Rebuilding sparse index for ALL workspaces...');
 
-    const workspaces = await NotionWorkspace.find({ status: 'active' }).select('workspaceId workspaceName');
+    const workspaces = await NotionWorkspace.find({ status: 'active' }).select(
+      'workspaceId workspaceName'
+    );
     console.log(`Found ${workspaces.length} active workspaces`);
 
     let success = 0;

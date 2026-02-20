@@ -57,7 +57,7 @@ function detectContentType(text) {
   }
 
   // Check for high special character density (likely code)
-  const specialChars = text.match(/[{}()\[\]<>;:=+\-*/%&|^!~]/g);
+  const specialChars = text.match(/[{}()[\]<>;:=+\-*/%&|^!~]/g);
   if (specialChars && specialChars.length > text.length * 0.05) {
     return 'code';
   }

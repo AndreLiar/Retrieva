@@ -96,7 +96,7 @@ Resolve any references in the current query as JSON.`,
  * @private
  */
 function hasLikelyReferences(query) {
-  for (const [type, pattern] of Object.entries(COREFERENCE_PATTERNS)) {
+  for (const [_type, pattern] of Object.entries(COREFERENCE_PATTERNS)) {
     if (pattern.test(query)) {
       return true;
     }
@@ -175,7 +175,7 @@ function simpleResolve(query, context) {
 
   // Get last mentioned entity for "it", "this", "that"
   const lastEntity = entities[0];
-  const lastUserQuery = messages.filter((m) => m.role === 'user').slice(-1)[0]?.content || '';
+  const _lastUserQuery = messages.filter((m) => m.role === 'user').slice(-1)[0]?.content || '';
 
   // Simple pronoun replacement for obvious cases
   if (lastEntity) {

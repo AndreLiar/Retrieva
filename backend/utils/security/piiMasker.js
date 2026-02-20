@@ -197,7 +197,7 @@ export function maskPII(text, options = {}) {
   let maskedText = text;
   const detections = [];
 
-  for (const [name, config] of Object.entries(PII_PATTERNS)) {
+  for (const [_name, config] of Object.entries(PII_PATTERNS)) {
     // Skip if not in requested types
     if (types && !types.includes(config.type)) {
       continue;
