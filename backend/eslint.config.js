@@ -49,7 +49,10 @@ export default [
     },
     rules: {
       // Error prevention
-      'no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+      'no-unused-vars': [
+        'warn',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' },
+      ],
       'no-console': 'off', // Allow console for server logging
       'no-debugger': 'error',
 
