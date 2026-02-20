@@ -15,7 +15,7 @@ export class BaseDocumentSourceAdapter {
    * @param {Object} credentials - Authentication credentials (access token, API key, etc.)
    * @returns {Promise<boolean>} Success status
    */
-  async authenticate(credentials) {
+  async authenticate(_credentials) {
     throw new Error('Method authenticate() must be implemented');
   }
 
@@ -24,7 +24,7 @@ export class BaseDocumentSourceAdapter {
    * @param {Object} options - Optional filters (folder, type, etc.)
    * @returns {Promise<Array>} Array of document metadata objects
    */
-  async listDocuments(options = {}) {
+  async listDocuments(_options = {}) {
     throw new Error('Method listDocuments() must be implemented');
   }
 
@@ -33,7 +33,7 @@ export class BaseDocumentSourceAdapter {
    * @param {string} documentId - Unique identifier of the document
    * @returns {Promise<Object>} Document object with content and metadata
    */
-  async fetchDocument(documentId) {
+  async fetchDocument(_documentId) {
     throw new Error('Method fetchDocument() must be implemented');
   }
 
@@ -42,7 +42,7 @@ export class BaseDocumentSourceAdapter {
    * @param {Object} rawContent - Raw content from the source
    * @returns {Promise<string>} Transformed text content
    */
-  async transformToText(rawContent) {
+  async transformToText(_rawContent) {
     throw new Error('Method transformToText() must be implemented');
   }
 
@@ -51,7 +51,7 @@ export class BaseDocumentSourceAdapter {
    * @param {Object} document - Document object from source
    * @returns {Promise<Object>} Standardized metadata object
    */
-  async extractMetadata(document) {
+  async extractMetadata(_document) {
     throw new Error('Method extractMetadata() must be implemented');
   }
 
@@ -61,7 +61,7 @@ export class BaseDocumentSourceAdapter {
    * @param {Object} options - Optional filters
    * @returns {Promise<Array>} Array of changed document IDs
    */
-  async detectChanges(lastSyncTime, options = {}) {
+  async detectChanges(_lastSyncTime, _options = {}) {
     throw new Error('Method detectChanges() must be implemented');
   }
 

@@ -250,6 +250,12 @@ app.use(
 // GUARDRAILS: PII detection in requests
 app.use(piiDetectionMiddleware(['question', 'content', 'message']));
 
+// GUARDRAILS: Abuse detection (rapid-fire requests, question spam, unusual hours)
+app.use(detectAbuse);
+
+// GUARDRAILS: Token usage limits (authenticated users only, skips unauthenticated)
+app.use(checkTokenLimits);
+
 // Health check routes (no /api prefix for Kubernetes probes)
 app.use('/health', healthRoutes);
 

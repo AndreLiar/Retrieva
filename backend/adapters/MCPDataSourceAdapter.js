@@ -106,7 +106,7 @@ export class MCPDataSourceAdapter extends BaseDocumentSourceAdapter {
     if (this._client && this._connected) {
       try {
         await this._client.close();
-      } catch (_) {
+      } catch (_err) {
         // best-effort
       }
       this._client = null;

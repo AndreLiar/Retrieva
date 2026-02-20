@@ -338,7 +338,7 @@ async function _detectAndSoftDeleteRemovedDocs(workspaceId, sourceType, liveIds)
 async function setJobProgress(job, data) {
   try {
     await job.updateProgress(data);
-  } catch (_) {
+  } catch (_err) {
     // non-critical
   }
 }
