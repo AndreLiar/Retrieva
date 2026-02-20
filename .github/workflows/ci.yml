@@ -155,8 +155,7 @@ jobs:
         run: npm ci --legacy-peer-deps
 
       - name: Run npm audit
-        run: npm audit --audit-level=high || true
-        continue-on-error: true
+        run: npm audit --audit-level=high
 
   # ===========================================================================
   # RAGAS Service (Python) Tests
@@ -197,6 +196,77 @@ jobs:
         continue-on-error: true
         env:
           OLLAMA_BASE_URL: http://localhost:11434
+
+  # ===========================================================================
+  # Secret Scanning (gitleaks)
+  # ===========================================================================
+  secret-scan:
+    name: Secret Scanning
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ===========================================================================
+  # SAST (Semgrep)
+  # ===========================================================================
+  sast:
+    name: SAST - Semgrep
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Semgrep
+        run: >
+          semgrep scan
+          --config p/nodejs
+          --config p/express
+          --config p/secrets
+          --config p/owasp-top-ten
+          --error
+          .
+
+  # ===========================================================================
+  # Container & Filesystem Scanning (Trivy)
+  # ===========================================================================
+  trivy-scan:
+    name: Trivy Scan (${{ matrix.service }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: backend
+            path: ./backend
+          - service: frontend
+            path: ./frontend
+          - service: ragas-service
+            path: ./ragas-service
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy filesystem scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: fs
+          scan-ref: ${{ matrix.path }}
+          severity: HIGH,CRITICAL
+          exit-code: '1'
+          ignore-unfixed: true
+          format: table
 
   # ===========================================================================
   # Docker Build Verification
@@ -241,7 +311,7 @@ jobs:
   # ===========================================================================
   ci-success:
     name: CI Success
-    needs: [backend-test, frontend-test, backend-security, ragas-test, docker-build]
+    needs: [backend-test, frontend-test, backend-security, ragas-test, docker-build, secret-scan, sast, trivy-scan]
     runs-on: ubuntu-latest
     if: always()
     steps:
@@ -253,6 +323,22 @@ jobs:
           fi
           if [[ "${{ needs.frontend-test.result }}" != "success" ]]; then
             echo "Frontend tests failed"
+            exit 1
+          fi
+          if [[ "${{ needs.backend-security.result }}" != "success" ]]; then
+            echo "Dependency audit failed — high/critical CVEs detected"
+            exit 1
+          fi
+          if [[ "${{ needs.secret-scan.result }}" != "success" ]]; then
+            echo "Secret scanning failed — potential secrets detected"
+            exit 1
+          fi
+          if [[ "${{ needs.sast.result }}" != "success" ]]; then
+            echo "SAST failed — security issues detected by Semgrep"
+            exit 1
+          fi
+          if [[ "${{ needs.trivy-scan.result }}" != "success" ]]; then
+            echo "Trivy scan failed — HIGH/CRITICAL vulnerabilities with fixes available"
             exit 1
           fi
           echo "All CI checks passed!"

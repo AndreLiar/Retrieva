@@ -1,0 +1,22 @@
+# Semgrep ignore file
+# https://semgrep.dev/docs/ignoring-files-folders-code/
+
+# Test files — intentionally use insecure patterns for testing
+backend/tests/
+frontend/src/tests/
+
+# Generated / vendored
+node_modules/
+.next/
+dist/
+build/
+coverage/
+
+# Example MCP server — reference implementation, not production code
+mcp-servers/
+
+# Infra — scanned separately by tfsec
+infra/
+
+# Docs
+docs/
