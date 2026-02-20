@@ -158,7 +158,7 @@ class ContextManager {
     const {
       conversationId,
       userId,
-      workspaceId,
+      workspaceId: _workspaceId,
       query,
       response,
       intent,
@@ -245,7 +245,7 @@ class ContextManager {
    * @param {Object} params - Cache clear parameters
    */
   clearCaches(params = {}) {
-    const { conversationId, userId, workspaceId } = params;
+    const { conversationId, userId: _userId, workspaceId } = params;
 
     if (conversationId) {
       this.services.session.clearCache?.(conversationId);

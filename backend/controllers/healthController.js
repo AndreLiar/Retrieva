@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import { redisConnection } from '../config/redis.js';
 import { getVectorStore } from '../config/vectorStore.js';
 import { getDefaultLLM, getCurrentProvider } from '../config/llm.js';
-import { sendSuccess, sendError } from '../utils/core/responseFormatter.js';
+import { sendSuccess } from '../utils/core/responseFormatter.js';
 import { promiseWithTimeout } from '../utils/core/asyncHelpers.js';
 import logger from '../config/logger.js';
 // ISSUE #29 FIX: Import queues for health check

@@ -102,10 +102,7 @@ export const invokeWithTimeout = async (chain, input, options = {}, timeoutMs = 
   });
 
   try {
-    const result = await Promise.race([
-      chain.invoke(input, options),
-      timeoutPromise,
-    ]);
+    const result = await Promise.race([chain.invoke(input, options), timeoutPromise]);
     clearTimeout(timeoutId);
     return result;
   } catch (error) {
@@ -132,7 +129,7 @@ export async function* streamWithTimeout(
   chunkTimeoutMs = 10000
 ) {
   let timeoutId;
-  let isFirstChunk = true;
+  let _isFirstChunk = true;
 
   const resetTimeout = (ms) => {
     if (timeoutId) clearTimeout(timeoutId);
@@ -145,7 +142,7 @@ export async function* streamWithTimeout(
 
   try {
     const stream = await chain.stream(input, options);
-    let timeoutPromise = resetTimeout(initialTimeoutMs);
+    let _timeoutPromise = resetTimeout(initialTimeoutMs);
 
     for await (const chunk of stream) {
       // Cancel the timeout for this chunk
@@ -154,8 +151,8 @@ export async function* streamWithTimeout(
       yield chunk;
 
       // Set timeout for next chunk (shorter after first chunk received)
-      isFirstChunk = false;
-      timeoutPromise = resetTimeout(chunkTimeoutMs);
+      _isFirstChunk = false;
+      _timeoutPromise = resetTimeout(chunkTimeoutMs);
     }
 
     clearTimeout(timeoutId);
@@ -203,6 +200,6 @@ export const rateLimit = (fn, maxCalls, period) => {
     }
 
     calls.push(now);
-    return await fn.apply(this, args);
+    return fn.apply(this, args);
   };
 };

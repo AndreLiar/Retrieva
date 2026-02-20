@@ -4,7 +4,7 @@
  * Tests for AES-256-GCM encryption/decryption
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { encrypt, decrypt, generateEncryptionKey } from '../../utils/security/encryption.js';
 
 describe('Encryption Utilities', () => {

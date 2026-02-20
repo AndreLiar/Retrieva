@@ -334,7 +334,7 @@ export function mergeExpandedChunks(chunks) {
 
   // Merge each group
   const merged = [];
-  for (const [sourceId, sourceChunks] of sourceGroups) {
+  for (const [_sourceId, sourceChunks] of sourceGroups) {
     // Sort by position
     sourceChunks.sort((a, b) => (a.position || 0) - (b.position || 0));
 
@@ -391,7 +391,7 @@ export async function fetchDocumentSummaryChunk(workspaceId, sourceId) {
     }
 
     return null;
-  } catch (error) {
+  } catch (_err) {
     logger.debug('No summary chunk found', {
       service: 'context-expansion',
       sourceId,

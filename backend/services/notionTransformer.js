@@ -34,85 +34,102 @@ const transformBlock = (block, indentLevel = 0) => {
   }
 
   switch (type) {
-    case 'paragraph':
+    case 'paragraph': {
       const paragraphText = extractPlainText(blockData.rich_text);
       return paragraphText ? `${indent}${paragraphText}\n\n` : '';
+    }
 
-    case 'heading_1':
+    case 'heading_1': {
       const h1Text = extractPlainText(blockData.rich_text);
       return h1Text ? `${indent}# ${h1Text}\n\n` : '';
+    }
 
-    case 'heading_2':
+    case 'heading_2': {
       const h2Text = extractPlainText(blockData.rich_text);
       return h2Text ? `${indent}## ${h2Text}\n\n` : '';
+    }
 
-    case 'heading_3':
+    case 'heading_3': {
       const h3Text = extractPlainText(blockData.rich_text);
       return h3Text ? `${indent}### ${h3Text}\n\n` : '';
+    }
 
-    case 'bulleted_list_item':
+    case 'bulleted_list_item': {
       const bulletText = extractPlainText(blockData.rich_text);
       return bulletText ? `${indent}- ${bulletText}\n` : '';
+    }
 
-    case 'numbered_list_item':
+    case 'numbered_list_item': {
       const numberedText = extractPlainText(blockData.rich_text);
       return numberedText ? `${indent}1. ${numberedText}\n` : '';
+    }
 
-    case 'to_do':
+    case 'to_do': {
       const todoText = extractPlainText(blockData.rich_text);
       const checked = blockData.checked ? 'x' : ' ';
       return todoText ? `${indent}- [${checked}] ${todoText}\n` : '';
+    }
 
-    case 'toggle':
+    case 'toggle': {
       const toggleText = extractPlainText(blockData.rich_text);
       return toggleText ? `${indent}▸ ${toggleText}\n` : '';
+    }
 
-    case 'quote':
+    case 'quote': {
       const quoteText = extractPlainText(blockData.rich_text);
       return quoteText ? `${indent}> ${quoteText}\n\n` : '';
+    }
 
-    case 'callout':
+    case 'callout': {
       const calloutText = extractPlainText(blockData.rich_text);
       const icon = blockData.icon?.emoji || '💡';
       return calloutText ? `${indent}${icon} ${calloutText}\n\n` : '';
+    }
 
-    case 'code':
+    case 'code': {
       const codeText = extractPlainText(blockData.rich_text);
       const language = blockData.language || '';
       return codeText ? `${indent}\`\`\`${language}\n${codeText}\n\`\`\`\n\n` : '';
+    }
 
     case 'divider':
       return `${indent}---\n\n`;
 
-    case 'table_row':
+    case 'table_row': {
       const cells = blockData.cells || [];
       const cellTexts = cells.map((cell) => extractPlainText(cell));
       return `${indent}| ${cellTexts.join(' | ')} |\n`;
+    }
 
-    case 'child_page':
+    case 'child_page': {
       const childPageTitle = block.child_page?.title || 'Untitled';
       return `${indent}📄 ${childPageTitle}\n\n`;
+    }
 
-    case 'child_database':
+    case 'child_database': {
       const childDbTitle = block.child_database?.title || 'Untitled Database';
       return `${indent}🗂️ ${childDbTitle}\n\n`;
+    }
 
     case 'embed':
-    case 'bookmark':
+    case 'bookmark': {
       const url = blockData.url || '';
       return url ? `${indent}🔗 ${url}\n\n` : '';
+    }
 
     case 'image':
     case 'video':
     case 'file':
-    case 'pdf':
+    case 'pdf': {
       const caption = extractPlainText(blockData.caption || []);
       const fileUrl = blockData.external?.url || blockData.file?.url || '';
       return caption ? `${indent}[${type}: ${caption}]\n` : fileUrl ? `${indent}[${type}]\n` : '';
+    }
 
-    case 'equation':
+    case 'equation': {
       const equation = blockData.expression || '';
       return equation ? `${indent}$$${equation}$$\n\n` : '';
+    }
 
     case 'table_of_contents':
       return `${indent}[Table of Contents]\n\n`;
@@ -125,17 +142,19 @@ const transformBlock = (block, indentLevel = 0) => {
       // Columns are handled by their children
       return '';
 
-    case 'link_preview':
+    case 'link_preview': {
       const previewUrl = blockData.url || '';
       return previewUrl ? `${indent}🔗 ${previewUrl}\n\n` : '';
+    }
 
     case 'synced_block':
       // Synced blocks contain children
       return '';
 
-    case 'template':
+    case 'template': {
       const templateText = extractPlainText(blockData.rich_text);
       return templateText ? `${indent}Template: ${templateText}\n\n` : '';
+    }
 
     case 'link_to_page':
       return `${indent}[Link to page]\n`;
@@ -262,9 +281,10 @@ const getBlockText = (block) => {
 
   // Handle special cases
   switch (type) {
-    case 'table_row':
+    case 'table_row': {
       const cells = blockData.cells || [];
       return cells.map((cell) => extractPlainText(cell)).join(' | ');
+    }
     case 'child_page':
       return block.child_page?.title || '';
     case 'child_database':
@@ -585,7 +605,7 @@ const arraysEqual = (a, b) => {
   return true;
 };
 
-const MIN_STANDALONE_TOKENS = parseInt(process.env.MIN_STANDALONE_TOKENS) || 50;
+const _MIN_STANDALONE_TOKENS = parseInt(process.env.MIN_STANDALONE_TOKENS) || 50;
 
 /**
  * Merge small groups (< MIN_GROUP_TOKENS) into their nearest

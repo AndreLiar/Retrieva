@@ -5,7 +5,7 @@
  * cascading failures by temporarily stopping requests when error rate is high
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Mock the logger before importing the module
 vi.mock('../../config/logger.js', () => ({
@@ -413,7 +413,9 @@ describe('Circuit Breaker', () => {
       for (let i = 0; i < 3; i++) {
         try {
           await cb.execute(fn, 'Test API');
-        } catch {}
+        } catch {
+          /* intentional: testing error suppression */
+        }
       }
 
       expect(cb.state).toBe('OPEN');
@@ -434,10 +436,14 @@ describe('Circuit Breaker', () => {
 
       try {
         await cb.execute(failingFn, 'Test');
-      } catch {}
+      } catch {
+        /* intentional: testing error suppression */
+      }
       try {
         await cb.execute(failingFn, 'Test');
-      } catch {}
+      } catch {
+        /* intentional: testing error suppression */
+      }
 
       expect(cb.state).toBe('OPEN');
 

@@ -4,7 +4,7 @@
  * Tests for environment variable validation at startup
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { validateEnv, getEnvInfo } from '../../config/envValidator.js';
 
 describe('Environment Validator', () => {

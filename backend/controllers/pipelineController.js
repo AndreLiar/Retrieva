@@ -8,7 +8,6 @@ import {
   getPipelineHealthStatus,
   retryFailedJobs,
   drainStageQueue,
-  PipelineStage,
   STAGE_ORDER,
   EMBEDDING_VERSION,
 } from '../services/pipeline/index.js';
@@ -123,15 +122,16 @@ export const getMetrics = catchAsync(async (req, res) => {
 
   if (aggregated.totalJobs > 0) {
     const totalAvgTime = Object.values(metrics).reduce(
-      (sum, m) => sum + (m.avgTimeMs * m.totalJobs),
+      (sum, m) => sum + m.avgTimeMs * m.totalJobs,
       0
     );
     aggregated.avgTimeMs = Math.round(totalAvgTime / aggregated.totalJobs);
   }
 
-  aggregated.successRate = aggregated.totalJobs > 0
-    ? Math.round((aggregated.completedJobs / aggregated.totalJobs) * 100)
-    : 100;
+  aggregated.successRate =
+    aggregated.totalJobs > 0
+      ? Math.round((aggregated.completedJobs / aggregated.totalJobs) * 100)
+      : 100;
 
   sendSuccess(res, {
     metrics: stage ? metrics : metrics,

@@ -95,7 +95,7 @@ describe('Validate Middleware', () => {
         extraField: 'should be stripped',
       };
 
-      const strictSchema = z
+      const _strictSchema = z
         .object({
           name: z.string(),
           email: z.string().email(),

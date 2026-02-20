@@ -68,7 +68,7 @@ export const streamRAGResponse = async (req, res) => {
       res.write(`event: ${event}\n`);
       res.write(`data: ${JSON.stringify(data)}\n\n`);
       if (typeof res.flush === 'function') res.flush();
-    } catch (writeError) {
+    } catch (_err) {
       // Client likely disconnected mid-write
       clientDisconnected = true;
       abortController.abort();

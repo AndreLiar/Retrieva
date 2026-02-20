@@ -329,7 +329,7 @@ class MemoryMonitorService {
       const key = `${METRICS_KEYS.HOURLY_STATS}${hourKey}`;
       await this.redis.hincrby(key, metric, value);
       await this.redis.expire(key, METRICS_RETENTION.HOURLY);
-    } catch (error) {
+    } catch (_err) {
       // Silent fail for metric increment
     }
   }

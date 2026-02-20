@@ -31,11 +31,7 @@
 import 'dotenv/config';
 import { connectDB, disconnectDB } from '../config/database.js';
 import { NotionWorkspace } from '../models/NotionWorkspace.js';
-import {
-  getCurrentKeyVersion,
-  getKeyRotationStatus,
-  generateEncryptionKey,
-} from '../utils/security/encryption.js';
+import { getKeyRotationStatus, generateEncryptionKey } from '../utils/security/encryption.js';
 import logger from '../config/logger.js';
 
 async function main() {
@@ -95,7 +91,9 @@ async function main() {
     console.log('\nWorkspaces to rotate:');
     for (const ws of workspacesNeedingRotation) {
       const version = ws.getTokenEncryptionVersion();
-      console.log(`  - ${ws.workspaceName || ws.workspaceId} (v${version} → v${status.currentVersion})`);
+      console.log(
+        `  - ${ws.workspaceName || ws.workspaceId} (v${version} → v${status.currentVersion})`
+      );
     }
 
     if (isDryRun) {
