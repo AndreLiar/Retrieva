@@ -18,5 +18,9 @@ mcp-servers/
 # Infra — scanned separately by tfsec
 infra/
 
+# Nginx config — ops-level; $host is nginx-normalized (safe), WebSocket
+# upgrade headers are intentional for Socket.io reverse proxying
+nginx/
+
 # Docs
 docs/

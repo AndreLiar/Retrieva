@@ -73,7 +73,9 @@ function getKeyBuffer(keyHex, version = CURRENT_KEY_VERSION) {
 function getKeyForVersion(version) {
   const keyHex = keyRegistry.get(version);
   if (!keyHex) {
-    throw new Error(`Encryption key version ${version} not found. Set ENCRYPTION_KEY_V${version} in environment.`);
+    throw new Error(
+      `Encryption key version ${version} not found. Set ENCRYPTION_KEY_V${version} in environment.`
+    );
   }
   return getKeyBuffer(keyHex, version);
 }
@@ -181,7 +183,7 @@ export const decrypt = (encryptedData) => {
   // Get key for this version
   const keyBuffer = getKeyForVersion(version);
 
-  const decipher = crypto.createDecipheriv(ALGORITHM, keyBuffer, iv);
+  const decipher = crypto.createDecipheriv(ALGORITHM, keyBuffer, iv, { authTagLength: 16 });
   decipher.setAuthTag(authTag);
 
   let decrypted = decipher.update(encrypted, 'hex', 'utf8');
