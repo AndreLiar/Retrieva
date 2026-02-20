@@ -25,6 +25,7 @@ import presenceRoutes from './routes/presenceRoutes.js';
 import memoryRoutes from './routes/memoryRoutes.js';
 import embeddingRoutes from './routes/embeddingRoutes.js';
 import pipelineRoutes from './routes/pipelineRoutes.js';
+import mcpDataSourceRoutes from './routes/mcpDataSourceRoutes.js';
 import logger from './config/logger.js';
 import { globalErrorHandler } from './utils/index.js';
 import { swaggerDocument } from './config/swagger.js';
@@ -267,6 +268,7 @@ app.use('/api/v1/presence', presenceRoutes);
 app.use('/api/v1/memory', memoryRoutes);
 app.use('/api/v1/embeddings', embeddingRoutes);
 app.use('/api/v1/pipeline', pipelineRoutes);
+app.use('/api/v1/mcp-sources', mcpDataSourceRoutes);
 
 // OpenAPI/Swagger documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));

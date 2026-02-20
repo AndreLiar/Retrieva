@@ -17,7 +17,7 @@ const documentSourceSchema = new mongoose.Schema(
     },
     sourceType: {
       type: String,
-      enum: ['notion', 'gdrive', 'confluence', 'pdf', 'text'],
+      enum: ['notion', 'gdrive', 'confluence', 'github', 'jira', 'slack', 'pdf', 'text', 'custom'],
       required: true,
       index: true,
     },
@@ -175,7 +175,11 @@ documentSourceSchema.methods.addError = function (error, retryCount = 0) {
 };
 
 // Method to update sync status
-documentSourceSchema.methods.markAsSynced = function (vectorStoreIds = [], chunkCount = 0, embeddingMetadata = null) {
+documentSourceSchema.methods.markAsSynced = function (
+  vectorStoreIds = [],
+  chunkCount = 0,
+  embeddingMetadata = null
+) {
   this.syncStatus = 'synced';
   this.lastSyncedAt = new Date();
   this.vectorStoreIds = vectorStoreIds;

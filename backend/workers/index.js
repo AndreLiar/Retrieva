@@ -1,5 +1,6 @@
 import './notionSyncWorker.js';
 import './documentIndexWorker.js';
+import './mcpSyncWorker.js';
 import logger from '../config/logger.js';
 import { disconnectRedis } from '../config/redis.js';
 import { closeQueues } from '../config/queue.js';
@@ -14,6 +15,7 @@ logger.info('='.repeat(60));
 logger.info('Active workers:');
 logger.info('  - Notion Sync Worker (concurrency: 2)');
 logger.info(`  - Document Index Worker (concurrency: ${indexConcurrency}) [OPTIMIZED]`);
+logger.info('  - MCP Sync Worker (concurrency: 2)');
 logger.info(`  - Batch size: ${batchSize} documents per batch`);
 logger.info(`  - API rate limit: ${process.env.NOTION_API_RATE_LIMIT || 2} req/sec`);
 logger.info('='.repeat(60));

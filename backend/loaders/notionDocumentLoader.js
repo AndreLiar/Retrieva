@@ -197,86 +197,81 @@ export const loadAndChunkNotionBlocks = async (blocks, metadata = {}) => {
       // heading_group chunks already contain the heading text in their content.
       // All other chunk types (list, table, code, callout, paragraph_group) are
       // structural orphans — their embeddings have zero topical signal without this.
-      const needsBreadcrumb =
-        group.headingPath.length > 0 && group.category !== 'heading_group';
-      const headingPrefix = needsBreadcrumb
-        ? `[${group.headingPath.join(' > ')}]\n\n`
-        : '';
-      const overlapPrefix = group.overlapBefore
-        ? `${group.overlapBefore}\n\n`
-        : '';
+      const needsBreadcrumb = group.headingPath.length > 0 && group.category !== 'heading_group';
+      const headingPrefix = needsBreadcrumb ? `[${group.headingPath.join(' > ')}]\n\n` : '';
+      const overlapPrefix = group.overlapBefore ? `${group.overlapBefore}\n\n` : '';
 
       return {
-      pageContent: headingPrefix + overlapPrefix + group.content,
-      metadata: {
-        // Page-level metadata
-        source: metadata.url || `notion://${metadata.sourceId}`,
-        sourceType: 'notion',
-        sourceId: metadata.sourceId,
-        workspaceId: metadata.workspaceId,
-        documentTitle: metadata.title,
-        documentUrl: metadata.url,
-        documentType: metadata.documentType || 'page',
+        pageContent: headingPrefix + overlapPrefix + group.content,
+        metadata: {
+          // Page-level metadata
+          source: metadata.url || `${metadata.sourceType || 'notion'}://${metadata.sourceId}`,
+          sourceType: metadata.sourceType || 'notion',
+          sourceId: metadata.sourceId,
+          workspaceId: metadata.workspaceId,
+          documentTitle: metadata.title,
+          documentUrl: metadata.url,
+          documentType: metadata.documentType || 'page',
 
-        // Author and timestamps
-        author: metadata.author,
-        createdAt: metadata.createdAt,
-        lastModified: metadata.lastModified,
+          // Author and timestamps
+          author: metadata.author,
+          createdAt: metadata.createdAt,
+          lastModified: metadata.lastModified,
 
-        // Document classification for access control filtering
-        // Defaults to 'internal' if not specified in source document
-        classification: metadata.classification || 'internal',
+          // Document classification for access control filtering
+          // Defaults to 'internal' if not specified in source document
+          classification: metadata.classification || 'internal',
 
-        // Notion properties
-        notionProperties: metadata.properties || {},
-        archived: metadata.archived,
-        icon: metadata.icon,
+          // Notion properties
+          notionProperties: metadata.properties || {},
+          archived: metadata.archived,
+          icon: metadata.icon,
 
-        // Parent information
-        parentId: metadata.parentId,
-        parentType: metadata.parentType,
+          // Parent information
+          parentId: metadata.parentId,
+          parentType: metadata.parentType,
 
-        // Chunk-specific metadata
-        chunkIndex: index,
-        totalChunks: semanticGroups.length,
-        chunkSize: group.content.length,
-        contentFingerprint: group.content.substring(0, 150),
+          // Chunk-specific metadata
+          chunkIndex: index,
+          totalChunks: semanticGroups.length,
+          chunkSize: group.content.length,
+          contentFingerprint: group.content.substring(0, 150),
 
-        // CRITICAL NEW METADATA (Phase 2 & 3)
-        block_type: group.category, // "heading_group", "list", "code", "table", "callout"
-        heading_path: group.headingPath, // ["Finance", "Invoices", "Approval Rules"]
-        block_types_in_chunk: group.blockTypes, // ["heading_2", "paragraph", "bulleted_list_item"]
+          // CRITICAL NEW METADATA (Phase 2 & 3)
+          block_type: group.category, // "heading_group", "list", "code", "table", "callout"
+          heading_path: group.headingPath, // ["Finance", "Invoices", "Approval Rules"]
+          block_types_in_chunk: group.blockTypes, // ["heading_2", "paragraph", "bulleted_list_item"]
 
-        // Size metadata
-        estimatedTokens: group.tokens,
-        blockCount: group.blockCount,
-        startBlockIndex: group.startIndex,
+          // Size metadata
+          estimatedTokens: group.tokens,
+          blockCount: group.blockCount,
+          startBlockIndex: group.startIndex,
 
-        // Special handling flags (Phase 3)
-        is_code: group.category === 'code' || group.category === 'code_split',
-        is_table: group.category === 'table' || group.category === 'table_split',
-        is_list: group.category === 'list' || group.category === 'list_split',
-        is_callout: group.category === 'callout' || group.category === 'callout_split',
-        code_language: group.codeLanguage || null,
+          // Special handling flags (Phase 3)
+          is_code: group.category === 'code' || group.category === 'code_split',
+          is_table: group.category === 'table' || group.category === 'table_split',
+          is_list: group.category === 'list' || group.category === 'list_split',
+          is_callout: group.category === 'callout' || group.category === 'callout_split',
+          code_language: group.codeLanguage || null,
 
-        // Inter-chunk overlap tracking (P4)
-        has_overlap: !!group.overlapBefore,
-        overlap_chars: group.overlapBefore?.length || 0,
+          // Inter-chunk overlap tracking (P4)
+          has_overlap: !!group.overlapBefore,
+          overlap_chars: group.overlapBefore?.length || 0,
 
-        // Oversized chunk split tracking
-        is_oversized_split: group.isOversizedSplit || false,
-        original_tokens: group.originalTokens || null,
-        split_index: group.splitIndex !== undefined ? group.splitIndex : null,
-        split_total: group.splitTotal || null,
+          // Oversized chunk split tracking
+          is_oversized_split: group.isOversizedSplit || false,
+          original_tokens: group.originalTokens || null,
+          split_index: group.splitIndex !== undefined ? group.splitIndex : null,
+          split_total: group.splitTotal || null,
 
-        // Legacy compatibility
-        section:
-          group.headingPath.length > 0
-            ? group.headingPath[group.headingPath.length - 1]
-            : 'General',
-        positionPercent: `${(((index + 1) / processedGroups.length) * 100).toFixed(1)}%`,
-      },
-    };
+          // Legacy compatibility
+          section:
+            group.headingPath.length > 0
+              ? group.headingPath[group.headingPath.length - 1]
+              : 'General',
+          positionPercent: `${(((index + 1) / processedGroups.length) * 100).toFixed(1)}%`,
+        },
+      };
     });
 
     logger.info(`Semantic chunking complete`, {
@@ -356,9 +351,9 @@ export const loadAndSplitNotionDocument = async (content, metadata = {}) => {
         ...split,
         metadata: {
           ...split.metadata,
-          // Notion-specific metadata
+          // Source-specific metadata
           workspaceId: metadata.workspaceId,
-          sourceType: 'notion',
+          sourceType: metadata.sourceType || 'notion',
           sourceId: metadata.sourceId,
           documentTitle: metadata.title,
           documentUrl: metadata.url,
@@ -413,11 +408,13 @@ export const loadAndSplitNotionDocument = async (content, metadata = {}) => {
 export const prepareNotionDocumentForIndexing = async (
   notionDocument,
   workspaceId,
-  blocks = null
+  blocks = null,
+  sourceType = 'notion'
 ) => {
   try {
     const metadata = {
       workspaceId,
+      sourceType,
       sourceId: notionDocument.sourceId,
       title: notionDocument.title,
       url: notionDocument.url,
