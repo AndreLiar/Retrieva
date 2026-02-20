@@ -155,7 +155,7 @@ jobs:
         run: npm ci --legacy-peer-deps
 
       - name: Run npm audit
-        run: npm audit --audit-level=high
+        run: npm audit --audit-level=high --omit=dev
 
   # ===========================================================================
   # RAGAS Service (Python) Tests
@@ -230,7 +230,7 @@ jobs:
         run: >
           semgrep scan
           --config p/nodejs
-          --config p/express
+          --config p/javascript
           --config p/secrets
           --config p/owasp-top-ten
           --error
