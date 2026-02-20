@@ -136,6 +136,19 @@ X-Workspace-Id: 507f1f77bcf86cd799439011
 | GET | `/analytics/usage` | Usage statistics |
 | GET | `/analytics/sources` | Source statistics |
 
+### MCP Data Sources
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/mcp-sources` | Register a new MCP data source |
+| GET | `/mcp-sources` | List all MCP sources for the workspace |
+| GET | `/mcp-sources/:id` | Get a single MCP source |
+| PATCH | `/mcp-sources/:id` | Update connection settings |
+| DELETE | `/mcp-sources/:id` | Remove source and its indexed documents |
+| POST | `/mcp-sources/test-connection` | Test connectivity without persisting |
+| POST | `/mcp-sources/:id/sync` | Trigger a sync job |
+| GET | `/mcp-sources/:id/stats` | Document counts and sync stats |
+
 ## Health Check
 
 ```bash

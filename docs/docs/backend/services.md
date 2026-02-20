@@ -409,6 +409,43 @@ if (!user.hasPermission('canQuery')) {
 }
 ```
 
+## MCP Data Source Service (`services/mcpDataSourceService.js`)
+
+Orchestrates CRUD and sync operations for external data sources connected via the Model Context Protocol. See [Data Source Connectors](../architecture/data-source-connectors) for the full architecture.
+
+### Key Functions
+
+| Function | Description |
+|----------|-------------|
+| `registerMCPDataSource(workspaceId, data)` | Save a new MCP connection; probes the server before persisting |
+| `listMCPDataSources(workspaceId)` | List all MCP sources for a workspace (auth token excluded) |
+| `getMCPDataSource(workspaceId, id)` | Get a single source |
+| `updateMCPDataSource(workspaceId, id, updates)` | Update settings; re-probes if URL or token changes |
+| `deleteMCPDataSource(workspaceId, id)` | Remove source and soft-delete its indexed documents |
+| `triggerMCPSync(workspaceId, id, syncType, triggeredBy)` | Enqueue a `mcpSync` BullMQ job |
+| `testMCPConnection(serverUrl, authToken, sourceType)` | Test connectivity without persisting |
+| `getMCPSourceStats(workspaceId, id)` | Return document counts by sync status |
+
+### Registration Flow
+
+```javascript
+// Register a Confluence MCP server
+const source = await registerMCPDataSource(workspaceId, {
+  name:       'Confluence - Engineering',
+  sourceType: 'confluence',
+  serverUrl:  'https://mcp.company.internal/confluence',
+  authToken:  'secret-bearer-token',
+});
+// Throws AppError(422) if the server is unreachable
+```
+
+### Triggering a Sync
+
+```javascript
+const { jobId } = await triggerMCPSync(workspaceId, source._id, 'incremental', 'manual');
+// Enqueues to mcpSyncQueue → mcpSyncWorker → documentIndexQueue
+```
+
 ## Logging Convention
 
 All services log with a `service` identifier:

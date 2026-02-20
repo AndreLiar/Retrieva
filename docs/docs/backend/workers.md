@@ -4,67 +4,51 @@ sidebar_position: 3
 
 # Background Workers
 
-The platform uses BullMQ for background job processing. Workers handle long-running tasks like Notion syncing and document indexing.
+The platform uses BullMQ for background job processing. Workers handle long-running tasks like syncing data sources and document indexing.
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                           Queue System                                   │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│  ┌─────────────────┐        ┌─────────────────┐                         │
-│  │  notionSync     │        │  documentIndex  │                         │
-│  │     Queue       │        │     Queue       │                         │
-│  └────────┬────────┘        └────────┬────────┘                         │
-│           │                          │                                   │
-│           ▼                          ▼                                   │
-│  ┌─────────────────┐        ┌─────────────────┐                         │
-│  │ Notion Sync     │───────▶│ Document Index  │                         │
-│  │    Worker       │        │    Worker       │                         │
-│  └─────────────────┘        └─────────────────┘                         │
-│           │                          │                                   │
-│           ▼                          ▼                                   │
-│  ┌─────────────────┐        ┌─────────────────┐                         │
-│  │  Notion API     │        │     Qdrant      │                         │
-│  └─────────────────┘        └─────────────────┘                         │
-│                                                                          │
-└─────────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                              Queue System                                     │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                               │
+│  ┌─────────────────┐  ┌─────────────────┐        ┌─────────────────┐        │
+│  │  notionSync     │  │    mcpSync      │        │  documentIndex  │        │
+│  │     Queue       │  │     Queue       │        │     Queue       │        │
+│  └────────┬────────┘  └────────┬────────┘        └────────┬────────┘        │
+│           │                    │                           │                  │
+│           ▼                    ▼                           ▼                  │
+│  ┌─────────────────┐  ┌─────────────────┐       ┌─────────────────┐         │
+│  │ Notion Sync     │  │   MCP Sync      │──────▶│ Document Index  │         │
+│  │    Worker       │──┤    Worker       │       │    Worker       │         │
+│  └─────────────────┘  └─────────────────┘       └─────────────────┘         │
+│           │                    │                           │                  │
+│           ▼                    ▼                           ▼                  │
+│  ┌─────────────────┐  ┌─────────────────┐       ┌─────────────────┐         │
+│  │  Notion API     │  │  MCP Server(s)  │       │     Qdrant      │         │
+│  └─────────────────┘  │ (Confluence,    │       └─────────────────┘         │
+│                        │  GitHub, …)     │                                   │
+│                        └─────────────────┘                                   │
+└──────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ## Queue Configuration
 
+Three queues are defined in `config/queue.js`:
+
+| Queue | Purpose | Retries | Initial backoff |
+|-------|---------|---------|-----------------|
+| `notionSync` | Notion workspace sync jobs | 3 | 60 s exponential |
+| `mcpSync` | MCP data source sync jobs | 3 | 60 s exponential |
+| `documentIndex` | Per-document embedding + Qdrant indexing | 3 | 30 s exponential |
+
 ```javascript
 // config/queue.js
 
-import { Queue } from 'bullmq';
-import { redisConnection } from './redis.js';
-
-export const notionSyncQueue = new Queue('notionSync', {
-  connection: redisConnection,
-  defaultJobOptions: {
-    attempts: 3,
-    backoff: {
-      type: 'exponential',
-      delay: 5000,
-    },
-    removeOnComplete: 100,
-    removeOnFail: 50,
-  },
-});
-
-export const documentIndexQueue = new Queue('documentIndex', {
-  connection: redisConnection,
-  defaultJobOptions: {
-    attempts: 5,
-    backoff: {
-      type: 'exponential',
-      delay: 2000,
-    },
-    removeOnComplete: 500,
-    removeOnFail: 100,
-  },
-});
+export const notionSyncQueue  = new Queue('notionSync',  { connection, defaultJobOptions: { attempts: 3, backoff: { type: 'exponential', delay: 60000 } } });
+export const mcpSyncQueue     = new Queue('mcpSync',     { connection, defaultJobOptions: { attempts: 3, backoff: { type: 'exponential', delay: 60000 } } });
+export const documentIndexQueue = new Queue('documentIndex', { connection, defaultJobOptions: { attempts: 3, backoff: { type: 'exponential', delay: 30000 } } });
 ```
 
 ## Notion Sync Worker
@@ -339,6 +323,91 @@ export const documentIndexWorker = new Worker('documentIndex', processIndexJob, 
     duration: 1000,
   },
 });
+```
+
+## MCP Sync Worker
+
+### Purpose
+
+Synchronizes content from any external data source connected via the [Model Context Protocol](../architecture/data-source-connectors) — Confluence, GitHub, Jira, Google Drive, and others. Mirrors the Notion Sync Worker pattern but is source-agnostic.
+
+### Job Data
+
+```javascript
+{
+  mcpDataSourceId: 'mcp-source-id',   // MCPDataSource._id
+  workspaceId:     'ws-123',
+  syncType:        'full' | 'incremental',
+  triggeredBy:     'manual' | 'auto',
+}
+```
+
+### Worker Implementation
+
+```javascript
+// workers/mcpSyncWorker.js
+
+async function processMCPSyncJob(job) {
+  const { mcpDataSourceId, workspaceId, syncType } = job.data;
+
+  // 1. Load MCPDataSource connection config
+  const mcpSource = await MCPDataSource.findById(mcpDataSourceId);
+  await mcpSource.markSyncing(job.id);
+
+  // 2. Connect MCPDataSourceAdapter to the remote MCP server
+  const adapter = new MCPDataSourceAdapter(
+    mcpSource.serverUrl,
+    mcpSource.get('authToken'),  // decrypted
+    mcpSource.sourceType
+  );
+  await adapter.authenticate();
+
+  // 3. Determine documents to sync
+  let docsToSync;
+  if (syncType === 'incremental' && mcpSource.lastSyncedAt) {
+    const changes = await adapter.detectChanges(mcpSource.lastSyncedAt);
+    docsToSync = changes.filter(c => c.changeType !== 'deleted');
+    // soft-delete removed docs
+  } else {
+    docsToSync = await adapter.listDocuments();
+  }
+
+  // 4. Process in batches — fetch + enqueue to documentIndexQueue
+  for (const doc of docsToSync) {
+    const documentContent = await adapter.getDocumentContent(doc.id);
+    await documentIndexQueue.add('indexDocument', {
+      workspaceId,
+      sourceId:        doc.id,
+      sourceType:      mcpSource.sourceType,  // e.g. 'confluence'
+      documentContent,
+      operation:       existingDoc ? 'update' : 'add',
+      skipM3:          true,
+    });
+  }
+
+  // 5. Update stats
+  await mcpSource.markSynced({ totalDocuments, documentsIndexed, ... });
+}
+
+export const mcpSyncWorker = new Worker('mcpSync', processMCPSyncJob, {
+  concurrency:      2,
+  lockDuration:     600000,   // 10 minutes
+  lockRenewTime:    240000,
+  maxStalledCount:  3,
+});
+```
+
+### Source Type in Qdrant Metadata
+
+When the `mcpSyncWorker` enqueues a document it passes `sourceType` (e.g. `'confluence'`) to `documentIndexWorker`. That value flows through `prepareNotionDocumentForIndexing` into every chunk's Qdrant metadata, so citations and filters correctly identify the origin source.
+
+### Environment Variables
+
+```bash
+MCP_WORKER_CONCURRENCY=2      # Parallel sync jobs (default: 2)
+MCP_SYNC_BATCH_SIZE=20        # Documents per batch (default: 20)
+MCP_CONNECT_TIMEOUT_MS=15000  # MCP server connect timeout
+MCP_TOOL_TIMEOUT_MS=30000     # Per-tool call timeout
 ```
 
 ## Dead Letter Queue

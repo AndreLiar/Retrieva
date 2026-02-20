@@ -14,6 +14,7 @@ const sidebars: SidebarsConfig = {
         'architecture/intent-classification',
         'architecture/semantic-chunking',
         'architecture/multi-tenancy',
+        'architecture/data-source-connectors',
       ],
     },
     {
@@ -79,6 +80,7 @@ const sidebars: SidebarsConfig = {
         'api/notion',
         'api/workspaces',
         'api/analytics',
+        'api/mcp-sources',
       ],
     },
     'api/error-handling',
