@@ -136,6 +136,7 @@ async function processIndexJob(job) {
     operation,
     vectorStoreIds,
     skipM3 = false,
+    sourceType = 'notion',
   } = job.data;
 
   logger.info(
@@ -155,7 +156,8 @@ async function processIndexJob(job) {
         documentContent,
         operation,
         skipM3,
-        job
+        job,
+        sourceType
       );
     } else {
       throw new Error(`Unknown operation: ${operation}`);
@@ -207,7 +209,8 @@ async function handleAddOrUpdate(
   documentContent,
   operation,
   skipM3 = false,
-  job = null
+  job = null,
+  sourceType = 'notion'
 ) {
   logger.info(
     `${operation === 'add' ? 'Adding' : 'Updating'} document ${sourceId} to vector store`
@@ -248,12 +251,14 @@ async function handleAddOrUpdate(
 
   await updateProgress({ phase: 'chunking', sourceId });
 
-  // Prepare document chunks with semantic chunking
-  // CRITICAL: Pass blocks as third parameter to enable semantic chunking
+  // Prepare document chunks.
+  // For Notion: semantic block-based chunking (blocks provided).
+  // For MCP sources: blocks are absent; falls back to character-based splitting.
   let chunks = await prepareNotionDocumentForIndexing(
     documentContent,
     workspaceId,
-    documentContent.blocks // ← Pass blocks for semantic chunking
+    documentContent.blocks ?? null,
+    sourceType
   );
   logger.info(`Prepared ${chunks.length} chunks (semantic: ${documentContent.blocks?.length > 0})`);
 
