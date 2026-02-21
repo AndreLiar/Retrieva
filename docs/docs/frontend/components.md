@@ -147,22 +147,34 @@ export function MobileSidebar() {
 
 ### Header
 
-Top navigation with search and user menu.
+Top navigation bar containing the notification badge, theme toggle, and user menu.
+
+The notification badge uses a **WebSocket-first, poll-as-safety-net** strategy to avoid burning the API rate limit budget:
+
+1. **Mount** — one HTTP call to `GET /notifications/count` fetches the initial count.
+2. **Real-time** — `SocketProvider` listens for `notification:new` socket events and calls `queryClient.setQueryData` to increment the badge count in-place. No HTTP request is made per notification.
+3. **Reconciliation** — a background poll fires every **5 minutes** (`refetchInterval: 300_000`) to correct any drift from missed socket events.
+4. `refetchOnWindowFocus: false` prevents tab-switch focus events from firing extra requests.
 
 ```tsx
+// components/layout/header.tsx
 export function Header() {
-  return (
-    <header className="h-16 border-b flex items-center justify-between px-4">
-      <Breadcrumbs />
-      <div className="flex items-center gap-4">
-        <SearchCommand />
-        <NotificationBell />
-        <UserNav />
-      </div>
-    </header>
-  );
+  const { data: notificationData } = useQuery({
+    queryKey: ['notifications', 'unread-count'],
+    queryFn: async () => {
+      const response = await notificationsApi.getUnreadCount();
+      return response.data?.unreadCount ?? 0;
+    },
+    refetchInterval: 300_000,    // 5-minute reconciliation poll
+    refetchOnWindowFocus: false, // socket push handles real-time
+  });
+
+  const unreadCount = notificationData || 0;
+  // ...badge renders unreadCount, capped at "9+" display
 }
 ```
+
+The `SocketProvider` (see Providers below) owns the `setQueryData` increment so the logic is centralised and the `Header` itself requires no socket awareness.
 
 ### WorkspaceSwitcher
 
@@ -308,6 +320,40 @@ interface TokenHealthBannerProps {
   expiresAt?: Date;
   onRefresh: () => void;
 }
+```
+
+## Providers
+
+### SocketProvider
+
+`components/providers/socket-provider.tsx` is a global provider that bridges Socket.io events into the React Query cache. It owns all real-time cache mutations so individual components stay stateless with respect to WebSocket logic.
+
+| Socket event | Action |
+|---|---|
+| `notification:new` | `setQueryData(['notifications', 'unread-count'], old + 1)` + invalidate list queries only |
+| `sync:status` | Invalidate all `notion-workspaces` / `notion-sync-*` queries + show toast |
+| `workspace:update` | Invalidate `workspaces` and `workspace-members` queries |
+| `conversation:update` | Invalidate `conversations` queries |
+
+The `notification:new` handler uses `setQueryData` (not `invalidateQueries`) for the unread count to avoid an unnecessary HTTP round-trip. A `predicate` filter on `invalidateQueries` ensures the count cache key (`['notifications', 'unread-count']`) is excluded from the list invalidation that accompanies each new notification event.
+
+```tsx
+// Notification handler in SocketProvider
+on<NotificationEvent>('notification:new', (notification) => {
+  // Increment badge count with no HTTP call
+  queryClient.setQueryData<number>(
+    ['notifications', 'unread-count'],
+    (old) => (old ?? 0) + 1
+  );
+
+  // Invalidate list queries only (count key is intentionally excluded)
+  queryClient.invalidateQueries({
+    predicate: (query) => {
+      const key = query.queryKey;
+      return key[0] === 'notifications' && key[1] !== 'unread-count';
+    },
+  });
+});
 ```
 
 ## Common Components
