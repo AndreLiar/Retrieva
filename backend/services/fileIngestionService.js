@@ -5,7 +5,6 @@
  * and indexes them into a per-assessment Qdrant collection.
  */
 
-import pdfParse from 'pdf-parse';
 import * as XLSX from 'xlsx';
 import { QdrantClient } from '@qdrant/js-client-rest';
 import { randomUUID } from 'crypto';
@@ -38,6 +37,8 @@ export function assessmentCollectionName(assessmentId) {
 // ---------------------------------------------------------------------------
 
 async function parsePdf(buffer) {
+  // Dynamic import avoids pdf-parse reading a test PDF at module-load time
+  const { default: pdfParse } = await import('pdf-parse');
   const data = await pdfParse(buffer);
   return data.text || '';
 }
@@ -236,7 +237,7 @@ export async function ingestFile({
 
   // 3. Embed
   const vectors = await embeddings.embedDocuments(chunks, {
-    onProgress: (batchNum, totalBatches, processed) => {
+    onProgress: (_batchNum, _totalBatches, processed) => {
       if (onProgress) onProgress({ indexed: processed, total: chunks.length, phase: 'embedding' });
     },
   });
