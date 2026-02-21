@@ -360,49 +360,38 @@ Logs every request with method, path, status code, response time, and user/works
 
 ### Global Rate Limiter
 
+Applied to all `/api/*` routes in `app.js`. Skips `/sync-status` (used for monitoring).
+
 ```javascript
-// middleware/rateLimiter.js
-
-import rateLimit from 'express-rate-limit';
-import RedisStore from 'rate-limit-redis';
-
-export const rateLimiter = rateLimit({
-  store: new RedisStore({
-    sendCommand: (...args) => redisClient.call(...args),
-  }),
-  windowMs: 60 * 1000,  // 1 minute
-  max: 100,             // 100 requests per minute
-  message: {
-    status: 'error',
-    message: 'Too many requests, please try again later',
-  },
-  skip: (req) => {
-    // Skip for health checks
-    return req.path === '/health' || req.path === '/sync-status';
-  },
+// app.js
+const limiter = rateLimit({
+  max: 1000,                    // 1 000 requests per IP per hour
+  windowMs: 60 * 60 * 1000,
+  message: 'Too many requests from this IP, please try again in an hour!',
+  skip: (req) => req.path.includes('/sync-status'),
 });
+app.use('/api', limiter);
 ```
 
-### Endpoint-Specific Limits
+### Endpoint-Specific Limiters (`middleware/ragRateLimiter.js`)
+
+Route-level limiters applied on top of the global budget. All are keyed by **user ID** for authenticated callers (falling back to IP for anonymous), so shared NAT addresses do not affect multiple users.
+
+| Export | Route | Limit | Window |
+|--------|-------|-------|--------|
+| `ragQueryLimiter` | `POST /rag/query` | 100 (auth) / 20 (anon) | 1 hour |
+| `ragStreamLimiter` | `POST /rag/stream` | 50 (auth) / 10 (anon) | 1 hour |
+| `ragBurstLimiter` | `POST /rag/*` | 5 | 10 seconds |
+| `evaluationLimiter` | `POST /ragas/evaluate` | 10 | 1 hour |
+| `notificationCountLimiter` | `GET /notifications/count` | 120 | 1 hour |
+
+#### `notificationCountLimiter`
+
+Added to prevent the notification badge poll from consuming the shared global budget. The frontend uses WebSocket push as the primary update path; HTTP is only used for the initial count on mount and a 5-minute reconciliation poll. 120 req/hr provides headroom for multiple open tabs and manual refreshes.
 
 ```javascript
-export const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,  // 15 minutes
-  max: 10,                    // 10 attempts
-  message: {
-    status: 'error',
-    message: 'Too many login attempts, please try again later',
-  },
-});
-
-export const ragLimiter = rateLimit({
-  windowMs: 60 * 1000,  // 1 minute
-  max: 20,              // 20 questions per minute
-});
-
-// Usage
-router.post('/login', authLimiter, authController.login);
-router.post('/ask', ragLimiter, ragController.ask);
+// Applied only to GET /notifications/count in notificationRoutes.js
+router.get('/count', notificationCountLimiter, getUnreadCount);
 ```
 
 ## Error Handling
