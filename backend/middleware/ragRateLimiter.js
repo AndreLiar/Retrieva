@@ -139,7 +139,7 @@ export const notificationCountLimiter = rateLimit({
   // Use the authenticated user ID so shared IPs (offices, NAT) don't bleed
   // into each other's quota. Falls back to IP when userId is unavailable.
   keyGenerator: (req) => `notif-count:${req.user?.userId || req.ip}`,
-  validate: { ip: false, trustProxy: false },
+  validate: { ip: false, trustProxy: false, keyGeneratorIpFallback: false },
   handler: (req, res, _next, options) => {
     logger.warn('Notification count rate limit exceeded', {
       service: 'rate-limiter',
