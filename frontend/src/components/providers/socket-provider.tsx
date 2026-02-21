@@ -18,8 +18,22 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
 
     // Handle new notifications
     const unsubNotification = on<NotificationEvent>('notification:new', (notification) => {
-      // Invalidate notification queries
-      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      // Optimistically increment the badge count in-place — no HTTP round-trip.
+      // The header's 5-minute reconciliation poll will correct any drift.
+      queryClient.setQueryData<number>(
+        ['notifications', 'unread-count'],
+        (old) => (old ?? 0) + 1
+      );
+
+      // Invalidate only the notification list (so the list page is fresh when
+      // opened), but intentionally exclude the count key — we just set it above
+      // and don't want an immediate refetch to undo the optimistic update.
+      queryClient.invalidateQueries({
+        predicate: (query) => {
+          const key = query.queryKey;
+          return key[0] === 'notifications' && key[1] !== 'unread-count';
+        },
+      });
 
       // Show toast notification
       toast(notification.title, {

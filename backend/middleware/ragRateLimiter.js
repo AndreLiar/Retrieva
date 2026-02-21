@@ -117,6 +117,40 @@ export const ragBurstLimiter = rateLimit({
 });
 
 /**
+ * Rate limiter for GET /notifications/count
+ *
+ * Keyed by user ID (all callers are authenticated).
+ * Primary delivery is WebSocket push — HTTP is only the initial load
+ * plus a 5-minute reconciliation poll, so we can afford to be generous
+ * here without impacting the global 1 000 req/hr shared budget.
+ *
+ * 120 req/hr headroom: poll (12/hr) + multiple open tabs + manual refreshes.
+ */
+export const notificationCountLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 120,
+  message: {
+    status: 'error',
+    message: 'Too many notification count requests. Please slow down.',
+    retryAfter: '1 hour',
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  // Use the authenticated user ID so shared IPs (offices, NAT) don't bleed
+  // into each other's quota. Falls back to IP when userId is unavailable.
+  keyGenerator: (req) => `notif-count:${req.user?.userId || req.ip}`,
+  validate: { ip: false, trustProxy: false },
+  handler: (req, res, _next, options) => {
+    logger.warn('Notification count rate limit exceeded', {
+      service: 'rate-limiter',
+      ip: req.ip,
+      userId: req.user?.userId || 'anonymous',
+    });
+    res.status(429).json(options.message);
+  },
+});
+
+/**
  * Evaluation endpoint limiter (calls external RAGAS service)
  */
 export const evaluationLimiter = rateLimit({
