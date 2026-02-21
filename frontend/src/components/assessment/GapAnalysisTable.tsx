@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import React from 'react';
 import {
   Table,
   TableBody,
@@ -65,9 +66,8 @@ export function GapAnalysisTable({ gaps }: GapAnalysisTableProps) {
           {gaps.map((gap, idx) => {
             const isOpen = expanded.has(idx);
             return (
-              <>
+              <React.Fragment key={`gap-${idx}`}>
                 <TableRow
-                  key={`row-${idx}`}
                   className="cursor-pointer hover:bg-muted/40"
                   onClick={() => toggle(idx)}
                 >
@@ -91,7 +91,7 @@ export function GapAnalysisTable({ gaps }: GapAnalysisTableProps) {
                 </TableRow>
 
                 {isOpen && (
-                  <TableRow key={`detail-${idx}`}>
+                  <TableRow>
                     <TableCell />
                     <TableCell colSpan={4} className="py-3">
                       <div className="space-y-3 text-sm">
@@ -138,7 +138,7 @@ export function GapAnalysisTable({ gaps }: GapAnalysisTableProps) {
                     </TableCell>
                   </TableRow>
                 )}
-              </>
+              </React.Fragment>
             );
           })}
         </TableBody>

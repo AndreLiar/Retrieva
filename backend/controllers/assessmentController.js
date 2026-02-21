@@ -246,7 +246,7 @@ export const deleteAssessment = catchAsync(async (req, res) => {
     throw new AppError('Access denied to this assessment', 403);
   }
 
-  if (assessment.createdBy !== userId) {
+  if (assessment.createdBy !== userId.toString()) {
     throw new AppError('Only the creator can delete an assessment', 403);
   }
 
