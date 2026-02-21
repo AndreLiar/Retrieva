@@ -15,14 +15,19 @@ export function Header() {
   const toggleSidebar = useUIStore((state) => state.toggleSidebar);
   const isMobile = useUIStore((state) => state.isMobile);
 
-  // Fetch unread notification count
+  // Fetch unread notification count.
+  // Real-time updates arrive via WebSocket (socket-provider.tsx uses setQueryData
+  // on 'notification:new'). This query only runs on mount for the initial count
+  // and every 5 minutes as a reconciliation safety-net in case a socket event
+  // was missed (server restart, brief disconnect, etc.).
   const { data: notificationData } = useQuery({
     queryKey: ['notifications', 'unread-count'],
     queryFn: async () => {
       const response = await notificationsApi.getUnreadCount();
-      return response.data?.unreadCount || 0;
+      return response.data?.unreadCount ?? 0;
     },
-    refetchInterval: 30000, // Refetch every 30 seconds
+    refetchInterval: 300_000,    // 5-minute reconciliation poll (was 30 s)
+    refetchOnWindowFocus: false, // socket push handles real-time; tab focus must not fire
   });
 
   const unreadCount = notificationData || 0;

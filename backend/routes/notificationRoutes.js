@@ -26,6 +26,7 @@ import {
   getNotificationTypes,
 } from '../controllers/notificationController.js';
 import { authenticate } from '../middleware/auth.js';
+import { notificationCountLimiter } from '../middleware/ragRateLimiter.js';
 
 const router = express.Router();
 
@@ -45,7 +46,7 @@ router.get('/', getNotifications);
  * @desc    Get unread notification count
  * @access  Private
  */
-router.get('/count', getUnreadCount);
+router.get('/count', notificationCountLimiter, getUnreadCount);
 
 /**
  * @route   GET /api/v1/notifications/preferences
