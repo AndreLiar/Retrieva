@@ -81,6 +81,7 @@ const sidebars: SidebarsConfig = {
         'api/workspaces',
         'api/analytics',
         'api/mcp-sources',
+        'api/assessments',
       ],
     },
     'api/error-handling',

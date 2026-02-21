@@ -463,3 +463,55 @@ logger.error('Query failed', {
   stack: error.stack,
 });
 ```
+
+---
+
+## Assessment Services
+
+### File Ingestion Service (`services/fileIngestionService.js`)
+
+Parses vendor documents and indexes them into per-assessment Qdrant collections.
+
+**Key functions**
+
+| Function | Description |
+|----------|-------------|
+| `parseFile(buffer, mimetype)` | Dispatches to pdf-parse / xlsx / mammoth depending on file type |
+| `chunkText(text)` | Splits into 600-char overlapping chunks at paragraph/sentence boundaries |
+| `ingestFile(assessmentId, file)` | Parse → chunk → embed → upsert to `assessment_{id}` Qdrant collection |
+| `searchAssessmentChunks(assessmentId, query, k)` | Semantic search within an assessment's collection |
+| `deleteAssessmentCollection(assessmentId)` | Removes the `assessment_{id}` collection from Qdrant on deletion |
+
+### Gap Analysis Agent (`services/gapAnalysisAgent.js`)
+
+Three-step ReAct agent that produces structured compliance gap output.
+
+**Steps**
+
+1. **Extract vendor claims** — runs 8 domain-focused semantic queries against `assessment_{id}` to surface what the vendor documents actually claim
+2. **Retrieve DORA obligations** — queries the shared `compliance_kb` collection per DORA domain with metadata filtering
+3. **Diff & score** — passes both sets to Azure OpenAI with `bindTools()` (function calling) using the `GAP_ANALYSIS_TOOL` schema; falls back to JSON mode if tool calling fails
+
+**Output schema**
+
+```javascript
+{
+  gaps: [{ article, domain, requirement, vendorCoverage, gapLevel, recommendation, sourceChunks }],
+  overallRisk: 'High' | 'Medium' | 'Low',
+  summary: string,
+  domainsAnalyzed: string[]
+}
+```
+
+### Report Generator (`services/reportGenerator.js`)
+
+Generates a Word (.docx) compliance report using the `docx` npm package.
+
+**Sections**
+1. Cover page with vendor name, framework, and date
+2. Executive summary with risk stats table
+3. Full gap analysis table (article, domain, gap level, recommendation)
+4. Domain-by-domain breakdown
+5. Methodology notes
+
+Entry point: `generateReport(assessmentId)` → returns a `Buffer` ready to stream.

@@ -64,11 +64,21 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
     });
 
+    // Handle assessment progress updates — invalidate list + individual detail cache
+    const unsubAssessment = on<{ assessmentId: string; status: string }>(
+      'assessment:update',
+      (event) => {
+        queryClient.invalidateQueries({ queryKey: ['assessments'] });
+        queryClient.invalidateQueries({ queryKey: ['assessment', event.assessmentId] });
+      }
+    );
+
     return () => {
       unsubNotification();
       unsubSync();
       unsubWorkspace();
       unsubConversation();
+      unsubAssessment();
     };
   }, [isConnected, on, queryClient]);
 

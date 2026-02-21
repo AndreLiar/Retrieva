@@ -513,3 +513,38 @@ npm run dev
 npm run workers
 npm run workers:dev  # With auto-reload
 ```
+
+---
+
+## Assessment Worker (`workers/assessmentWorker.js`)
+
+BullMQ Worker on the `assessmentJobs` queue (concurrency: 2). Handles two job types:
+
+### `fileIndex` job
+
+- Deserialises the file buffer from JSON (`Buffer.from(buffer.data)`)
+- Calls `fileIngestionService.ingestFile()` to parse, chunk, embed, and upsert into the `assessment_{id}` Qdrant collection
+- Updates the document status in MongoDB (`uploading` → `indexed` | `failed`)
+- Emits `assessment:update` via Socket.io on completion
+
+### `gapAnalysis` job
+
+- Polls (12 × 10 s = 2 min max) until all `fileIndex` jobs are complete
+- Calls `gapAnalysisAgent.runGapAnalysis(assessmentId)`
+- Updates Assessment status to `analyzing` → `complete` | `failed`
+- Emits `assessment:update` with final status
+
+### Queue
+
+`assessmentJobs` queue is defined in `config/queue.js` alongside `notionSync`, `mcpSync`, and `documentIndex`. The worker is imported at startup in `index.js`.
+
+### DORA Knowledge Base Seed
+
+Before running assessments in a new environment, seed the compliance knowledge base:
+
+```bash
+npm run seed:compliance         # Upsert DORA articles into compliance_kb
+npm run seed:compliance:reset   # Wipe and re-seed
+```
+
+The seed script is idempotent — it checks if `compliance_kb` already exists before creating it.
