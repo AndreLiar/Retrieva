@@ -19,6 +19,7 @@ import { initializeSocketServer, getStats as getSocketStats } from './services/s
 // Import workers to start them with the server
 import './workers/notionSyncWorker.js';
 import './workers/documentIndexWorker.js';
+import './workers/assessmentWorker.js';
 import { startMemoryDecayWorker } from './workers/memoryDecayWorker.js';
 import { scheduleMemoryDecayJob } from './config/queue.js';
 // Pipeline workers (Phase 3)

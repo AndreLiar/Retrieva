@@ -1,0 +1,283 @@
+[
+  {
+    "regulation": "DORA",
+    "article": "Article 5",
+    "title": "Governance and Organisation",
+    "domain": "ICT Risk Management",
+    "text": "1. Financial entities shall establish governance and control frameworks ensuring effective ICT risk management to achieve a high level of digital operational resilience.\n\n2. The management body shall define, approve, oversee and be responsible for implementing ICT risk management arrangements. In doing so, they shall:\n\n(a) bear ultimate responsibility for managing ICT risk;\n(b) establish policies ensuring high standards of availability, authenticity, integrity and confidentiality of data;\n(c) set clear roles and responsibilities for ICT functions with effective governance arrangements;\n(d) set and approve the digital operational resilience strategy, including ICT risk tolerance levels;\n(e) approve and review ICT business continuity policy and response and recovery plans;\n(f) approve and review ICT internal audit plans and material modifications;\n(g) allocate appropriate budgets for digital resilience needs, including security awareness and staff training;\n(h) approve and review policy on ICT third-party service provider arrangements;\n(i) establish reporting channels regarding: third-party arrangements, planned material changes, impact assessments, and ICT incidents.\n\n3. Non-microenterprises must establish a dedicated role or designate senior management to monitor third-party ICT service provider arrangements.\n\n4. Management body members must actively keep up to date with sufficient knowledge and skills regarding ICT risk through regular training.",
+    "obligations": [
+      "Establish governance and control frameworks for effective ICT risk management",
+      "Management body bears ultimate responsibility for managing ICT risk",
+      "Establish policies ensuring high standards of data availability, authenticity, integrity and confidentiality",
+      "Set clear roles and responsibilities for ICT functions",
+      "Set and approve digital operational resilience strategy including ICT risk tolerance levels",
+      "Allocate appropriate budgets for digital resilience, security awareness and staff training",
+      "Approve and review ICT third-party service provider policies",
+      "Establish reporting channels for third-party arrangements, material changes, impact assessments and incidents",
+      "Designate dedicated senior management role to monitor third-party providers",
+      "Management body maintains sufficient knowledge and skills in ICT risk through regular training"
+    ]
+  },
+  {
+    "regulation": "DORA",
+    "article": "Article 6",
+    "title": "ICT Risk Management Framework",
+    "domain": "ICT Risk Management",
+    "text": "1. Financial entities shall have a sound, comprehensive and well-documented ICT risk management framework as part of their overall risk management system.\n\n2. The framework must include strategies, policies, procedures, ICT protocols and tools protecting information assets, computer software, hardware, servers, physical components, premises, data centres and sensitive areas from risks including damage and unauthorized access.\n\n3. Entities shall minimize ICT risk impact through appropriate strategies, policies, procedures, ICT protocols and tools, providing complete and updated information to competent authorities upon request.\n\n4. Non-microenterprise entities must assign ICT risk management responsibility to a control function with appropriate independence, ensuring proper segregation across the three lines of defence model.\n\n5. The framework requires documented annual reviews (periodic for microenterprises), triggered by major incidents, supervisory instructions, or testing processes, with improvement based on implementation lessons and competent authority reporting.\n\n6. Non-microenterprise frameworks undergo regular internal audits by auditors possessing sufficient knowledge, skills and expertise in ICT risk with appropriate independence, with audit frequency matching the entity's ICT risk level.\n\n7. Entities must establish formal follow-up processes including timely verification and remediation of critical ICT audit findings.\n\n8. The digital operational resilience strategy addresses ICT risk through eight specific points: (a) business alignment; (b) risk tolerance and impact analysis; (c) security objectives with key performance indicators; (d) ICT reference architecture; (e) incident detection mechanisms; (f) resilience documentation; (g) compliance testing; (h) incident communication strategy.\n\n9. Entities may define holistic multi-vendor ICT strategies showing dependencies on third-party service providers.\n\n10. Entities may outsource compliance verification to intra-group or external undertakings while retaining full responsibility for ICT risk management compliance.",
+    "obligations": [
+      "Establish sound, comprehensive and well-documented ICT risk management framework",
+      "Framework must protect information assets from damage and unauthorized access",
+      "Minimize ICT risk impact through appropriate strategies, policies, procedures and tools",
+      "Provide complete and updated information to competent authorities upon request",
+      "Assign ICT risk management to control function with appropriate independence",
+      "Conduct documented annual framework reviews",
+      "Establish regular internal audits by qualified auditors",
+      "Establish formal follow-up processes for critical audit findings",
+      "Digital operational resilience strategy must address business alignment, risk tolerance, security objectives, ICT architecture, incident detection, documentation, testing and communication",
+      "Retain full responsibility for ICT risk management even when outsourcing compliance verification"
+    ]
+  },
+  {
+    "regulation": "DORA",
+    "article": "Article 9",
+    "title": "Protection and Prevention",
+    "domain": "ICT Risk Management",
+    "text": "1. Financial entities must continuously monitor and control the security and functioning of ICT systems and minimize ICT risk impact through appropriate security tools and procedures.\n\n2. Entities shall design, procure and implement ICT security policies, procedures, protocols and tools ensuring resilience, continuity, and availability of ICT systems, maintaining high standards for data availability, authenticity, integrity, and confidentiality.\n\n3. ICT solutions must:\n(a) ensure the security of the means of transfer of data;\n(b) minimize corruption, loss, unauthorized access, and technical flaws;\n(c) prevent the lack of availability, the impairment of the authenticity and integrity;\n(d) protect data from management risks and human error.\n\n4. As part of ICT risk management, entities shall:\n(a) develop and document an information security policy;\n(b) establish network management using appropriate techniques and automated isolation mechanisms;\n(c) implement access limitation policies addressing access rights and ensure a sound administration thereof;\n(d) implement strong authentication and cryptographic keys whereby data is encrypted based on approved cryptographic standards;\n(e) implement documented ICT change management policies including software and firmware changes;\n(f) maintain appropriate and comprehensive documented policies for patches and updates.\n\nNetwork infrastructure must be instantaneously severed or segmented to minimise contagion in the event of a cyber attack. Change management requires appropriate management approval and specific protocols.",
+    "obligations": [
+      "Continuously monitor and control the security and functioning of ICT systems",
+      "Design, procure and implement ICT security policies, procedures, protocols and tools",
+      "Ensure security of data transfer means",
+      "Minimize corruption, loss, unauthorized access and technical flaws",
+      "Prevent lack of availability and impairment of authenticity and integrity",
+      "Protect data from management risks and human error",
+      "Develop and document an information security policy",
+      "Establish network management with appropriate techniques and automated isolation mechanisms",
+      "Implement access limitation policies with sound administration",
+      "Implement strong authentication and cryptographic encryption for data",
+      "Implement documented ICT change management policies",
+      "Maintain documented policies for patches and updates",
+      "Ensure network infrastructure can be instantaneously severed or segmented"
+    ]
+  },
+  {
+    "regulation": "DORA",
+    "article": "Article 10",
+    "title": "Detection",
+    "domain": "ICT Risk Management",
+    "text": "1. Financial entities shall have in place mechanisms to promptly detect anomalous activities, in accordance with Article 17, including ICT network performance issues and ICT-related incidents, and to identify potential material single points of failure. Detection mechanisms must be regularly tested in accordance with Article 25.\n\n2. Detection mechanisms should enable multiple layers of control, define alert thresholds and criteria to trigger and initiate ICT-related incident response processes, including automatic alert mechanisms for relevant staff in charge of ICT-related incident response.\n\n3. Financial entities shall devote sufficient resources and capabilities to monitor user activity, the occurrence of ICT anomalies and ICT-related incidents, in particular cyber-attacks.\n\n4. Data reporting service providers shall, in addition, have in place systems that can effectively check trade reports for completeness, identify omissions and obvious errors, and request re-transmission of those reports.",
+    "obligations": [
+      "Establish mechanisms to promptly detect anomalous activities and ICT-related incidents",
+      "Identify potential material single points of failure",
+      "Regularly test detection mechanisms",
+      "Enable multiple layers of control in detection systems",
+      "Define alert thresholds and criteria to trigger incident response processes",
+      "Establish automatic alert mechanisms for relevant ICT incident response staff",
+      "Devote sufficient resources and capabilities to monitor user activity and ICT anomalies",
+      "Monitor ICT-related incidents, particularly cyber-attacks"
+    ]
+  },
+  {
+    "regulation": "DORA",
+    "article": "Article 11",
+    "title": "Response and Recovery",
+    "domain": "ICT Risk Management",
+    "text": "1. Financial entities shall put in place a comprehensive ICT business continuity policy.\n\n2. Entities must implement policies addressing:\n(a) ensuring the continuity of the financial entity's critical or important functions;\n(b) respond to and resolve ICT-related incidents in a way that limits damage;\n(c) activate, without delay, dedicated plans that enable containment measures;\n(d) estimate preliminary impacts, damages and losses;\n(e) communication ensuring updated information is transmitted to all relevant internal staff.\n\n3. Financial entities must implement associated ICT response and recovery plans.\n\n4. Entities shall maintain and periodically test appropriate ICT business continuity plans, and ICT response and recovery plans.\n\n5. Conduct business impact analysis assessing potential impact of severe business disruptions by means of quantitative and qualitative criteria, including through scenario analyses.\n\n6. Test digital operational resilience plans at least once a year for non-microenterprises, and in the event of any substantive changes to ICT systems supporting critical or important functions.\n\n7. Non-microenterprises shall require a crisis management function, establishing communication and crisis management procedures.\n\n8. Keep readily accessible records of activities before and during disruption events.\n\n9-11. ESAs shall develop guidelines on combined ICT business continuity policy and response and recovery plans for ICT-related incidents.",
+    "obligations": [
+      "Establish comprehensive ICT business continuity policy",
+      "Ensure continuity of critical or important functions",
+      "Respond to and resolve ICT-related incidents to limit damage",
+      "Activate dedicated containment plans without delay",
+      "Estimate preliminary impacts, damages and losses",
+      "Ensure communication of updated information to all relevant internal staff",
+      "Implement associated ICT response and recovery plans",
+      "Maintain and periodically test ICT business continuity plans",
+      "Conduct business impact analysis with quantitative and qualitative criteria including scenario analyses",
+      "Test digital operational resilience plans at least once a year",
+      "Test plans upon substantive ICT system changes",
+      "Establish crisis management function with communication procedures",
+      "Keep readily accessible records of activities before and during disruptions"
+    ]
+  },
+  {
+    "regulation": "DORA",
+    "article": "Article 17",
+    "title": "ICT-related Incident Management Process",
+    "domain": "Incident Reporting",
+    "text": "1. Financial entities shall define, establish and implement an ICT-related incident management process to detect, manage and notify ICT-related incidents.\n\n2. Entities must document all ICT incidents and cyber threats, establishing procedures for integrated monitoring, handling, and follow-up to identify root causes and prevent recurrence.\n\n3. The management process requires:\n\n(a) put in place early warning indicators;\n(b) procedures to identify, track, log, categorise and classify incidents by priority, severity, and service criticality per Article 18(1);\n(c) assign roles and responsibilities that need to be activated for different ICT-related incident types and scenarios;\n(d) communication plans for staff, stakeholders, media pursuant to Article 14, client notification, escalation procedures, and information sharing with counterparty entities;\n(e) reporting major incidents to senior management and the management body, detailing impact, response, and additional controls;\n(f) establish ICT-related incident response procedures to mitigate impacts and ensure that services become operational and secure in a timely manner.",
+    "obligations": [
+      "Define, establish and implement an ICT-related incident management process",
+      "Detect, manage and notify ICT-related incidents",
+      "Document all ICT incidents and cyber threats",
+      "Establish procedures for integrated monitoring, handling and follow-up",
+      "Identify root causes and prevent recurrence of incidents",
+      "Put in place early warning indicators",
+      "Identify, track, log, categorise and classify incidents by priority, severity and service criticality",
+      "Assign roles and responsibilities for different incident types and scenarios",
+      "Establish communication plans for staff, stakeholders, media and clients",
+      "Establish escalation procedures and information sharing with counterparty entities",
+      "Report major incidents to senior management and management body",
+      "Establish incident response procedures to mitigate impacts and ensure timely service restoration"
+    ]
+  },
+  {
+    "regulation": "DORA",
+    "article": "Article 18",
+    "title": "Classification of ICT-related Incidents and Cyber Threats",
+    "domain": "Incident Reporting",
+    "text": "1. Financial entities shall classify ICT-related incidents and shall determine their impact based on the following criteria: the number of clients or financial counterparts affected and, where applicable, the amount or number of transactions affected by the major ICT-related incident; the duration of the major ICT-related incident, including the service downtime; the geographical spread with regard to the areas affected by the major ICT-related incident, particularly if it affects more than two Member States; the data losses that the major ICT-related incident entails, in relation to availability, authenticity, integrity or confidentiality of data; the criticality of the services affected, including the financial entity's transactions and operations; the economic impact, in particular direct and indirect costs and losses, of the major ICT-related incident, in both absolute and relative terms.\n\n2. Entities shall classify cyber threats as significant based on the criticality of the services at risk, including the financial entity's transactions and operations, number and/or relevance of clients or financial counterparts targeted and the geographical spread of the areas at risk.\n\n3. The ESAs shall develop regulatory technical standards specifying materiality thresholds and criteria for classification. The ESAs must submit these standards to the Commission by January 17, 2024.",
+    "obligations": [
+      "Classify ICT-related incidents based on defined impact criteria",
+      "Assess number of clients or counterparts affected",
+      "Assess amount or number of transactions affected",
+      "Assess duration of incident including service downtime",
+      "Assess geographical spread of incident across Member States",
+      "Assess data losses in relation to availability, authenticity, integrity and confidentiality",
+      "Assess criticality of affected services including transactions and operations",
+      "Assess economic impact in both absolute and relative terms",
+      "Classify cyber threats as significant based on service criticality at risk",
+      "Consider number and relevance of clients or counterparts targeted",
+      "Consider geographical spread in cyber threat classification"
+    ]
+  },
+  {
+    "regulation": "DORA",
+    "article": "Article 19",
+    "title": "Reporting of major ICT-related incidents and voluntary notification of significant cyber threats",
+    "domain": "Incident Reporting",
+    "text": "1. Financial entities shall report major ICT-related incidents to the relevant competent authority as referred to in Article 46 in accordance with paragraph 4 of this Article. Where a financial entity is subject to supervision by more than one national competent authority, Member States shall designate a single competent authority as the relevant competent authority. Credit institutions classified as significant shall report to the relevant national competent authority, which shall immediately transmit the report to the ECB.\n\n2. Financial entities may, on a voluntary basis, notify significant cyber threats to the relevant competent authority when they deem the threat to be of relevance to the financial system, service users or clients.\n\n3. Where a major ICT-related incident occurs and has an impact on the financial interests of clients, financial entities shall, without undue delay as soon as they become aware of it, inform their clients about the major ICT-related incident and about the measures that have been taken to mitigate the adverse effects of such incident. In the case of a significant cyber threat, financial entities shall, where applicable, inform their clients that are potentially affected of any appropriate protection measures which the latter may consider taking.\n\n4. Financial entities shall submit the following to the relevant competent authority:\n(a) an initial notification;\n(b) an intermediate report after the initial notification, as soon as the status of the original incident has changed significantly, followed by updated notifications every time a relevant status update is available;\n(c) a final report, when the root cause analysis has been completed and the actual impact figures are available to replace estimates.\n\n5. Financial entities may outsource the reporting obligations under this Article to a third-party service provider. In case of such outsourcing, the financial entity remains fully responsible for the fulfilment of the incident reporting requirements.",
+    "obligations": [
+      "Report major ICT-related incidents to relevant competent authority",
+      "Significant credit institutions report to ECB via national competent authority",
+      "Voluntarily notify significant cyber threats to competent authority when relevant",
+      "Inform clients without undue delay of major incidents impacting their financial interests",
+      "Inform clients of measures taken to mitigate adverse effects",
+      "Inform potentially affected clients of protection measures for significant cyber threats",
+      "Submit initial notification to competent authority within specified time limits",
+      "Submit intermediate reports when incident status changes significantly",
+      "Provide updated notifications with each relevant status update",
+      "Submit final report after root cause analysis completion with actual impact figures",
+      "Remain fully responsible for reporting obligations even when outsourced"
+    ]
+  },
+  {
+    "regulation": "DORA",
+    "article": "Article 24",
+    "title": "Digital Operational Resilience Testing",
+    "domain": "Resilience Testing",
+    "text": "1. Financial entities, excluding microenterprises, shall maintain a sound and comprehensive digital operational resilience testing programme integrated into their ICT risk-management framework.\n\n2. The testing programme shall encompass a range of assessments, tests, methodologies, practices and tools as set out in Articles 25 and 26.\n\n3. The programme shall apply a risk-based approach considering the evolving landscape of ICT risk and any specific exposures of the financial entity.\n\n4. Tests shall be undertaken by independent parties, whether internal or external. Where internal testers conduct tests, financial entities shall dedicate sufficient resources and ensure that conflicts of interest are avoided throughout the design and execution phases of the test.\n\n5. Financial entities shall establish procedures and policies to prioritise, classify and remedy all issues revealed through the performance of the tests and shall establish internal validation methodologies to ascertain that all identified weaknesses, deficiencies or gaps are fully addressed.\n\n6. Financial entities shall ensure that at least yearly, appropriate tests are conducted on all ICT systems and applications supporting critical or important functions.",
+    "obligations": [
+      "Maintain sound and comprehensive digital operational resilience testing programme",
+      "Integrate testing programme into ICT risk-management framework",
+      "Apply risk-based approach considering evolving ICT risk landscape",
+      "Ensure tests undertaken by independent parties (internal or external)",
+      "Ensure internal testers have dedicated resources and no conflicts of interest",
+      "Establish procedures to prioritise, classify and remedy issues revealed through testing",
+      "Establish internal validation methodologies to confirm weaknesses are fully addressed",
+      "Conduct appropriate tests yearly on all ICT systems supporting critical or important functions"
+    ]
+  },
+  {
+    "regulation": "DORA",
+    "article": "Article 25",
+    "title": "Testing of ICT Tools and Systems",
+    "domain": "Resilience Testing",
+    "text": "1. The digital operational resilience testing programme referred to in Article 24 shall provide for the execution of appropriate tests, such as vulnerability assessments and scans, open source analyses, network security assessments, gap analyses, physical security reviews, questionnaires and scanning software solutions, source code reviews where feasible, scenario-based tests, compatibility testing, performance testing, end-to-end testing and penetration testing.\n\n2. Central securities depositories and central counterparties shall perform vulnerability assessments before any deployment or redeployment of new or existing applications and infrastructure components, and ICT services supporting critical or important functions of the financial entity.\n\n3. Microenterprises shall perform the tests referred to in paragraph 1 by combining a risk-based approach with a strategic planning of ICT testing, by duly considering the need to maintain a balanced approach between the scale of resources and the time to be allocated to the ICT testing, on the one hand, and the urgency, type of risk, criticality of information assets and of services provided, as well as any other relevant factor, on the other hand.",
+    "obligations": [
+      "Execute vulnerability assessments and scans",
+      "Conduct open source analyses",
+      "Perform network security assessments",
+      "Conduct gap analyses",
+      "Perform physical security reviews",
+      "Use questionnaires and scanning software solutions",
+      "Conduct source code reviews where feasible",
+      "Perform scenario-based tests",
+      "Conduct compatibility testing",
+      "Perform performance testing",
+      "Conduct end-to-end testing",
+      "Perform penetration testing",
+      "Perform vulnerability assessments before deployment of new applications and infrastructure"
+    ]
+  },
+  {
+    "regulation": "DORA",
+    "article": "Article 28",
+    "title": "General Principles — ICT Third-Party Risk Management",
+    "domain": "Third-Party Risk",
+    "text": "1. Financial entities shall manage ICT third-party risk as an integral component of ICT risk within their ICT risk management framework, in accordance with the following principles:\n\n(a) financial entities that have in place contractual arrangements for the use of ICT services to run their business operations shall, at all times, remain fully responsible for compliance with, and the discharge of, all obligations under this Regulation and applicable financial services law;\n(b) financial entities' management of ICT third-party risk shall be implemented in light of the principle of proportionality, taking into account:\n(i) the nature, scale, complexity and importance of ICT-related dependencies;\n(ii) the risks arising from contractual arrangements on the use of ICT services.\n\n2. Entities shall adopt and regularly review a strategy on ICT third-party risk including policies on use of ICT services supporting critical or important functions, applied individually and on sub-consolidated and consolidated bases.\n\n3. Financial entities shall maintain and update at entity level, and at sub-consolidated and consolidated levels, a register of information in relation to all contractual arrangements on the use of ICT services provided by ICT third-party service providers. The register shall be reported yearly to competent authorities.\n\n4. Before entering into a contractual arrangement on the use of ICT services, financial entities shall:\n(a) assess whether the contractual arrangement covers the use of ICT services supporting a critical or important function;\n(b) assess whether supervisory conditions for contracting are met;\n(c) identify and assess all relevant risks in relation to the contractual arrangement, including concentration risk;\n(d) undertake all due diligence on prospective ICT third-party service providers;\n(e) identify and assess conflicts of interest that the contractual arrangement may cause.\n\n5. ICT third-party service providers shall comply with appropriate information security standards. Where contractual arrangements concern critical or important functions, financial entities shall, before concluding the arrangements, duly consider the use of the most up-to-date and highest quality information security standards.\n\n6. In exercising access and audit rights on ICT third-party service providers, financial entities shall determine the frequency of audits and inspections based on a risk-based approach and commonly accepted audit standards.\n\n7. Financial entities shall have the right to terminate contractual arrangements where:\n(a) significant breach of applicable laws, regulations or contractual terms;\n(b) circumstances altering the performance of the functions under the contractual arrangement;\n(c) evidence of weaknesses in the ICT third-party service provider's overall ICT risk management;\n(d) circumstances where the competent authority can no longer effectively supervise the financial entity.\n\n8. For critical or important functions, financial entities shall put in place exit strategies for orderly termination of the contractual arrangement.",
+    "obligations": [
+      "Manage ICT third-party risk within ICT risk management framework",
+      "Remain fully responsible for compliance with DORA despite third-party arrangements",
+      "Implement third-party risk management with proportionality principle",
+      "Adopt and regularly review ICT third-party risk strategy",
+      "Establish policy on ICT services supporting critical or important functions",
+      "Maintain register of all contractual arrangements at entity, sub-consolidated and consolidated levels",
+      "Report register yearly to competent authorities",
+      "Assess whether services support critical or important function before contracting",
+      "Verify supervisory conditions are met before contracting",
+      "Identify and assess all relevant risks including concentration risk",
+      "Conduct due diligence on prospective ICT third-party providers",
+      "Identify and assess conflicts of interest",
+      "Require ICT third-party providers to comply with appropriate information security standards",
+      "Consider most up-to-date information security standards for critical/important function providers",
+      "Determine audit frequency based on risk-based approach",
+      "Use commonly accepted audit standards for third-party assessments",
+      "Establish termination rights for significant breaches",
+      "Establish termination rights for performance-altering circumstances",
+      "Establish termination rights for ICT risk weaknesses",
+      "Establish termination rights for supervisory impediments",
+      "Develop exit strategies for orderly termination for critical or important functions"
+    ]
+  },
+  {
+    "regulation": "DORA",
+    "article": "Article 29",
+    "title": "Preliminary Assessment of ICT Concentration Risk",
+    "domain": "Third-Party Risk",
+    "text": "1. When performing the identification and assessment of risks referred to in Article 28(4)(c), financial entities shall also determine whether the conclusion of a contractual arrangement for ICT services supporting critical or important functions would lead to:\n\n(a) contracting an ICT third-party service provider that is not easily substitutable;\n(b) having in place multiple contractual arrangements in relation to the provision of ICT services supporting critical or important functions with the same ICT third-party service provider or with closely connected ICT third-party service providers.\n\nFinancial entities shall weigh the benefits and costs of alternative solutions, such as the use of different ICT third-party service providers, taking into account whether and how envisaged solutions match the business needs and objectives set out in the digital operational resilience strategy.\n\n2. Where the contractual arrangements on the use of ICT services include the possibility that an ICT third-party service provider further subcontracts ICT services supporting a critical or important function to other ICT third-party service providers, financial entities shall weigh benefits and risks that may arise in connection with such subcontracting, in particular with regard to a third-country ICT subcontractor.\n\nWhere contractual arrangements concern ICT services supporting critical or important functions, financial entities shall duly consider the insolvency law provisions that would apply in the event of the ICT third-party service provider's bankruptcy as well as any constraint that may arise in respect of the urgent recovery of the financial entity's data.\n\nWhere contractual arrangements on the use of ICT services are concluded with an ICT third-party service provider established in a third country, financial entities shall additionally consider compliance with Union data protection rules and the effective enforcement of the law in that third country.\n\nWhere the subcontracting is permitted, financial entities shall evaluate whether and how potentially long or complex chains of subcontracting may impact their ability to fully monitor the contracted functions and the ability of the competent authority to effectively supervise the financial entity in that respect.",
+    "obligations": [
+      "Assess concentration risk before concluding critical or important function service arrangements",
+      "Evaluate substitutability of proposed third-party provider",
+      "Assess multiple-arrangement risk with same or closely connected providers",
+      "Weigh benefits and costs of alternative solutions",
+      "Align third-party arrangements with digital operational resilience strategy",
+      "Assess risks of permitted subcontracting for critical or important functions",
+      "Evaluate third-country subcontractor risks",
+      "Consider insolvency law provisions applicable to the provider",
+      "Assess constraints affecting urgent data recovery",
+      "Assess third-country provider compliance with Union data protection rules",
+      "Assess effective enforcement of law in third country",
+      "Evaluate impact of complex subcontracting chains on monitoring ability"
+    ]
+  },
+  {
+    "regulation": "DORA",
+    "article": "Article 30",
+    "title": "Key Contractual Provisions",
+    "domain": "Third-Party Risk",
+    "text": "1. The rights and obligations of the financial entity and of the ICT third-party service provider shall be clearly allocated and set out in writing. The full contract shall include the service level agreement and be documented in one written document that is available to the parties on paper, or in a document with another downloadable, durable and accessible format.\n\n2. Contractual arrangements on the use of ICT services shall include at least the following elements:\n\n(a) a clear and complete description of all functions and ICT services to be provided by the ICT third-party service provider, indicating whether subcontracting of an ICT service supporting a critical or important function, or material parts thereof, is permitted, and, where it is, the conditions applicable to such subcontracting;\n(b) the locations, namely the regions or countries, where the contracted or subcontracted functions and ICT services are to be provided and where data is to be processed, including the storage location, and the requirement for the ICT third-party service provider to notify the financial entity if it envisages changing such locations;\n(c) provisions on availability, authenticity, integrity and confidentiality in relation to the protection of data, including personal data;\n(d) provisions on ensuring access to, recovery and return of, in an easily accessible format, personal and non-personal data processed by the ICT third-party service provider in the event of the insolvency, resolution or discontinuation of the business operations of that provider, or in the event of the termination of the contractual arrangements;\n(e) service level descriptions, including updates and revisions thereof;\n(f) the obligation of the ICT third-party service provider to provide assistance to the financial entity at no additional cost, or at a cost that is determined ex-ante, when an ICT incident that is related to the ICT service provided to the financial entity occurs;\n(g) the obligation of the ICT third-party service provider to fully cooperate with the competent authorities and the resolution authorities of the financial entity, including persons appointed by them;\n(h) termination rights and related minimum notice periods for the termination of the contractual arrangements, in accordance with the expectations of competent authorities and resolution authorities;\n(i) conditions for the participation of ICT third-party service providers in the financial entities' ICT security awareness programmes and digital operational resilience training.\n\n3. For contractual arrangements on the use of ICT services supporting critical or important functions, the following elements shall additionally be included:\n\n(a) full service level descriptions, including updates and revisions thereof, with precise quantitative and qualitative performance targets within the agreed service levels;\n(b) notice periods and reporting obligations of the ICT third-party service provider to the financial entity, including notification of any development that might have a material impact on the ICT third-party service provider's ability to effectively provide the ICT services;\n(c) requirements for the ICT third-party service provider to implement and test business contingency plans;\n(d) the obligation of the ICT third-party service provider to participate in and fully cooperate with the financial entity's TLPT as referred to in Articles 26 and 27;\n(e) the right to monitor, on an ongoing basis, the ICT third-party service provider's performance, which shall entail:\n(i) unrestricted rights of access, inspection and audit by the financial entity, or an appointed third party, and by the competent authority;\n(ii) the right to agree on alternative assurance levels if other clients' rights are affected;\n(f) exit strategies, in particular the establishment of a mandatory adequate transition period:\n(i) during which the ICT third-party service provider will continue providing the respective functions or ICT services with a view to reducing the risk of disruption at the financial entity or to allowing the financial entity to effectively transition to another third-party service provider or to in-house solutions;\n(ii) allowing the financial entity to migrate to another ICT third-party service provider or to in-house solutions.\n\n4. Financial entities and ICT third-party service providers shall use standard contractual clauses developed by public authorities for specific services.\n\n5. The ESAs shall develop draft regulatory technical standards on standard contractual clauses by 17 July 2024.",
+    "obligations": [
+      "Clearly allocate rights and obligations in writing",
+      "Document full contract including SLA in writing or accessible durable format",
+      "Provide clear and complete description of all functions and ICT services",
+      "Specify subcontracting permissions and applicable conditions",
+      "Specify locations of service provision and data processing",
+      "Require notification when provider changes locations",
+      "Include data availability, authenticity, integrity and confidentiality protection provisions",
+      "Include provisions for data access, recovery and return upon insolvency or termination",
+      "Include service level descriptions including updates and revisions",
+      "Require provider assistance at no additional cost upon ICT incident",
+      "Require full cooperation with competent authorities and resolution authorities",
+      "Include termination rights and minimum notice periods",
+      "Include conditions for participation in ICT security awareness programmes",
+      "Include precise quantitative and qualitative performance targets for critical/important functions",
+      "Include notice periods and reporting obligations for material impact developments",
+      "Require provider to implement and test business contingency plans",
+      "Require provider participation in TLPT per Articles 26 and 27",
+      "Include unrestricted rights of access, inspection and audit",
+      "Include exit strategies with mandatory adequate transition period",
+      "Transition period must allow continued service provision to reduce disruption risk",
+      "Transition period must allow migration to another provider or in-house solutions",
+      "Use standard contractual clauses developed by public authorities where available"
+    ]
+  }
+]

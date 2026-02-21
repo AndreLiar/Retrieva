@@ -9,3 +9,5 @@ export { ragApi, streamRAGResponse } from './rag';
 export { adminApi } from './admin';
 export { embeddingsApi } from './embeddings';
 export { pipelineApi } from './pipeline';
+export { assessmentsApi } from './assessments';
+export type { Assessment, Gap, GapLevel, OverallRisk, AssessmentStatus } from './assessments';
