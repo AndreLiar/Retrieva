@@ -15,7 +15,6 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vites
 import supertest from 'supertest';
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import path from 'path';
 
 // ---------------------------------------------------------------------------
 // Environment must be set BEFORE any imports that read process.env
