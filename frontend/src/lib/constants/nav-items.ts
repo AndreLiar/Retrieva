@@ -1,7 +1,7 @@
 import {
-  MessageSquare,
+  Bot,
   FolderOpen,
-  Link2,
+  Database,
   BarChart3,
   Bell,
   Settings,
@@ -19,20 +19,20 @@ export interface NavItem {
 }
 
 export const desktopMainNavItems: NavItem[] = [
-  { title: 'Chat', href: '/chat', icon: MessageSquare },
-  { title: 'Conversations', href: '/conversations', icon: FolderOpen },
-  { title: 'Workspaces', href: '/workspaces', icon: Building2 },
-  { title: 'Members', href: '/members', icon: Users, workspaceRoles: ['owner'] },
-  { title: 'Notion', href: '/notion', icon: Link2, workspaceRoles: ['owner', 'member'] },
-  { title: 'Analytics', href: '/analytics', icon: BarChart3, workspaceRoles: ['owner', 'member'] },
   { title: 'Assessments', href: '/assessments', icon: ShieldCheck },
+  { title: 'Copilot', href: '/copilot', icon: Bot },
+  { title: 'Sources', href: '/sources', icon: Database, workspaceRoles: ['owner', 'member'] },
+  { title: 'Conversations', href: '/conversations', icon: FolderOpen },
+  { title: 'Analytics', href: '/analytics', icon: BarChart3, workspaceRoles: ['owner', 'member'] },
+  { title: 'Members', href: '/members', icon: Users, workspaceRoles: ['owner'] },
+  { title: 'Workspaces', href: '/workspaces', icon: Building2 },
 ];
 
 export const mobileMainNavItems: NavItem[] = [
-  { title: 'Chat', href: '/chat', icon: MessageSquare },
+  { title: 'Assessments', href: '/assessments', icon: ShieldCheck },
+  { title: 'Copilot', href: '/copilot', icon: Bot },
+  { title: 'Sources', href: '/sources', icon: Database, workspaceRoles: ['owner', 'member'] },
   { title: 'Conversations', href: '/conversations', icon: FolderOpen },
-  { title: 'Notion', href: '/notion', icon: Link2, workspaceRoles: ['owner', 'member'] },
-  { title: 'Analytics', href: '/analytics', icon: BarChart3, workspaceRoles: ['owner', 'member'] },
 ];
 
 export const bottomNavItems: NavItem[] = [
