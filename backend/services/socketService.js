@@ -17,6 +17,7 @@ import { User } from '../models/User.js';
 import { WorkspaceMember } from '../models/WorkspaceMember.js';
 import * as presenceService from './presenceService.js';
 import * as liveAnalyticsService from './liveAnalyticsService.js';
+import { createRedisConnection } from '../config/redis.js';
 import logger from '../config/logger.js';
 
 /**
@@ -134,9 +135,71 @@ export function initializeSocketServer(httpServer) {
   // Connection handler
   io.on('connection', handleConnection);
 
+  // -------------------------------------------------------------------------
+  // Redis pub/sub subscriber
+  // Receives events published by realtimeEvents.js and forwards them to the
+  // appropriate Socket.io rooms. A dedicated IORedis connection is required
+  // because a subscribed connection can only run pub/sub commands.
+  // -------------------------------------------------------------------------
+  _initRealtimeSubscriber();
+
   logger.info('Socket.io server initialized', { service: 'socket' });
 
   return io;
+}
+
+/**
+ * Initialise the Redis subscriber for cross-process realtime event routing.
+ * Called once inside initializeSocketServer — never at module load time so
+ * tests that don't spin up a real server never create a live Redis connection.
+ */
+function _initRealtimeSubscriber() {
+  const sub = createRedisConnection();
+
+  sub.psubscribe('realtime:*', (err) => {
+    if (err) {
+      logger.error('Failed to subscribe to realtime channels', {
+        service: 'socket',
+        error: err.message,
+      });
+    } else {
+      logger.info('Subscribed to realtime Redis channels', { service: 'socket' });
+    }
+  });
+
+  sub.on('pmessage', (_pattern, channel, rawMessage) => {
+    if (!io) return;
+
+    let parsed;
+    try {
+      parsed = JSON.parse(rawMessage);
+    } catch {
+      logger.error('Invalid realtime message JSON', { service: 'socket', channel });
+      return;
+    }
+
+    const { event, data } = parsed;
+
+    // channel = 'realtime:user:abc123' | 'realtime:workspace:abc123' | 'realtime:query:uuid'
+    const parts = channel.split(':');
+    const type = parts[1];
+    const id = parts.slice(2).join(':');
+
+    switch (type) {
+      case 'user':
+        // Preserves offline queue: emitToUser queues messages for offline users
+        emitToUser(id, event, data);
+        break;
+      case 'workspace':
+        emitToWorkspace(id, event, data);
+        break;
+      case 'query':
+        emitToQuery(id, event, data);
+        break;
+      default:
+        logger.warn('Unknown realtime channel type', { service: 'socket', channel });
+    }
+  });
 }
 
 /**
@@ -602,7 +665,10 @@ export function getStats() {
   return {
     totalConnections: io?.sockets.sockets.size || 0,
     uniqueUsers: connectedUsers.size,
-    offlineQueueSize: Array.from(offlineQueue.values()).reduce((sum, q) => sum + q.messages.length, 0),
+    offlineQueueSize: Array.from(offlineQueue.values()).reduce(
+      (sum, q) => sum + q.messages.length,
+      0
+    ),
     offlineQueueUsers: offlineQueue.size,
   };
 }

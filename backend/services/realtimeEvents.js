@@ -11,8 +11,46 @@
  * @module services/realtimeEvents
  */
 
-import { emitToUser, emitToWorkspace, emitToQuery } from './socketService.js';
+import { redisConnection } from '../config/redis.js';
 import logger from '../config/logger.js';
+
+// ---------------------------------------------------------------------------
+// Internal pub/sub helpers
+//
+// Events are published to Redis instead of calling socketService functions
+// directly. socketService.js subscribes to realtime:* and forwards to
+// Socket.io rooms. This decouples event producers from the WebSocket server,
+// so the Real-time Service can later be extracted to a separate process
+// without changing any callsite in this file.
+//
+// Channel format:
+//   realtime:user:{userId}           → io.to('user:{id}').emit(event, data)
+//   realtime:workspace:{workspaceId} → io.to('workspace:{id}').emit(...)
+//   realtime:query:{queryId}         → io.to('query:{id}').emit(...)
+// ---------------------------------------------------------------------------
+
+function publishEvent(channel, event, data) {
+  redisConnection.publish(channel, JSON.stringify({ event, data })).catch((err) => {
+    logger.error('Failed to publish realtime event', {
+      service: 'realtime',
+      channel,
+      event,
+      error: err.message,
+    });
+  });
+}
+
+function emitToUser(userId, event, data) {
+  publishEvent(`realtime:user:${userId}`, event, data);
+}
+
+function emitToWorkspace(workspaceId, event, data) {
+  publishEvent(`realtime:workspace:${workspaceId}`, event, data);
+}
+
+function emitToQuery(queryId, event, data) {
+  publishEvent(`realtime:query:${queryId}`, event, data);
+}
 
 /**
  * Event Types Constants
