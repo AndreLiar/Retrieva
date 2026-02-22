@@ -4,7 +4,7 @@ sidebar_position: 2
 
 # RAG Pipeline
 
-The RAG (Retrieval-Augmented Generation) pipeline is the core of the platform, responsible for answering user questions using retrieved context from their Notion workspace.
+The RAG (Retrieval-Augmented Generation) pipeline answers user questions by autonomously gathering context from the workspace knowledge base, DORA compliance articles, and completed vendor assessments.
 
 ## Pipeline Overview
 
@@ -13,18 +13,19 @@ The RAG (Retrieval-Augmented Generation) pipeline is the core of the platform, r
 │                           RAG Pipeline                                   │
 ├─────────────────────────────────────────────────────────────────────────┤
 │                                                                          │
-│  ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────────────┐  │
-│  │  Query   │───▶│  Intent  │───▶│ Retrieval│───▶│    Reranking     │  │
-│  │  Input   │    │ Classify │    │          │    │                  │  │
-│  └──────────┘    └──────────┘    └──────────┘    └──────────────────┘  │
-│                                                           │              │
-│  ┌──────────────────────────────────────────────────────┐│              │
-│  │                                                       ▼│              │
-│  │  ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐      │
-│  │  │ Response │◀───│  Answer  │◀───│   LLM    │◀───│ Context  │      │
-│  │  │          │    │Validation│    │Generation│    │Compression│     │
-│  │  └──────────┘    └──────────┘    └──────────┘    └──────────┘      │
-│  └─────────────────────────────────────────────────────────────────────┘│
+│  ┌──────────┐    ┌──────────┐    ┌─────────────────────────────────┐   │
+│  │  Query   │───▶│  Query   │───▶│        Agentic Retrieval        │   │
+│  │  Input   │    │ Rephrase │    │   (LangGraph ReAct Agent)       │   │
+│  └──────────┘    └──────────┘    └──────────────┬──────────────────┘   │
+│                                                  │                       │
+│                                       ┌──────────▼──────────┐           │
+│                                       │  RRF Reranking       │           │
+│                                       └──────────┬──────────┘           │
+│                                                  │                       │
+│  ┌──────────┐    ┌──────────┐    ┌──────────────▼──────────────────┐   │
+│  │ Response │◀───│  Answer  │◀───│  Context Compression + LLM Gen  │   │
+│  │          │    │Validation│    │                                  │   │
+│  └──────────┘    └──────────┘    └─────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -52,112 +53,94 @@ const rephrased = await rephraseChain.invoke({
 
 | Original | With History | Rephrased |
 |----------|-------------|-----------|
-| "What about the approval process?" | "Tell me about expense policies" | "What is the expense approval process?" |
+| "What about Article 30 exit rights?" | "We were reviewing vendor contracts" | "What are the Article 30 exit strategy requirements for ICT vendor contracts under DORA?" |
 
 ## Stage 2: Intent Classification
 
-The system classifies queries into 10 intent types using a 3-tier approach:
-
-### Tier 1: Regex Patterns (Fast)
-
-```javascript
-const QUICK_PATTERNS = {
-  COMPARISON: /\b(compare|versus|vs\.?|difference|better|worse)\b/i,
-  PROCEDURAL: /\b(how (do|can|to|should)|steps|process|guide)\b/i,
-  AGGREGATION: /\b(all|every|list|summarize|overview)\b/i,
-  // ...
-};
-```
-
-### Tier 2: Keyword Scoring (Medium)
-
-```javascript
-const KEYWORD_SIGNALS = {
-  FACTUAL: {
-    positive: ['what is', 'define', 'meaning', 'who is'],
-    negative: ['compare', 'difference'],
-  },
-  // ...
-};
-```
-
-### Tier 3: LLM Classification (Accurate)
-
-For ambiguous queries, GPT-4o-mini classifies the intent with reasoning.
+The system classifies queries into 10 intent types using a 3-tier approach (regex → keywords → LLM). Classification informs the LLM answer prompt style but does **not** gate retrieval — the agent always retrieves, then the prompt is tuned to the intent.
 
 ### Intent Types
 
-| Intent | Description | Retrieval Strategy |
-|--------|-------------|-------------------|
-| `factual` | Direct fact lookup | focused (k=5) |
-| `comparison` | Compare items/concepts | multi-aspect (k=10) |
-| `explanation` | Deep understanding | deep (k=8) |
-| `aggregation` | Summarize/list all | broad (k=15) |
-| `procedural` | How-to instructions | focused (k=6) |
-| `clarification` | Needs more context | context-only |
-| `chitchat` | Social conversation | no-retrieval |
-| `out_of_scope` | Unrelated to docs | no-retrieval |
-| `opinion` | Subjective question | focused (k=5) |
-| `temporal` | Time-based query | focused (k=6) |
+| Intent | Description |
+|--------|-------------|
+| `factual` | Direct fact lookup |
+| `comparison` | Compare items/concepts |
+| `explanation` | Deep understanding |
+| `aggregation` | Summarize/list all |
+| `procedural` | How-to instructions |
+| `clarification` | Needs more context |
+| `chitchat` | Social conversation |
+| `out_of_scope` | Unrelated to docs |
+| `opinion` | Subjective question |
+| `temporal` | Time-based query |
 
-## Stage 3: Document Retrieval
+## Stage 3: Agentic Retrieval
 
-### Hybrid Search
+Retrieval is handled by a **LangGraph ReAct agent** (`services/ragAgent.js`) that autonomously decides what to search and how many times. The agent has four tools:
 
-Combines semantic and keyword search:
+### Agent Tools
 
-```javascript
-// Semantic search (dense vectors)
-const semanticResults = await vectorStore.similaritySearch(query, k, {
-  filter: { workspaceId: workspaceId }
-});
+| Tool | Description | Collection |
+|------|-------------|------------|
+| `search_knowledge_base` | Semantic search over workspace documents (policies, contracts, uploaded files) | `langchain-rag` (tenant-filtered) |
+| `search_dora_articles` | Search DORA regulatory articles; optional domain filter | `compliance_kb` |
+| `lookup_vendor_assessment` | Retrieve a completed gap analysis for a named ICT vendor | MongoDB |
+| `done_searching` | Signal retrieval complete; triggers synthesis | — |
 
-// Keyword search (sparse vectors)
-const sparseResults = await sparseVectorManager.search(query, workspaceId, k);
+### Agent Retrieval Strategy
 
-// RRF Fusion
-const fusedResults = reciprocalRankFusion([semanticResults, sparseResults]);
+```
+User question + last 4 conversation turns
+        │
+        ▼
+ ┌──────────────────────────────────────┐
+ │         RAG Agent (ReAct loop)        │
+ │                                       │
+ │  1. search_knowledge_base (2-3×)      │
+ │  2. search_dora_articles (if needed)  │
+ │  3. lookup_vendor_assessment (optional)│
+ │  4. done_searching                    │
+ │                                       │
+ │  max 30 graph steps                   │
+ └──────────────────────────────────────┘
+        │
+        ▼
+ Collected docs (deduped by content prefix)
 ```
 
 ### Workspace Isolation
 
-Every query MUST include workspace filter:
+The knowledge base tool wraps every search with the workspace's Qdrant filter:
 
 ```javascript
-function buildQdrantFilter(filters, workspaceId) {
-  if (!workspaceId) {
-    throw new Error('workspaceId is required for vector store queries');
-  }
-
-  return {
-    must: [
-      { key: 'metadata.workspaceId', match: { value: workspaceId } },
-      // Additional filters...
-    ]
-  };
-}
+// Enforced by wrapWithTenantIsolation on the vector store
+const docs = await vectorStore.similaritySearch(query, k, qdrantFilter);
+// qdrantFilter always includes { must: [{ key: 'metadata.workspaceId', match: workspaceId }] }
 ```
+
+### DORA Domain Filtering
+
+`search_dora_articles` supports optional domain filtering:
+
+```javascript
+// Agent may call with a specific domain
+{ query: "subcontracting notification requirements", domain: "Third-Party Risk" }
+
+// Or search all domains
+{ query: "TLPT threat-led penetration testing requirements" }
+```
+
+Available domains: `General Provisions`, `ICT Risk Management`, `Incident Reporting`, `Resilience Testing`, `Third-Party Risk`, `ICT Third-Party Oversight`, `Information Sharing`.
 
 ## Stage 4: Reranking
 
-### Cross-Encoder Reranking
+After the agent finishes, all collected documents are passed through `rerankDocuments()` (Reciprocal Rank Fusion + BM25):
 
 ```javascript
-const rerankedDocs = await crossEncoderRerank(documents, query, {
-  topK: 10,
-  threshold: 0.3,
-});
+const rerankedDocs = rerankDocuments(agentResult.documents, searchQuery, 15);
 ```
 
-### BM25 Scoring
-
-```javascript
-const bm25Scores = calculateBM25Scores(documents, query);
-const combined = documents.map((doc, i) => ({
-  ...doc,
-  score: 0.7 * doc.semanticScore + 0.3 * bm25Scores[i],
-}));
-```
+This caps the context at the top-15 most relevant chunks regardless of how many the agent collected across multiple tool calls.
 
 ## Stage 5: Context Compression
 

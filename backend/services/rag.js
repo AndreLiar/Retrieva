@@ -29,10 +29,12 @@ import { buildQdrantFilter, retrieveAdditionalDocuments } from './rag/queryRetri
 import { trackQueryAnalytics, buildRAGResult } from './rag/analyticsTracker.js';
 import { guardrailsConfig } from '../config/guardrails.js';
 
+// Agentic retrieval
+import { runRetrievalAgent } from './ragAgent.js';
+
 // Intent-aware routing
 import { IntentType } from './intent/intentClassifier.js';
 import { queryRouter } from './intent/queryRouter.js';
-import { executeStrategy } from './intent/retrievalStrategies.js';
 import { CHITCHAT_RESPONSES, OUT_OF_SCOPE_RESPONSE } from './intent/intentHandlers.js';
 
 // M3 Compressed Memory Layer
@@ -134,7 +136,7 @@ class RAGService {
   }
 
   async _doInit() {
-    this.logger.info('Initializing RAG system for Notion...', { service: 'rag' });
+    this.logger.info('Initializing RAG system...', { service: 'rag' });
 
     // Initialize LLM - use injected LLM or get from provider factory
     if (this._injectedLLM) {
@@ -569,7 +571,7 @@ class RAGService {
 
     const searchQuery = await this._rephraseQuery(question, history);
 
-    // Resolve Notion workspace UUID for Qdrant filtering
+    // Resolve workspace UUID for Qdrant filtering
     const qdrantWorkspaceId = await this._resolveQdrantWorkspaceId(workspaceId);
 
     let qdrantFilter = null;
@@ -593,28 +595,35 @@ class RAGService {
       throw error;
     }
 
-    emit('status', { message: 'Searching documents...' });
+    // Agentic retrieval — agent autonomously decides what to search and how many times
+    const agentResult = await runRetrievalAgent({
+      question: searchQuery,
+      vectorStore: this.vectorStore,
+      workspaceId: qdrantWorkspaceId,
+      qdrantFilter,
+      history,
+      emit,
+      llm: this.llm,
+    });
 
-    // Execute intent-aware retrieval strategy
-    const retrieval = await executeStrategy(
-      routing.strategy,
-      searchQuery,
-      this.retriever,
-      this.vectorStore,
-      routing.config,
-      {
-        filter: qdrantFilter,
-        entities: routing.entities || [],
-        workspaceId: qdrantWorkspaceId,
-      }
-    );
+    // Rerank the agent's collected documents by relevance to the search query
+    const rerankedDocs = rerankDocuments(agentResult.documents, searchQuery, 15);
 
-    this.logger.info('Strategy execution complete', {
+    const retrieval = {
+      documents: rerankedDocs,
+      allQueries: [searchQuery],
+      metrics: {
+        strategy: 'agent',
+        docsCollected: agentResult.documents.length,
+        docsAfterRerank: rerankedDocs.length,
+      },
+    };
+
+    this.logger.info('Agentic retrieval complete', {
       service: 'rag',
       requestId,
-      strategy: routing.strategy,
-      docsRetrieved: retrieval.documents.length,
-      metrics: retrieval.metrics,
+      docsCollected: agentResult.documents.length,
+      docsAfterRerank: rerankedDocs.length,
     });
 
     const { context: docContext, sources } = this._prepareContext(retrieval.documents);

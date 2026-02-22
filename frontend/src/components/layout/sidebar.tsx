@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { MessageSquare, PanelLeftClose, PanelLeft } from 'lucide-react';
+import { ShieldCheck, PanelLeftClose, PanelLeft } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -48,8 +48,8 @@ export function Sidebar() {
       {/* Header */}
       <div className="flex h-14 items-center border-b px-3">
         {!sidebarCollapsed && (
-          <Link href="/chat" className="flex items-center gap-2 font-semibold">
-            <MessageSquare className="h-6 w-6 text-primary" />
+          <Link href="/assessments" className="flex items-center gap-2 font-semibold">
+            <ShieldCheck className="h-6 w-6 text-primary" />
             <span>Retrieva</span>
           </Link>
         )}

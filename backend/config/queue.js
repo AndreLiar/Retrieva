@@ -75,6 +75,30 @@ export const mcpSyncQueue = new Queue('mcpSync', {
 });
 
 /**
+ * Queue for assessment file indexing and gap analysis jobs
+ * Handles:
+ * - Parsing + embedding uploaded vendor documents
+ * - Running the DORA gap analysis agent after indexing
+ */
+export const assessmentQueue = new Queue('assessmentJobs', {
+  connection: redisConnection,
+  defaultJobOptions: {
+    attempts: 3,
+    backoff: {
+      type: 'exponential',
+      delay: 30000,
+    },
+    removeOnComplete: {
+      count: 50,
+      age: 7 * 24 * 60 * 60, // Keep for 7 days
+    },
+    removeOnFail: {
+      count: 100,
+    },
+  },
+});
+
+/**
  * Queue for memory decay and archival operations
  * Handles:
  * - Archiving old conversations
@@ -156,6 +180,7 @@ const queueEventListeners = {
   documentIndex: null,
   memoryDecay: null,
   mcpSync: null,
+  assessmentJobs: null,
 };
 
 // Log queue events with stored references
@@ -179,6 +204,11 @@ queueEventListeners.mcpSync = (error) => {
 };
 mcpSyncQueue.on('error', queueEventListeners.mcpSync);
 
+queueEventListeners.assessmentJobs = (error) => {
+  logger.error('Assessment jobs queue error:', { error: error.message, stack: error.stack });
+};
+assessmentQueue.on('error', queueEventListeners.assessmentJobs);
+
 logger.info('BullMQ queues initialized successfully');
 
 /**
@@ -201,11 +231,16 @@ export const closeQueues = async () => {
       mcpSyncQueue.off('error', queueEventListeners.mcpSync);
     }
 
+    if (queueEventListeners.assessmentJobs) {
+      assessmentQueue.off('error', queueEventListeners.assessmentJobs);
+    }
+
     await Promise.all([
       notionSyncQueue.close(),
       documentIndexQueue.close(),
       memoryDecayQueue.close(),
       mcpSyncQueue.close(),
+      assessmentQueue.close(),
     ]);
     logger.info('All queues closed gracefully');
   } catch (error) {
@@ -218,6 +253,7 @@ export default {
   documentIndexQueue,
   memoryDecayQueue,
   mcpSyncQueue,
+  assessmentQueue,
   scheduleMemoryDecayJob,
   closeQueues,
 };
