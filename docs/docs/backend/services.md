@@ -311,7 +311,7 @@ export function tenantIsolationPlugin(schema) {
 
 ### Email Service (`services/emailService.js`)
 
-Sends transactional emails via the **Resend HTTP API**.
+Sends transactional emails via the **Resend HTTP API**. In **microservice mode** (`EMAIL_SERVICE_URL` is set), this file proxies HTTP calls to the standalone `email-service` (port 3008). When the env var is unset, it calls the Resend HTTP API directly in-process.
 
 ```javascript
 export const emailService = {
@@ -331,6 +331,7 @@ export const emailService = {
 | `RESEND_API_KEY` | - | Resend API key (required for sending) |
 | `SMTP_FROM_NAME` | `RAG Platform` | Display name in "From" field |
 | `RESEND_FROM_EMAIL` | `noreply@retrieva.online` | Sender address (must match verified domain) |
+| `EMAIL_SERVICE_URL` | - | When set, proxy to standalone email-service instead of calling Resend directly |
 
 :::note
 If `RESEND_API_KEY` is not set, the service logs a warning and skips sending. This makes email optional for local development.
@@ -339,6 +340,8 @@ If `RESEND_API_KEY` is not set, the service logs a warning and skips sending. Th
 ### Notification Service (`services/notificationService.js`)
 
 Dual-channel delivery: **WebSocket** (real-time) + **email** (important events).
+
+In **microservice mode** (`NOTIFICATION_SERVICE_URL` is set), this file is a thin HTTP proxy to the standalone `notification-service` (port 3009) which owns the Notification MongoDB collection and Redis pub/sub publishing. When unset, in-process logic is used (no docker-compose required for local dev).
 
 ```javascript
 export const notificationService = {
@@ -352,14 +355,32 @@ export const notificationService = {
 };
 ```
 
-**Delivery logic:**
+**Delivery logic (both modes):**
 
 1. Persist notification in MongoDB
-2. If user is online, deliver via WebSocket (`socket.io`)
+2. If user is online, deliver via WebSocket (in-process emit or Redis pub/sub publish)
 3. If user has email enabled for the notification type **and** priority is not LOW, send email
 4. Urgent/high-priority notifications always attempt email delivery
 
 User preferences are checked per notification type and channel (`inApp`, `email`, `push`).
+
+### Real-Time / Presence Service
+
+Socket.io real-time communication and user presence tracking. Like email and notifications, this follows the **strangler fig** pattern.
+
+**`services/socketService.js`** — When `REALTIME_SERVICE_URL` is set, the monolith publishes events to Redis channels instead of maintaining a Socket.io server. When unset, the full Socket.io server runs in-process (same as before the extraction).
+
+**`services/presenceService.js`** — When `REALTIME_SERVICE_URL` is set, all write operations are no-ops (the `realtime-service` owns presence state) and reads query Redis hashes directly. When unset, an in-memory Map is used.
+
+| Function | Remote mode | Local mode |
+|----------|-------------|------------|
+| `emitToUser()` | Publishes to `realtime:user:{userId}` Redis channel | Emits directly via Socket.io |
+| `emitToWorkspace()` | Publishes to `realtime:workspace:{id}` Redis channel | Emits to Socket.io room |
+| `isUserOnline()` | Reads `presence:user:{userId}` Redis HASH (async) | Checks in-memory Map (sync) |
+| `userConnected()` | no-op | Updates in-memory Map |
+| `getWorkspacePresence()` | Reads `presence:workspace:{id}:members` Redis HASH | Reads in-memory Map |
+
+**Analytics socket events** (`analytics:subscribe`, `analytics:get`) are no-ops in the standalone `realtime-service` — the `liveAnalyticsService` remains in the monolith and is only available in local mode.
 
 ## Service Dependencies
 

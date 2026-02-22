@@ -347,6 +347,9 @@ rag/
 │   │   │   └── hooks/         # Custom React hooks
 │   │   └── types/             # TypeScript definitions
 │   └── public/                # Static assets
+├── email-service/             # Standalone email microservice (port 3008)
+├── notification-service/      # Standalone notification microservice (port 3009)
+├── realtime-service/          # Standalone Socket.io / presence microservice (port 3010)
 ├── ragas-service/             # Python RAGAS evaluation service
 ├── infra/                     # Terraform infrastructure
 ├── docs/                      # Docusaurus documentation
@@ -598,9 +601,44 @@ Multiple safeguards against LLM misbehavior:
 - `GET /health` - Service health check
 - `GET /api-docs` - Swagger UI
 
+## Microservice Architecture
+
+The platform uses a **strangler fig** pattern to extract functionality into standalone services while keeping the monolith fully functional without Docker. When a `*_SERVICE_URL` env var is set, the monolith delegates to the microservice; otherwise it falls back to built-in in-process logic.
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         Monolith (port 3007)                     │
+│  emailService.js ──────────── EMAIL_SERVICE_URL ──────────────► email-service (3008)
+│  notificationService.js ───── NOTIFICATION_SERVICE_URL ───────► notification-service (3009)
+│  socketService.js ─────────── REALTIME_SERVICE_URL ───────────► realtime-service (3010)
+│  presenceService.js ──────────────── ▲                          │
+└──────────────────────────────────────┼──────────────────────────┘
+                                       │ Redis pub/sub
+                              ┌────────┴────────┐
+                              │      Redis       │
+                              │  ┌────────────┐  │
+                              │  │  Channels  │  │
+                              │  │ realtime:* │  │
+                              │  ├────────────┤  │
+                              │  │   Hashes   │  │
+                              │  │ presence:* │  │
+                              │  └────────────┘  │
+                              └─────────────────-┘
+```
+
+### Microservices Summary
+
+| Service | Port | Env var trigger | Responsibility |
+|---------|------|----------------|----------------|
+| `email-service` | 3008 | `EMAIL_SERVICE_URL` | Transactional email via Resend HTTP API |
+| `notification-service` | 3009 | `NOTIFICATION_SERVICE_URL` | Notification CRUD, delivery, user preferences |
+| `realtime-service` | 3010 | `REALTIME_SERVICE_URL` | Socket.io server, presence state (Redis HASH) |
+
+See [Docker Deployment](../deployment/docker) for Redis pub/sub channel and presence key schemas.
+
 ## Real-Time Features
 
-The platform uses **Socket.io** for real-time communication:
+The platform uses **Socket.io** for real-time communication. In local mode (no `REALTIME_SERVICE_URL`), Socket.io runs in-process in the monolith. In microservice mode, clients connect to the `realtime-service` directly and the monolith publishes events via Redis pub/sub.
 
 ### Events (Server → Client)
 | Event | Description |
@@ -608,15 +646,20 @@ The platform uses **Socket.io** for real-time communication:
 | `sync:progress` | Sync job progress updates |
 | `sync:complete` | Sync job completed |
 | `sync:error` | Sync job failed |
-| `notification` | New notification |
+| `notification:new` | New in-app notification |
 | `presence:update` | User presence changes |
-| `analytics:live` | Live analytics updates |
+| `presence:typing-start` | User started typing |
+| `presence:typing-stop` | User stopped typing |
+| `analytics:live` | Live analytics updates (local mode only) |
 
 ### Events (Client → Server)
 | Event | Description |
 |-------|-------------|
 | `join:workspace` | Join workspace room |
 | `leave:workspace` | Leave workspace room |
+| `presence:status` | Update status (online/away/busy) |
+| `presence:typing-start` | Start typing indicator |
+| `presence:typing-stop` | Stop typing indicator |
 | `presence:ping` | Heartbeat for presence |
 
 ## Monitoring & Evaluation

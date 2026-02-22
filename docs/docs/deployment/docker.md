@@ -11,26 +11,33 @@ Container-based deployment using Docker and Docker Compose.
 ### Development Stack
 
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                    Docker Compose Stack (Development)                     │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│   ┌──────────────┐     ┌──────────────┐     ┌──────────────┐           │
-│   │   Backend    │     │ RAGAS Service│     │   Frontend   │           │
-│   │  (Node.js)   │     │   (Python)   │     │  (Next.js)   │           │
-│   │  Port: 3007  │     │  Port: 8001  │     │  Port: 3000  │           │
-│   └──────┬───────┘     └──────────────┘     └──────────────┘           │
-│          │                                                               │
-│   ┌──────┴───────────────────────────────────────────────┐              │
-│   │                     rag-network                       │              │
-│   └──────┬───────────┬───────────────┬───────────────────┘              │
-│          │           │               │                                   │
-│   ┌──────┴─────┐ ┌───┴────┐   ┌─────┴─────┐                            │
-│   │  MongoDB   │ │ Redis  │   │  Qdrant   │                            │
-│   │ Port:27017 │ │Port:6378│   │Port: 6333 │                            │
-│   └────────────┘ └────────┘   └───────────┘                            │
-│                                                                          │
-└─────────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                      Docker Compose Stack (Development)                        │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                                │
+│  ┌─────────────┐  ┌─────────────┐  ┌──────────────┐  ┌──────────────┐       │
+│  │   Backend   │  │   Frontend  │  │ RAGAS Service│  │ MinIO (S3)   │       │
+│  │  Port: 3007 │  │  Port: 3000 │  │  Port: 8001  │  │  Port: 9000  │       │
+│  └──────┬──────┘  └─────────────┘  └──────────────┘  └──────────────┘       │
+│         │                                                                      │
+│  ┌──────┴──────────────────────────────────────────────────────────┐          │
+│  │                        Microservices                             │          │
+│  │  ┌──────────────┐  ┌──────────────────┐  ┌──────────────────┐  │          │
+│  │  │ email-service│  │notification-svc  │  │  realtime-svc    │  │          │
+│  │  │  Port: 3008  │  │   Port: 3009     │  │   Port: 3010     │  │          │
+│  │  └──────────────┘  └──────────────────┘  └──────────────────┘  │          │
+│  └─────────────────────────────────────────────────────────────────┘          │
+│                                                                                │
+│  ┌────────────────────────────────────────────────────────────────┐           │
+│  │                         rag-network                             │           │
+│  └──────────────┬──────────────────────────────────────┬──────────┘           │
+│                 │                                        │                     │
+│  ┌──────────────┴──┐  ┌────────────┐          ┌────────┴────┐                │
+│  │    MongoDB      │  │   Redis    │          │   Qdrant    │                │
+│  │   Port: 27017   │  │ Port: 6378 │          │  Port: 6333 │                │
+│  └─────────────────┘  └────────────┘          └─────────────┘                │
+│                                                                                │
+└──────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### Production Stack
@@ -296,6 +303,37 @@ docker-compose build backend
 docker-compose build --no-cache backend
 ```
 
+## Microservices
+
+Phase 1–2 extractions add three lightweight services alongside the monolith. Each uses the same `strangler fig` pattern — the monolith automatically falls back to its built-in in-process logic when the corresponding `*_SERVICE_URL` env var is **not** set.
+
+| Service | Port | Env var | Fallback |
+|---------|------|---------|---------|
+| `email-service` | 3008 | `EMAIL_SERVICE_URL` | In-process Resend HTTP calls |
+| `notification-service` | 3009 | `NOTIFICATION_SERVICE_URL` | In-process DB + socket delivery |
+| `realtime-service` | 3010 | `REALTIME_SERVICE_URL` | In-process Socket.io server |
+
+### Redis pub/sub channels (realtime-service)
+
+When `REALTIME_SERVICE_URL` is set, the monolith publishes socket events to Redis instead of emitting directly. The realtime-service subscribes and forwards them to connected clients.
+
+| Channel | Direction | Purpose |
+|---------|-----------|---------|
+| `realtime:user:{userId}` | monolith → realtime-svc | Emit to a specific user |
+| `realtime:workspace:{workspaceId}` | monolith → realtime-svc | Emit to a workspace room |
+| `realtime:query:{queryId}` | monolith → realtime-svc | Emit to a query room |
+| `realtime:broadcast` | monolith → realtime-svc | Broadcast to all connected sockets |
+
+### Redis presence keys (realtime-service → monolith reads)
+
+The realtime-service writes presence state to Redis hashes; the monolith presenceService reads them for query decisions (e.g. whether to email a notification).
+
+| Key | Type | Fields |
+|-----|------|--------|
+| `presence:user:{userId}` | HASH | `status`, `lastSeen`, `name`, `email`, `connections` — expires 600 s |
+| `presence:workspace:{workspaceId}:members` | HASH | `{userId}` → JSON presence data |
+| `presence:typing:{workspaceId}:{conversationId}` | HASH | `{userId}` → JSON typing data — expires 30 s |
+
 ## Health Checks
 
 ### MongoDB
@@ -314,6 +352,14 @@ docker exec rag-redis redis-cli ping
 
 ```bash
 curl http://localhost:3007/health
+```
+
+### Microservices
+
+```bash
+curl http://localhost:3008/health   # email-service
+curl http://localhost:3009/health   # notification-service
+curl http://localhost:3010/health   # realtime-service
 ```
 
 ### Qdrant
