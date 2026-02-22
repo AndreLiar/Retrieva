@@ -28,6 +28,7 @@ import pipelineRoutes from './routes/pipelineRoutes.js';
 import mcpDataSourceRoutes from './routes/mcpDataSourceRoutes.js';
 import assessmentRoutes from './routes/assessmentRoutes.js';
 import dataSourceRoutes from './routes/dataSourceRoutes.js';
+import complianceRoutes from './routes/complianceRoutes.js';
 import logger from './config/logger.js';
 import { globalErrorHandler } from './utils/index.js';
 import { swaggerDocument } from './config/swagger.js';
@@ -273,6 +274,7 @@ app.use('/api/v1/pipeline', pipelineRoutes);
 app.use('/api/v1/mcp-sources', mcpDataSourceRoutes);
 app.use('/api/v1/assessments', assessmentRoutes);
 app.use('/api/v1/data-sources', dataSourceRoutes);
+app.use('/api/v1/compliance', complianceRoutes);
 
 // OpenAPI/Swagger documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));

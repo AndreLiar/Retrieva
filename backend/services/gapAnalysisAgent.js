@@ -28,10 +28,13 @@ const QDRANT_API_KEY = process.env.QDRANT_API_KEY;
 export const COMPLIANCE_KB_COLLECTION = 'compliance_kb';
 
 const DORA_DOMAINS = [
+  'General Provisions',
   'ICT Risk Management',
   'Incident Reporting',
   'Resilience Testing',
   'Third-Party Risk',
+  'ICT Third-Party Oversight',
+  'Information Sharing',
 ];
 
 function getQdrantClient() {
@@ -47,7 +50,15 @@ function getQdrantClient() {
 const gapItemSchema = z.object({
   article: z.string().describe('DORA article reference, e.g. "Article 30(3)(e)"'),
   domain: z
-    .enum(['ICT Risk Management', 'Incident Reporting', 'Resilience Testing', 'Third-Party Risk'])
+    .enum([
+      'General Provisions',
+      'ICT Risk Management',
+      'Incident Reporting',
+      'Resilience Testing',
+      'Third-Party Risk',
+      'ICT Third-Party Oversight',
+      'Information Sharing',
+    ])
     .describe('The DORA compliance domain'),
   requirement: z.string().describe('The specific DORA obligation being assessed (1–2 sentences)'),
   vendorCoverage: z
@@ -69,7 +80,7 @@ const recordGapAnalysisSchema = z.object({
   gaps: z
     .array(gapItemSchema)
     .describe(
-      'Complete list of gap assessments — at least 10 entries covering critical Articles 28–30'
+      'Complete list of gap assessments — at least 15 entries spanning all DORA chapters (Articles 5–49)'
     ),
   overallRisk: z
     .enum(['High', 'Medium', 'Low'])
@@ -95,16 +106,16 @@ You have three tools available:
 
 Follow this methodology:
 1. Search vendor documents with 6–8 targeted queries covering: security policies, incident management, business continuity/DR, audit rights, data protection, SLAs, subcontracting, and vulnerability management.
-2. Search DORA requirements for each of the four domains: ICT Risk Management, Incident Reporting, Resilience Testing, Third-Party Risk.
-3. Reason about the evidence gathered and identify compliance gaps.
+2. Search DORA requirements for each of the seven domains: General Provisions, ICT Risk Management, Incident Reporting, Resilience Testing, Third-Party Risk, ICT Third-Party Oversight, and Information Sharing.
+3. Reason about the evidence gathered and identify compliance gaps across all domains.
 4. Call record_gap_analysis ONCE with your complete structured findings.
 
 Scoring guidance:
 - Mark as "covered" ONLY when vendor documentation explicitly and clearly addresses the obligation.
 - Mark as "partial" when the vendor mentions the topic but incompletely or vaguely.
 - Mark as "missing" when no relevant evidence was found.
-- Focus especially on Articles 28–30 (third-party contractual requirements) — these are mandatory for all financial entity contracts with ICT providers.
-- Produce at least 10 specific gap entries.`;
+- Focus especially on Articles 28–30 (third-party contractual requirements) and Articles 31–44 (ICT third-party oversight) — these are mandatory for all financial entity contracts with ICT providers.
+- Produce at least 15 specific gap entries spanning all relevant domains.`;
 
 // ---------------------------------------------------------------------------
 // Build LangChain tools (closures capture assessmentId, client, embeddings)
@@ -182,10 +193,13 @@ function buildTools(assessmentId, client) {
       schema: z.object({
         domain: z
           .enum([
+            'General Provisions',
             'ICT Risk Management',
             'Incident Reporting',
             'Resilience Testing',
             'Third-Party Risk',
+            'ICT Third-Party Oversight',
+            'Information Sharing',
           ])
           .describe('The DORA domain to retrieve requirements for'),
       }),
@@ -242,7 +256,7 @@ async function runReActAgent(assessment, emit) {
 
   const userMessage = `Conduct a full DORA (Regulation EU 2022/2554) compliance gap analysis for the third-party ICT vendor: "${assessment.vendorName}".
 
-Search vendor documents thoroughly, retrieve DORA requirements for all four domains, then call record_gap_analysis with your complete structured findings.`;
+Search vendor documents thoroughly, retrieve DORA requirements for all seven domains (General Provisions, ICT Risk Management, Incident Reporting, Resilience Testing, Third-Party Risk, ICT Third-Party Oversight, Information Sharing), then call record_gap_analysis with your complete structured findings covering all applicable chapters.`;
 
   try {
     await agent.invoke(
@@ -367,7 +381,7 @@ Respond ONLY with a valid JSON object:
   "domainsAnalyzed": ["..."]
 }`;
 
-  const userPrompt = `Vendor: ${assessment.vendorName}\n\nDORA OBLIGATIONS:\n${doraContext}\n\nVENDOR EVIDENCE:\n${vendorContext}\n\nProduce a gap analysis with at least 10 gaps covering Articles 28-30.`;
+  const userPrompt = `Vendor: ${assessment.vendorName}\n\nDORA OBLIGATIONS:\n${doraContext}\n\nVENDOR EVIDENCE:\n${vendorContext}\n\nProduce a gap analysis with at least 15 gaps spanning all DORA chapters (Articles 5–49).`;
 
   const response = await llm.invoke([
     { role: 'system', content: systemPrompt },
