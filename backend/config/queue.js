@@ -75,6 +75,28 @@ export const mcpSyncQueue = new Queue('mcpSync', {
 });
 
 /**
+ * Queue for generic data source synchronization jobs (file, url, confluence).
+ * Each job fetches/chunks content and enqueues to documentIndexQueue.
+ */
+export const dataSourceSyncQueue = new Queue('dataSourceSync', {
+  connection: redisConnection,
+  defaultJobOptions: {
+    attempts: SYNC_MAX_RETRIES,
+    backoff: {
+      type: 'exponential',
+      delay: 60000, // Start with 1 minute
+    },
+    removeOnComplete: {
+      count: 20,
+      age: 3 * 24 * 60 * 60, // Remove after 3 days
+    },
+    removeOnFail: {
+      count: 50,
+    },
+  },
+});
+
+/**
  * Queue for assessment file indexing and gap analysis jobs
  * Handles:
  * - Parsing + embedding uploaded vendor documents
@@ -181,6 +203,7 @@ const queueEventListeners = {
   memoryDecay: null,
   mcpSync: null,
   assessmentJobs: null,
+  dataSourceSync: null,
 };
 
 // Log queue events with stored references
@@ -209,6 +232,11 @@ queueEventListeners.assessmentJobs = (error) => {
 };
 assessmentQueue.on('error', queueEventListeners.assessmentJobs);
 
+queueEventListeners.dataSourceSync = (error) => {
+  logger.error('Data source sync queue error:', { error: error.message, stack: error.stack });
+};
+dataSourceSyncQueue.on('error', queueEventListeners.dataSourceSync);
+
 logger.info('BullMQ queues initialized successfully');
 
 /**
@@ -235,12 +263,17 @@ export const closeQueues = async () => {
       assessmentQueue.off('error', queueEventListeners.assessmentJobs);
     }
 
+    if (queueEventListeners.dataSourceSync) {
+      dataSourceSyncQueue.off('error', queueEventListeners.dataSourceSync);
+    }
+
     await Promise.all([
       notionSyncQueue.close(),
       documentIndexQueue.close(),
       memoryDecayQueue.close(),
       mcpSyncQueue.close(),
       assessmentQueue.close(),
+      dataSourceSyncQueue.close(),
     ]);
     logger.info('All queues closed gracefully');
   } catch (error) {
@@ -254,6 +287,7 @@ export default {
   memoryDecayQueue,
   mcpSyncQueue,
   assessmentQueue,
+  dataSourceSyncQueue,
   scheduleMemoryDecayJob,
   closeQueues,
 };

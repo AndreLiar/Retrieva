@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -18,9 +19,14 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { notionApi } from '@/lib/api';
+import { sourcesApi } from '@/lib/api/sources';
 import { useActiveWorkspace } from '@/lib/stores/workspace-store';
 import { RequirePermission } from '@/components/common';
 import { NotionWorkspaceCard, TokenHealthBanner } from '@/components/notion';
+import { DataSourceCard } from '@/components/sources/DataSourceCard';
+import { FileUploadDialog } from '@/components/sources/FileUploadDialog';
+import { UrlAddDialog } from '@/components/sources/UrlAddDialog';
+import { ConfluenceConnectDialog } from '@/components/sources/ConfluenceConnectDialog';
 
 // ─── Notion source icon ───────────────────────────────────────────────────────
 function NotionIcon({ className }: { className?: string }) {
@@ -31,7 +37,7 @@ function NotionIcon({ className }: { className?: string }) {
   );
 }
 
-// ─── Status badge helper ──────────────────────────────────────────────────────
+// ─── Status badge ─────────────────────────────────────────────────────────────
 function SyncStatusBadge({ status }: { status?: string }) {
   if (!status || status === 'idle')
     return (
@@ -60,50 +66,34 @@ function SyncStatusBadge({ status }: { status?: string }) {
   return <Badge variant="outline">{status}</Badge>;
 }
 
-// ─── Coming-soon source card ──────────────────────────────────────────────────
-function ComingSoonSourceCard({
-  icon,
-  title,
-  description,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-}) {
-  return (
-    <Card className="opacity-60 border-dashed">
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-muted-foreground">{icon}</span>
-            <CardTitle className="text-base">{title}</CardTitle>
-          </div>
-          <Badge variant="outline" className="text-xs">
-            Coming soon
-          </Badge>
-        </div>
-        <CardDescription className="text-xs">{description}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Button size="sm" variant="outline" disabled className="w-full">
-          <Plus className="h-3 w-3 mr-1" /> Connect
-        </Button>
-      </CardContent>
-    </Card>
-  );
-}
+// Suppress unused import warning — SyncStatusBadge uses these icons
+void SyncStatusBadge;
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function SourcesPage() {
   const router = useRouter();
   const activeWorkspace = useActiveWorkspace();
 
-  const { data: notionWorkspaces, isLoading } = useQuery({
+  // Dialog state
+  const [fileDialogOpen, setFileDialogOpen] = useState(false);
+  const [urlDialogOpen, setUrlDialogOpen] = useState(false);
+  const [confluenceDialogOpen, setConfluenceDialogOpen] = useState(false);
+
+  // Notion workspaces
+  const { data: notionWorkspaces, isLoading: notionLoading } = useQuery({
     queryKey: ['notion-workspaces', activeWorkspace?.id],
     queryFn: async () => {
       const response = await notionApi.listWorkspaces();
       return response.data?.workspaces || [];
     },
+    enabled: !!activeWorkspace?.id,
+    refetchInterval: 10000,
+  });
+
+  // Generic data sources (file, url, confluence)
+  const { data: dataSources, isLoading: sourcesLoading } = useQuery({
+    queryKey: ['data-sources', activeWorkspace?.id],
+    queryFn: () => sourcesApi.list(activeWorkspace!.id),
     enabled: !!activeWorkspace?.id,
     refetchInterval: 10000,
   });
@@ -115,6 +105,10 @@ export default function SourcesPage() {
       </div>
     );
   }
+
+  const fileSources = (dataSources || []).filter((d) => d.sourceType === 'file');
+  const urlSources = (dataSources || []).filter((d) => d.sourceType === 'url');
+  const confluenceSources = (dataSources || []).filter((d) => d.sourceType === 'confluence');
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
@@ -148,7 +142,7 @@ export default function SourcesPage() {
           </RequirePermission>
         </div>
 
-        {isLoading ? (
+        {notionLoading ? (
           <div className="grid gap-4 md:grid-cols-2">
             {[...Array(2)].map((_, i) => (
               <Skeleton key={i} className="h-32" />
@@ -182,26 +176,124 @@ export default function SourcesPage() {
         )}
       </section>
 
-      {/* ── Other source types (coming soon) ───────────────────────────── */}
-      <section>
-        <h2 className="text-lg font-medium mb-4">More sources</h2>
-        <div className="grid gap-4 md:grid-cols-3">
-          <ComingSoonSourceCard
-            icon={<FileText className="h-5 w-5" />}
-            title="File Upload"
-            description="Upload PDF, DOCX, or XLSX documents directly into the knowledge base."
-          />
-          <ComingSoonSourceCard
-            icon={<Layers className="h-5 w-5" />}
-            title="Confluence"
-            description="Connect Confluence Cloud spaces to index your internal wiki pages."
-          />
-          <ComingSoonSourceCard
-            icon={<Globe className="h-5 w-5" />}
-            title="Web URL"
-            description="Crawl and index public web pages or regulatory document URLs."
-          />
+      {/* ── File Upload ─────────────────────────────────────────────────── */}
+      <section className="mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <FileText className="h-5 w-5 text-muted-foreground" />
+            <h2 className="text-lg font-medium">File Upload</h2>
+            {fileSources.length > 0 && (
+              <Badge variant="secondary">{fileSources.length}</Badge>
+            )}
+          </div>
+          <RequirePermission permission="canTriggerSync">
+            <Button size="sm" onClick={() => setFileDialogOpen(true)}>
+              <Plus className="h-4 w-4 mr-1" /> Upload file
+            </Button>
+          </RequirePermission>
         </div>
+
+        {sourcesLoading ? (
+          <Skeleton className="h-24" />
+        ) : fileSources.length === 0 ? (
+          <div className="text-center py-8 border rounded-lg bg-muted/30 border-dashed">
+            <FileText className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+            <p className="text-sm text-muted-foreground mb-3">
+              No files uploaded yet. Upload PDF, DOCX, or XLSX documents directly into the knowledge base.
+            </p>
+            <RequirePermission permission="canTriggerSync">
+              <Button size="sm" variant="outline" onClick={() => setFileDialogOpen(true)}>
+                <Plus className="h-3 w-3 mr-1" /> Upload file
+              </Button>
+            </RequirePermission>
+          </div>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2">
+            {fileSources.map((ds) => (
+              <DataSourceCard key={ds._id} dataSource={ds} workspaceId={activeWorkspace.id} />
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* ── Web URL ─────────────────────────────────────────────────────── */}
+      <section className="mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Globe className="h-5 w-5 text-muted-foreground" />
+            <h2 className="text-lg font-medium">Web URL</h2>
+            {urlSources.length > 0 && (
+              <Badge variant="secondary">{urlSources.length}</Badge>
+            )}
+          </div>
+          <RequirePermission permission="canTriggerSync">
+            <Button size="sm" onClick={() => setUrlDialogOpen(true)}>
+              <Plus className="h-4 w-4 mr-1" /> Add URL
+            </Button>
+          </RequirePermission>
+        </div>
+
+        {sourcesLoading ? (
+          <Skeleton className="h-24" />
+        ) : urlSources.length === 0 ? (
+          <div className="text-center py-8 border rounded-lg bg-muted/30 border-dashed">
+            <Globe className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+            <p className="text-sm text-muted-foreground mb-3">
+              No URLs added yet. Crawl and index public web pages or regulatory document URLs.
+            </p>
+            <RequirePermission permission="canTriggerSync">
+              <Button size="sm" variant="outline" onClick={() => setUrlDialogOpen(true)}>
+                <Plus className="h-3 w-3 mr-1" /> Add URL
+              </Button>
+            </RequirePermission>
+          </div>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2">
+            {urlSources.map((ds) => (
+              <DataSourceCard key={ds._id} dataSource={ds} workspaceId={activeWorkspace.id} />
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* ── Confluence ──────────────────────────────────────────────────── */}
+      <section className="mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Layers className="h-5 w-5 text-muted-foreground" />
+            <h2 className="text-lg font-medium">Confluence</h2>
+            {confluenceSources.length > 0 && (
+              <Badge variant="secondary">{confluenceSources.length}</Badge>
+            )}
+          </div>
+          <RequirePermission permission="canTriggerSync">
+            <Button size="sm" onClick={() => setConfluenceDialogOpen(true)}>
+              <Plus className="h-4 w-4 mr-1" /> Connect space
+            </Button>
+          </RequirePermission>
+        </div>
+
+        {sourcesLoading ? (
+          <Skeleton className="h-24" />
+        ) : confluenceSources.length === 0 ? (
+          <div className="text-center py-8 border rounded-lg bg-muted/30 border-dashed">
+            <Layers className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+            <p className="text-sm text-muted-foreground mb-3">
+              No Confluence spaces connected yet. Connect Confluence Cloud spaces to index your internal wiki pages.
+            </p>
+            <RequirePermission permission="canTriggerSync">
+              <Button size="sm" variant="outline" onClick={() => setConfluenceDialogOpen(true)}>
+                <Plus className="h-3 w-3 mr-1" /> Connect space
+              </Button>
+            </RequirePermission>
+          </div>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2">
+            {confluenceSources.map((ds) => (
+              <DataSourceCard key={ds._id} dataSource={ds} workspaceId={activeWorkspace.id} />
+            ))}
+          </div>
+        )}
       </section>
 
       {/* ── Link to legacy Notion page ──────────────────────────────────── */}
@@ -216,6 +308,23 @@ export default function SourcesPage() {
           Advanced Notion settings
         </Button>
       </div>
+
+      {/* ── Dialogs ─────────────────────────────────────────────────────── */}
+      <FileUploadDialog
+        open={fileDialogOpen}
+        onOpenChange={setFileDialogOpen}
+        workspaceId={activeWorkspace.id}
+      />
+      <UrlAddDialog
+        open={urlDialogOpen}
+        onOpenChange={setUrlDialogOpen}
+        workspaceId={activeWorkspace.id}
+      />
+      <ConfluenceConnectDialog
+        open={confluenceDialogOpen}
+        onOpenChange={setConfluenceDialogOpen}
+        workspaceId={activeWorkspace.id}
+      />
     </div>
   );
 }

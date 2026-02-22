@@ -82,6 +82,7 @@ const sidebars: SidebarsConfig = {
         'api/analytics',
         'api/mcp-sources',
         'api/assessments',
+        'api/data-sources',
       ],
     },
     'api/error-handling',

@@ -35,12 +35,13 @@ The platform uses BullMQ for background job processing. Workers handle long-runn
 
 ## Queue Configuration
 
-Three queues are defined in `config/queue.js`:
+Four queues are defined in `config/queue.js`:
 
 | Queue | Purpose | Retries | Initial backoff |
 |-------|---------|---------|-----------------|
 | `notionSync` | Notion workspace sync jobs | 3 | 60 s exponential |
 | `mcpSync` | MCP data source sync jobs | 3 | 60 s exponential |
+| `dataSourceSync` | File / URL / Confluence sync jobs | 3 | 60 s exponential |
 | `documentIndex` | Per-document embedding + Qdrant indexing | 3 | 30 s exponential |
 
 ```javascript
@@ -409,6 +410,75 @@ MCP_SYNC_BATCH_SIZE=20        # Documents per batch (default: 20)
 MCP_CONNECT_TIMEOUT_MS=15000  # MCP server connect timeout
 MCP_TOOL_TIMEOUT_MS=30000     # Per-tool call timeout
 ```
+
+## DataSource Sync Worker
+
+### Purpose
+
+Orchestrates ingestion for the three "bring your own content" source types: uploaded files, public URLs, and Confluence Cloud spaces. Mirrors the MCP Sync Worker pattern but requires no external MCP server.
+
+### Job Data
+
+```javascript
+{
+  dataSourceId: 'ds-abc123',   // DataSource._id
+  workspaceId:  'ws-123',
+  sourceType:   'file' | 'url' | 'confluence',
+}
+```
+
+### Worker Implementation
+
+```javascript
+// workers/dataSourceSyncWorker.js
+
+async function processDataSourceJob(job) {
+  const { dataSourceId, workspaceId, sourceType } = job.data;
+  const dataSource = await DataSource.findById(dataSourceId);
+
+  await dataSource.markSyncing(job.id);
+  emitSyncStart(workspaceId, 'datasource', { dataSourceId });
+
+  switch (sourceType) {
+    case 'file':
+      // FileAdapter reads config.parsedText (pre-parsed at upload),
+      // chunks via chunkText(), enqueues to documentIndexQueue,
+      // then clears parsedText from the DB.
+      await processFile(dataSource, workspaceId);
+      break;
+    case 'url':
+      // UrlCrawlerAdapter fetches the URL (axios, 10 s timeout),
+      // strips HTML, chunks, enqueues to documentIndexQueue.
+      await processUrl(dataSource, workspaceId);
+      break;
+    case 'confluence':
+      // ConfluenceAdapter paginates pages in the space via Confluence
+      // REST API v1, strips storage XML, chunks each page body.
+      await processConfluence(dataSource, workspaceId);
+      break;
+  }
+
+  await dataSource.markSynced(stats);
+  emitSyncComplete(workspaceId, { dataSourceId, ...stats });
+}
+
+export const dataSourceSyncWorker = new Worker('dataSourceSync', processDataSourceJob, {
+  concurrency: 2,
+  lockDuration: 600000,
+});
+```
+
+### Adapters
+
+| Adapter | File | Key dependency |
+|---------|------|----------------|
+| `FileAdapter` | `backend/adapters/FileAdapter.js` | `fileIngestionService.chunkText()` |
+| `UrlCrawlerAdapter` | `backend/adapters/UrlCrawlerAdapter.js` | `axios` (bundled) |
+| `ConfluenceAdapter` | `backend/adapters/ConfluenceAdapter.js` | Confluence Cloud REST API v1 |
+
+All adapters produce an array of `{ content, metadata }` chunks that are forwarded to `documentIndexQueue` for embedding + Qdrant upsert.
+
+---
 
 ## Dead Letter Queue
 

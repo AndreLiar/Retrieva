@@ -11,3 +11,5 @@ export { embeddingsApi } from './embeddings';
 export { pipelineApi } from './pipeline';
 export { assessmentsApi } from './assessments';
 export type { Assessment, Gap, GapLevel, OverallRisk, AssessmentStatus } from './assessments';
+export { sourcesApi } from './sources';
+export type { DataSource, DataSourceStatus, DataSourceType, CreateDataSourceDto } from './sources';
