@@ -161,10 +161,13 @@ function buildRetrievalTools(vectorStore, workspaceId, qdrantFilter, emit) {
         query: z.string().describe('Query about DORA compliance requirements or obligations'),
         domain: z
           .enum([
+            'General Provisions',
             'ICT Risk Management',
             'Incident Reporting',
             'Resilience Testing',
             'Third-Party Risk',
+            'ICT Third-Party Oversight',
+            'Information Sharing',
           ])
           .optional()
           .describe('Optional: filter by DORA domain'),

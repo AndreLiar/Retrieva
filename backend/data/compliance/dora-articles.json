@@ -1,6 +1,66 @@
 [
   {
     "regulation": "DORA",
+    "article": "Article 1",
+    "title": "Subject Matter",
+    "domain": "General Provisions",
+    "text": "This Regulation lays down uniform requirements concerning the security of network and information systems supporting the business processes of financial entities as follows:\n\n(a) requirements applicable to financial entities in relation to:\n(i) information and communication technology (ICT) risk management;\n(ii) reporting of major ICT-related incidents and notifying, on a voluntary basis, significant cyber threats to competent authorities;\n(iii) reporting of major operational or security payment-related incidents to competent authorities;\n(iv) digital operational resilience testing;\n(v) information and intelligence sharing in relation to cyber threats and vulnerabilities;\n(vi) measures for the sound management of ICT third-party risk;\n\n(b) requirements in relation to the contractual arrangements between ICT third-party service providers and financial entities;\n\n(c) rules on the establishment and conduct of the Oversight Framework for critical ICT third-party service providers when providing services to financial entities;\n\n(d) rules on cooperation among competent authorities, and rules on supervision and enforcement by competent authorities in relation to all matters covered by this Regulation.",
+    "obligations": [
+      "Comply with ICT risk management requirements",
+      "Report major ICT-related incidents to competent authorities",
+      "Voluntarily notify significant cyber threats to competent authorities",
+      "Report major operational or security payment-related incidents",
+      "Conduct digital operational resilience testing",
+      "Participate in information and intelligence sharing on cyber threats",
+      "Manage ICT third-party risk according to prescribed requirements",
+      "Ensure contractual arrangements with ICT third-party providers comply with regulatory requirements"
+    ]
+  },
+  {
+    "regulation": "DORA",
+    "article": "Article 2",
+    "title": "Scope",
+    "domain": "General Provisions",
+    "text": "1. This Regulation applies to the following entities:\n(a) credit institutions;\n(b) payment institutions, including payment institutions exempted pursuant to Directive (EU) 2015/2366;\n(c) account information service providers;\n(d) electronic money institutions;\n(e) investment firms;\n(f) crypto-asset service providers and issuers of asset-referenced tokens;\n(g) central securities depositories;\n(h) central counterparties;\n(i) trading venues;\n(j) trade repositories;\n(k) managers of alternative investment funds;\n(l) management companies;\n(m) data reporting service providers;\n(n) insurance and reinsurance undertakings;\n(o) insurance intermediaries, reinsurance intermediaries and ancillary insurance intermediaries;\n(p) institutions for occupational retirement provision;\n(q) credit rating agencies;\n(r) administrators of critical benchmarks;\n(s) crowdfunding service providers;\n(t) securitisation repositories;\n(u) ICT third-party service providers.\n\n2. For the purposes of this Regulation, entities referred to in paragraph 1, points (a) to (t), are referred to as 'financial entities'.\n\n3. This Regulation does not apply to:\n(a) managers of alternative investment funds referred to in Article 3(2) of Directive 2011/61/EU;\n(b) insurance and reinsurance undertakings referred to in Article 4 of Directive 2009/138/EC;\n(c) institutions for occupational retirement provision which operate pension schemes which together have less than 15 members in total;\n(d) natural or legal persons exempted pursuant to Articles 2 and 3 of Directive 2014/65/EU;\n(e) insurance intermediaries, reinsurance intermediaries and ancillary insurance intermediaries which are microenterprises or small or medium-sized enterprises;\n(f) post office giro institutions.",
+    "obligations": [
+      "Identify whether the entity falls within DORA scope",
+      "Apply DORA requirements across credit institutions, payment institutions, investment firms, insurance undertakings and other financial entities",
+      "ICT third-party service providers subject to oversight framework provisions",
+      "Verify applicability of exemptions for microenterprises and specified categories"
+    ]
+  },
+  {
+    "regulation": "DORA",
+    "article": "Article 3",
+    "title": "Definitions",
+    "domain": "General Provisions",
+    "text": "For the purposes of this Regulation, the following definitions apply:\n\n'digital operational resilience' means the ability of a financial entity to build, assure and review its operational integrity and reliability by ensuring, either directly or indirectly through the use of services provided by ICT third-party service providers, the full range of ICT-related capabilities needed to address the security of the network and information systems which a financial entity uses, and which support the continued provision of financial services and their quality.\n\n'ICT risk' means any reasonably identifiable circumstance in relation to the use of network and information systems, which, if materialised, may compromise the security of the network and information systems, of any technology-dependent tool or process, of operations and processes, or of the provision of services, by producing adverse effects in the digital or physical environment.\n\n'ICT-related incident' means an unplanned event or series of related events that compromises the security of the network and information systems, and has an adverse impact, or is likely to have an adverse impact, on the availability, authenticity, integrity or confidentiality of data.\n\n'major ICT-related incident' means an ICT-related incident that has a high adverse impact on the network and information systems that support critical or important functions of the financial entity.\n\n'significant cyber threat' means a cyber threat with the technical characteristics of a cyber threat that is likely to have severe impacts on the network and information systems of a financial entity.\n\n'critical or important function' means a function whose disruption would materially impair the financial performance of a financial entity, or the soundness or continuity of its services and activities.\n\n'ICT third-party service provider' means an undertaking providing digital and data services to one or more financial entities, including cloud computing service providers, software, data analytics services, data centres, and any other undertaking providing a digital service.\n\n'critical ICT third-party service provider' means an ICT third-party service provider that has been designated as critical in accordance with Article 31.\n\n'ICT services' means digital and data services provided through ICT systems to one or more internal or external users on an ongoing basis.\n\n'ICT risk management framework' means the system of tools, methods, processes and policies addressing ICT risk.\n\n'threat-led penetration testing' (TLPT) means a framework that mimics the tactics, techniques and procedures of real-life threat actors perceived as posing a genuine cyber threat, and delivers a controlled, bespoke, intelligence-led penetration test on the live production systems of the financial entity.\n\n'concentration risk' means exposure to one or more ICT third-party service providers creating a degree of dependency on such providers so that unavailability, failure or other shortfall of that provider may endanger the ability of a financial entity to deliver critical or important functions.",
+    "obligations": [
+      "Apply regulatory definitions consistently across all DORA compliance activities",
+      "Identify critical or important functions subject to heightened requirements",
+      "Classify ICT-related incidents using regulatory definitions",
+      "Distinguish between ICT-related incidents, major ICT-related incidents and significant cyber threats",
+      "Apply concentration risk definition when assessing third-party dependencies",
+      "Identify ICT third-party service providers within scope of third-party risk management requirements"
+    ]
+  },
+  {
+    "regulation": "DORA",
+    "article": "Article 4",
+    "title": "Proportionality Principle",
+    "domain": "General Provisions",
+    "text": "1. Financial entities shall implement the rules laid down in Chapter II in accordance with the principle of proportionality, taking into account their size and overall risk profile, and the nature, scale and complexity of their services, activities and operations.\n\n2. In addition, the application by financial entities of Chapters III, IV and V shall be proportionate to their size and overall risk profile, and the nature, scale and complexity of their services, activities and operations, as specifically required under the relevant provisions of those Chapters.\n\n3. The competent authorities shall take into account the principle of proportionality when assessing the ICT risk management framework of financial entities on the basis of the reports submitted pursuant to Article 19(1).\n\n4. The ESAs shall develop, through the Joint Committee, draft regulatory technical standards to further specify the elements, the criteria and where applicable the thresholds referred to in this Regulation, having due regard to the size and overall risk profile of financial entities, and the nature, scale and complexity of their activities.",
+    "obligations": [
+      "Apply ICT risk management proportionately to entity size and risk profile",
+      "Apply incident reporting proportionately based on nature, scale and complexity of activities",
+      "Apply resilience testing proportionately based on entity characteristics",
+      "Apply third-party risk management proportionately",
+      "Microenterprises may follow simplified obligations specified in relevant articles",
+      "Document proportionality reasoning when applying simplified approaches"
+    ]
+  },
+  {
+    "regulation": "DORA",
     "article": "Article 5",
     "title": "Governance and Organisation",
     "domain": "ICT Risk Management",
@@ -35,6 +95,42 @@
       "Establish formal follow-up processes for critical audit findings",
       "Digital operational resilience strategy must address business alignment, risk tolerance, security objectives, ICT architecture, incident detection, documentation, testing and communication",
       "Retain full responsibility for ICT risk management even when outsourcing compliance verification"
+    ]
+  },
+  {
+    "regulation": "DORA",
+    "article": "Article 7",
+    "title": "ICT Systems, Protocols and Tools",
+    "domain": "ICT Risk Management",
+    "text": "In order to address and manage ICT risk, financial entities shall use and maintain updated ICT systems, protocols and tools that are:\n\n(a) appropriate to the magnitude of operations supporting the conduct of their activities, in accordance with the proportionality principle as referred to in Article 4;\n(b) reliable;\n(c) equipped with sufficient capacity to accurately process the data necessary for the performance of activities and the timely provision of services, and to deal with peak orders, message or transaction volumes, as needed, including where new technology is introduced;\n(d) technologically resilient in order to adequately deal with additional information processing needs as required under stressed market conditions or other adverse situations.\n\nFinancial entities shall continuously monitor the performance of ICT systems and tools, identify and promptly address all differences between the expected and actual ICT capacity, and establish monitoring mechanisms to assess the quality of ICT services provided by third-party providers. The monitoring shall cover at minimum key performance indicators related to availability, authenticity, integrity and confidentiality, and latency of ICT services.",
+    "obligations": [
+      "Use and maintain updated ICT systems, protocols and tools appropriate to operational magnitude",
+      "Ensure ICT systems are reliable",
+      "Ensure ICT systems have sufficient capacity to process data and handle peak volumes",
+      "Ensure ICT systems are technologically resilient for adverse conditions",
+      "Continuously monitor ICT system and tool performance",
+      "Promptly address differences between expected and actual ICT capacity",
+      "Establish monitoring mechanisms for third-party ICT service quality",
+      "Monitor key performance indicators: availability, authenticity, integrity, confidentiality and latency"
+    ]
+  },
+  {
+    "regulation": "DORA",
+    "article": "Article 8",
+    "title": "Identification",
+    "domain": "ICT Risk Management",
+    "text": "1. As part of the ICT risk management framework referred to in Article 6(1), financial entities shall identify, classify and adequately document all ICT supported business functions, roles and responsibilities, the information assets and ICT assets, including those located remotely, network resources and hardware equipment, and map those considered critical.\n\n2. Financial entities shall identify all sources of ICT risk, in particular the risk exposure to and from other financial entities, and assess relevant cyber threats and ICT vulnerabilities with respect to the business functions, information assets and ICT assets. Financial entities shall review on a regular basis, and at least yearly, the risk scenarios impacting them.\n\n3. Financial entities, other than microenterprises, shall perform a risk assessment upon each major change in the network and information system infrastructure, in the processes or procedures affecting their business functions, information assets or ICT assets.\n\n4. Financial entities shall identify all information assets and ICT assets, including those with third-party service providers, and map the information assets considered critical. They shall update this mapping regularly and whenever there are major changes to the infrastructure.\n\n5. Financial entities shall maintain and regularly update an inventory of all ICT assets and review ICT risks associated with each ICT asset identified in the inventory.",
+    "obligations": [
+      "Identify, classify and document all ICT-supported business functions, roles and responsibilities",
+      "Identify and document information assets and ICT assets including those held remotely",
+      "Map ICT assets and resources considered critical",
+      "Identify all sources of ICT risk including from other financial entities",
+      "Assess cyber threats and ICT vulnerabilities with respect to business functions and assets",
+      "Review risk scenarios at least yearly",
+      "Perform risk assessment upon major changes to network and information system infrastructure",
+      "Maintain and regularly update an inventory of all ICT assets",
+      "Review ICT risks associated with each asset in the inventory",
+      "Update asset mapping whenever major infrastructure changes occur"
     ]
   },
   {
@@ -100,6 +196,102 @@
   },
   {
     "regulation": "DORA",
+    "article": "Article 12",
+    "title": "Backup Policies and Procedures, Restoration and Recovery Procedures and Methods",
+    "domain": "ICT Risk Management",
+    "text": "1. For the purposes of ensuring the restoration of ICT systems and data with minimum downtime, limited disruption and loss, as part of their ICT risk management framework, financial entities shall develop and document:\n\n(a) backup policies and procedures specifying the scope of the data that is subject to the backup and the minimum frequency of the backup, based on the criticality of information or the degree of confidentiality of the data;\n(b) restoration and recovery procedures and methods.\n\n2. Financial entities shall set up backup systems that can be activated in accordance with the backup policies and procedures and the restoration and recovery procedures and methods. The activation of backup systems shall not endanger the security of the network and information systems or the availability, authenticity, integrity or confidentiality of data. Testing of the backup procedures and restoration and recovery procedures and methods shall be undertaken periodically.\n\n3. When restoring backup data using own systems, financial entities shall use ICT systems that are physically and logically segregated from the source ICT system. The ICT systems must be securely protected from any unauthorized access or ICT corruption and allow for the timely restoration of services making use of data and system backups as necessary.\n\n4. Financial entities shall have in place appropriate multi-site resource configurations with sufficient capacity and capability to ensure business requirements. In the event of the unavailability of the primary ICT infrastructure, alternative ICT facilities, including at secondary sites, shall provide services with a level of service consistent with the financial entity's recovery time objectives and recovery point objectives.\n\n5. Financial entities shall establish recovery time objectives and recovery point objectives for each business function and determine the level of resources and the total recovery time allocated to each business function, taking into account business impact analyses and the financial entity's overall risk tolerance and risk appetite.\n\n6. Financial entities, other than microenterprises, shall report to the relevant competent authorities, upon their request, an estimation of aggregate annual costs and losses caused by major ICT-related incidents.",
+    "obligations": [
+      "Develop and document backup policies specifying scope and minimum frequency of backups",
+      "Document restoration and recovery procedures and methods",
+      "Set up backup systems that can be activated without endangering security",
+      "Periodically test backup procedures and restoration and recovery procedures",
+      "Use ICT systems physically and logically segregated from source for backup restoration",
+      "Protect restoration ICT systems from unauthorized access and ICT corruption",
+      "Establish multi-site resource configurations with sufficient capacity",
+      "Ensure alternative ICT facilities provide consistent service levels at secondary sites",
+      "Establish recovery time objectives (RTOs) and recovery point objectives (RPOs) for each business function",
+      "Determine resources and total recovery time allocation by business function based on business impact analysis",
+      "Report aggregate annual costs and losses from major ICT incidents to competent authorities upon request"
+    ]
+  },
+  {
+    "regulation": "DORA",
+    "article": "Article 13",
+    "title": "Learning and Evolving",
+    "domain": "ICT Risk Management",
+    "text": "1. Financial entities shall have in place capabilities and staff to gather information on vulnerabilities and cyber threats, ICT-related incidents, in particular cyber-attacks, and analyse the impact they are likely to have on their digital operational resilience.\n\n2. Financial entities shall put in place post-ICT-related incident reviews after a major ICT-related incident disrupts their core activities. Those reviews shall analyse the causes of disruption and identify required improvements to the ICT operations or within the ICT business continuity policy referred to in Article 11.\n\n3. Financial entities, other than microenterprises, shall monitor effective implementation of the improvement measures referred to in paragraph 2 and shall also monitor, on an ongoing basis, the technological developments relevant to their business activities and operations.\n\n4. Financial entities shall set up ICT security awareness programmes and digital operational resilience training as part of the staff training schemes. Those programmes and training shall be applicable to all staff and to senior management and shall have a level of complexity commensurate to the remit of their functions.\n\n5. Financial entities, other than microenterprises, shall monitor relevant ICT third-party dependencies, keep track of evolving threats to their arrangements with ICT third-party service providers and review regularly their exposure to operational risk related to ICT third-party service providers.\n\n6. Financial entities, other than microenterprises, shall report to the relevant competent authorities, on request, information about the number of major ICT-related incidents reported by ICT third-party service providers as part of the contractual arrangements.",
+    "obligations": [
+      "Establish capabilities and staff to gather information on vulnerabilities and cyber threats",
+      "Analyse likely impact of ICT-related incidents on digital operational resilience",
+      "Conduct post-ICT-related incident reviews after major incidents disrupting core activities",
+      "Analyse causes of disruption and identify required operational improvements",
+      "Monitor effective implementation of improvement measures",
+      "Monitor technological developments relevant to business activities",
+      "Set up ICT security awareness programmes for all staff and senior management",
+      "Establish digital operational resilience training as part of staff training schemes",
+      "Monitor relevant ICT third-party dependencies",
+      "Track evolving threats in ICT third-party arrangements",
+      "Review exposure to operational risk from ICT third-party service providers regularly"
+    ]
+  },
+  {
+    "regulation": "DORA",
+    "article": "Article 14",
+    "title": "Communication",
+    "domain": "ICT Risk Management",
+    "text": "1. As part of the ICT risk management framework referred to in Article 6(1), financial entities shall have in place crisis communication plans enabling a responsible disclosure of, at least, major ICT-related incidents or significant cyber threats to clients and counterparts as well as to the public, as appropriate.\n\n2. As part of the ICT risk management framework, financial entities shall implement communication policies for internal staff and for external stakeholders. Communication policies for staff shall address the need to make aware all relevant staff, including the management body, of at least all major ICT-related incidents, cyber threats and countermeasures adopted, as well as of the ICT risk management framework requirements.\n\n3. At least one person shall be tasked with implementing the communication strategy for ICT-related incidents and fulfilling the public and media relation function for that purpose.\n\n4. The communication obligations set out in this Article shall not result in the disclosure of confidential information or classified information or in the contravention of any applicable law.",
+    "obligations": [
+      "Establish crisis communication plans for major ICT-related incidents and significant cyber threats",
+      "Enable responsible disclosure to clients, counterparts and the public as appropriate",
+      "Implement communication policies for internal staff and external stakeholders",
+      "Make all relevant staff aware of major ICT incidents, threats and countermeasures",
+      "Make management body aware of ICT risk management framework requirements",
+      "Designate at least one person responsible for ICT incident communication strategy",
+      "Designate public and media relations function for ICT incidents",
+      "Ensure communications do not disclose confidential or classified information"
+    ]
+  },
+  {
+    "regulation": "DORA",
+    "article": "Article 15",
+    "title": "Further Harmonisation of ICT Risk Management Tools, Methods, Processes and Policies",
+    "domain": "ICT Risk Management",
+    "text": "The ESAs shall, through the Joint Committee, in consultation with the European Union Agency for Cybersecurity (ENISA), develop common regulatory technical standards in order to:\n\n(a) specify further elements to be included in the ICT security policy, procedures, protocols and tools referred to in Article 9(2), with a view to ensuring the security of networks, enable adequate safeguards against intrusions and data misuse, preserve the availability, authenticity, integrity and confidentiality of data;\n\n(b) develop further components of the controls of access management rights referred to in Article 9(4), point (c), and associated human resources policy specifying access rights, procedures for granting and revoking rights, monitoring of anomalous behaviour;\n\n(c) develop further the mechanisms for the detection of anomalous activities referred to in Article 10(1) and criteria to trigger and initiate ICT-related incident response processes;\n\n(d) specify further tests referred to in Article 25, including their scope, testing methodologies, outcomes and remediation activities;\n\n(e) specify further any element of the ICT business continuity policy referred to in Article 11;\n\n(f) specify further the rules on the backup systems and restoration procedures referred to in Article 12;\n\n(g) specify further the elements of the post-incident reviews referred to in Article 13(2);\n\n(h) specify further the elements and format of reporting under Article 19.\n\nFinancial entities shall comply with applicable regulatory technical standards developed under this Article upon their publication in the Official Journal.",
+    "obligations": [
+      "Comply with regulatory technical standards developed by ESAs for ICT security policies",
+      "Comply with RTS specifications for access management controls",
+      "Comply with RTS specifications for anomalous activity detection mechanisms",
+      "Comply with RTS specifications for testing scope and methodologies",
+      "Comply with RTS specifications for ICT business continuity policy elements",
+      "Comply with RTS specifications for backup systems and restoration procedures",
+      "Comply with RTS specifications for post-incident reviews",
+      "Comply with RTS specifications for incident reporting format and content"
+    ]
+  },
+  {
+    "regulation": "DORA",
+    "article": "Article 16",
+    "title": "Simplified ICT Risk Management Framework",
+    "domain": "ICT Risk Management",
+    "text": "1. Articles 5 to 15 shall not apply to microenterprises.\n\n2. Microenterprises shall apply a simplified ICT risk management framework comprising:\n\n(a) a summary of the policies and procedures addressing digital operational resilience, as required under Article 6(1);\n(b) at least a policy on ICT risk tolerance;\n(c) ICT business continuity plans that address continuity of critical or important functions, including backup systems;\n(d) guidelines on ICT incidents categorisation;\n(e) monitoring mechanisms;\n(f) policies on ICT-related security documentation;\n(g) policies on change and patch management;\n(h) assessment of ICT third-party risk;\n(i) ICT security training and awareness programme;\n(j) internal audits on ICT risk.\n\n3. Microenterprises shall also fulfil the requirements set out in Articles 17, 18, 19, 24, 25, 28, 29 and 30.\n\n4. In the event of changes in their size or risk profile that would bring them beyond the definition of a microenterprise, the entity shall review its ICT risk management framework and update it accordingly within a reasonable timeframe.",
+    "obligations": [
+      "Microenterprises apply simplified ICT risk management framework",
+      "Establish summary of digital operational resilience policies and procedures",
+      "Establish ICT risk tolerance policy",
+      "Develop ICT business continuity plans including backup systems",
+      "Establish guidelines for ICT incident categorisation",
+      "Establish monitoring mechanisms",
+      "Maintain ICT security documentation policies",
+      "Maintain change and patch management policies",
+      "Assess ICT third-party risk",
+      "Establish ICT security training and awareness programme",
+      "Conduct internal ICT risk audits",
+      "Microenterprises must still comply with incident reporting, testing and third-party risk requirements",
+      "Update ICT risk management framework when entity grows beyond microenterprise threshold"
+    ]
+  },
+  {
+    "regulation": "DORA",
     "article": "Article 17",
     "title": "ICT-related Incident Management Process",
     "domain": "Incident Reporting",
@@ -161,6 +353,61 @@
   },
   {
     "regulation": "DORA",
+    "article": "Article 20",
+    "title": "Harmonisation of Reporting Content and Templates",
+    "domain": "Incident Reporting",
+    "text": "The ESAs shall, through the Joint Committee and in consultation with ENISA and the ECB, develop:\n\n(a) common regulatory technical standards in order to:\n(i) determine the content of reports for major ICT-related incidents pursuant to Article 19(1) and (4), based on the criteria set out in Article 18 and taking into account international cyber security standards and technical specifications;\n(ii) determine the timeframe and the content of the notification to clients pursuant to Article 19(3);\n(iii) determine the criteria applicable to financial entities for outsourcing the reporting obligation pursuant to Article 19(5);\n\n(b) common implementing technical standards to establish the standard forms, templates and procedures for financial entities to report a major ICT-related incident.\n\nFinancial entities shall use the common templates, forms and procedures established in the implementing technical standards when making reports under Article 19.\n\nThe ESAs shall submit those draft regulatory technical standards and draft implementing technical standards to the Commission by 17 July 2024.",
+    "obligations": [
+      "Use common reporting templates and forms prescribed by ESA technical standards for major ICT incident reports",
+      "Follow standardised procedures for incident reporting to competent authorities",
+      "Apply prescribed timeframes for client notifications as specified in technical standards",
+      "Comply with ESA criteria when outsourcing reporting obligations",
+      "Ensure report content meets regulatory technical standard requirements including international cybersecurity standards"
+    ]
+  },
+  {
+    "regulation": "DORA",
+    "article": "Article 21",
+    "title": "Centralised Reporting",
+    "domain": "Incident Reporting",
+    "text": "1. The ESAs shall, through the Joint Committee, prepare a joint report assessing the feasibility of further centralisation of incident reporting through a single EU Hub for major ICT-related incident reporting by financial entities. The joint report shall explore ways to facilitate the flow of major ICT-related incident reports, reduce duplication of reporting requirements, and examine the synergies with the NIS 2 Directive reporting framework.\n\n2. On the basis of that joint report, the Commission shall submit a report to the European Parliament and the Council, accompanied, where appropriate, by a legislative proposal.\n\n3. Where such a legislative proposal is adopted, all financial entities shall submit major ICT-related incident reports to a designated single EU Hub. The single EU Hub shall relay the reports to the relevant national competent authorities, to ENISA, to Europol's European Cybercrime Centre and to any other entity depending on the competences of the authority that has received the report.\n\nFinancial entities should monitor and be prepared to adapt their incident reporting processes if a centralised EU Hub is established, as the single point of entry would replace direct reporting to national competent authorities for major ICT incidents.",
+    "obligations": [
+      "Monitor regulatory developments regarding centralised EU incident reporting hub",
+      "Be prepared to adapt incident reporting processes if single EU Hub is established",
+      "Ensure incident reporting systems can accommodate potential future centralised reporting requirements",
+      "Comply with any legislative changes establishing centralised reporting obligations"
+    ]
+  },
+  {
+    "regulation": "DORA",
+    "article": "Article 22",
+    "title": "Supervisory Feedback",
+    "domain": "Incident Reporting",
+    "text": "1. Without prejudice to the technical input, guidance or remedies and subsequent assistance that ENISA may provide in accordance with Directive (EU) 2022/2555, upon request of the financial entity the relevant competent authority shall, after receipt of the complete initial notification and of any subsequent report as referred to in Article 19(4), provide in a timely manner appropriate feedback or guidance to the financial entity, in particular regarding any remedies available at national level, confidential technical feedback, an overview of the cyber threats relevant to the financial entity and its sector, and guidance on the further conduct of incident response.\n\n2. Financial entities should, where appropriate, following the receipt of supervisory feedback:\n(a) update the relevant competent authority with their progress on the measures being taken;\n(b) take into account the guidance when investigating the incident;\n(c) integrate the guidance into their future incident response procedures.",
+    "obligations": [
+      "Request supervisory feedback from competent authority following major ICT incident reports where appropriate",
+      "Update competent authority with progress on remedial measures following supervisory feedback",
+      "Take into account competent authority guidance when investigating the incident",
+      "Integrate supervisory guidance into future incident response procedures",
+      "Engage with ENISA technical input and guidance as available"
+    ]
+  },
+  {
+    "regulation": "DORA",
+    "article": "Article 23",
+    "title": "Operational or Security Payment-related Incidents",
+    "domain": "Incident Reporting",
+    "text": "1. The requirements on major ICT-related incident reporting set out in Articles 19 and 20 shall also apply to major operational or security payment-related incidents where a financial entity, other than those referred to in point (c) of Article 2(1), is subject to the requirements of Directive (EU) 2015/2366.\n\n2. Competent authorities shall inform EBA of payment incident reports received under Directive (EU) 2015/2366 and forward those reports to EBA on a timely basis, unless such reports would not be considered major under Article 19.\n\n3. To the extent that the content of payment incident reports fulfils the requirements of the reporting obligations under this Article, financial entities may satisfy the requirements of this Article by submitting their payment incident reports. Duplication of reporting is not required where major operational or security payment-related incidents meet the criteria of major ICT-related incidents.\n\n4. Financial entities subject to payment services regulations must align their operational or security incident reporting with DORA requirements to avoid duplicative reporting obligations. A single report satisfying both DORA and payment services directive requirements is acceptable where criteria are met.",
+    "obligations": [
+      "Apply major ICT incident reporting requirements to major operational or security payment-related incidents",
+      "Report major operational or security payment incidents to relevant competent authorities",
+      "Align payment incident reporting with DORA incident reporting requirements",
+      "Avoid duplicative reporting where a single report satisfies both DORA and payment services requirements",
+      "Ensure payment-related incident reports meet DORA content and format requirements"
+    ]
+  },
+  {
+    "regulation": "DORA",
     "article": "Article 24",
     "title": "Digital Operational Resilience Testing",
     "domain": "Resilience Testing",
@@ -196,6 +443,45 @@
       "Conduct end-to-end testing",
       "Perform penetration testing",
       "Perform vulnerability assessments before deployment of new applications and infrastructure"
+    ]
+  },
+  {
+    "regulation": "DORA",
+    "article": "Article 26",
+    "title": "Advanced Testing of ICT Tools, Systems and Processes Based on Threat-Led Penetration Testing",
+    "domain": "Resilience Testing",
+    "text": "1. Financial entities, other than microenterprises, that are identified by competent authorities as required to perform threat-led penetration testing (TLPT) shall carry out such testing at least every 3 years. Based on the risk profile of the financial entity and taking into account operational circumstances, the competent authority may where necessary request the financial entity to reduce or increase this frequency.\n\n2. Each threat-led penetration test shall cover several or all critical or important functions of a financial entity and shall be performed on live production systems supporting such functions.\n\n3. Financial entities shall identify all relevant underlying ICT systems, processes and technologies supporting critical or important functions and ICT services, including those outsourced or contracted to ICT third-party service providers, and, taking into account the fact that the financial entity remains fully responsible for ensuring compliance with this Article, shall coordinate with ICT third-party service providers to ensure their participation.\n\n4. Threat-led penetration testing shall cover at minimum the following network perimeters: data flows in and out of network perimeters; network segmentation; and the security of third party services.\n\n5. Financial entities shall use the threat intelligence to:\n(a) determine the threat actors and their specific attack scenarios;\n(b) define the scope of the TLPT;\n(c) test against realistic and credible attack scenarios.\n\n6. Pooled testing may be performed by multiple financial entities where an ICT third-party service provider provides material ICT services to multiple financial entities, subject to regulatory agreement and coordination by the lead overseer.\n\n7. Upon completion of the TLPT, the financial entity and any ICT third-party service provider involved shall address all identified risks and remediate vulnerabilities discovered through the TLPT. The financial entity shall share the findings of the TLPT with the relevant competent authority.\n\n8. Financial entities shall ensure the ICT third-party service providers' participation in TLPT activities in the contractual arrangements with those providers.",
+    "obligations": [
+      "Conduct threat-led penetration testing (TLPT) at least every 3 years when required by competent authority",
+      "Cover several or all critical or important functions in each TLPT",
+      "Perform TLPT on live production systems",
+      "Identify all relevant ICT systems, processes and technologies supporting critical or important functions",
+      "Coordinate with ICT third-party service providers to ensure their participation in TLPT",
+      "Cover minimum network perimeters: data flows, network segmentation, third-party service security",
+      "Use threat intelligence to determine threat actors, attack scenarios and TLPT scope",
+      "Test against realistic and credible attack scenarios",
+      "Address all identified risks and remediate vulnerabilities after TLPT completion",
+      "Share TLPT findings with relevant competent authority",
+      "Ensure ICT third-party provider TLPT participation in contractual arrangements"
+    ]
+  },
+  {
+    "regulation": "DORA",
+    "article": "Article 27",
+    "title": "Requirements for Testers for the Carrying out of Threat-Led Penetration Testing",
+    "domain": "Resilience Testing",
+    "text": "1. Financial entities shall only use testers for the carrying out of TLPT that:\n\n(a) are of the highest suitability and repute;\n(b) possess technical and organisational capabilities and demonstrate specific expertise in threat intelligence, penetration testing and red team operations;\n(c) are certified by an accreditation body in a Member State or adhere to formal codes of conduct or ethical frameworks;\n(d) provide an independent assurance, or are audited, in relation to the sound management of risks associated with the carrying out of TLPT;\n(e) are duly covered by relevant professional indemnity insurances, including against risks of misconduct and negligence.\n\n2. When using internal testers, financial entities shall ensure that:\n(a) such use has been approved by the relevant competent authority;\n(b) the relevant competent authority has verified that the financial entity has sufficient dedicated resources and ensured that conflicts of interest are avoided throughout the design and execution phases of the test;\n(c) the threat intelligence provider is external to the financial entity.\n\n3. Financial entities shall ensure that testers contracted to conduct TLPT comply, throughout the duration of the TLPT, with the requirements set out in paragraph 1. Financial entities shall perform appropriate due diligence when selecting testers.\n\n4. TLPT carried out in accordance with this Article and with the TIBER-EU framework as implemented in national law or as applied by the competent authorities shall be mutually recognised across Member States.",
+    "obligations": [
+      "Use only testers of highest suitability and repute for TLPT",
+      "Ensure testers possess technical capabilities in threat intelligence, penetration testing and red team operations",
+      "Use certified or formally accredited testers adhering to recognised codes of conduct",
+      "Ensure testers provide independent assurance on sound management of TLPT risks",
+      "Ensure testers are covered by relevant professional indemnity insurance",
+      "Obtain competent authority approval when using internal testers for TLPT",
+      "Verify internal testers have dedicated resources and no conflicts of interest",
+      "Ensure threat intelligence provider is external when using internal testers",
+      "Verify tester compliance with requirements throughout TLPT duration",
+      "Perform appropriate due diligence when selecting TLPT testers"
     ]
   },
   {
@@ -278,6 +564,218 @@
       "Transition period must allow continued service provision to reduce disruption risk",
       "Transition period must allow migration to another provider or in-house solutions",
       "Use standard contractual clauses developed by public authorities where available"
+    ]
+  },
+  {
+    "regulation": "DORA",
+    "article": "Article 31",
+    "title": "Designation of Critical ICT Third-Party Service Providers",
+    "domain": "ICT Third-Party Oversight",
+    "text": "1. The ESAs, through the Joint Committee, on the basis of a recommendation from the Joint Examination Team, shall designate ICT third-party service providers that are critical for financial entities.\n\n2. The designation shall be based on criteria including: the systemic impact on the stability, continuity or quality of the provision of financial services of ICT third-party service providers' failure or disruption; the systemic character or importance of the financial entities that rely on the relevant ICT third-party service providers; the degree of substitutability of the ICT third-party service provider; the number of global systemically important institutions (G-SIIs) or other systemically important institutions (O-SIIs) that rely on the ICT third-party service provider; the interdependence between the ICT third-party service providers and the number of ICT third-party service providers that are interconnected with each other; and the innovation level or the degree of sophistication of the ICT services involved.\n\n3. A designation as a critical ICT third-party service provider shall not be made where the ICT third-party service provider is:\n(a) a financial entity under this Regulation;\n(b) a financial entity or an ICT third-party service provider established in a third country where reciprocal oversight of ICT third-party service providers does not exist;\n(c) an intra-group ICT service provider.\n\n4. The ESAs shall maintain a public register of designated critical ICT third-party service providers.\n\nFinancial entities must identify which of their ICT third-party service providers are or become designated as critical, as this affects oversight requirements and enhances the scrutiny applied to those providers.",
+    "obligations": [
+      "Identify which ICT third-party providers are designated as critical by ESAs",
+      "Monitor the ESA public register of designated critical ICT third-party service providers",
+      "Apply heightened oversight to contractual arrangements with critical ICT third-party service providers",
+      "Understand that critical ICT third-party service providers are subject to Lead Overseer supervision",
+      "Cooperate with Lead Overseer information requests regarding critical provider relationships",
+      "Notify competent authorities of material changes to arrangements with critical ICT third-party providers"
+    ]
+  },
+  {
+    "regulation": "DORA",
+    "article": "Article 32",
+    "title": "Structure of the Oversight Framework",
+    "domain": "ICT Third-Party Oversight",
+    "text": "1. The Joint Committee of the ESAs, assisted by the Oversight Forum, shall coordinate the Oversight Framework activities of the relevant ESAs and ensure consistent application.\n\n2. Each critical ICT third-party service provider shall be assigned to one of the ESAs as a Lead Overseer based on which type of financial entities it primarily provides services to. The Lead Overseer for critical ICT third-party service providers primarily serving credit institutions and investment firms shall be the EBA. The Lead Overseer for critical ICT third-party service providers primarily serving insurance undertakings shall be EIOPA. The Lead Overseer for critical ICT third-party service providers primarily serving fund managers, CCPs, trading venues and trade repositories shall be ESMA.\n\n3. The Oversight Forum shall be composed of the Chairpersons of the ESAs, high-level representatives from competent authorities, and the ECB. It shall, inter alia, prepare draft recommendations for Lead Overseers and facilitate coordination of national competent authorities regarding oversight of critical ICT third-party service providers.\n\n4. Financial entities shall cooperate with the Lead Overseer and provide information requested by the Lead Overseer regarding their use of services from critical ICT third-party service providers.\n\n5. The Lead Overseer shall have access to all relevant documents and information including those held by financial entities related to critical ICT third-party providers.",
+    "obligations": [
+      "Cooperate with the Lead Overseer (EBA, EIOPA or ESMA depending on entity type) regarding critical ICT third-party providers",
+      "Provide information requested by Lead Overseer on use of critical ICT third-party services",
+      "Make documents and information available to Lead Overseer when requested",
+      "Understand that EBA oversees critical providers serving credit institutions and investment firms",
+      "Understand that EIOPA oversees critical providers serving insurance undertakings",
+      "Understand that ESMA oversees critical providers serving fund managers, CCPs, trading venues and trade repositories"
+    ]
+  },
+  {
+    "regulation": "DORA",
+    "article": "Article 33",
+    "title": "Tasks of the Lead Overseer",
+    "domain": "ICT Third-Party Oversight",
+    "text": "1. The Lead Overseer shall carry out the following tasks:\n\n(a) be the primary point of contact for the critical ICT third-party service provider in relation to the exercise of the oversight mandate;\n(b) on the basis of a recommendation from the Oversight Forum, take measures;\n(c) draw up the individual oversight plan describing the annual supervisory objectives and the main oversight actions planned for each critical ICT third-party service provider;\n(d) jointly conduct, with the relevant competent authorities, all activities and tasks with respect to the performance of their oversight mandate.\n\n2. The Lead Overseer shall carry out, in relation to critical ICT third-party service providers subject to its oversight, the following tasks:\n\n(a) carry out general investigations and inspections;\n(b) request information and documentation from the critical ICT third-party service provider;\n(c) require the critical ICT third-party service provider to participate in general investigations and inspections;\n(d) impose non-financial penalties in accordance with Article 35(6);\n(e) issue recommendations to the critical ICT third-party service provider;\n(f) draw up the annual oversight report.\n\n3. Financial entities shall support the Lead Overseer in its supervision of critical ICT third-party service providers and ensure that their contractual arrangements with such providers allow the Lead Overseer to exercise its oversight mandate effectively.",
+    "obligations": [
+      "Support Lead Overseer tasks in supervising critical ICT third-party service providers",
+      "Ensure contractual arrangements with critical ICT providers allow Lead Overseer effective oversight",
+      "Include provisions in contracts enabling Lead Overseer access and inspection rights",
+      "Cooperate with general investigations and inspections of critical ICT third-party providers",
+      "Provide information to Lead Overseer as requested regarding critical ICT provider relationships"
+    ]
+  },
+  {
+    "regulation": "DORA",
+    "article": "Article 34",
+    "title": "Operational Coordination between Lead Overseers",
+    "domain": "ICT Third-Party Oversight",
+    "text": "1. Lead Overseers shall coordinate and cooperate, in particular through the Oversight Forum, when exercising their respective oversight mandates.\n\n2. Lead Overseers shall share information related to critical ICT third-party service providers, including information on serious incidents and on oversight assessments.\n\n3. National competent authorities shall cooperate with the Lead Overseer and share information with the Lead Overseer where such information is relevant to the oversight of the critical ICT third-party service providers.\n\n4. Financial entities shall not be required to disclose the same information to multiple Lead Overseers where a critical ICT third-party service provider is subject to oversight by more than one Lead Overseer.\n\nFinancial entities should be aware of the coordination mechanisms between oversight authorities to avoid duplication and ensure consistency in responding to information requests related to their critical ICT third-party service providers.",
+    "obligations": [
+      "Avoid duplicative information disclosures where critical provider is subject to multiple Lead Overseers",
+      "Cooperate with coordinated oversight activities across multiple Lead Overseers",
+      "Maintain records enabling coordinated oversight information requests to be fulfilled efficiently"
+    ]
+  },
+  {
+    "regulation": "DORA",
+    "article": "Article 35",
+    "title": "Powers of the Lead Overseer",
+    "domain": "ICT Third-Party Oversight",
+    "text": "1. For the purpose of fulfilling the mandate referred to in Article 33(2), the Lead Overseer shall have the following powers in relation to critical ICT third-party service providers:\n\n(a) the power to request all relevant information and documentation pursuant to Article 37;\n(b) the power to conduct general investigations and inspections pursuant to Articles 38 and 39;\n(c) the power to request, after the completion of the oversight activities, reports specifying the actions taken or the remedies implemented by the critical ICT third-party service provider in relation to the recommendations of the Lead Overseer.\n\n2. The Lead Overseer may also conduct oversight activities jointly with the competent authorities.\n\n3. When exercising its powers, the Lead Overseer shall take into account the scale and complexity of the services provided by the critical ICT third-party service provider, and the nature, extent and complexity of the ICT services provided to financial entities.\n\n4. The Lead Overseer shall impose periodic penalty payments to compel critical ICT third-party service providers to comply with requests for information, investigations, inspections, remediation actions and recommendations.\n\n5. The periodic penalty payment for each day of non-compliance shall not exceed 1% of the average daily worldwide turnover of the critical ICT third-party service provider in the preceding business year.\n\n6. The Lead Overseer may require, within a specified period, financial entities that use services from the critical ICT third-party service provider to terminate, in full or in part, the contractual arrangements with that provider.\n\nFinancial entities must cooperate with the Lead Overseer when exercising its powers and may be required to terminate arrangements with non-compliant critical ICT third-party service providers.",
+    "obligations": [
+      "Cooperate with Lead Overseer investigations and information requests regarding critical ICT providers",
+      "Provide documentation requested by Lead Overseer about critical ICT provider relationships",
+      "Be prepared to terminate contractual arrangements with critical ICT providers upon Lead Overseer order",
+      "Cooperate with joint oversight activities conducted with competent authorities",
+      "Facilitate Lead Overseer access to conduct oversight activities effectively"
+    ]
+  },
+  {
+    "regulation": "DORA",
+    "article": "Article 36",
+    "title": "Exercise of the Powers of the Lead Overseer Outside the Union",
+    "domain": "ICT Third-Party Oversight",
+    "text": "1. Where an ICT third-party service provider that has been designated as critical is established in a third country, it shall establish a subsidiary in the Union within 12 months of its designation as a critical ICT third-party service provider.\n\n2. The requirement referred to in paragraph 1 shall not apply where:\n(a) the ICT third-party service provider is established in a country with which the Union has concluded an international agreement on the mutual recognition and equivalence of oversight regimes for ICT third-party service providers;\n(b) the ICT third-party service provider can demonstrate that the oversight requirements applied in the third country in which it is established are equivalent to those of this Regulation;\n(c) after the completion of the oversight activities, the Lead Overseer has concluded that the ICT third-party service provider is not subject to oversight arrangements in a third country.\n\n3. Financial entities using services from third-country critical ICT third-party service providers shall monitor the status of Union subsidiary requirements and the compliance of their providers.\n\nFinancial entities contracting ICT services from providers in third countries should assess whether those providers may be designated as critical and what the implications are for their service arrangements and continuity.",
+    "obligations": [
+      "Monitor compliance of critical third-country ICT providers with Union subsidiary establishment requirements",
+      "Assess implications of third-country provider designation as critical for service continuity",
+      "Consider third-country regulatory equivalence when evaluating ICT provider risk",
+      "Include provisions in contracts with third-country providers addressing oversight cooperation requirements",
+      "Plan for contingency if third-country critical ICT provider fails to establish EU subsidiary"
+    ]
+  },
+  {
+    "regulation": "DORA",
+    "article": "Article 37",
+    "title": "Request for Information",
+    "domain": "ICT Third-Party Oversight",
+    "text": "1. The Lead Overseer may, by simple request or by decision, require critical ICT third-party service providers to provide all information that is necessary for the Lead Overseer to carry out its duties under this Regulation, including all relevant business or operational documents, contracts, policies, documentation, ICT security audit reports, ICT-related incident reports, as well as any information relating to parties to whom the critical ICT third-party service provider has outsourced operational functions or activities.\n\n2. When sending a simple request for information under paragraph 1, the Lead Overseer shall:\n(a) refer to this Article as the legal basis of the request;\n(b) state the purpose of the request;\n(c) specify what information is required;\n(d) set a time limit within which the information is to be provided;\n(e) indicate that there is no obligation to provide the information, but that a voluntary reply to the request must not be incorrect or misleading.\n\n3. Financial entities that use services from the critical ICT third-party service provider may be required to assist in providing information where the Lead Overseer determines this is necessary and where information is held at the level of the financial entity.\n\n4. Financial entities shall maintain comprehensive records of their contractual arrangements with critical ICT third-party service providers to facilitate responses to information requests from the Lead Overseer.",
+    "obligations": [
+      "Assist the Lead Overseer in providing information about critical ICT third-party provider relationships where requested",
+      "Maintain comprehensive records of contractual arrangements with critical ICT third-party providers",
+      "Respond promptly and accurately to Lead Overseer requests for information",
+      "Ensure records include all relevant documents, contracts, policies and audit reports related to critical ICT providers",
+      "Ensure information provided to Lead Overseer is accurate, complete and not misleading"
+    ]
+  },
+  {
+    "regulation": "DORA",
+    "article": "Article 38",
+    "title": "General Investigations",
+    "domain": "ICT Third-Party Oversight",
+    "text": "1. In order to carry out its duties under this Regulation, and with the assistance of the competent authorities of the Member States in which the critical ICT third-party service provider operates or in which the relevant premises are located, the Lead Overseer may conduct investigations of critical ICT third-party service providers.\n\n2. The Lead Overseer shall have the power to:\n(a) examine records, data, procedures, and any other material relevant to the execution of its tasks, irrespective of the medium on which they are stored;\n(b) take or obtain certified copies of or extracts from such records, data, procedures and other material;\n(c) summon and ask representatives of the critical ICT third-party service provider for oral or written explanations on facts or documents relating to the subject-matter and purpose of the inspection and to record the answers;\n(d) interview any other natural or legal person who consents to be interviewed for the purpose of collecting information relating to the subject-matter of an investigation.\n\n3. Financial entities may be interviewed or requested to provide supporting documentation or evidence during a Lead Overseer investigation of a critical ICT third-party service provider.\n\n4. Financial entities shall cooperate fully and promptly with Lead Overseer investigations and shall ensure that their contractual arrangements with critical ICT third-party service providers include provisions facilitating such cooperation.",
+    "obligations": [
+      "Cooperate fully with Lead Overseer investigations of critical ICT third-party providers",
+      "Provide oral or written explanations to Lead Overseer investigators when requested",
+      "Provide supporting documentation or evidence during Lead Overseer investigations",
+      "Ensure contractual arrangements include provisions facilitating Lead Overseer investigation cooperation",
+      "Make records and data available to Lead Overseer investigators upon request"
+    ]
+  },
+  {
+    "regulation": "DORA",
+    "article": "Article 39",
+    "title": "Inspections",
+    "domain": "ICT Third-Party Oversight",
+    "text": "1. In order to carry out its duties under this Regulation, the Lead Overseer may, with prior notification, conduct on-site inspections at any business premises, land or property of the critical ICT third-party service provider, as well as off-site inspections.\n\n2. The Lead Overseer shall have the power to:\n(a) enter any business premises, land or property;\n(b) examine the books, records and data in whatever form they are stored;\n(c) obtain or take copies of documents;\n(d) carry out audits of the ICT risk management, policies, procedures, ICT systems and processes of the critical ICT third-party service provider;\n(e) interview staff.\n\n3. Officials and other persons authorised by the Lead Overseer to conduct an on-site inspection shall exercise their powers upon production of a written authorisation.\n\n4. Officials authorised by the Lead Overseer may also seal any business premises and books and records for the period of, and to the extent necessary for, the inspection.\n\n5. Financial entities shall be notified of and may be required to participate in or facilitate Lead Overseer inspections of critical ICT third-party service providers where those inspections relate to services provided to the financial entity.\n\n6. Financial entities shall ensure that contractual arrangements with critical ICT third-party service providers include provisions allowing Lead Overseer and competent authority inspection access.",
+    "obligations": [
+      "Facilitate Lead Overseer on-site inspections of critical ICT third-party service providers where required",
+      "Participate in Lead Overseer inspection activities when requested",
+      "Ensure contracts with critical ICT providers include Lead Overseer inspection access provisions",
+      "Ensure contracts include competent authority inspection access provisions",
+      "Cooperate with officials authorised to conduct inspections of critical ICT third-party providers"
+    ]
+  },
+  {
+    "regulation": "DORA",
+    "article": "Article 40",
+    "title": "Continuous Oversight",
+    "domain": "ICT Third-Party Oversight",
+    "text": "1. The Lead Overseer shall draw up an individual oversight plan for each critical ICT third-party service provider covering:\n\n(a) the annual supervisory objectives for the critical ICT third-party service provider, taking into account the ICT third-party service provider's risk profile;\n(b) the key actions planned during the oversight cycle, including the general investigations and on-site inspections planned;\n(c) any other task the Lead Overseer deems appropriate.\n\n2. Following the completion of oversight activities, the Lead Overseer shall issue recommendations to the critical ICT third-party service provider to be complied with within the period specified. Those recommendations shall address:\n(a) technical measures and organisational measures;\n(b) ICT security measures.\n\n3. Where the critical ICT third-party service provider does not comply with the recommendations within the specified period, the Lead Overseer shall notify the competent authorities of the financial entities using the services of that provider.\n\n4. Financial entities shall adapt their use of and reliance on critical ICT third-party service providers based on the outcomes of Lead Overseer oversight activities and recommendations.\n\n5. Financial entities shall monitor competent authority communications regarding the compliance status of their critical ICT third-party service providers.",
+    "obligations": [
+      "Monitor Lead Overseer oversight plan outcomes and recommendations for critical ICT providers",
+      "Adapt use of critical ICT providers based on Lead Overseer oversight findings",
+      "Monitor competent authority notifications regarding critical ICT provider non-compliance",
+      "Plan contingency responses to potential Lead Overseer non-compliance notifications regarding critical providers",
+      "Review contractual arrangements with critical ICT providers in light of oversight findings and recommendations"
+    ]
+  },
+  {
+    "regulation": "DORA",
+    "article": "Article 41",
+    "title": "Harmonisation of Conditions Enabling the Conduct of Oversight Activities",
+    "domain": "ICT Third-Party Oversight",
+    "text": "The ESAs shall develop, through the Joint Committee, draft regulatory technical standards to specify:\n\n(a) the information to be provided by ICT third-party service providers in the application for voluntary designation as referred to in Article 31;\n(b) the content, structure and format of the information to be submitted, disclosed or reported by critical ICT third-party service providers pursuant to Article 35(1), point (c), and Article 39;\n(c) the criteria for determining the composition of the joint examination team and the modalities for the coordination between the Lead Overseer and the competent authorities in relation to oversight activities, exchanges of information and co-operation tasks;\n(d) the details of competent authorities' cooperation with the Lead Overseer, in particular the type of information to be exchanged;\n(e) the modalities of how financial entities can facilitate exchanges of information to the Lead Overseer during oversight activities.\n\nFinancial entities shall comply with applicable regulatory technical standards developed under this Article, which specify how to facilitate oversight information exchanges between financial entities and Lead Overseers.",
+    "obligations": [
+      "Comply with RTS requirements on facilitating information exchange with Lead Overseers during oversight activities",
+      "Implement processes to efficiently provide information to Lead Overseers in prescribed format and content",
+      "Monitor publication of regulatory technical standards governing oversight activity harmonisation",
+      "Update internal procedures when RTS requirements on oversight cooperation are published"
+    ]
+  },
+  {
+    "regulation": "DORA",
+    "article": "Article 42",
+    "title": "Follow-up by Competent Authorities",
+    "domain": "ICT Third-Party Oversight",
+    "text": "1. Without prejudice to the powers of competent authorities under relevant sectoral Union law, where the Lead Overseer has informed a competent authority that a critical ICT third-party service provider has failed to comply with the recommendations issued to it pursuant to Article 40(2), the competent authority shall, where the failure to comply with those recommendations is likely to affect the digital operational resilience of the financial entity using the ICT services of that critical ICT third-party service provider, take the following measures:\n\n(a) direct the financial entity to temporarily suspend, in full or in part, the use of or reliance on the relevant ICT services until the risks identified in the recommendations have been addressed;\n(b) direct the financial entity to terminate, in full or in part, the relevant contractual arrangements with the critical ICT third-party service provider.\n\n2. Where a financial entity has been directed to terminate a contractual arrangement under paragraph 1, point (b), such termination shall take effect in accordance with the applicable terms and conditions of the contractual arrangement and in a manner that limits the disruption to the financial entity's operations.\n\n3. Financial entities shall develop contingency plans and exit strategies to enable orderly termination of critical ICT service relationships when directed to do so by competent authorities.\n\n4. Financial entities shall monitor the compliance status of their critical ICT third-party service providers with Lead Overseer recommendations.",
+    "obligations": [
+      "Be prepared to suspend use of critical ICT services if directed by competent authority due to provider non-compliance",
+      "Be prepared to terminate critical ICT service contractual arrangements if directed by competent authority",
+      "Develop contingency plans enabling orderly termination of critical ICT service relationships",
+      "Maintain exit strategies for critical ICT third-party service providers",
+      "Monitor compliance of critical ICT providers with Lead Overseer recommendations",
+      "Ensure exit strategy allows termination without excessive disruption to operations"
+    ]
+  },
+  {
+    "regulation": "DORA",
+    "article": "Article 43",
+    "title": "Oversight Fees",
+    "domain": "ICT Third-Party Oversight",
+    "text": "1. The Lead Overseer shall charge annual supervisory fees to critical ICT third-party service providers. Those fees shall cover all expenses incurred by the Lead Overseer with respect to the supervision of critical ICT third-party service providers pursuant to this Regulation.\n\n2. The total amount of annual supervisory fees charged to a specific critical ICT third-party service provider shall be proportionate to its size, measured by its annual net revenues received from the provision of ICT services to financial entities in the Union.\n\n3. The ESAs shall develop, by means of delegated acts, the methodology for calculating the supervisory fees and the procedure for the payment of those fees.\n\nFinancial entities should be aware that their critical ICT third-party service providers may seek to recover oversight fees through pricing adjustments in service contracts. Financial entities should review existing and new contracts with critical ICT providers for provisions related to regulatory cost pass-through.",
+    "obligations": [
+      "Review contractual arrangements with critical ICT providers for provisions related to regulatory oversight fee pass-through",
+      "Assess impact of oversight fees on total cost of critical ICT services",
+      "Ensure contracts address allocation of regulatory compliance costs including oversight fees",
+      "Monitor changes to oversight fee methodology that may affect critical ICT service pricing"
+    ]
+  },
+  {
+    "regulation": "DORA",
+    "article": "Article 44",
+    "title": "International Cooperation",
+    "domain": "ICT Third-Party Oversight",
+    "text": "1. The ESAs may, in accordance with Article 33 of Regulations (EU) No 1093/2010, No 1094/2010 and No 1095/2010, conclude administrative arrangements with third-country regulatory and supervisory authorities in order to foster international supervisory cooperation.\n\n2. The ESAs shall share information received from third-country authorities with their respective Board of Supervisors and the Oversight Forum.\n\n3. Financial entities subject to DORA and using ICT services from providers in third countries should be aware of international cooperation arrangements that may affect oversight of those providers and of the information that may be shared with third-country authorities.\n\n4. Financial entities should assess the implications of international cooperation frameworks when engaging with ICT third-party service providers established in non-EU jurisdictions, including the potential sharing of information about the financial entity's use of ICT services with third-country regulatory authorities.",
+    "obligations": [
+      "Be aware of international cooperation agreements affecting oversight of third-country ICT providers",
+      "Assess information-sharing implications when using ICT providers in non-EU jurisdictions",
+      "Review cross-border data handling and regulatory information sharing provisions in third-country ICT provider contracts",
+      "Monitor international cooperation developments that may affect oversight of critical ICT third-party providers"
+    ]
+  },
+  {
+    "regulation": "DORA",
+    "article": "Article 45",
+    "title": "Arrangements for Information Sharing",
+    "domain": "Information Sharing",
+    "text": "1. Financial entities may exchange amongst themselves cyber threat information and intelligence, including indicators of compromise, tactics, techniques and procedures, cyber security alerts and configuration tools, to the extent that such information and intelligence sharing:\n\n(a) aims to enhance the digital operational resilience of financial entities, in particular through awareness-raising in relation to cyber threats, limiting or impeding the cyber threats' ability to spread, supporting defence capabilities, threat detection techniques, mitigation strategies or response and recovery stages;\n(b) takes place within trusted communities of financial entities;\n(c) is implemented through information-sharing arrangements that protect the potentially sensitive nature of the information shared and is governed by rules of conduct in full respect of business confidentiality, protection of personal data in accordance with Regulation (EU) 2016/679, and guidelines on competition policy.\n\n2. For the purpose of paragraph 1, financial entities shall designate a member of senior management responsible for the implementation and overseeing of the information-sharing arrangements and for reporting to the management body on relevant developments.\n\n3. The information sharing arrangements referred to in paragraph 1 may include, where permissible:\n(a) membership of information-sharing communities;\n(b) sharing of information including indicators of compromise, tactics, techniques and procedures;\n(c) analysis of information;\n(d) threat intelligence.\n\n4. Competent authorities shall be informed of participation in information-sharing arrangements and may request information about the arrangements. Financial entities shall cooperate with competent authorities on matters related to information-sharing arrangements.",
+    "obligations": [
+      "Participate in trusted community information-sharing arrangements on cyber threats where appropriate",
+      "Ensure information-sharing arrangements protect sensitive information and respect business confidentiality",
+      "Comply with GDPR requirements when sharing information in cyber threat intelligence arrangements",
+      "Designate senior management member responsible for information-sharing arrangement implementation and oversight",
+      "Report information-sharing arrangement developments to management body",
+      "Inform competent authorities of participation in information-sharing arrangements",
+      "Cooperate with competent authorities on matters related to information-sharing",
+      "Limit information sharing to aims of enhancing digital operational resilience",
+      "Ensure information-sharing operates within trusted communities of financial entities"
     ]
   }
 ]
