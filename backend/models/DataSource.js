@@ -56,6 +56,15 @@ const dataSourceSchema = new mongoose.Schema(
       type: String,
     },
 
+    /**
+     * DigitalOcean Spaces object key for the original uploaded file.
+     * Present only for sourceType='file'. Allows re-indexing without re-upload.
+     * Example: workspaces/ws-123/datasources/abc/report.pdf
+     */
+    storageKey: {
+      type: String,
+    },
+
     lastSyncedAt: { type: Date },
     lastSyncJobId: { type: String },
 

@@ -110,7 +110,7 @@ async function enqueueChunks(chunks, workspaceId, dataSourceId, sourceType, stat
 
 async function processFile(dataSource, workspaceId, stats) {
   const adapter = new FileAdapter(dataSource);
-  const chunks = adapter.getChunks();
+  const chunks = await adapter.getChunks();
 
   stats.total = chunks.length;
   await enqueueChunks(chunks, workspaceId, dataSource._id.toString(), 'file', stats);

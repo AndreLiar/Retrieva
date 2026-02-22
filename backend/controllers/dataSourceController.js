@@ -11,6 +11,7 @@ import { DocumentSource } from '../models/DocumentSource.js';
 import { dataSourceSyncQueue } from '../config/queue.js';
 import { catchAsync, sendSuccess, sendError, AppError } from '../utils/index.js';
 import logger from '../config/logger.js';
+import { uploadFile, deleteFile, buildStorageKey } from '../services/spacesService.js';
 
 const MAX_FILE_SIZE_MB = 25;
 
@@ -149,6 +150,21 @@ export const create = catchAsync(async (req, res) => {
     ...(apiToken ? { apiToken } : {}),
     status: 'pending',
   });
+
+  // Upload original file buffer to DO Spaces for re-indexing capability
+  if (sourceType === 'file' && req.file?.buffer) {
+    const key = buildStorageKey({
+      workspaceId,
+      dataSourceId: dataSource._id.toString(),
+      fileName: req.file.originalname,
+    });
+    const contentType = req.file.mimetype || 'application/octet-stream';
+    const storageKey = await uploadFile({ key, buffer: req.file.buffer, contentType });
+    if (storageKey) {
+      dataSource.storageKey = storageKey;
+      await dataSource.save();
+    }
+  }
 
   // Enqueue initial sync immediately
   await dataSourceSyncQueue.add(
@@ -291,6 +307,9 @@ export const deleteSource = catchAsync(async (req, res) => {
     },
     { syncStatus: 'deleted' }
   );
+
+  // Delete original file from DO Spaces (non-blocking — errors are logged, not thrown)
+  await deleteFile(dataSource.storageKey);
 
   await DataSource.findByIdAndDelete(req.params.id);
 
