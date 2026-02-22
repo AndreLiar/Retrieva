@@ -53,6 +53,8 @@ services:
       - OLLAMA_BASE_URL=http://host.docker.internal:11434
       - RAGAS_SERVICE_URL=http://ragas-service:8001
       - EMAIL_SERVICE_URL=http://email-service:3008
+      - NOTIFICATION_SERVICE_URL=http://notification-service:3009
+      - REALTIME_SERVICE_URL=http://realtime-service:3010
       - INTERNAL_API_KEY=${INTERNAL_API_KEY:-}
       # Override Spaces endpoint so the backend container talks to MinIO internally
       - DO_SPACES_ENDPOINT=http://minio:9000
@@ -71,6 +73,10 @@ services:
       minio:
         condition: service_healthy
       email-service:
+        condition: service_started
+      notification-service:
+        condition: service_started
+      realtime-service:
         condition: service_started
     volumes:
       - ./backend:/app
@@ -97,6 +103,61 @@ services:
       - RESEND_FROM_EMAIL=${RESEND_FROM_EMAIL:-noreply@retrieva.online}
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
       - INTERNAL_API_KEY=${INTERNAL_API_KEY:-}
+    networks:
+      - rag-network
+    restart: unless-stopped
+
+  # ===========================================================================
+  # Notification Service (Phase 2 microservice — persistent notifications)
+  # ===========================================================================
+  notification-service:
+    build:
+      context: ./notification-service
+      dockerfile: Dockerfile
+    container_name: rag-notification-service
+    ports:
+      - "3009:3009"
+    environment:
+      - NODE_ENV=development
+      - PORT=3009
+      - MONGODB_URI=mongodb://mongodb:27017/enterprise_rag
+      - REDIS_URL=redis://redis:6379
+      - EMAIL_SERVICE_URL=http://email-service:3008
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
+      - INTERNAL_API_KEY=${INTERNAL_API_KEY:-}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      email-service:
+        condition: service_started
+    networks:
+      - rag-network
+    restart: unless-stopped
+
+  # ===========================================================================
+  # Realtime Service (Phase 2 microservice — Socket.io + presence)
+  # ===========================================================================
+  realtime-service:
+    build:
+      context: ./realtime-service
+      dockerfile: Dockerfile
+    container_name: rag-realtime-service
+    ports:
+      - "3010:3010"
+    environment:
+      - NODE_ENV=development
+      - PORT=3010
+      - MONGODB_URI=mongodb://mongodb:27017/enterprise_rag
+      - REDIS_URL=redis://redis:6379
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
+      - JWT_ACCESS_SECRET=${JWT_ACCESS_SECRET:-}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - rag-network
     restart: unless-stopped

@@ -2,9 +2,13 @@
  * Presence Controller
  *
  * Handles presence-related API endpoints:
- * - GET /presence/:workspaceId - Get online users in workspace
- * - GET /presence/:workspaceId/count - Get online count
- * - GET /presence/stats - Get global presence stats (admin)
+ * - GET /presence/:workspaceId        — Get online users in workspace
+ * - GET /presence/:workspaceId/count  — Get online count
+ * - GET /presence/stats               — Get global presence stats
+ * - GET /presence/:workspaceId/typing/:conversationId — Get typing users
+ *
+ * All presence read functions are now async (Redis when REALTIME_SERVICE_URL
+ * is set, in-memory Maps otherwise).
  *
  * @module controllers/presenceController
  */
@@ -38,11 +42,11 @@ export async function getWorkspacePresence(req, res) {
       });
     }
 
-    // Get presence from service
-    const presence = presenceService.getWorkspacePresence(workspaceId);
-
-    // Also get socket-based online users for comparison
-    const socketOnlineUsers = getOnlineWorkspaceUsers(workspaceId);
+    // Both functions may return a Promise (Redis) or a plain value (in-memory)
+    const [presence, socketOnlineUsers] = await Promise.all([
+      Promise.resolve(presenceService.getWorkspacePresence(workspaceId)),
+      Promise.resolve(getOnlineWorkspaceUsers(workspaceId)),
+    ]);
 
     res.json({
       success: true,
@@ -59,11 +63,7 @@ export async function getWorkspacePresence(req, res) {
       error: error.message,
       workspaceId: req.params.workspaceId,
     });
-
-    res.status(500).json({
-      success: false,
-      error: 'Failed to get presence data',
-    });
+    res.status(500).json({ success: false, error: 'Failed to get presence data' });
   }
 }
 
@@ -77,7 +77,6 @@ export async function getWorkspaceOnlineCount(req, res) {
     const { workspaceId } = req.params;
     const userId = req.user.userId;
 
-    // Check workspace membership
     const membership = await WorkspaceMember.findOne({
       workspaceId,
       userId,
@@ -91,14 +90,11 @@ export async function getWorkspaceOnlineCount(req, res) {
       });
     }
 
-    const onlineCount = presenceService.getWorkspaceOnlineCount(workspaceId);
+    const onlineCount = await Promise.resolve(presenceService.getWorkspaceOnlineCount(workspaceId)); // may be Promise or number
 
     res.json({
       success: true,
-      data: {
-        workspaceId,
-        onlineCount,
-      },
+      data: { workspaceId, onlineCount },
     });
   } catch (error) {
     logger.error('Failed to get online count', {
@@ -106,11 +102,7 @@ export async function getWorkspaceOnlineCount(req, res) {
       error: error.message,
       workspaceId: req.params.workspaceId,
     });
-
-    res.status(500).json({
-      success: false,
-      error: 'Failed to get online count',
-    });
+    res.status(500).json({ success: false, error: 'Failed to get online count' });
   }
 }
 
@@ -121,22 +113,15 @@ export async function getWorkspaceOnlineCount(req, res) {
  */
 export async function getPresenceStats(req, res) {
   try {
-    const stats = presenceService.getPresenceStats();
+    const stats = await Promise.resolve(presenceService.getPresenceStats());
 
-    res.json({
-      success: true,
-      data: stats,
-    });
+    res.json({ success: true, data: stats });
   } catch (error) {
     logger.error('Failed to get presence stats', {
       controller: 'presence',
       error: error.message,
     });
-
-    res.status(500).json({
-      success: false,
-      error: 'Failed to get presence statistics',
-    });
+    res.status(500).json({ success: false, error: 'Failed to get presence statistics' });
   }
 }
 
@@ -150,7 +135,6 @@ export async function getTypingUsers(req, res) {
     const { workspaceId, conversationId } = req.params;
     const userId = req.user.userId;
 
-    // Check workspace membership
     const membership = await WorkspaceMember.findOne({
       workspaceId,
       userId,
@@ -164,26 +148,20 @@ export async function getTypingUsers(req, res) {
       });
     }
 
-    const typingUsers = presenceService.getTypingUsers(workspaceId, conversationId);
+    const typingUsers = await Promise.resolve(
+      presenceService.getTypingUsers(workspaceId, conversationId)
+    );
 
     res.json({
       success: true,
-      data: {
-        workspaceId,
-        conversationId,
-        typingUsers,
-      },
+      data: { workspaceId, conversationId, typingUsers },
     });
   } catch (error) {
     logger.error('Failed to get typing users', {
       controller: 'presence',
       error: error.message,
     });
-
-    res.status(500).json({
-      success: false,
-      error: 'Failed to get typing users',
-    });
+    res.status(500).json({ success: false, error: 'Failed to get typing users' });
   }
 }
 

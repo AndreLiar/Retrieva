@@ -1,0 +1,19 @@
+{
+  "name": "retrieva-notification-service",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.5.0",
+    "express": "^5.0.1",
+    "ioredis": "^5.6.0",
+    "mongoose": "^8.0.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -1,27 +1,83 @@
 /**
- * Notification Service
+ * Notification Service — Monolith Proxy
  *
- * Centralized service for managing notifications
- * Handles:
- * - Creating and persisting notifications
- * - Real-time delivery via WebSocket
- * - Email delivery (for important notifications)
- * - User preference checking
+ * All notification logic is delegated to the standalone notification-service
+ * microservice (see /notification-service/). The public API (method names +
+ * signatures) is identical to the original, so no callsite in the monolith
+ * needs to change.
+ *
+ * Routing:
+ *   NOTIFICATION_SERVICE_URL is set  → HTTP POST via internalClient
+ *   NOTIFICATION_SERVICE_URL not set → falls back to in-process logic so the
+ *                                      backend works without Docker for local dev.
  *
  * @module services/notificationService
  */
 
+import { internalClient } from '../utils/internalClient.js';
 import { Notification, NotificationTypes, NotificationPriority } from '../models/Notification.js';
 import { User } from '../models/User.js';
 import { emitToUser, isUserOnline } from './socketService.js';
 import { emailService } from './emailService.js';
 import logger from '../config/logger.js';
 
-/**
- * Default notification preferences
- */
+const NOTIFICATION_SERVICE_URL = process.env.NOTIFICATION_SERVICE_URL;
+
+// ---------------------------------------------------------------------------
+// Remote path (notification-service is running)
+// ---------------------------------------------------------------------------
+
+async function callNotificationService(path, payload) {
+  return internalClient.post(NOTIFICATION_SERVICE_URL, path, payload).catch((err) => {
+    logger.error('Notification service call failed', {
+      service: 'notification',
+      path,
+      error: err.message,
+    });
+    return { success: false, error: err.message };
+  });
+}
+
+const remote = {
+  createAndDeliver: (p) => callNotificationService('/internal/notify/deliver', p),
+  notifyWorkspaceInvitation: (p) =>
+    callNotificationService('/internal/notify/workspace-invitation', p),
+  notifyPermissionChange: (p) => callNotificationService('/internal/notify/permission-change', p),
+  notifyWorkspaceRemoval: (p) => callNotificationService('/internal/notify/workspace-removal', p),
+  notifySyncCompleted: (p) => callNotificationService('/internal/notify/sync-completed', p),
+  notifySyncFailed: (p) => callNotificationService('/internal/notify/sync-failed', p),
+  notifyWorkspaceMembers: (p) => callNotificationService('/internal/notify/workspace-members', p),
+  isNotificationEnabled: () => true,
+  DEFAULT_PREFERENCES: {
+    inApp: {
+      workspace_invitation: true,
+      workspace_removed: true,
+      permission_changed: true,
+      member_joined: true,
+      member_left: false,
+      sync_completed: true,
+      sync_failed: true,
+      indexing_completed: false,
+      indexing_failed: true,
+      system_alert: true,
+      token_limit_warning: true,
+    },
+    email: {
+      workspace_invitation: true,
+      workspace_removed: true,
+      permission_changed: false,
+      sync_failed: true,
+      system_alert: true,
+      token_limit_reached: true,
+    },
+  },
+};
+
+// ---------------------------------------------------------------------------
+// In-process fallback (local dev without docker-compose)
+// ---------------------------------------------------------------------------
+
 const DEFAULT_PREFERENCES = {
-  // In-app notifications (always on by default)
   inApp: {
     workspace_invitation: true,
     workspace_removed: true,
@@ -35,7 +91,6 @@ const DEFAULT_PREFERENCES = {
     system_alert: true,
     token_limit_warning: true,
   },
-  // Email notifications (selective by default)
   email: {
     workspace_invitation: true,
     workspace_removed: true,
@@ -44,7 +99,6 @@ const DEFAULT_PREFERENCES = {
     system_alert: true,
     token_limit_reached: true,
   },
-  // Push notifications (future)
   push: {
     workspace_invitation: true,
     sync_failed: true,
@@ -52,31 +106,13 @@ const DEFAULT_PREFERENCES = {
   },
 };
 
-/**
- * Check if user has notification enabled for a type
- * @param {Object} user - User object with notificationPreferences
- * @param {string} type - Notification type
- * @param {string} channel - Channel: 'inApp', 'email', 'push'
- * @returns {boolean}
- */
 function isNotificationEnabled(user, type, channel = 'inApp') {
   const prefs = user?.notificationPreferences || DEFAULT_PREFERENCES;
   const channelPrefs = prefs[channel] || DEFAULT_PREFERENCES[channel];
-
-  // If specific preference exists, use it; otherwise default to true for inApp
-  if (typeof channelPrefs[type] === 'boolean') {
-    return channelPrefs[type];
-  }
-
-  // Default behavior: inApp always on, email selective
+  if (typeof channelPrefs?.[type] === 'boolean') return channelPrefs[type];
   return channel === 'inApp';
 }
 
-/**
- * Create and deliver a notification
- * @param {Object} options - Notification options
- * @returns {Promise<Object>} Created notification and delivery status
- */
 async function createAndDeliver(options) {
   const {
     userId,
@@ -93,20 +129,17 @@ async function createAndDeliver(options) {
   } = options;
 
   try {
-    // Get user to check preferences
     const user = await User.findById(userId).select('email name notificationPreferences');
     if (!user) {
       logger.warn('Cannot create notification - user not found', { userId, type });
       return { success: false, reason: 'User not found' };
     }
 
-    // Check if user wants this notification (unless skipPreferenceCheck)
     if (!skipPreferenceCheck && !isNotificationEnabled(user, type, 'inApp')) {
       logger.debug('Notification skipped - user preference disabled', { userId, type });
       return { success: true, skipped: true, reason: 'User preference disabled' };
     }
 
-    // Create notification in database
     const notification = await Notification.createNotification({
       userId,
       type,
@@ -127,7 +160,6 @@ async function createAndDeliver(options) {
       deliveredViaEmail: false,
     };
 
-    // Deliver via WebSocket if user is online
     if (isUserOnline(userId.toString())) {
       emitToUser(userId.toString(), 'notification:new', {
         id: notification._id,
@@ -142,21 +174,12 @@ async function createAndDeliver(options) {
         actionLabel,
         createdAt: notification.createdAt,
       });
-
       notification.deliveredViaSocket = true;
       await notification.save();
       result.deliveredViaSocket = true;
-
-      logger.debug('Notification delivered via WebSocket', {
-        service: 'notification',
-        userId: userId.toString(),
-        type,
-      });
     }
 
-    // Check if email should be sent
     if (isNotificationEnabled(user, type, 'email') && priority !== NotificationPriority.LOW) {
-      // Send email for high priority or if user isn't online
       const shouldEmail =
         priority === NotificationPriority.URGENT ||
         priority === NotificationPriority.HIGH ||
@@ -164,7 +187,7 @@ async function createAndDeliver(options) {
 
       if (shouldEmail) {
         try {
-          await sendNotificationEmail(user, notification);
+          await _sendNotificationEmail(user, notification);
           notification.deliveredViaEmail = true;
           await notification.save();
           result.deliveredViaEmail = true;
@@ -199,121 +222,36 @@ async function createAndDeliver(options) {
   }
 }
 
-/**
- * Send notification via email
- * @param {Object} user - User object
- * @param {Object} notification - Notification object
- */
-async function sendNotificationEmail(user, notification) {
-  const { type, title, message, actionUrl, actionLabel, _data } = notification;
+async function _sendNotificationEmail(user, notification) {
+  const { type, title, message, actionUrl, actionLabel } = notification;
 
-  // Use specific email templates for certain types
   switch (type) {
     case NotificationTypes.WORKSPACE_INVITATION:
-      // Already handled by workspaceMemberController
       break;
 
     case NotificationTypes.SYNC_FAILED:
       await emailService.sendEmail({
         to: user.email,
         subject: `[Action Required] ${title}`,
-        html: generateNotificationEmailHtml({
-          title,
-          message,
-          actionUrl,
-          actionLabel,
-          priority: 'high',
-        }),
+        html: _notificationEmailHtml({ title, message, actionUrl, actionLabel, priority: 'high' }),
       });
       break;
 
     default:
-      // Generic notification email
       await emailService.sendEmail({
         to: user.email,
         subject: title,
-        html: generateNotificationEmailHtml({
-          title,
-          message,
-          actionUrl,
-          actionLabel,
-        }),
+        html: _notificationEmailHtml({ title, message, actionUrl, actionLabel }),
       });
   }
 }
 
-/**
- * Generate HTML for notification email
- */
-function generateNotificationEmailHtml({
-  title,
-  message,
-  actionUrl,
-  actionLabel,
-  priority = 'normal',
-}) {
+function _notificationEmailHtml({ title, message, actionUrl, actionLabel, priority = 'normal' }) {
   const buttonColor = priority === 'high' ? '#dc2626' : '#667eea';
-
-  return `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${title}</title>
-</head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-
-  <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 10px 10px 0 0; text-align: center;">
-    <h1 style="color: white; margin: 0; font-size: 20px;">${title}</h1>
-  </div>
-
-  <div style="background: #f9fafb; padding: 25px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 10px 10px;">
-    <p style="font-size: 16px; margin-bottom: 20px;">
-      ${message}
-    </p>
-
-    ${
-      actionUrl && actionLabel
-        ? `
-    <div style="text-align: center; margin: 25px 0;">
-      <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}${actionUrl}"
-         style="background: ${buttonColor};
-                color: white;
-                padding: 12px 25px;
-                text-decoration: none;
-                border-radius: 8px;
-                font-weight: 600;
-                display: inline-block;">
-        ${actionLabel}
-      </a>
-    </div>
-    `
-        : ''
-    }
-
-    <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
-
-    <p style="font-size: 12px; color: #9ca3af; text-align: center;">
-      This notification was sent by Retrieva.<br>
-      <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/settings/notifications" style="color: #667eea;">
-        Manage notification preferences
-      </a>
-    </p>
-  </div>
-
-</body>
-</html>
-  `;
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title></head><body style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;"><div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 10px 10px 0 0; text-align: center;"><h1 style="color: white; margin: 0; font-size: 20px;">${title}</h1></div><div style="background: #f9fafb; padding: 25px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 10px 10px;"><p>${message}</p>${actionUrl && actionLabel ? `<div style="text-align: center; margin: 25px 0;"><a href="${frontendUrl}${actionUrl}" style="background: ${buttonColor}; color: white; padding: 12px 25px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">${actionLabel}</a></div>` : ''}<hr style="border: none; border-top: 1px solid #e5e7eb;"><p style="font-size: 12px; color: #9ca3af; text-align: center;">This notification was sent by Retrieva.<br><a href="${frontendUrl}/settings/notifications" style="color: #667eea;">Manage preferences</a></p></div></body></html>`;
 }
 
-// ============================================================================
-// Convenience Methods for Specific Notification Types
-// ============================================================================
-
-/**
- * Send workspace invitation notification
- */
 async function notifyWorkspaceInvitation({
   userId,
   workspaceId,
@@ -322,7 +260,6 @@ async function notifyWorkspaceInvitation({
   inviterName,
   role,
 }) {
-  // Create database notification
   const notification = await Notification.createInvitationNotification({
     userId,
     workspaceId,
@@ -332,7 +269,6 @@ async function notifyWorkspaceInvitation({
     role,
   });
 
-  // Deliver via WebSocket
   if (isUserOnline(userId.toString())) {
     emitToUser(userId.toString(), 'notification:invitation', {
       id: notification._id,
@@ -343,7 +279,6 @@ async function notifyWorkspaceInvitation({
       role,
       createdAt: notification.createdAt,
     });
-
     notification.deliveredViaSocket = true;
     await notification.save();
   }
@@ -357,9 +292,6 @@ async function notifyWorkspaceInvitation({
   return notification;
 }
 
-/**
- * Send permission change notification
- */
 async function notifyPermissionChange({
   userId,
   workspaceId,
@@ -390,7 +322,6 @@ async function notifyPermissionChange({
       changedBy: actorName,
       createdAt: notification.createdAt,
     });
-
     notification.deliveredViaSocket = true;
     await notification.save();
   }
@@ -398,9 +329,6 @@ async function notifyPermissionChange({
   return notification;
 }
 
-/**
- * Send workspace removal notification
- */
 async function notifyWorkspaceRemoval({ userId, workspaceId, workspaceName, actorId, actorName }) {
   const notification = await Notification.createRemovalNotification({
     userId,
@@ -419,7 +347,6 @@ async function notifyWorkspaceRemoval({ userId, workspaceId, workspaceName, acto
       removedBy: actorName,
       createdAt: notification.createdAt,
     });
-
     notification.deliveredViaSocket = true;
     await notification.save();
   }
@@ -427,9 +354,6 @@ async function notifyWorkspaceRemoval({ userId, workspaceId, workspaceName, acto
   return notification;
 }
 
-/**
- * Send sync completed notification to workspace owner
- */
 async function notifySyncCompleted({
   userId,
   workspaceId,
@@ -459,7 +383,6 @@ async function notifySyncCompleted({
       data: { totalPages, successCount, errorCount, duration },
       createdAt: notification.createdAt,
     });
-
     notification.deliveredViaSocket = true;
     await notification.save();
   }
@@ -467,9 +390,6 @@ async function notifySyncCompleted({
   return notification;
 }
 
-/**
- * Send sync failed notification
- */
 async function notifySyncFailed({ userId, workspaceId, workspaceName, error }) {
   const notification = await Notification.createSyncFailedNotification({
     userId,
@@ -478,7 +398,6 @@ async function notifySyncFailed({ userId, workspaceId, workspaceName, error }) {
     error,
   });
 
-  // Always try to deliver via WebSocket for urgent notifications
   if (isUserOnline(userId.toString())) {
     emitToUser(userId.toString(), 'notification:new', {
       id: notification._id,
@@ -490,15 +409,13 @@ async function notifySyncFailed({ userId, workspaceId, workspaceName, error }) {
       data: { error },
       createdAt: notification.createdAt,
     });
-
     notification.deliveredViaSocket = true;
     await notification.save();
   }
 
-  // Also send email for failed syncs
   const user = await User.findById(userId).select('email name');
   if (user && isNotificationEnabled(user, NotificationTypes.SYNC_FAILED, 'email')) {
-    await sendNotificationEmail(user, notification);
+    await _sendNotificationEmail(user, notification);
     notification.deliveredViaEmail = true;
     await notification.save();
   }
@@ -506,9 +423,6 @@ async function notifySyncFailed({ userId, workspaceId, workspaceName, error }) {
   return notification;
 }
 
-/**
- * Notify all workspace members about an event
- */
 async function notifyWorkspaceMembers({
   workspaceId,
   excludeUserId = null,
@@ -517,7 +431,6 @@ async function notifyWorkspaceMembers({
   message,
   data = {},
 }) {
-  // Import here to avoid circular dependency
   const { WorkspaceMember } = await import('../models/WorkspaceMember.js');
 
   const members = await WorkspaceMember.find({
@@ -528,22 +441,14 @@ async function notifyWorkspaceMembers({
 
   const results = await Promise.all(
     members.map((member) =>
-      createAndDeliver({
-        userId: member.userId,
-        type,
-        title,
-        message,
-        workspaceId,
-        data,
-      })
+      createAndDeliver({ userId: member.userId, type, title, message, workspaceId, data })
     )
   );
 
   return results;
 }
 
-// Export service
-export const notificationService = {
+const local = {
   createAndDeliver,
   notifyWorkspaceInvitation,
   notifyPermissionChange,
@@ -554,5 +459,21 @@ export const notificationService = {
   isNotificationEnabled,
   DEFAULT_PREFERENCES,
 };
+
+// Use remote proxy when NOTIFICATION_SERVICE_URL is configured, otherwise fall back
+// to the in-process logic (no docker-compose required for local dev).
+export const notificationService = NOTIFICATION_SERVICE_URL ? remote : local;
+
+if (NOTIFICATION_SERVICE_URL) {
+  logger.info('Notification service: using remote microservice', {
+    service: 'notification',
+    url: NOTIFICATION_SERVICE_URL,
+  });
+} else {
+  logger.info(
+    'Notification service: using in-process logic (set NOTIFICATION_SERVICE_URL to use microservice)',
+    { service: 'notification' }
+  );
+}
 
 export default notificationService;
