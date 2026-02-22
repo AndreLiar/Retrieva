@@ -188,4 +188,16 @@ npm run seed:compliance         # Seed DORA articles into Qdrant
 npm run seed:compliance:reset   # Delete and re-seed
 ```
 
-The knowledge base (`compliance_kb` Qdrant collection) contains verbatim article text for DORA Articles 5, 6, 9, 10, 11, 17, 18, 19, 24, 25, 28, 29, and 30.
+The knowledge base (`compliance_kb` Qdrant collection) contains 45 DORA articles covering all 5 regulatory chapters:
+
+| Domain | Articles | Coverage |
+|--------|----------|---------|
+| General Provisions | 4 | Articles 1–4 (scope, definitions, proportionality) |
+| ICT Risk Management | 12 | Articles 5–16 (governance, framework, identification, protection, detection, response, backup, training, communication) |
+| Incident Reporting | 7 | Articles 17–23 (incident management, classification, reporting, supervisory feedback, payment incidents) |
+| Resilience Testing | 4 | Articles 24–27 (testing programme, ICT tool tests, TLPT, tester requirements) |
+| Third-Party Risk | 3 | Articles 28–30 (general principles, concentration risk, key contractual provisions) |
+| ICT Third-Party Oversight | 14 | Articles 31–44 (critical provider designation, lead overseer powers, investigations, inspections, international cooperation) |
+| Information Sharing | 1 | Article 45 (cyber threat intelligence sharing arrangements) |
+
+The gap analysis agent (`gapAnalysisAgent.js`) queries the four core operational domains (ICT Risk Management, Incident Reporting, Resilience Testing, Third-Party Risk) when analysing vendor documents. The DORA Copilot (`ragAgent.js`) can search all seven domains when answering compliance questions.
