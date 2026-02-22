@@ -23,6 +23,9 @@ const {
   DO_SPACES_ENDPOINT,
   DO_SPACES_REGION = 'fra1',
   DO_SPACES_BUCKET = 'retrieva-files',
+  // Set to 'true' when using MinIO locally (path-style: endpoint/bucket/key)
+  // Leave unset or 'false' for DO Spaces in production (virtual-hosted style)
+  DO_SPACES_FORCE_PATH_STYLE = 'false',
 } = process.env;
 
 export const spacesEnabled = !!(DO_SPACES_KEY && DO_SPACES_SECRET && DO_SPACES_ENDPOINT);
@@ -37,7 +40,6 @@ export const spacesClient = spacesEnabled
         accessKeyId: DO_SPACES_KEY,
         secretAccessKey: DO_SPACES_SECRET,
       },
-      // DO Spaces requires path-style addressing
-      forcePathStyle: false,
+      forcePathStyle: DO_SPACES_FORCE_PATH_STYLE === 'true',
     })
   : null;
