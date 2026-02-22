@@ -313,7 +313,7 @@ export async function processDocumentEntities({
 export async function extractMessageEntities(message, workspaceId) {
   try {
     // Search for existing entities mentioned in message
-    const words = message.toLowerCase().split(/\s+/);
+
     const mentionedEntities = [];
 
     // Get all workspace entities for matching
@@ -322,8 +322,6 @@ export async function extractMessageEntities(message, workspaceId) {
     );
 
     for (const entity of allEntities) {
-      const entityWords = entity.normalizedName.split(' ');
-
       // Check if entity name appears in message
       if (message.toLowerCase().includes(entity.normalizedName)) {
         mentionedEntities.push(entity);

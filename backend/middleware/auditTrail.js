@@ -141,7 +141,7 @@ function getTarget(req) {
  * @returns {function(Request, Response, NextFunction): void} Express middleware
  */
 export function createAuditMiddleware(options = {}) {
-  const { excludePaths = [], includeBody = true } = options;
+  const { excludePaths = [], _includeBody = true } = options;
 
   return async (req, res, next) => {
     // Skip excluded paths

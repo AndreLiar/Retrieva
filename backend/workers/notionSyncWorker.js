@@ -8,7 +8,6 @@ import { documentIndexQueue, notionSyncQueue } from '../config/queue.js';
 import logger from '../config/logger.js';
 import { connectDB } from '../config/database.js';
 import { documentRetryTracker } from '../utils/rag/documentRetryTracker.js';
-import { notionCircuitBreaker } from '../utils/core/circuitBreaker.js';
 import { sparseVectorManager } from '../services/search/sparseVector.js';
 import {
   emitSyncStart,
@@ -126,7 +125,7 @@ async function processSyncJob(job) {
 
     await workspace.updateSyncStatus('syncing', job.id);
 
-    const { activityUserId, workspaceOwner } = await logSyncActivity(
+    const { _activityUserId, _workspaceOwner } = await logSyncActivity(
       workspace,
       'sync_started',
       { syncType, jobId: job.id },
@@ -474,10 +473,10 @@ async function processSyncJob(job) {
 export const notionSyncWorker = new Worker('notionSync', processSyncJob, {
   connection: redisConnection,
   concurrency: 2,
-  lockDuration: 600000,      // 10 minutes - max time for a single operation
-  lockRenewTime: 240000,     // 4 minutes - renew lock every 4 min
-  maxStalledCount: 3,        // Allow 3 stall detections before failing
-  stalledInterval: 300000,   // Check for stalled jobs every 5 minutes
+  lockDuration: 600000, // 10 minutes - max time for a single operation
+  lockRenewTime: 240000, // 4 minutes - renew lock every 4 min
+  maxStalledCount: 3, // Allow 3 stall detections before failing
+  stalledInterval: 300000, // Check for stalled jobs every 5 minutes
 });
 
 notionSyncWorker.on('completed', (job) => {
@@ -555,9 +554,10 @@ async function recoverStaleJob(staleJob) {
   const canRecover = retryCount < MAX_RECOVERY_ATTEMPTS;
 
   // Calculate how much progress was made
-  const progressPercent = progress?.totalDocuments > 0
-    ? Math.round((progress.processedDocuments / progress.totalDocuments) * 100)
-    : 0;
+  const progressPercent =
+    progress?.totalDocuments > 0
+      ? Math.round((progress.processedDocuments / progress.totalDocuments) * 100)
+      : 0;
 
   logger.warn(`Processing stale job for recovery`, {
     service: 'notion-sync',
@@ -651,7 +651,11 @@ async function recoverStaleJob(staleJob) {
     });
 
     // Send error alert for operations visibility
-    await sendErrorAlerts(workspaceId, new Error(`Sync job timed out after ${retryCount + 1} attempts`), staleJob);
+    await sendErrorAlerts(
+      workspaceId,
+      new Error(`Sync job timed out after ${retryCount + 1} attempts`),
+      staleJob
+    );
   }
 }
 

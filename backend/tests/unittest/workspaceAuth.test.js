@@ -82,7 +82,7 @@ describe('Workspace Auth Middleware', () => {
     it('should return 403 when user has no workspace memberships', async () => {
       mockReq.user = { userId: 'user-123' };
 
-      const mockFind = vi.fn().mockReturnValue({
+      const _mockFind = vi.fn().mockReturnValue({
         populate: vi.fn().mockResolvedValue([]),
       });
       WorkspaceMember.find.mockReturnValue({ populate: vi.fn().mockResolvedValue([]) });

@@ -24,7 +24,7 @@
 
 import { Worker } from 'bullmq';
 import { redisConnection } from '../config/redis.js';
-import { documentIndexQueue, dataSourceSyncQueue } from '../config/queue.js';
+import { documentIndexQueue } from '../config/queue.js';
 import { DataSource } from '../models/DataSource.js';
 import { DocumentSource } from '../models/DocumentSource.js';
 import { FileAdapter } from '../adapters/FileAdapter.js';
@@ -149,7 +149,7 @@ async function processConfluence(dataSource, workspaceId, stats, job) {
       if (i % 5 === 0) {
         try {
           await job.updateProgress({ phase: 'fetching', total: stats.total, synced: i + 1 });
-        } catch (_) {
+        } catch {
           // non-critical
         }
         emitSyncProgress(workspaceId, {

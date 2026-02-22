@@ -10,7 +10,7 @@
  * @module services/liveAnalyticsService
  */
 
-import { emitToUser, emitToWorkspace, broadcast } from './socketService.js';
+import { emitToUser, emitToWorkspace } from './socketService.js';
 import { presenceService } from './presenceService.js';
 import { getStats as getSocketStats } from './socketService.js';
 import { QueryActivity } from '../models/QueryActivity.js';

@@ -2,7 +2,7 @@
  * Token Estimation Tests (Phase 5)
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import {
   estimateTokens,
   estimateTokensAccurate,
@@ -14,7 +14,8 @@ import {
 describe('Token Estimation', () => {
   describe('estimateTokens (heuristic)', () => {
     it('should estimate English prose at ~4.5 chars/token', () => {
-      const englishText = 'The quick brown fox jumps over the lazy dog. This is a sample English sentence for testing token estimation accuracy.';
+      const englishText =
+        'The quick brown fox jumps over the lazy dog. This is a sample English sentence for testing token estimation accuracy.';
       const tokens = estimateTokens(englishText);
       const expectedTokens = Math.ceil(englishText.length / 4.5);
       expect(tokens).toBe(expectedTokens);
@@ -61,7 +62,8 @@ describe('Token Estimation', () => {
 
   describe('detectContentType', () => {
     it('should detect English prose', () => {
-      const text = 'This is a simple English sentence without any special characters or code patterns.';
+      const text =
+        'This is a simple English sentence without any special characters or code patterns.';
       expect(detectContentType(text)).toBe('english');
     });
 
@@ -132,11 +134,7 @@ describe('Token Estimation', () => {
 
   describe('estimateTokensBatch', () => {
     it('should estimate tokens for multiple texts', async () => {
-      const texts = [
-        'First piece of text.',
-        'Second longer piece of text here.',
-        'Third text.',
-      ];
+      const texts = ['First piece of text.', 'Second longer piece of text here.', 'Third text.'];
 
       const results = await estimateTokensBatch(texts);
 
@@ -152,16 +150,12 @@ describe('Token Estimation', () => {
     });
 
     it('should handle mixed content in batch', async () => {
-      const texts = [
-        'English text here',
-        'function code() { return 1; }',
-        '中文测试文本',
-      ];
+      const texts = ['English text here', 'function code() { return 1; }', '中文测试文本'];
 
       const results = await estimateTokensBatch(texts);
 
       expect(results).toHaveLength(3);
-      results.forEach(count => expect(count).toBeGreaterThan(0));
+      results.forEach((count) => expect(count).toBeGreaterThan(0));
     });
   });
 

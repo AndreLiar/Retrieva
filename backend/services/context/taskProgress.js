@@ -10,7 +10,6 @@
 import { StringOutputParser } from '@langchain/core/output_parsers';
 import {
   TaskStatus,
-  Task,
   taskLlm,
   PROGRESS_PROMPT,
   COMPLETION_PROMPT,

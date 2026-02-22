@@ -23,7 +23,7 @@
 
 import { Worker } from 'bullmq';
 import { redisConnection } from '../config/redis.js';
-import { documentIndexQueue, mcpSyncQueue } from '../config/queue.js';
+import { documentIndexQueue } from '../config/queue.js';
 import { MCPDataSource } from '../models/MCPDataSource.js';
 import { DocumentSource } from '../models/DocumentSource.js';
 import { MCPDataSourceAdapter } from '../adapters/MCPDataSourceAdapter.js';
@@ -338,7 +338,7 @@ async function _detectAndSoftDeleteRemovedDocs(workspaceId, sourceType, liveIds)
 async function setJobProgress(job, data) {
   try {
     await job.updateProgress(data);
-  } catch (_) {
+  } catch {
     // non-critical
   }
 }

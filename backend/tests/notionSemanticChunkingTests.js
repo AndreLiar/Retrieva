@@ -15,7 +15,6 @@
 
 import { ragService } from '../services/rag.js';
 import { Conversation } from '../models/Conversation.js';
-import logger from '../config/logger.js';
 
 /**
  * Gold Standard Test Queries
@@ -317,7 +316,7 @@ async function runTests() {
   // Save to file
   try {
     results.saveToFile();
-  } catch (error) {
+  } catch {
     console.log('\n⚠️  Could not save results to file (tests/results/ directory may not exist)');
   }
 

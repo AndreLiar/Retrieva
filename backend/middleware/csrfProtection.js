@@ -166,7 +166,7 @@ export function csrfProtection(options = {}) {
       ) {
         throw new Error('Token mismatch');
       }
-    } catch (_error) {
+    } catch {
       logger.warn('CSRF validation failed - token mismatch', {
         service: 'csrf',
         path: req.path,

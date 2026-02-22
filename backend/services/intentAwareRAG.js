@@ -17,10 +17,7 @@ import { ragService } from './rag.js';
 import { queryRouter } from './intent/index.js';
 
 // Extracted intent modules
-import {
-  handleNonRAGIntent,
-  handleOutOfScope,
-} from './intent/intentHandlers.js';
+import { handleNonRAGIntent } from './intent/intentHandlers.js';
 import {
   buildFullContext,
   updateContextAfterInteraction,
@@ -75,7 +72,13 @@ class IntentAwareRAGService {
    * Process a query with context enrichment, then delegate to ragService.
    */
   async ask(question, options = {}) {
-    const { conversationId, filters = null, forceIntent = null, userId = null, onEvent = null } = options;
+    const {
+      conversationId,
+      filters = null,
+      forceIntent = null,
+      userId = null,
+      onEvent = null,
+    } = options;
 
     if (!conversationId) {
       throw new Error('conversationId is required');

@@ -370,7 +370,7 @@ class SessionStateManager {
    * Determine appropriate phase based on context
    * @private
    */
-  _determinePhase(state, intent, topic) {
+  _determinePhase(state, intent, _topic) {
     const currentPhase = state.currentPhase;
     const messageCount = state.metrics.totalMessages;
     const topicMessageCount = state.currentTopic.messageCount || 0;

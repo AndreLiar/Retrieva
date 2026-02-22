@@ -191,7 +191,9 @@ export function validateOutput(content, options = {}) {
   // Check length constraints
   if (trimmedContent.length < minLength) {
     result.valid = false;
-    result.errors.push(`Answer is too short (${trimmedContent.length} chars, minimum ${minLength})`);
+    result.errors.push(
+      `Answer is too short (${trimmedContent.length} chars, minimum ${minLength})`
+    );
   }
 
   if (trimmedContent.length > maxLength) {
@@ -213,7 +215,7 @@ export function validateOutput(content, options = {}) {
   }
 
   // Run quality checks
-  for (const { name, check, warning } of QUALITY_CHECKS) {
+  for (const { _name, check, warning } of QUALITY_CHECKS) {
     if (check(trimmedContent)) {
       if (strict) {
         result.valid = false;

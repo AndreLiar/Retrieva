@@ -86,7 +86,7 @@ export class NotionAdapter extends BaseDocumentSourceAdapter {
    * @param {Object} options - Filter options
    * @returns {Promise<Array>} Array of page objects
    */
-  async listPages(options = {}) {
+  async listPages(_options = {}) {
     const pages = [];
     let hasMore = true;
     let startCursor = undefined;

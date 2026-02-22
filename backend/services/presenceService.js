@@ -11,7 +11,6 @@
  */
 
 import { emitToWorkspace, emitToUser } from './socketService.js';
-import { WorkspaceMember } from '../models/WorkspaceMember.js';
 import logger from '../config/logger.js';
 
 // ============================================================================

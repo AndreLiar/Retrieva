@@ -16,7 +16,8 @@ const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 // Azure OpenAI Configuration
 const AZURE_OPENAI_API_KEY = process.env.AZURE_OPENAI_API_KEY;
 const AZURE_OPENAI_ENDPOINT = process.env.AZURE_OPENAI_ENDPOINT;
-const AZURE_OPENAI_EMBEDDING_DEPLOYMENT = process.env.AZURE_OPENAI_EMBEDDING_DEPLOYMENT || 'text-embedding-3-small';
+const AZURE_OPENAI_EMBEDDING_DEPLOYMENT =
+  process.env.AZURE_OPENAI_EMBEDDING_DEPLOYMENT || 'text-embedding-3-small';
 const AZURE_OPENAI_API_VERSION = process.env.AZURE_OPENAI_API_VERSION || '2024-02-15-preview';
 
 // Embedding provider type (azure, openai, local)
@@ -94,9 +95,7 @@ const auditLog = {
   },
 
   getByWorkspace(workspaceId, count = 50) {
-    return this.entries
-      .filter((e) => e.workspaceId === workspaceId)
-      .slice(-count);
+    return this.entries.filter((e) => e.workspaceId === workspaceId).slice(-count);
   },
 };
 
@@ -246,7 +245,7 @@ export function getCloudProviderType() {
  * @returns {string} Provider type (local or cloud)
  */
 export function selectProvider(context) {
-  const { trustLevel, cloudConsent, preferCloud, fallbackToCloud } = context;
+  const { trustLevel, cloudConsent, preferCloud, _fallbackToCloud } = context;
 
   // Regulated data must always use local
   if (trustLevel === TrustLevel.REGULATED) {
@@ -310,10 +309,7 @@ export async function embedTexts(texts, context) {
       usedProvider = EmbeddingProvider.CLOUD;
       embeddings = await embedWithCloud(texts, context);
       error = null;
-    } else if (
-      selectedProvider === EmbeddingProvider.CLOUD &&
-      context.fallbackToCloud !== false
-    ) {
+    } else if (selectedProvider === EmbeddingProvider.CLOUD && context.fallbackToCloud !== false) {
       logger.warn('Cloud embedding failed, falling back to local', {
         service: 'embedding-router',
         workspaceId: context.workspaceId,
@@ -332,7 +328,8 @@ export async function embedTexts(texts, context) {
 
   // Determine model name based on provider
   const cloudProviderType = getCloudProviderType();
-  const cloudModelName = cloudProviderType === 'azure' ? AZURE_OPENAI_EMBEDDING_DEPLOYMENT : OPENAI_MODEL;
+  const cloudModelName =
+    cloudProviderType === 'azure' ? AZURE_OPENAI_EMBEDDING_DEPLOYMENT : OPENAI_MODEL;
 
   // Create embedding metadata
   const metadata = {
@@ -459,7 +456,8 @@ export async function embedQuery(text, context) {
   metrics.totalTimeMs += timeMs;
 
   const cloudProviderType = getCloudProviderType();
-  const cloudModelName = cloudProviderType === 'azure' ? AZURE_OPENAI_EMBEDDING_DEPLOYMENT : OPENAI_MODEL;
+  const cloudModelName =
+    cloudProviderType === 'azure' ? AZURE_OPENAI_EMBEDDING_DEPLOYMENT : OPENAI_MODEL;
 
   return {
     embedding,

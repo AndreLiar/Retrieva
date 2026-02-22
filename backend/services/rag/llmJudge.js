@@ -91,7 +91,7 @@ Evaluate this answer and respond with JSON only.`,
  * @param {string} context - The context string with source content
  * @returns {string} Formatted sources string
  */
-function formatSourcesForJudge(sources, context) {
+function formatSourcesForJudge(sources, _context) {
   return sources
     .map((source, index) => {
       return `[Source ${source.sourceNumber || index + 1}]: ${source.title}${source.section ? ` - ${source.section}` : ''}`;

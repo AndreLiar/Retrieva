@@ -390,7 +390,7 @@ class UserPreferenceManager {
    * @param {Object} interaction - Interaction details
    */
   async learnFromInteraction(userId, interaction) {
-    const { queryLength, responseLength, intent, topic, hadFollowUp, hadClarification } =
+    const { queryLength, _responseLength, _intent, topic, hadFollowUp, hadClarification } =
       interaction;
 
     const prefs = await this.getOrCreate(userId);

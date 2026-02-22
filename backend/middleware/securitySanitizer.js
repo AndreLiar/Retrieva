@@ -197,7 +197,7 @@ function sanitizeObjectXSS(obj, aggressive = false) {
  * @param {boolean} options.replaceWith - Value to replace dangerous values with (default: '')
  * @returns {Function} Express middleware
  */
-export function mongoSanitize(options = {}) {
+export function mongoSanitize(_options = {}) {
   return (req, res, next) => {
     if (req.body) {
       req.body = sanitizeNoSQL(req.body, 'body');

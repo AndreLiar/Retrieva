@@ -11,7 +11,6 @@
  */
 
 import { Entity } from '../../models/Entity.js';
-import { DocumentSummary } from '../../models/DocumentSummary.js';
 import {
   extractMessageEntities,
   buildEntityContext,
@@ -38,8 +37,6 @@ const REDIS_KEYS = {
 
 // TTL for conversation entity tracking (24 hours)
 const CONVERSATION_ENTITY_TTL = 24 * 60 * 60;
-// TTL for entity cache (1 hour)
-const ENTITY_CACHE_TTL = 60 * 60;
 
 /**
  * Entity Memory Manager
@@ -484,7 +481,7 @@ export async function searchEntities(workspaceId, searchQuery, options = {}) {
  * @returns {Promise<Object>} Graph data
  */
 export async function getEntityGraph(workspaceId, entityId, options = {}) {
-  const { depth = 1, limit = 20 } = options;
+  const { _depth = 1, limit = 20 } = options;
 
   const centerEntity = await Entity.findById(entityId).populate(
     'relationships.entityId',

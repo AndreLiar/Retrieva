@@ -64,7 +64,7 @@ describe('Sparse Vector Service', () => {
 
       // Check that at least one top result mentions Stripe
       const topResults = results.slice(0, 3);
-      const hasStripeMatch = topResults.some(
+      const _hasStripeMatch = topResults.some(
         (r) =>
           r.metadata?.title?.toLowerCase().includes('stripe') ||
           r.metadata?.sourceId?.toLowerCase().includes('stripe')

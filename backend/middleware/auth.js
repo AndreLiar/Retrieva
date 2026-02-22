@@ -210,7 +210,7 @@ export const optionalAuth = async (req, res, next) => {
             userAgent: req.headers['user-agent'],
           }
         );
-      } catch (logError) {
+      } catch {
         // Don't fail if security logging fails
       }
     }

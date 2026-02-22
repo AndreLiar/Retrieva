@@ -27,7 +27,7 @@ const request = (path, method = 'GET', data = null) => {
       res.on('end', () => {
         try {
           resolve(JSON.parse(body));
-        } catch (e) {
+        } catch {
           resolve(body);
         }
       });

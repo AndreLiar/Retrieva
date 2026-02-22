@@ -26,28 +26,6 @@ function fileTypeFromName(originalname) {
   return path.extname(originalname).replace('.', '').toLowerCase();
 }
 
-/**
- * Validate that the workspace from query/body matches a workspace the user
- * is authorised for (req.authorizedWorkspaces set by requireWorkspaceAccess).
- */
-function resolveWorkspaceId(req) {
-  const workspaceId = req.query.workspaceId || req.body.workspaceId;
-  if (!workspaceId) return null;
-
-  const authorizedIds = (req.authorizedWorkspaces || []).map((w) =>
-    (w.workspaceId || w._id || '').toString()
-  );
-
-  // Accept if user is authorized for this workspace
-  if (authorizedIds.includes(workspaceId)) return workspaceId;
-
-  // Also accept MongoDB _id comparisons
-  const authorizedMongoIds = (req.authorizedWorkspaces || []).map((w) => w._id?.toString());
-  if (authorizedMongoIds.includes(workspaceId)) return workspaceId;
-
-  return null;
-}
-
 // ---------------------------------------------------------------------------
 // Controllers
 // ---------------------------------------------------------------------------

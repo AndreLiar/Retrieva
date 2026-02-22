@@ -205,7 +205,7 @@ async function createAndDeliver(options) {
  * @param {Object} notification - Notification object
  */
 async function sendNotificationEmail(user, notification) {
-  const { type, title, message, actionUrl, actionLabel, data } = notification;
+  const { type, title, message, actionUrl, actionLabel, _data } = notification;
 
   // Use specific email templates for certain types
   switch (type) {

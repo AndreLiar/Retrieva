@@ -3,7 +3,7 @@
  * Tests for semantic block grouping with list splitting
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import {
   groupBlocksSemantically,
   mergeSmallGroups,
@@ -357,10 +357,7 @@ describe('Notion Transformer', () => {
 
   describe('transformBlocksToText', () => {
     it('should transform bullet list items', () => {
-      const blocks = [
-        createBulletItem('First item'),
-        createBulletItem('Second item'),
-      ];
+      const blocks = [createBulletItem('First item'), createBulletItem('Second item')];
 
       const text = transformBlocksToText(blocks);
 
@@ -369,10 +366,7 @@ describe('Notion Transformer', () => {
     });
 
     it('should transform numbered list items', () => {
-      const blocks = [
-        createNumberedItem('Step one'),
-        createNumberedItem('Step two'),
-      ];
+      const blocks = [createNumberedItem('Step one'), createNumberedItem('Step two')];
 
       const text = transformBlocksToText(blocks);
 

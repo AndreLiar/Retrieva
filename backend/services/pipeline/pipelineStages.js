@@ -1,4 +1,4 @@
-import { Queue, Worker } from 'bullmq';
+import { Queue } from 'bullmq';
 import { redisConnection } from '../../config/redis.js';
 import logger from '../../config/logger.js';
 import crypto from 'crypto';
@@ -127,9 +127,7 @@ export function getStageMetrics(stage = null) {
   if (stage) {
     return { [stage]: { ...stageMetrics[stage] } };
   }
-  return Object.fromEntries(
-    Object.entries(stageMetrics).map(([s, m]) => [s, { ...m }])
-  );
+  return Object.fromEntries(Object.entries(stageMetrics).map(([s, m]) => [s, { ...m }]));
 }
 
 export function resetStageMetrics(stage = null) {
@@ -188,15 +186,19 @@ export async function addToPipeline(stage, data, options = {}) {
     return null;
   }
 
-  const job = await queue.add(stage, {
-    ...data,
-    idempotencyKey,
+  const job = await queue.add(
     stage,
-    createdAt: new Date().toISOString(),
-  }, {
-    ...options,
-    jobId: idempotencyKey, // Use idempotency key as job ID
-  });
+    {
+      ...data,
+      idempotencyKey,
+      stage,
+      createdAt: new Date().toISOString(),
+    },
+    {
+      ...options,
+      jobId: idempotencyKey, // Use idempotency key as job ID
+    }
+  );
 
   logger.debug(`Added job to pipeline stage: ${stage}`, {
     service: 'pipeline',
@@ -271,9 +273,7 @@ export function needsEmbeddingMigration(metadata) {
   if (!metadata?.version) return true;
   if (metadata.version !== EMBEDDING_VERSION.current) return true;
 
-  const config = metadata.provider === 'cloud'
-    ? EMBEDDING_VERSION.cloud
-    : EMBEDDING_VERSION.local;
+  const config = metadata.provider === 'cloud' ? EMBEDDING_VERSION.cloud : EMBEDDING_VERSION.local;
 
   if (metadata.model !== config.model) return true;
 

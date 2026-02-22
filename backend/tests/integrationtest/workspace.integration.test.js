@@ -143,7 +143,6 @@ describe('Workspace/Notion API Integration Tests', () => {
   let user1Token;
   let user2Token;
   let user1Id;
-  let user2Id;
   let workspaceId;
 
   beforeAll(async () => {
@@ -188,8 +187,7 @@ describe('Workspace/Notion API Integration Tests', () => {
       .send({ email: testUser2.email, password: testUser2.password });
     expect(loginRes2.status).toBe(200);
     user2Token = loginRes2.body.data.accessToken;
-    const user2Doc = await User.findOne({ email: testUser2.email });
-    user2Id = user2Doc._id.toString();
+    // user2Id removed (unused)
   });
 
   afterAll(async () => {

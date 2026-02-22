@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   extractCitations,
   validateCitations,
@@ -219,8 +219,7 @@ describe('Citation Validator', () => {
     });
 
     it('should handle text with all citations', () => {
-      const text =
-        'Claim one [Source 1]. Claim two [Source 2]. Claim three [Source 3].';
+      const text = 'Claim one [Source 1]. Claim two [Source 2]. Claim three [Source 3].';
       const result = analyzeCitationCoverage(text);
 
       expect(result.coverage).toBe(1);

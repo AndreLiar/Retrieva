@@ -24,12 +24,7 @@ import {
 } from './taskTrackerSchema.js';
 
 // Import progress and completion logic
-import {
-  updateTaskProgress,
-  checkTaskCompletion,
-  completeTask,
-  buildTaskContext,
-} from './taskProgress.js';
+import { updateTaskProgress, checkTaskCompletion, buildTaskContext } from './taskProgress.js';
 
 // Re-export for backward compatibility
 export { TaskStatus, TaskType, Task };

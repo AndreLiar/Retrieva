@@ -195,7 +195,7 @@ userSchema.pre('save', async function () {
 userSchema.methods.comparePassword = async function (candidatePassword) {
   try {
     return await bcrypt.compare(candidatePassword, this.password);
-  } catch (error) {
+  } catch {
     throw new Error('Password comparison failed');
   }
 };
@@ -208,7 +208,7 @@ userSchema.methods.comparePassword = async function (candidatePassword) {
 userSchema.methods.incLoginAttempts = async function () {
   // If lock has expired, reset attempts
   if (this.lockUntil && this.lockUntil < Date.now()) {
-    return await this.updateOne({
+    return this.updateOne({
       $set: { loginAttempts: 1 },
       $unset: { lockUntil: 1 },
     });
@@ -225,7 +225,7 @@ userSchema.methods.incLoginAttempts = async function () {
     updates.$set = { lockUntil: Date.now() + lockTime };
   }
 
-  return await this.updateOne(updates);
+  return this.updateOne(updates);
 };
 
 /**
@@ -234,7 +234,7 @@ userSchema.methods.incLoginAttempts = async function () {
  * @returns {Promise<void>}
  */
 userSchema.methods.resetLoginAttempts = async function () {
-  return await this.updateOne({
+  return this.updateOne({
     $set: { loginAttempts: 0, lastLogin: Date.now() },
     $unset: { lockUntil: 1 },
   });
@@ -261,7 +261,7 @@ userSchema.methods.toJSON = function () {
  * @returns {Promise<UserDocument|null>} User with credentials or null
  */
 userSchema.statics.findByCredentials = async function (email) {
-  return await this.findOne({ email }).select('+password +refreshTokens +loginAttempts +lockUntil');
+  return this.findOne({ email }).select('+password +refreshTokens +loginAttempts +lockUntil');
 };
 
 /**

@@ -15,12 +15,7 @@ import { embeddings } from '../../config/embeddings.js';
 import logger from '../../config/logger.js';
 
 // Import similarity functions
-import {
-  levenshteinSimilarity,
-  jaccardSimilarity,
-  cosineSimilarity,
-  combinedStringSimilarity,
-} from './entitySimilarity.js';
+import { cosineSimilarity, combinedStringSimilarity } from './entitySimilarity.js';
 
 // Import merge functions
 import {

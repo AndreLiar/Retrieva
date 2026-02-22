@@ -9,7 +9,7 @@
 
 import { ChatOllama } from '@langchain/ollama';
 import logger from '../config/logger.js';
-import { analyzeForInjection, validateInput } from '../utils/security/promptInjectionDetector.js';
+import { analyzeForInjection } from '../utils/security/promptInjectionDetector.js';
 
 /**
  * Dedicated guardrail LLM - small, fast model for classification

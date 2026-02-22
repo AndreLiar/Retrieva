@@ -15,7 +15,7 @@ import { syncScheduler } from './services/syncScheduler.js';
 import { startupInitService } from './services/startupInit.js';
 import { ragService } from './services/rag.js';
 import { answerFormatter } from './services/answerFormatter.js';
-import { initializeSocketServer, getStats as getSocketStats } from './services/socketService.js';
+import { initializeSocketServer } from './services/socketService.js';
 // Import workers to start them with the server
 import './workers/notionSyncWorker.js';
 import './workers/documentIndexWorker.js';
