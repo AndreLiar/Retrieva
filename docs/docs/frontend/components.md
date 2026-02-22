@@ -14,6 +14,7 @@ components/
 ├── layout/         # Layout structure
 ├── analytics/      # Analytics dashboard
 ├── notion/         # Notion integration
+├── sources/        # Data source management (file, url, confluence, MCP)
 ├── providers/      # Context providers
 ├── common/         # Shared/utility components
 ├── theme/          # Theme switching
@@ -307,6 +308,65 @@ interface TokenHealthBannerProps {
   isHealthy: boolean;
   expiresAt?: Date;
   onRefresh: () => void;
+}
+```
+
+## Sources Components
+
+Components in `components/sources/` drive the **Sources** page (`/sources`) where users connect and manage all data sources.
+
+### DataSourceCard
+
+Card for file, URL, and Confluence sources (native ingestion).
+
+```tsx
+interface DataSourceCardProps {
+  source: DataSource;       // status, stats, lastSyncedAt
+  workspaceId: string;
+}
+```
+
+Shows source type icon, status badge (pending / syncing / active / error), document count, last sync date, and sync/delete actions gated by `RequirePermission`.
+
+### FileUploadDialog
+
+Dialog for uploading a PDF, DOCX, or XLSX file (max 25 MB). Submits as `multipart/form-data` via `sourcesApi.create()`.
+
+### UrlAddDialog
+
+Dialog for indexing a public web URL. Submits as JSON `{ sourceType: 'url', config: { url } }`.
+
+### ConfluenceConnectDialog
+
+Dialog for connecting Confluence Cloud. Fields: base URL, space key, email, API token (password). Submits as JSON with encrypted API token stored server-side.
+
+### MCPServerCard
+
+Card for MCP-connected external servers.
+
+```tsx
+interface MCPServerCardProps {
+  source: MCPSource;
+  workspaceId: string;
+}
+```
+
+- Source type icons: `Layers` (Confluence), `HardDrive` (Google Drive), `GitBranch` (GitHub), `TicketCheck` (Jira), `MessageSquare` (Slack), `Plug` (custom)
+- Status badges: pending · syncing (animated) · active · paused · error
+- Shows documents indexed, last sync date, auto-sync interval, and last error string
+- Sync and delete buttons gated by `RequirePermission permission="canTriggerSync"`
+
+### MCPConnectDialog
+
+Dialog for registering a new MCP server. Fields: name, source type (Select), server URL + inline "Test" button, auth token (optional, password), auto-sync toggle (Switch), sync interval hours.
+
+The **Test** button calls `mcpApi.testConnection()` directly (not via React Query mutation) and displays green/red inline feedback below the URL field before the user submits.
+
+```tsx
+interface MCPConnectDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  workspaceId: string;
 }
 ```
 

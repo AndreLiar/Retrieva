@@ -8,6 +8,8 @@ Manage external data sources connected via the [Model Context Protocol](../archi
 
 All endpoints require authentication and are workspace-scoped.
 
+The **Sources** page (`/sources`) provides a full UI for this API: `MCPServerCard` displays each source with its sync status and action buttons, and `MCPConnectDialog` lets users register a new server with an inline test-connection step before submitting. See [Sources Components](../frontend/components#sources-components) for component details.
+
 ---
 
 ## Register a Data Source

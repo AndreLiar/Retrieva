@@ -12,14 +12,15 @@ import {
   Clock,
   AlertCircle,
   ExternalLink,
+  Plug,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { notionApi } from '@/lib/api';
 import { sourcesApi } from '@/lib/api/sources';
+import { mcpApi } from '@/lib/api/mcp';
 import { useActiveWorkspace } from '@/lib/stores/workspace-store';
 import { RequirePermission } from '@/components/common';
 import { NotionWorkspaceCard, TokenHealthBanner } from '@/components/notion';
@@ -27,6 +28,8 @@ import { DataSourceCard } from '@/components/sources/DataSourceCard';
 import { FileUploadDialog } from '@/components/sources/FileUploadDialog';
 import { UrlAddDialog } from '@/components/sources/UrlAddDialog';
 import { ConfluenceConnectDialog } from '@/components/sources/ConfluenceConnectDialog';
+import { MCPServerCard } from '@/components/sources/MCPServerCard';
+import { MCPConnectDialog } from '@/components/sources/MCPConnectDialog';
 
 // ─── Notion source icon ───────────────────────────────────────────────────────
 function NotionIcon({ className }: { className?: string }) {
@@ -78,6 +81,7 @@ export default function SourcesPage() {
   const [fileDialogOpen, setFileDialogOpen] = useState(false);
   const [urlDialogOpen, setUrlDialogOpen] = useState(false);
   const [confluenceDialogOpen, setConfluenceDialogOpen] = useState(false);
+  const [mcpDialogOpen, setMcpDialogOpen] = useState(false);
 
   // Notion workspaces
   const { data: notionWorkspaces, isLoading: notionLoading } = useQuery({
@@ -98,6 +102,14 @@ export default function SourcesPage() {
     refetchInterval: 10000,
   });
 
+  // MCP sources
+  const { data: mcpSources, isLoading: mcpLoading } = useQuery({
+    queryKey: ['mcp-sources', activeWorkspace?.id],
+    queryFn: () => mcpApi.list(activeWorkspace!.id),
+    enabled: !!activeWorkspace?.id,
+    refetchInterval: 10000,
+  });
+
   if (!activeWorkspace) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -109,6 +121,7 @@ export default function SourcesPage() {
   const fileSources = (dataSources || []).filter((d) => d.sourceType === 'file');
   const urlSources = (dataSources || []).filter((d) => d.sourceType === 'url');
   const confluenceSources = (dataSources || []).filter((d) => d.sourceType === 'confluence');
+  const mcpSourceList = mcpSources || [];
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
@@ -171,6 +184,48 @@ export default function SourcesPage() {
               >
                 <NotionWorkspaceCard workspace={workspace} />
               </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* ── MCP Servers ─────────────────────────────────────────────────── */}
+      <section className="mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Plug className="h-5 w-5 text-muted-foreground" />
+            <h2 className="text-lg font-medium">MCP Servers</h2>
+            {mcpSourceList.length > 0 && (
+              <Badge variant="secondary">{mcpSourceList.length}</Badge>
+            )}
+          </div>
+          <RequirePermission permission="canTriggerSync">
+            <Button size="sm" onClick={() => setMcpDialogOpen(true)}>
+              <Plus className="h-4 w-4 mr-1" /> Add MCP server
+            </Button>
+          </RequirePermission>
+        </div>
+
+        {mcpLoading ? (
+          <Skeleton className="h-24" />
+        ) : mcpSourceList.length === 0 ? (
+          <div className="text-center py-8 border rounded-lg bg-muted/30 border-dashed">
+            <Plug className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+            <p className="text-sm text-muted-foreground mb-1">No MCP servers connected yet.</p>
+            <p className="text-sm text-muted-foreground mb-3">
+              Connect any MCP-compatible server (Confluence, GitHub, Jira, Google Drive, Slack)
+              to index its documents directly.
+            </p>
+            <RequirePermission permission="canTriggerSync">
+              <Button size="sm" variant="outline" onClick={() => setMcpDialogOpen(true)}>
+                <Plus className="h-3 w-3 mr-1" /> Add MCP server
+              </Button>
+            </RequirePermission>
+          </div>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2">
+            {mcpSourceList.map((src) => (
+              <MCPServerCard key={src._id} source={src} workspaceId={activeWorkspace.id} />
             ))}
           </div>
         )}
@@ -323,6 +378,11 @@ export default function SourcesPage() {
       <ConfluenceConnectDialog
         open={confluenceDialogOpen}
         onOpenChange={setConfluenceDialogOpen}
+        workspaceId={activeWorkspace.id}
+      />
+      <MCPConnectDialog
+        open={mcpDialogOpen}
+        onOpenChange={setMcpDialogOpen}
         workspaceId={activeWorkspace.id}
       />
     </div>

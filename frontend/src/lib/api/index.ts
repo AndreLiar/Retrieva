@@ -13,3 +13,5 @@ export { assessmentsApi } from './assessments';
 export type { Assessment, Gap, GapLevel, OverallRisk, AssessmentStatus } from './assessments';
 export { sourcesApi } from './sources';
 export type { DataSource, DataSourceStatus, DataSourceType, CreateDataSourceDto } from './sources';
+export { mcpApi } from './mcp';
+export type { MCPSource, MCPSourceType, MCPSyncStatus, RegisterMCPSourceDto, TestConnectionResult } from './mcp';
