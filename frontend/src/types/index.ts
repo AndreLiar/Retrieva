@@ -283,6 +283,47 @@ export interface RAGResponse {
   cached?: boolean;
 }
 
+// Organization Types (Phase 2a)
+export type OrgRole = 'org-admin' | 'billing-admin' | 'auditor' | 'member';
+export type OrgPlan = 'free' | 'team' | 'enterprise';
+
+export interface Organization {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  logoUrl?: string;
+  ownerId: string;
+  plan: OrgPlan;
+  status: 'active' | 'suspended';
+  settings: {
+    maxWorkspaces: number;
+    maxMembers: number;
+    allowMembersToCreateWorkspaces: boolean;
+  };
+  memberCount?: number;
+  workspaceCount?: number;
+  createdAt: string;
+}
+
+export interface OrgMember {
+  id: string;
+  organizationId: string;
+  userId: string;
+  user: { id: string; name: string; email: string };
+  role: OrgRole;
+  status: 'active' | 'pending' | 'revoked';
+}
+
+export interface LinkedWorkspace {
+  id: string;
+  workspaceName: string;
+  workspaceIcon?: string;
+  syncStatus: string;
+  stats?: { totalDocuments: number };
+  createdAt: string;
+}
+
 // Streaming Event Types
 export type StreamEventType =
   | 'status'

@@ -15,3 +15,5 @@ export { sourcesApi } from './sources';
 export type { DataSource, DataSourceStatus, DataSourceType, CreateDataSourceDto } from './sources';
 export { mcpApi } from './mcp';
 export type { MCPSource, MCPSourceType, MCPSyncStatus, RegisterMCPSourceDto, TestConnectionResult } from './mcp';
+export { organizationsApi } from './organizations';
+export type { CreateOrgDto, UpdateOrgDto } from './organizations';

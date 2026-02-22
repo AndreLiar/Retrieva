@@ -84,6 +84,7 @@ const sidebars: SidebarsConfig = {
         'api/assessments',
         'api/data-sources',
         'api/compliance',
+        'api/organizations',
       ],
     },
     'api/error-handling',

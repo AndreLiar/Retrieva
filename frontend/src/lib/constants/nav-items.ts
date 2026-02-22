@@ -8,6 +8,7 @@ import {
   Building2,
   Users,
   ShieldCheck,
+  Landmark,
 } from 'lucide-react';
 
 export interface NavItem {
@@ -26,6 +27,7 @@ export const desktopMainNavItems: NavItem[] = [
   { title: 'Analytics', href: '/analytics', icon: BarChart3, workspaceRoles: ['owner', 'member'] },
   { title: 'Members', href: '/members', icon: Users, workspaceRoles: ['owner'] },
   { title: 'Workspaces', href: '/workspaces', icon: Building2 },
+  { title: 'Organization', href: '/organization', icon: Landmark },
 ];
 
 export const mobileMainNavItems: NavItem[] = [

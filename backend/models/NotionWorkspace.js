@@ -178,6 +178,13 @@ const notionWorkspaceSchema = new mongoose.Schema(
       createdBy: String,
       tags: [String],
     },
+    // Optional link to an Organization (Phase 2a)
+    organizationId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Organization',
+      index: true,
+      default: null,
+    },
   },
   {
     timestamps: true,
@@ -193,7 +200,8 @@ notionWorkspaceSchema.pre('save', async function () {
     // Only encrypt if not already encrypted
     // New format: v{n}:iv:authTag:encrypted
     // Legacy format: iv:authTag:encrypted (no 'v' prefix)
-    const isAlreadyEncrypted = this.accessToken.includes(':') &&
+    const isAlreadyEncrypted =
+      this.accessToken.includes(':') &&
       (this.accessToken.startsWith('v') || this.accessToken.split(':').length === 3);
 
     if (!isAlreadyEncrypted) {

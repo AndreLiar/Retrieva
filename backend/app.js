@@ -29,6 +29,7 @@ import mcpDataSourceRoutes from './routes/mcpDataSourceRoutes.js';
 import assessmentRoutes from './routes/assessmentRoutes.js';
 import dataSourceRoutes from './routes/dataSourceRoutes.js';
 import complianceRoutes from './routes/complianceRoutes.js';
+import organizationRoutes from './routes/organizationRoutes.js';
 import logger from './config/logger.js';
 import { globalErrorHandler } from './utils/index.js';
 import { swaggerDocument } from './config/swagger.js';
@@ -41,7 +42,6 @@ const STREAMING_TIMEOUT_MS = parseInt(process.env.STREAMING_TIMEOUT_MS) || 18000
 const SYNC_TIMEOUT_MS = parseInt(process.env.SYNC_TIMEOUT_MS) || 600000; // 10 min for sync operations
 
 // Guardrails middleware
-import { detectAbuse, checkTokenLimits } from './middleware/abuseDetection.js';
 import { createAuditMiddleware } from './middleware/auditTrail.js';
 import { piiDetectionMiddleware } from './utils/security/piiMasker.js';
 
@@ -275,6 +275,7 @@ app.use('/api/v1/mcp-sources', mcpDataSourceRoutes);
 app.use('/api/v1/assessments', assessmentRoutes);
 app.use('/api/v1/data-sources', dataSourceRoutes);
 app.use('/api/v1/compliance', complianceRoutes);
+app.use('/api/v1/organizations', organizationRoutes);
 
 // OpenAPI/Swagger documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));

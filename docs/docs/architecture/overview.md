@@ -118,6 +118,29 @@ The RAG Platform follows a modular, layered architecture designed for scalabilit
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
+## Tenant Hierarchy (Phase 2a)
+
+The platform uses a three-tier tenant model for B2B enterprise use:
+
+```
+Organization  (company-level entity)
+├── OrganizationMember  roles: org-admin | billing-admin | auditor | member
+│
+└── NotionWorkspace  (optional link via organizationId)
+    └── WorkspaceMember  roles: owner | member | viewer
+```
+
+| Layer | Model | Purpose |
+|-------|-------|---------|
+| **Organization** | `Organization` | Company / team grouping; owns workspaces and members |
+| **Org Member** | `OrganizationMember` | Per-user org-level role |
+| **Workspace** | `NotionWorkspace` | Notion integration; scoped vector retrieval |
+| **Workspace Member** | `WorkspaceMember` | Per-user workspace-level permissions |
+
+`NotionWorkspace.organizationId` is optional — existing standalone workspaces continue to work unchanged.
+
+See [Organizations API](../api/organizations.md) for the full endpoint reference.
+
 ## Request Flow
 
 ### RAG Query Flow
