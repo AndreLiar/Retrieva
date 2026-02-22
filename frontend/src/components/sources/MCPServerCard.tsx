@@ -6,6 +6,7 @@ import {
   AlertCircle,
   RefreshCw,
   Trash2,
+  BookOpen,
   GitBranch,
   HardDrive,
   Layers,
@@ -30,6 +31,7 @@ function MCPTypeIcon({ type, className }: { type: MCPSourceType; className?: str
   if (type === 'gdrive') return <HardDrive className={className} />;
   if (type === 'github') return <GitBranch className={className} />;
   if (type === 'jira') return <TicketCheck className={className} />;
+  if (type === 'notion') return <BookOpen className={className} />;
   if (type === 'slack') return <MessageSquare className={className} />;
   return <Plug className={className} />;
 }
@@ -39,6 +41,7 @@ const SOURCE_TYPE_LABELS: Record<MCPSourceType, string> = {
   gdrive: 'Google Drive',
   github: 'GitHub',
   jira: 'Jira',
+  notion: 'Notion',
   slack: 'Slack',
   custom: 'Custom MCP',
 };

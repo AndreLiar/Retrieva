@@ -33,6 +33,7 @@ const SOURCE_TYPES: { value: MCPSourceType; label: string }[] = [
   { value: 'gdrive', label: 'Google Drive' },
   { value: 'github', label: 'GitHub' },
   { value: 'jira', label: 'Jira' },
+  { value: 'notion', label: 'Notion' },
   { value: 'slack', label: 'Slack' },
   { value: 'custom', label: 'Custom MCP server' },
 ];

@@ -36,7 +36,7 @@ const mcpDataSourceSchema = new mongoose.Schema(
      */
     sourceType: {
       type: String,
-      enum: ['confluence', 'gdrive', 'github', 'jira', 'slack', 'custom'],
+      enum: ['confluence', 'gdrive', 'github', 'jira', 'notion', 'slack', 'custom'],
       required: true,
     },
 

@@ -3,7 +3,7 @@ import type { ApiResponse } from '@/types';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
-export type MCPSourceType = 'confluence' | 'gdrive' | 'github' | 'jira' | 'slack' | 'custom';
+export type MCPSourceType = 'confluence' | 'gdrive' | 'github' | 'jira' | 'notion' | 'slack' | 'custom';
 export type MCPSyncStatus = 'pending' | 'syncing' | 'active' | 'error' | 'paused';
 
 export interface MCPSyncSettings {
