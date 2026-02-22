@@ -52,6 +52,8 @@ services:
       - QDRANT_URL=http://qdrant:6333
       - OLLAMA_BASE_URL=http://host.docker.internal:11434
       - RAGAS_SERVICE_URL=http://ragas-service:8001
+      - EMAIL_SERVICE_URL=http://email-service:3008
+      - INTERNAL_API_KEY=${INTERNAL_API_KEY:-}
       # Override Spaces endpoint so the backend container talks to MinIO internally
       - DO_SPACES_ENDPOINT=http://minio:9000
       - DO_SPACES_KEY=minioadmin
@@ -68,9 +70,33 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
+      email-service:
+        condition: service_started
     volumes:
       - ./backend:/app
       - /app/node_modules
+    networks:
+      - rag-network
+    restart: unless-stopped
+
+  # ===========================================================================
+  # Email Service (Phase 1 microservice — Resend dispatcher)
+  # ===========================================================================
+  email-service:
+    build:
+      context: ./email-service
+      dockerfile: Dockerfile
+    container_name: rag-email-service
+    ports:
+      - "3008:3008"
+    environment:
+      - NODE_ENV=development
+      - PORT=3008
+      - RESEND_API_KEY=${RESEND_API_KEY:-}
+      - SMTP_FROM_NAME=${SMTP_FROM_NAME:-Retrieva}
+      - RESEND_FROM_EMAIL=${RESEND_FROM_EMAIL:-noreply@retrieva.online}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
+      - INTERNAL_API_KEY=${INTERNAL_API_KEY:-}
     networks:
       - rag-network
     restart: unless-stopped
