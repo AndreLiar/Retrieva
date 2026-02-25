@@ -6,7 +6,7 @@ import { sendSuccess } from '../utils/core/responseFormatter.js';
 import { promiseWithTimeout } from '../utils/core/asyncHelpers.js';
 import logger from '../config/logger.js';
 // ISSUE #29 FIX: Import queues for health check
-import { notionSyncQueue, documentIndexQueue } from '../config/queue.js';
+import { assessmentQueue, documentIndexQueue } from '../config/queue.js';
 
 // ISSUE #14 FIX: Health check timeouts to prevent hanging
 const HEALTH_CHECK_TIMEOUT_MS = 5000; // 5 seconds for each service check
@@ -138,18 +138,18 @@ export const detailedHealth = async (req, res) => {
 
   // ISSUE #29 FIX: Check BullMQ Queues
   try {
-    const [syncQueueCounts, indexQueueCounts] = await Promise.all([
-      notionSyncQueue.getJobCounts(),
+    const [assessmentQueueCounts, indexQueueCounts] = await Promise.all([
+      assessmentQueue.getJobCounts(),
       documentIndexQueue.getJobCounts(),
     ]);
 
     health.services.queues = {
       status: 'up',
-      notionSync: {
-        waiting: syncQueueCounts.waiting || 0,
-        active: syncQueueCounts.active || 0,
-        completed: syncQueueCounts.completed || 0,
-        failed: syncQueueCounts.failed || 0,
+      assessment: {
+        waiting: assessmentQueueCounts.waiting || 0,
+        active: assessmentQueueCounts.active || 0,
+        completed: assessmentQueueCounts.completed || 0,
+        failed: assessmentQueueCounts.failed || 0,
       },
       documentIndex: {
         waiting: indexQueueCounts.waiting || 0,

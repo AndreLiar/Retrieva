@@ -4,695 +4,125 @@ sidebar_position: 1
 
 # Architecture Overview
 
-The RAG Platform follows a modular, layered architecture designed for scalability, security, and maintainability.
+Retrieva is a DORA-compliance RAG platform. The core flow is: **upload vendor documents → AI-generated DORA gap analysis report → conversational Q&A**.
 
-## High-Level Architecture
-
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                           Client Layer                                   │
-│  ┌─────────────────────────────────────────────────────────────────┐   │
-│  │                    Next.js Frontend                              │   │
-│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────────────┐│   │
-│  │  │ Chat UI  │  │ Settings │  │Workspaces│  │ Analytics Dashboard││   │
-│  │  └──────────┘  └──────────┘  └──────────┘  └──────────────────┘│   │
-│  └─────────────────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────────────────┘
-                                    │
-                         HTTPS / WebSocket (Socket.io)
-                                    │
-┌─────────────────────────────────────────────────────────────────────────┐
-│                          API Gateway Layer                               │
-│  ┌─────────────────────────────────────────────────────────────────┐   │
-│  │                     Express 5 Server                             │   │
-│  │  ┌────────────┐ ┌────────────┐ ┌────────────┐ ┌──────────────┐ │   │
-│  │  │    Auth    │ │    Rate    │ │    CSRF    │ │   Workspace  │ │   │
-│  │  │ Middleware │ │  Limiter   │ │ Protection │ │   Isolation  │ │   │
-│  │  └────────────┘ └────────────┘ └────────────┘ └──────────────┘ │   │
-│  │  ┌────────────┐ ┌────────────┐ ┌────────────┐ ┌──────────────┐ │   │
-│  │  │   Abuse    │ │  Security  │ │  Webhook   │ │   Workspace  │ │   │
-│  │  │ Detection  │ │ Sanitizer  │ │ Verify     │ │    Quota     │ │   │
-│  │  └────────────┘ └────────────┘ └────────────┘ └──────────────┘ │   │
-│  └─────────────────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────────────────┘
-                                    │
-┌─────────────────────────────────────────────────────────────────────────┐
-│                         Service Layer                                    │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────────────┐ │
-│  │   RAG Service   │  │  Notion Sync    │  │      Auth Service       │ │
-│  │                 │  │    Service      │  │                         │ │
-│  │ - Intent        │  │ - OAuth         │  │ - JWT Management        │ │
-│  │ - Retrieval     │  │ - Page Fetch    │  │ - Refresh Tokens        │ │
-│  │ - Generation    │  │ - Transform     │  │ - Session Management    │ │
-│  │ - Validation    │  │ - Token Monitor │  │ - Auth Audit Logging    │ │
-│  │ - Guardrails    │  │ - Sync Cooldown │  │                         │ │
-│  └─────────────────┘  └─────────────────┘  └─────────────────────────┘ │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────────────┐ │
-│  │ Analytics       │  │  Notification   │  │   Real-Time Services    │ │
-│  │   Service       │  │    Service      │  │                         │ │
-│  │                 │  │                 │  │ - Socket.io Service     │ │
-│  │ - Query Metrics │  │ - Email (Resend)│  │ - Presence Tracking     │ │
-│  │ - Cost Tracking │  │ - In-App Alerts │  │ - Live Analytics        │ │
-│  │ - RAGAS Eval    │  │ - Token Expiry  │  │ - Activity Feed         │ │
-│  │ - LangSmith     │  │                 │  │ - Real-Time Events      │ │
-│  └─────────────────┘  └─────────────────┘  └─────────────────────────┘ │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────────────┐ │
-│  │ Memory Service  │  │ Security        │  │   Content Processing    │ │
-│  │                 │  │   Services      │  │                         │ │
-│  │ - Conversation  │  │                 │  │ - Notion Transformer    │ │
-│  │   Context       │  │ - Tenant Iso.   │  │ - Semantic Chunking     │ │
-│  │ - Memory Decay  │  │ - Security Log  │  │ - Answer Formatter      │ │
-│  │ - Summaries     │  │ - Error Alerts  │  │ - Context Compression   │ │
-│  └─────────────────┘  └─────────────────┘  └─────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────────────┘
-                                    │
-┌─────────────────────────────────────────────────────────────────────────┐
-│                        Worker Layer (BullMQ)                             │
-│  ┌───────────────────┐ ┌───────────────────┐ ┌───────────────────────┐ │
-│  │ Notion Sync       │ │ Document Index    │ │ Memory Decay          │ │
-│  │   Worker          │ │   Worker          │ │   Worker              │ │
-│  │                   │ │                   │ │                       │ │
-│  │ - Full sync       │ │ - Chunk docs      │ │ - Prune old context   │ │
-│  │ - Incremental     │ │ - Embeddings      │ │ - Summarize convos    │ │
-│  │ - Rate limiting   │ │ - Qdrant storage  │ │ - Decay scores        │ │
-│  │ - Error recovery  │ │ - Sparse vectors  │ │                       │ │
-│  └───────────────────┘ └───────────────────┘ └───────────────────────┘ │
-│  ┌───────────────────┐ ┌─────────────────────────────────────────────┐ │
-│  │ Pipeline Worker   │ │            Dead Letter Queue                │ │
-│  │                   │ │                                             │ │
-│  │ - Batch processing│ │ - Failed job storage                       │ │
-│  │ - Job chaining    │ │ - Retry management                         │ │
-│  └───────────────────┘ └─────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────────────┘
-                                    │
-┌─────────────────────────────────────────────────────────────────────────┐
-│                         Data Layer                                       │
-│  ┌───────────────────┐  ┌───────────────┐  ┌─────────────────────────┐ │
-│  │      MongoDB      │  │    Qdrant     │  │         Redis           │ │
-│  │                   │  │               │  │                         │ │
-│  │ - Users           │  │ - Dense Vecs  │  │ - Session Cache         │ │
-│  │ - Workspaces      │  │ - Sparse Vecs │  │ - Rate Limit Counters   │ │
-│  │ - Conversations   │  │ - Metadata    │  │ - BullMQ Job Queues     │ │
-│  │ - Messages        │  │ - Filters     │  │ - RAG Response Cache    │ │
-│  │ - DocumentSources │  │               │  │ - Sync Cooldown State   │ │
-│  │ - SyncJobs        │  │               │  │                         │ │
-│  │ - Analytics       │  │               │  │                         │ │
-│  │ - AuditLogs       │  │               │  │                         │ │
-│  │ - Notifications   │  │               │  │                         │ │
-│  │ - TokenUsage      │  │               │  │                         │ │
-│  │ - DeadLetterJobs  │  │               │  │                         │ │
-│  └───────────────────┘  └───────────────┘  └─────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────────────┘
-                                    │
-┌─────────────────────────────────────────────────────────────────────────┐
-│                         External Services                                │
-│  ┌───────────────┐  ┌──────────────────┐  ┌───────────────────────────┐│
-│  │  Notion API   │  │   Azure OpenAI   │  │   Monitoring Services    ││
-│  │               │  │                  │  │                          ││
-│  │ - OAuth 2.0   │  │ - GPT-4o-mini    │  │ - LangSmith (LLM Tracing)││
-│  │ - Pages API   │  │   (LLM)          │  │ - RAGAS (RAG Evaluation) ││
-│  │ - Databases   │  │ - text-embedding │  │                          ││
-│  │ - Search      │  │   -3-small       │  │                          ││
-│  │ - Webhooks    │  │   (Embeddings)   │  │                          ││
-│  └───────────────┘  └──────────────────┘  └───────────────────────────┘│
-└─────────────────────────────────────────────────────────────────────────┘
-```
-
-## Tenant Hierarchy (Phase 2a)
-
-The platform uses a three-tier tenant model for B2B enterprise use:
+## Services
 
 ```
-Organization  (company-level entity)
-├── OrganizationMember  roles: org-admin | billing-admin | auditor | member
-│
-└── NotionWorkspace  (optional link via organizationId)
-    └── WorkspaceMember  roles: owner | member | viewer
+backend/     - Express 5 API server (ES modules, Node.js 20)
+frontend/    - Next.js 16 App Router (React 19, TypeScript)
 ```
 
-| Layer | Model | Purpose |
-|-------|-------|---------|
-| **Organization** | `Organization` | Company / team grouping; owns workspaces and members |
-| **Org Member** | `OrganizationMember` | Per-user org-level role |
-| **Workspace** | `NotionWorkspace` | Notion integration; scoped vector retrieval |
-| **Workspace Member** | `WorkspaceMember` | Per-user workspace-level permissions |
+## Data Flow
 
-`NotionWorkspace.organizationId` is optional — existing standalone workspaces continue to work unchanged.
-
-See [Organizations API](../api/organizations.md) for the full endpoint reference.
-
-## Request Flow
-
-### RAG Query Flow
+### Gap Analysis Flow
 
 ```
-1. User submits question
-         │
-         ▼
-2. Authentication & Authorization
-   - JWT validation
-   - Workspace membership check
-   - Permission verification (canQuery)
-         │
-         ▼
-3. Intent Classification (3-tier)
-   - Regex patterns → Keyword scoring → LLM
-   - Returns: intent type, confidence, strategy
-         │
-         ▼
-4. Retrieval Strategy Selection
-   - focused, multi-aspect, deep, broad, context-only, no-retrieval
-         │
-         ▼
-5. Document Retrieval
-   - Hybrid search (dense + sparse vectors)
-   - Mandatory workspaceId filter
-   - RRF (Reciprocal Rank Fusion) scoring
-         │
-         ▼
-6. Post-Retrieval Processing
-   - Cross-encoder reranking
-   - LLM context compression
-   - Quality filtering
-         │
-         ▼
-7. Answer Generation
-   - Structured prompt with context
-   - Streaming via SSE
-   - Citation enforcement
-         │
-         ▼
-8. Answer Validation (LLM Judge)
-   - Hallucination detection
-   - Grounding verification
-   - Citation validation
-         │
-         ▼
-9. Response & Caching
-   - Output sanitization
-   - Confidence handling
-   - Cache for repeated queries
+User → Upload vendor PDF/DOCX/XLSX
+     → assessmentController → assessmentQueue (BullMQ)
+     → assessmentWorker:
+         1. documentIndexWorker: parse → embed chunks → Qdrant
+         2. runGapAnalysis: retrieve chunks → LLM generates DORA gap report
+     → Assessment.results stored in MongoDB
+     → User downloads report or queries via chat
 ```
 
-### Notion Sync Flow
+### RAG (Q&A) Flow
 
 ```
-1. Sync Trigger (manual/scheduled)
-         │
-         ▼
-2. Fetch Document List
-   - Notion API pagination
-   - Rate limit handling
-         │
-         ▼
-3. Determine Changes
-   - Content hash comparison
-   - Full sync: all docs
-   - Incremental: changed only
-         │
-         ▼
-4. Queue Document Jobs
-   - BullMQ job per document
-   - Batch processing (30 docs)
-         │
-         ▼
-5. Document Processing
-   - Fetch page blocks
-   - Transform to markdown
-   - Semantic chunking
-         │
-         ▼
-6. Indexing
-   - Generate embeddings
-   - Build sparse vectors
-   - Store in Qdrant
-         │
-         ▼
-7. Update Metadata
-   - MongoDB document records
-   - Workspace stats
-   - Sync job status
+User Question → RAG Service
+              → Embed query → Qdrant retrieval (k=15)
+              → Cross-encoder re-ranking (top 5)
+              → Context expansion (sibling chunks)
+              → LLM generates answer with citations
+              → Response streamed to frontend
 ```
 
-## Directory Structure
+## Model Hierarchy
 
 ```
-rag/
-├── backend/
-│   ├── adapters/              # External service adapters
-│   │   └── NotionAdapter.js   # Notion API client wrapper
-│   ├── config/                # Configuration modules
-│   │   ├── database.js        # MongoDB connection
-│   │   ├── redis.js           # Redis connection
-│   │   ├── queue.js           # BullMQ queue setup
-│   │   ├── llm.js             # LLM provider factory
-│   │   ├── llmProvider.js     # Azure OpenAI LLM config
-│   │   ├── embeddings.js      # Embedding model factory
-│   │   ├── embeddingProvider.js # Azure OpenAI embeddings
-│   │   ├── vectorStore.js     # Qdrant configuration
-│   │   ├── guardrails.js      # LLM guardrail settings
-│   │   ├── langsmith.js       # LangSmith tracing
-│   │   ├── swagger.js         # OpenAPI documentation
-│   │   ├── logger.js          # Winston logger
-│   │   └── envValidator.js    # Environment validation
-│   ├── controllers/           # Request handlers (16 controllers)
-│   │   ├── ragController.js
-│   │   ├── authController.js
-│   │   ├── conversationController.js
-│   │   ├── notionController.js
-│   │   ├── analyticsController.js
-│   │   ├── memoryController.js
-│   │   ├── evaluationController.js
-│   │   └── ...
-│   ├── middleware/            # Express middleware (11 modules)
-│   │   ├── auth.js            # JWT authentication
-│   │   ├── workspaceAuth.js   # Workspace authorization
-│   │   ├── csrfProtection.js  # CSRF token validation
-│   │   ├── abuseDetection.js  # Request abuse detection
-│   │   ├── ragRateLimiter.js  # RAG-specific rate limits
-│   │   ├── securitySanitizer.js # Input sanitization
-│   │   ├── workspaceQuota.js  # Usage quota enforcement
-│   │   └── ...
-│   ├── models/                # Mongoose schemas (19 models)
-│   │   ├── User.js
-│   │   ├── Conversation.js
-│   │   ├── Message.js
-│   │   ├── NotionWorkspace.js
-│   │   ├── DocumentSource.js
-│   │   ├── SyncJob.js
-│   │   ├── Analytics.js
-│   │   ├── AuditLog.js
-│   │   ├── TokenUsage.js
-│   │   ├── Notification.js
-│   │   ├── DeadLetterJob.js
-│   │   └── ...
-│   ├── routes/                # API route definitions (15 modules)
-│   ├── services/              # Business logic
-│   │   ├── rag.js             # Core RAG orchestration
-│   │   ├── intentAwareRAG.js  # Intent-aware retrieval
-│   │   ├── ragExecutor.js     # RAG execution engine
-│   │   ├── intent/            # Intent classification (3-tier)
-│   │   │   ├── intentClassifier.js
-│   │   │   └── retrievalStrategies.js
-│   │   ├── rag/               # RAG sub-modules
-│   │   │   ├── documentRanking.js    # Cross-encoder reranking
-│   │   │   ├── llmJudge.js           # Hallucination detection
-│   │   │   ├── retrievalEnhancements.js
-│   │   │   └── chunkFilter.js        # Quality filtering
-│   │   ├── memory/            # Conversation memory
-│   │   ├── context/           # Context management
-│   │   ├── search/            # Search utilities
-│   │   │   └── sparseVector.js # BM25 sparse vectors
-│   │   ├── security/          # Security services
-│   │   ├── pipeline/          # Processing pipelines
-│   │   ├── versioning/        # Document versioning
-│   │   ├── notionOAuth.js     # Notion OAuth flow
-│   │   ├── notionTransformer.js # Notion → Markdown
-│   │   ├── notionTokenMonitor.js # Token health checks
-│   │   ├── socketService.js   # Socket.io real-time
-│   │   ├── emailService.js    # Resend email sending
-│   │   ├── notificationService.js
-│   │   ├── deadLetterQueue.js # Failed job handling
-│   │   ├── tenantIsolation.js # Multi-tenant security
-│   │   ├── llmGuardrailService.js
-│   │   ├── ragasEvaluation.js # RAGAS integration
-│   │   └── ...
-│   ├── workers/               # BullMQ background workers
-│   │   ├── notionSyncWorker.js     # Notion sync jobs
-│   │   ├── documentIndexWorker.js  # Embedding/indexing
-│   │   ├── memoryDecayWorker.js    # Memory cleanup
-│   │   ├── pipelineWorker.js       # Pipeline processing
-│   │   └── index.js                # Worker initialization
-│   ├── loaders/               # Document loaders
-│   │   └── notionDocumentLoader.js
-│   ├── prompts/               # LLM prompt templates
-│   │   └── ragPrompt.js
-│   ├── repositories/          # Data access layer
-│   ├── utils/                 # Utility functions
-│   │   ├── core/              # Core utilities
-│   │   ├── rag/               # RAG-specific utils
-│   │   └── security/          # Security utils (JWT, crypto)
-│   ├── validators/            # Request validation schemas
-│   ├── scripts/               # Maintenance scripts
-│   └── tests/                 # Test suites
-│       ├── unittest/
-│       └── integrationtest/
-├── frontend/
-│   ├── src/
-│   │   ├── app/               # Next.js 15 App Router
-│   │   ├── components/        # React components
-│   │   ├── lib/               # Utilities & state
-│   │   │   ├── api/           # API client (Axios)
-│   │   │   ├── stores/        # Zustand state stores
-│   │   │   └── hooks/         # Custom React hooks
-│   │   └── types/             # TypeScript definitions
-│   └── public/                # Static assets
-├── email-service/             # Standalone email microservice (port 3008)
-├── notification-service/      # Standalone notification microservice (port 3009)
-├── realtime-service/          # Standalone Socket.io / presence microservice (port 3010)
-├── ragas-service/             # Python RAGAS evaluation service
-├── infra/                     # Terraform infrastructure
-├── docs/                      # Docusaurus documentation
-├── docker-compose.yml         # Development environment
-├── docker-compose.staging.yml # Staging environment
-└── package.json               # Root package (workspaces)
+User
+└── Workspace  (vendor isolation boundary)
+    └── WorkspaceMember (owner | member | viewer)
+    └── Assessment (per vendor DORA evaluation)
+        └── DocumentSource (indexed chunks in Qdrant)
 ```
 
-## LangChain Orchestration
-
-The platform uses **LangChain** as the core AI orchestration framework, providing a unified interface for LLMs, embeddings, vector stores, and chains.
-
-### LangChain Stack
+## Backend Request Flow
 
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                        LangChain Orchestration Layer                     │
-├─────────────────────────────────────────────────────────────────────────┤
-│  ┌─────────────────────────────────────────────────────────────────┐   │
-│  │                    @langchain/core                               │   │
-│  │  ┌──────────────┐  ┌──────────────┐  ┌────────────────────────┐│   │
-│  │  │ChatPrompt    │  │StringOutput  │  │ HumanMessage/          ││   │
-│  │  │  Template    │  │   Parser     │  │ AIMessage              ││   │
-│  │  └──────────────┘  └──────────────┘  └────────────────────────┘│   │
-│  │  ┌──────────────┐  ┌──────────────┐  ┌────────────────────────┐│   │
-│  │  │Messages      │  │LangChain     │  │ Runnable               ││   │
-│  │  │  Placeholder │  │  Tracer      │  │ Sequences              ││   │
-│  │  └──────────────┘  └──────────────┘  └────────────────────────┘│   │
-│  └─────────────────────────────────────────────────────────────────┘   │
-├─────────────────────────────────────────────────────────────────────────┤
-│  ┌─────────────────┐  ┌─────────────────┐  ┌───────────────────────┐  │
-│  │ @langchain/     │  │ @langchain/     │  │ @langchain/           │  │
-│  │    openai       │  │    qdrant       │  │    textsplitters      │  │
-│  │                 │  │                 │  │                       │  │
-│  │ AzureChatOpenAI │  │ QdrantVector    │  │ RecursiveCharacter    │  │
-│  │ AzureOpenAI     │  │   Store         │  │   TextSplitter        │  │
-│  │   Embeddings    │  │                 │  │                       │  │
-│  └─────────────────┘  └─────────────────┘  └───────────────────────┘  │
-└─────────────────────────────────────────────────────────────────────────┘
+Routes → Middleware (authenticate, requireWorkspaceAccess, validateBody)
+       → Controllers → Services / Workers
+       → MongoDB (metadata) + Qdrant (vector store)
 ```
 
-### LangChain Components Used
+## Key Components
 
-| Package | Component | Purpose |
-|---------|-----------|---------|
-| `@langchain/openai` | `AzureChatOpenAI` | LLM for chat completions |
-| `@langchain/openai` | `AzureOpenAIEmbeddings` | Text embeddings (1536 dims) |
-| `@langchain/qdrant` | `QdrantVectorStore` | Vector similarity search |
-| `@langchain/core` | `ChatPromptTemplate` | Structured prompt templates |
-| `@langchain/core` | `MessagesPlaceholder` | Conversation history injection |
-| `@langchain/core` | `StringOutputParser` | Parse LLM string responses |
-| `@langchain/core` | `HumanMessage/AIMessage` | Chat message types |
-| `@langchain/core` | `LangChainTracer` | LangSmith integration |
-| `@langchain/textsplitters` | `RecursiveCharacterTextSplitter` | Document chunking |
-| `@langchain/community` | `PDFLoader` | PDF document loading |
+### Controllers
+| Controller | Responsibility |
+|-----------|----------------|
+| `assessmentController.js` | Upload files, start gap analysis, retrieve results |
+| `ragController.js` | Conversational Q&A over indexed documents |
+| `workspaceController.js` | Workspace CRUD + member management |
+| `authController.js` | Register, login, logout, token refresh |
+| `conversationController.js` | Conversation history management |
+| `healthController.js` | Service health checks |
 
-### Chain Patterns
+### Workers (BullMQ)
+| Worker | Queue | Purpose |
+|--------|-------|---------|
+| `assessmentWorker.js` | `assessmentJobs` | Orchestrates file indexing + DORA gap analysis |
+| `documentIndexWorker.js` | `documentIndex` | Embeds chunks and upserts to Qdrant |
 
-The RAG pipeline uses LangChain's LCEL (LangChain Expression Language) for composable chains:
+### Key Services
+| Service | Purpose |
+|---------|---------|
+| `services/rag.js` | Core RAG pipeline: retrieval, re-ranking, answer generation |
+| `services/assessmentService.js` | DORA gap analysis logic |
+| `services/fileIngestionService.js` | Parses PDF, DOCX, XLSX to plain text |
+| `services/emailService.js` | Transactional email via Resend HTTP API |
+| `services/storageService.js` | File backup via DigitalOcean Spaces (S3-compatible) |
 
-```javascript
-// Example: RAG Chain with history
-const chain = ChatPromptTemplate.fromMessages([
-  ["system", systemPrompt],
-  new MessagesPlaceholder("chat_history"),
-  ["human", "{question}"],
-])
-  .pipe(llm)
-  .pipe(new StringOutputParser());
+### Configuration
+| Module | Purpose |
+|--------|---------|
+| `config/llm.js` | Azure OpenAI LLM client (gpt-4o-mini) |
+| `config/embeddings.js` | Azure OpenAI embeddings (text-embedding-3-small) |
+| `config/vectorStore.js` | Qdrant client + collection management |
+| `config/queue.js` | BullMQ queue definitions |
+| `config/database.js` | MongoDB connection |
+| `config/redis.js` | Redis connection (BullMQ + RAG cache) |
 
-// Streaming execution
-const stream = await chain.stream({
-  question: userQuery,
-  chat_history: messages,
-  context: retrievedDocs,
-});
-```
-
-### Where LangChain is Used
-
-| Service | LangChain Usage |
-|---------|-----------------|
-| `services/rag.js` | Main RAG chain with prompts, history, streaming |
-| `services/intentAwareRAG.js` | Intent-based chain selection |
-| `services/intent/intentClassifier.js` | LLM-based intent classification |
-| `services/rag/llmJudge.js` | Hallucination detection chain |
-| `services/rag/crossEncoderRerank.js` | LLM-based reranking |
-| `services/rag/retrievalEnhancements.js` | Query expansion, HyDE |
-| `services/answerFormatter.js` | Answer formatting chain |
-| `services/memory/summarization.js` | Conversation summarization |
-| `services/memory/entityExtraction.js` | Named entity extraction |
-| `services/context/coreferenceResolver.js` | Pronoun resolution |
-| `config/vectorStore.js` | Qdrant vector store setup |
-| `config/embeddings.js` | Azure embedding model |
-| `config/llmProvider.js` | LLM provider factory |
-| `loaders/notionDocumentLoader.js` | Document splitting |
-
-### LLM Provider Configuration
-
-```javascript
-// config/llmProvider.js - Factory pattern for LLM providers
-export async function createLLM(options = {}) {
-  const provider = process.env.LLM_PROVIDER || 'azure_openai';
-
-  switch (provider) {
-    case 'azure_openai':
-      const { AzureChatOpenAI } = await import('@langchain/openai');
-      return new AzureChatOpenAI({
-        azureOpenAIApiKey: process.env.AZURE_OPENAI_API_KEY,
-        azureOpenAIApiInstanceName: instanceName,
-        azureOpenAIApiDeploymentName: process.env.AZURE_OPENAI_LLM_DEPLOYMENT,
-        temperature: options.temperature ?? 0.3,
-        streaming: options.streaming ?? true,
-      });
-    // ... other providers
-  }
-}
-```
-
-## Key Design Decisions
-
-### 1. Hybrid Search
-
-Combines dense (semantic) and sparse (BM25) vectors for better retrieval:
-
-- **Dense vectors**: Capture semantic meaning (text-embedding-3-small)
-- **Sparse vectors**: Capture exact term matching
-- **RRF fusion**: Combines rankings from both methods
-
-### 2. Semantic Chunking
-
-Documents are chunked based on structure, not character count:
-
-- Headings create new chunks
-- Lists, tables, code blocks stay together
-- Heading paths preserved for context
-- Target size: 200-400 tokens
-
-### 3. Intent-Aware Retrieval
-
-Different query types need different retrieval strategies:
-
-| Intent | Strategy | Top-K | Description |
-|--------|----------|-------|-------------|
-| Factual | focused | 5 | Single-source precision |
-| Comparison | multi-aspect | 10 | Multiple viewpoints |
-| Explanation | deep | 8 | Comprehensive coverage |
-| Aggregation | broad | 15 | Wide coverage |
-| Procedural | focused | 6 | Step-by-step |
-
-### 4. Multi-Tenant Isolation
-
-Three-layer protection for data isolation:
-
-1. **Middleware**: Workspace membership verification
-2. **Database**: Mongoose plugin auto-filters by workspaceId
-3. **Vector Store**: Mandatory workspaceId in all Qdrant queries
-
-### 5. LLM Guardrails
-
-Multiple safeguards against LLM misbehavior:
-
-- **Prompt injection prevention**: XML-delimited user input
-- **Hallucination detection**: LLM Judge evaluation
-- **Output sanitization**: XSS/injection prevention
-- **Confidence blocking**: Low-confidence answer filtering
-
-## Data Models
-
-### Core Models
-
-| Model | Purpose | Key Fields |
-|-------|---------|------------|
-| **User** | User accounts | email, passwordHash, role, workspaces |
-| **NotionWorkspace** | Connected Notion workspaces | workspaceId, accessToken (encrypted), ownerId |
-| **WorkspaceMember** | Workspace membership & roles | userId, workspaceId, role (owner/admin/member/viewer) |
-| **Conversation** | Chat conversations | userId, workspaceId, title, messages |
-| **Message** | Individual messages | conversationId, role, content, sources |
-
-### Document Management
-
-| Model | Purpose | Key Fields |
-|-------|---------|------------|
-| **DocumentSource** | Indexed Notion pages | sourceId, workspaceId, title, contentHash, chunkCount |
-| **SyncJob** | Sync operation tracking | workspaceId, status, type, progress, error |
-| **DocumentSummary** | AI-generated summaries | sourceId, summary, topics, entities |
-| **DocumentVersion** | Document change history | sourceId, version, changes, timestamp |
-
-### Analytics & Monitoring
-
-| Model | Purpose | Key Fields |
-|-------|---------|------------|
-| **Analytics** | RAG query metrics | questionHash, latency, confidence, sources |
-| **TokenUsage** | LLM token consumption | userId, date, inputTokens, outputTokens, cost |
-| **AuditLog** | System activity log | action, userId, resource, details, ip |
-| **AuthAuditLog** | Auth-specific events | event, email, success, ip, userAgent |
-| **QueryActivity** | Search analytics | query, intent, retrievedDocs, feedback |
-
-### System Models
-
-| Model | Purpose | Key Fields |
-|-------|---------|------------|
-| **Notification** | In-app notifications | userId, type, title, read, data |
-| **DeadLetterJob** | Failed job storage | originalJob, error, attempts, lastAttempt |
-| **ConversationSummary** | Compressed conversation context | conversationId, summary, keyPoints |
-| **Entity** | Extracted entities from docs | name, type, mentions, workspaceId |
-
-## API Endpoints
-
-### Authentication (`/api/v1/auth`)
-- `POST /register` - User registration
-- `POST /login` - User login (returns JWT)
-- `POST /refresh` - Refresh access token
-- `POST /logout` - Invalidate tokens
-- `GET /me` - Current user info
-
-### RAG (`/api/v1/rag`)
-- `POST /` - Ask a question (non-streaming)
-- `POST /stream` - Ask with SSE streaming
-- `GET /cache/stats` - Cache statistics
-
-### Conversations (`/api/v1/conversations`)
-- `GET /` - List conversations
-- `POST /` - Create conversation
-- `GET /:id` - Get conversation with messages
-- `DELETE /:id` - Delete conversation
-- `POST /:id/ask` - Ask within conversation context
-
-### Notion (`/api/v1/notion`)
-- `GET /auth` - Initiate OAuth flow
-- `GET /callback` - OAuth callback
-- `GET /workspaces` - List connected workspaces
-- `POST /workspaces/:id/sync` - Trigger sync
-- `GET /workspaces/:id/sync-status` - Sync progress
-- `DELETE /workspaces/:id` - Disconnect workspace
-
-### Analytics (`/api/v1/analytics`)
-- `GET /dashboard` - Dashboard metrics
-- `GET /queries` - Query history
-- `GET /usage` - Token usage stats
-- `POST /:id/feedback` - Submit feedback
-
-### Memory (`/api/v1/memory`)
-- `GET /conversations/:id/context` - Get conversation context
-- `POST /conversations/:id/summarize` - Summarize conversation
-- `DELETE /conversations/:id/context` - Clear context
-
-### Health & Monitoring
-- `GET /health` - Service health check
-- `GET /api-docs` - Swagger UI
-
-## Microservice Architecture
-
-The platform uses a **strangler fig** pattern to extract functionality into standalone services while keeping the monolith fully functional without Docker. When a `*_SERVICE_URL` env var is set, the monolith delegates to the microservice; otherwise it falls back to built-in in-process logic.
+## Infrastructure
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                         Monolith (port 3007)                     │
-│  emailService.js ──────────── EMAIL_SERVICE_URL ──────────────► email-service (3008)
-│  notificationService.js ───── NOTIFICATION_SERVICE_URL ───────► notification-service (3009)
-│  socketService.js ─────────── REALTIME_SERVICE_URL ───────────► realtime-service (3010)
-│  presenceService.js ──────────────── ▲                          │
-└──────────────────────────────────────┼──────────────────────────┘
-                                       │ Redis pub/sub
-                              ┌────────┴────────┐
-                              │      Redis       │
-                              │  ┌────────────┐  │
-                              │  │  Channels  │  │
-                              │  │ realtime:* │  │
-                              │  ├────────────┤  │
-                              │  │   Hashes   │  │
-                              │  │ presence:* │  │
-                              │  └────────────┘  │
-                              └─────────────────-┘
+                 ┌─────────────┐
+  HTTPS ─────→  │    Nginx    │
+                 └──────┬──────┘
+              ┌─────────┴──────────┐
+              ↓                    ↓
+        ┌──────────┐        ┌──────────┐
+        │ Frontend │        │ Backend  │
+        │ :3000    │        │ :3007    │
+        └──────────┘        └────┬─────┘
+                           ┌─────┼──────┐
+                           ↓     ↓      ↓
+                      MongoDB  Redis  Qdrant
 ```
 
-### Microservices Summary
+**Production** (DigitalOcean fra1):
+- Nginx reverse proxy + Let's Encrypt SSL
+- Docker Compose with health checks
+- MongoDB Atlas (M0 free tier)
+- Qdrant v1.13.2 (self-hosted Docker)
+- Redis 7 (self-hosted Docker, 256MB)
+- DigitalOcean Spaces for file storage
+- Azure OpenAI: `gpt-4o-mini` + `text-embedding-3-small`
 
-| Service | Port | Env var trigger | Responsibility |
-|---------|------|----------------|----------------|
-| `email-service` | 3008 | `EMAIL_SERVICE_URL` | Transactional email via Resend HTTP API |
-| `notification-service` | 3009 | `NOTIFICATION_SERVICE_URL` | Notification CRUD, delivery, user preferences |
-| `realtime-service` | 3010 | `REALTIME_SERVICE_URL` | Socket.io server, presence state (Redis HASH) |
+## Multi-Tenancy
 
-See [Docker Deployment](../deployment/docker) for Redis pub/sub channel and presence key schemas.
+Workspace-based isolation. Every Qdrant query filters by `workspaceId`. The `ENFORCE_TENANT_ISOLATION=true` env var adds a defense-in-depth check at the vector store layer.
 
-## Real-Time Features
+## LLM Provider Abstraction
 
-The platform uses **Socket.io** for real-time communication. In local mode (no `REALTIME_SERVICE_URL`), Socket.io runs in-process in the monolith. In microservice mode, clients connect to the `realtime-service` directly and the monolith publishes events via Redis pub/sub.
-
-### Events (Server → Client)
-| Event | Description |
-|-------|-------------|
-| `sync:progress` | Sync job progress updates |
-| `sync:complete` | Sync job completed |
-| `sync:error` | Sync job failed |
-| `notification:new` | New in-app notification |
-| `presence:update` | User presence changes |
-| `presence:typing-start` | User started typing |
-| `presence:typing-stop` | User stopped typing |
-| `analytics:live` | Live analytics updates (local mode only) |
-
-### Events (Client → Server)
-| Event | Description |
-|-------|-------------|
-| `join:workspace` | Join workspace room |
-| `leave:workspace` | Leave workspace room |
-| `presence:status` | Update status (online/away/busy) |
-| `presence:typing-start` | Start typing indicator |
-| `presence:typing-stop` | Stop typing indicator |
-| `presence:ping` | Heartbeat for presence |
-
-## Monitoring & Evaluation
-
-### LangSmith Integration
-- Traces all LLM calls (chat completions, embeddings)
-- Captures latency, token usage, and errors
-- Links traces to conversations for debugging
-
-### RAGAS Evaluation Service
-Separate Python service (`ragas-service/`) for RAG quality evaluation:
-
-| Metric | Description |
-|--------|-------------|
-| **Faithfulness** | Answer grounded in retrieved context |
-| **Relevancy** | Answer addresses the question |
-| **Context Precision** | Retrieved docs are relevant |
-| **Context Recall** | All needed info was retrieved |
-
-### Cost Tracking
-- Per-user token usage tracking
-- Daily/weekly/monthly aggregation
-- Cost alerting thresholds
-- LLM model cost attribution
-
-## Environment-Specific Configurations
-
-| Aspect | Development | Staging | Production |
-|--------|-------------|---------|------------|
-| **MongoDB** | Docker local | Atlas M0/M2 | Atlas M10+ |
-| **Redis** | Docker local | Docker/Managed | Self-hosted Docker (same droplet) |
-| **Qdrant** | Docker local | Qdrant Cloud Free | Self-hosted Docker (same droplet) |
-| **LLM** | Azure OpenAI | Azure OpenAI | Azure OpenAI |
-| **Logging** | Debug level | Debug level | Info level |
-| **Rate Limits** | Relaxed | Moderate | Strict |
-| **CSRF** | Disabled | Enabled | Enabled |
+The provider factory (`config/llmProvider.js`) supports Azure OpenAI (default), OpenAI, and Anthropic. Switch via the `LLM_PROVIDER` env var.

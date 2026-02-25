@@ -61,27 +61,6 @@ services:
       retries: 3
 
   # ===========================================================================
-  # RAGAS Evaluation Service (Python) - Staging
-  # ===========================================================================
-  ragas-service:
-    build:
-      context: ./ragas-service
-      dockerfile: Dockerfile
-    container_name: rag-ragas-staging
-    ports:
-      - "8001:8001"
-    env_file:
-      - ./ragas-service/.env
-    networks:
-      - rag-network-staging
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 1G
-
-  # ===========================================================================
   # Redis (Local for staging - can use managed service instead)
   # ===========================================================================
   # For cost-effective staging, run Redis locally

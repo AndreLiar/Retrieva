@@ -37,7 +37,7 @@ const assessmentSchema = new mongoose.Schema(
   {
     workspaceId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'NotionWorkspace',
+      ref: 'Workspace',
       required: true,
       index: true,
     },
