@@ -10,7 +10,6 @@ import { Worker } from 'bullmq';
 import { redisConnection } from '../config/redis.js';
 import { Assessment } from '../models/Assessment.js';
 import { ingestFile } from '../services/fileIngestionService.js';
-import { emitToUser } from '../services/socketService.js';
 import logger from '../config/logger.js';
 import { connectDB } from '../config/database.js';
 
@@ -43,12 +42,6 @@ async function processFileIndex(job) {
     status: 'indexing',
     statusMessage: `Indexing ${fileName}…`,
     [`documents.${documentIndex}.status`]: 'uploading',
-  });
-
-  emitToUser(userId, 'assessment:update', {
-    assessmentId,
-    status: 'indexing',
-    statusMessage: `Indexing ${fileName}…`,
   });
 
   try {
@@ -96,12 +89,6 @@ async function processFileIndex(job) {
       statusMessage: `Failed to index ${fileName}: ${err.message}`,
     });
 
-    emitToUser(userId, 'assessment:update', {
-      assessmentId,
-      status: 'failed',
-      statusMessage: `Failed to index ${fileName}: ${err.message}`,
-    });
-
     throw err;
   }
 }
@@ -120,12 +107,6 @@ async function processGapAnalysis(job) {
   });
 
   await Assessment.findByIdAndUpdate(assessmentId, {
-    status: 'analyzing',
-    statusMessage: 'Running compliance gap analysis…',
-  });
-
-  emitToUser(userId, 'assessment:update', {
-    assessmentId,
     status: 'analyzing',
     statusMessage: 'Running compliance gap analysis…',
   });

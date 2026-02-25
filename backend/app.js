@@ -7,32 +7,17 @@ import { httpLogger } from './config/httpLogger.js';
 import rateLimit from 'express-rate-limit';
 import hpp from 'hpp';
 import compression from 'compression';
-import swaggerUi from 'swagger-ui-express';
 import { securitySanitizer } from './middleware/securitySanitizer.js';
-import { csrfProtection, getCsrfToken } from './middleware/csrfProtection.js';
 import { ragRoutes } from './routes/ragRoutes.js';
 import { conversationRoutes } from './routes/conversationRoutes.js';
-import notionRoutes from './routes/notionRoutes.js';
 import workspaceRoutes from './routes/workspaceRoutes.js';
-import analyticsRoutes from './routes/analyticsRoutes.js';
-import evaluationRoutes from './routes/evaluationRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import healthRoutes from './routes/healthRoutes.js';
-import { guardrailsRoutes } from './routes/guardrailsRoutes.js';
-import { notificationRoutes } from './routes/notificationRoutes.js';
-import activityRoutes from './routes/activityRoutes.js';
-import presenceRoutes from './routes/presenceRoutes.js';
-import memoryRoutes from './routes/memoryRoutes.js';
-import embeddingRoutes from './routes/embeddingRoutes.js';
-import pipelineRoutes from './routes/pipelineRoutes.js';
-import mcpDataSourceRoutes from './routes/mcpDataSourceRoutes.js';
 import assessmentRoutes from './routes/assessmentRoutes.js';
 import dataSourceRoutes from './routes/dataSourceRoutes.js';
 import complianceRoutes from './routes/complianceRoutes.js';
-import organizationRoutes from './routes/organizationRoutes.js';
 import logger from './config/logger.js';
 import { globalErrorHandler } from './utils/index.js';
-import { swaggerDocument } from './config/swagger.js';
 
 // =============================================================================
 // ISSUE #12 FIX: Global Request Timeout Configuration
@@ -41,8 +26,6 @@ const REQUEST_TIMEOUT_MS = parseInt(process.env.REQUEST_TIMEOUT_MS) || 30000; //
 const STREAMING_TIMEOUT_MS = parseInt(process.env.STREAMING_TIMEOUT_MS) || 180000; // 3 min for streaming
 const SYNC_TIMEOUT_MS = parseInt(process.env.SYNC_TIMEOUT_MS) || 600000; // 10 min for sync operations
 
-// Guardrails middleware
-import { createAuditMiddleware } from './middleware/auditTrail.js';
 import { piiDetectionMiddleware } from './utils/security/piiMasker.js';
 
 const app = express();
@@ -232,25 +215,7 @@ app.use(
   })
 );
 
-// CSRF Protection (after cookie parser, before routes)
-// Disabled by default for API-first approach, enable with CSRF_ENABLED=true
-app.use(
-  csrfProtection({
-    enabled: process.env.CSRF_ENABLED === 'true',
-  })
-);
-
-// CSRF token endpoint (for clients that need to fetch token)
-app.get('/api/v1/csrf-token', getCsrfToken);
-
-// GUARDRAILS: Audit trail middleware (logs all requests)
-app.use(
-  createAuditMiddleware({
-    excludePaths: ['/health', '/api-docs', '/favicon.ico'],
-  })
-);
-
-// GUARDRAILS: PII detection in requests
+// PII detection in requests
 app.use(piiDetectionMiddleware(['question', 'content', 'message']));
 
 // Health check routes (no /api prefix for Kubernetes probes)
@@ -260,25 +225,10 @@ app.use('/health', healthRoutes);
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1', ragRoutes);
 app.use('/api/v1/conversations', conversationRoutes);
-app.use('/api/v1/notion', notionRoutes);
 app.use('/api/v1/workspaces', workspaceRoutes);
-app.use('/api/v1/analytics', analyticsRoutes);
-app.use('/api/v1/evaluation', evaluationRoutes);
-app.use('/api/v1/guardrails', guardrailsRoutes);
-app.use('/api/v1/notifications', notificationRoutes);
-app.use('/api/v1/activity', activityRoutes);
-app.use('/api/v1/presence', presenceRoutes);
-app.use('/api/v1/memory', memoryRoutes);
-app.use('/api/v1/embeddings', embeddingRoutes);
-app.use('/api/v1/pipeline', pipelineRoutes);
-app.use('/api/v1/mcp-sources', mcpDataSourceRoutes);
 app.use('/api/v1/assessments', assessmentRoutes);
 app.use('/api/v1/data-sources', dataSourceRoutes);
 app.use('/api/v1/compliance', complianceRoutes);
-app.use('/api/v1/organizations', organizationRoutes);
-
-// OpenAPI/Swagger documentation
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.get('/', (req, res) => {
   res.send('Hello from a secure app.js!');

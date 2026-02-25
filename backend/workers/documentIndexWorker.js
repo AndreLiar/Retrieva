@@ -8,7 +8,9 @@ import { connectDB } from '../config/database.js';
 
 // M2 Indexed Memory Layer - Sparse vectors for hybrid search
 import { sparseVectorManager } from '../services/search/sparseVector.js';
-import { guardrailsConfig } from '../config/guardrails.js';
+
+// Inline guardrails config (guardrails.js removed in MVP)
+const guardrailsConfig = { retrieval: { sparseSearch: { useInvertedIndex: false } } };
 
 // Phase 5: Cross-document deduplication
 import {
@@ -17,16 +19,9 @@ import {
   contentHashIndex,
 } from '../services/rag/indexDeduplication.js';
 
-// M3 Compressed Memory Layer
-import { createOrUpdateSummary } from '../services/memory/summarization.js';
-import { processDocumentEntities } from '../services/memory/entityExtraction.js';
-
-// Real-time events for indexing status
-import { emitSyncIndexing, emitSyncPageFetched } from '../services/realtimeEvents.js';
-
 // Phase 2: PII Detection for auto trust level upgrade
 import { scanChunks, logDetection } from '../services/security/piiDetector.js';
-import { NotionWorkspace } from '../models/NotionWorkspace.js';
+import { Workspace } from '../models/Workspace.js';
 
 // Qdrant client for verification
 import { QdrantClient } from '@qdrant/js-client-rest';
@@ -171,14 +166,6 @@ async function processIndexJob(job) {
       await docSource.addError(error);
     }
 
-    // Emit real-time error event
-    emitSyncPageFetched(workspaceId, {
-      pageId: sourceId,
-      title: documentContent?.title || sourceId,
-      status: 'error',
-      error: error.message,
-    });
-
     throw error;
   }
 }
@@ -292,7 +279,7 @@ async function handleAddOrUpdate(
   let piiDetectionResult = null;
 
   // Load workspace BEFORE try-catch so it's available for embedding later
-  const workspace = await NotionWorkspace.findOne({ workspaceId });
+  const workspace = await Workspace.findById(workspaceId).catch(() => null);
 
   // DEBUG: Log workspace lookup result for embedding routing
   logger.info('Workspace lookup for embedding routing', {
@@ -360,15 +347,6 @@ async function handleAddOrUpdate(
         oldLevel: currentTrustLevel,
         newLevel: piiDetectionResult.trustLevel,
         patterns: piiDetectionResult.detectedPatterns.slice(0, 5).map((p) => p.name),
-      });
-
-      // Emit real-time event for trust level change
-      emitSyncPageFetched(workspaceId, {
-        pageId: sourceId,
-        title: documentContent.title || 'Untitled',
-        status: 'pii_detected',
-        trustLevelUpgraded: true,
-        newTrustLevel: piiDetectionResult.trustLevel,
       });
     }
   } catch (piiError) {
@@ -605,103 +583,14 @@ async function handleAddOrUpdate(
       verifiedInQdrant: verification.actualCount,
       orphanedOldChunks: operation === 'update' ? oldChunkCount : 0,
     });
-
-    // Emit real-time indexing status
-    emitSyncIndexing(workspaceId, {
-      documentsIndexed: 1,
-      totalDocuments: 1,
-      currentDocument: documentContent.title || sourceId,
-    });
-
-    // Emit page fetched with success status
-    emitSyncPageFetched(workspaceId, {
-      pageId: sourceId,
-      title: documentContent.title || 'Untitled',
-      status: 'success',
-      chunksCreated: verification.actualCount,
-    });
   } else {
     logger.warn(`DocumentSource not found for ${sourceId}, this should not happen`);
-  }
-
-  // M3 COMPRESSED MEMORY: Generate summary and extract entities
-  // Skip during bulk sync for faster processing (can be run later)
-  if (!skipM3) {
-    processM3Memory(workspaceId, docSource?._id, sourceId, documentContent).catch((err) => {
-      logger.warn(`M3 memory processing failed for ${sourceId}:`, {
-        service: 'document-index',
-        error: err.message,
-      });
-    });
   }
 
   return {
     chunksCreated: chunks.length,
     pointIds,
   };
-}
-
-/**
- * Process M3 Compressed Memory (summarization + entity extraction)
- * Runs asynchronously after indexing to not block the main flow
- * @param {string} workspaceId - Workspace ID
- * @param {string} documentSourceId - DocumentSource ID
- * @param {string} sourceId - Source document ID
- * @param {Object} documentContent - Document content and metadata
- */
-async function processM3Memory(workspaceId, documentSourceId, sourceId, documentContent) {
-  const title = documentContent.title || 'Untitled';
-  const content = documentContent.content || '';
-
-  // Skip if content is too short for meaningful M3 processing
-  if (content.length < 200) {
-    logger.debug(`Skipping M3 processing for ${sourceId} - content too short`);
-    return;
-  }
-
-  const startTime = Date.now();
-
-  try {
-    // Generate document summary
-    logger.info(`Generating M3 summary for ${sourceId}`, { service: 'document-index' });
-    const summary = await createOrUpdateSummary({
-      workspaceId,
-      documentSourceId,
-      sourceId,
-      title,
-      content,
-    });
-
-    // Extract entities
-    logger.info(`Extracting M3 entities for ${sourceId}`, { service: 'document-index' });
-    const entities = await processDocumentEntities({
-      workspaceId,
-      documentSourceId,
-      sourceId,
-      title,
-      content,
-    });
-
-    // Link entities to summary
-    if (summary && entities.length > 0) {
-      summary.entityIds = entities.map((e) => e._id);
-      await summary.save();
-    }
-
-    logger.info(`M3 memory processing complete for ${sourceId}`, {
-      service: 'document-index',
-      summaryLength: summary?.summary?.length || 0,
-      entitiesCount: entities.length,
-      processingTimeMs: Date.now() - startTime,
-    });
-  } catch (error) {
-    logger.error(`M3 memory processing failed for ${sourceId}:`, {
-      service: 'document-index',
-      error: error.message,
-      processingTimeMs: Date.now() - startTime,
-    });
-    // Don't throw - M3 processing is non-critical
-  }
 }
 
 /**

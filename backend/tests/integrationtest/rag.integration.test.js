@@ -148,14 +148,13 @@ describe('RAG API Integration Tests', () => {
     userToken = loginRes.body.data.accessToken;
 
     // Create workspace
-    const NotionWorkspace = mongoose.model('NotionWorkspace');
-    const workspace = await NotionWorkspace.create({
-      workspaceId: 'rag-test-workspace',
-      workspaceName: 'RAG Test Workspace',
+    const Workspace = mongoose.model('Workspace');
+    const workspace = await Workspace.create({
+      name: 'RAG Test Workspace',
       userId: userId,
-      accessToken: 'test-encrypted-token',
+      syncStatus: 'synced',
     });
-    workspaceId = workspace.workspaceId;
+    workspaceId = workspace._id.toString();
 
     // Create workspace member
     const WorkspaceMember = mongoose.model('WorkspaceMember');
@@ -440,11 +439,9 @@ describe('RAG API Integration Tests', () => {
 
       // Add to workspace using WorkspaceMember (correct model)
       const WorkspaceMember = mongoose.model('WorkspaceMember');
-      const NotionWorkspace = mongoose.model('NotionWorkspace');
-      const workspace = await NotionWorkspace.findOne({ workspaceId: workspaceId });
 
       await WorkspaceMember.create({
-        workspaceId: workspace._id,
+        workspaceId: workspaceId,
         userId: otherUserDoc._id,
         role: 'member',
         status: 'active',

@@ -5,7 +5,7 @@
  * SECURITY: Implements BOLA protection - verifies user has access to workspace
  */
 
-import { NotionWorkspace } from '../models/NotionWorkspace.js';
+import { Workspace } from '../models/Workspace.js';
 import { WorkspaceMember } from '../models/WorkspaceMember.js';
 import { sendError } from '../utils/index.js';
 import logger from '../config/logger.js';
@@ -33,7 +33,7 @@ export const loadWorkspace = async (req, res, next) => {
     return sendError(res, 401, 'Authentication required');
   }
 
-  const workspace = await NotionWorkspace.findById(id);
+  const workspace = await Workspace.findById(id);
 
   if (!workspace) {
     return sendError(res, 404, 'Workspace not found');
@@ -88,7 +88,7 @@ export const loadWorkspaceSafe = async (req, res, next) => {
     return sendError(res, 401, 'Authentication required');
   }
 
-  const workspace = await NotionWorkspace.findById(id).select('-accessToken');
+  const workspace = await Workspace.findById(id).select('-accessToken');
 
   if (!workspace) {
     return sendError(res, 404, 'Workspace not found');

@@ -22,7 +22,6 @@ import { Separator } from '@/components/ui/separator';
 import { AssessmentProgressStepper } from '@/components/assessment/AssessmentProgressStepper';
 import { GapAnalysisTable } from '@/components/assessment/GapAnalysisTable';
 import { assessmentsApi } from '@/lib/api/assessments';
-import { useSocket } from '@/lib/hooks';
 import type { Assessment, OverallRisk } from '@/lib/api/assessments';
 
 const RISK_VARIANT: Record<OverallRisk, 'default' | 'secondary' | 'destructive'> = {
@@ -37,18 +36,10 @@ const RISK_DESCRIPTION: Record<OverallRisk, string> = {
   High: 'Significant compliance gaps detected — remediation required before contract renewal.',
 };
 
-interface AssessmentUpdateEvent {
-  assessmentId: string;
-  status: Assessment['status'];
-  statusMessage?: string;
-}
-
 export default function AssessmentDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { on, isConnected } = useSocket();
-
   const { data: assessment, isLoading, isError } = useQuery({
     queryKey: ['assessment', id],
     queryFn: async () => {
@@ -63,23 +54,16 @@ export default function AssessmentDetailPage() {
     },
   });
 
-  // Real-time updates via socket
+  // Notify when assessment transitions to complete or failed
+  const prevStatus = assessment?.status;
   useEffect(() => {
-    if (!isConnected) return;
-    const unsub = on<AssessmentUpdateEvent>('assessment:update', (event) => {
-      if (event.assessmentId !== id) return;
-      queryClient.invalidateQueries({ queryKey: ['assessment', id] });
-      queryClient.invalidateQueries({ queryKey: ['assessments'] });
-      if (event.status === 'complete') {
-        toast.success('Gap analysis complete — report ready');
-      } else if (event.status === 'failed') {
-        toast.error('Assessment failed', {
-          description: event.statusMessage ?? 'An error occurred during analysis.',
-        });
-      }
-    });
-    return unsub;
-  }, [isConnected, on, id, queryClient]);
+    if (prevStatus === 'complete') {
+      toast.success('Gap analysis complete — report ready');
+    } else if (prevStatus === 'failed') {
+      toast.error('Assessment failed');
+    }
+   
+  }, [prevStatus]);
 
   const downloadMutation = useMutation({
     mutationFn: () =>

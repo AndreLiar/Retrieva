@@ -20,7 +20,6 @@ import { tool } from '@langchain/core/tools';
 import { Assessment } from '../models/Assessment.js';
 import { embeddings } from '../config/embeddings.js';
 import { createLLM } from '../config/llmProvider.js';
-import { emitToUser } from './socketService.js';
 import logger from '../config/logger.js';
 
 const QDRANT_URL = process.env.QDRANT_URL || 'http://localhost:6333';
@@ -407,12 +406,8 @@ export async function runGapAnalysis({ assessmentId, userId, job }) {
   if (!assessment) throw new Error(`Assessment ${assessmentId} not found`);
 
   const emit = (msg, pct) => {
-    emitToUser(userId, 'assessment:update', {
-      assessmentId,
-      status: 'analyzing',
-      statusMessage: msg,
-    });
     if (job && pct !== undefined) job.updateProgress(pct).catch(() => {});
+    logger.debug('Gap analysis progress', { assessmentId, msg, pct });
   };
 
   // Wait for all documents to finish indexing (max 2 min)
@@ -473,14 +468,6 @@ export async function runGapAnalysis({ assessmentId, userId, job }) {
     'results.summary': result.summary || '',
     'results.domainsAnalyzed': result.domainsAnalyzed || DORA_DOMAINS,
     'results.generatedAt': new Date(),
-  });
-
-  emitToUser(userId, 'assessment:update', {
-    assessmentId,
-    status: 'complete',
-    statusMessage: 'Analysis complete',
-    overallRisk,
-    gapCount: gaps.length,
   });
 
   logger.info('Gap analysis complete', {

@@ -11,10 +11,9 @@
  */
 
 import logger from '../../config/logger.js';
-import { guardrailsConfig } from '../../config/guardrails.js';
 
-// PII patterns from config
-const piiConfig = guardrailsConfig.output.piiMasking;
+// PII masking config (inline — guardrails.js removed in MVP)
+const piiConfig = { enabled: true };
 
 // Additional patterns for detection
 const PII_PATTERNS = {
@@ -341,20 +340,7 @@ export function piiDetectionMiddleware(fieldsToCheck = ['question', 'content', '
         userId: req.user?.userId,
       });
 
-      // Import here to avoid circular dependency
-      import('../services/securityLogger.js').then(({ logSecurityEvent }) => {
-        logSecurityEvent(
-          'pii_detected',
-          {
-            endpoint: req.originalUrl,
-            detectedIn,
-          },
-          {
-            userId: req.user?.userId,
-            ipAddress: req.ip,
-          }
-        );
-      });
+      // Security logging removed (securityLogger not available in MVP)
     }
 
     next();

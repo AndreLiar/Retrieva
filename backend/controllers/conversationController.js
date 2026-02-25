@@ -21,9 +21,9 @@ async function getUserPrimaryWorkspace(userId) {
   const membership = await WorkspaceMember.findOne({
     userId,
     status: 'active',
-  }).populate('workspaceId', 'workspaceId');
+  }).populate('workspaceId', '_id');
 
-  return membership?.workspaceId?.workspaceId || null;
+  return membership?.workspaceId?._id?.toString() || null;
 }
 
 /**
