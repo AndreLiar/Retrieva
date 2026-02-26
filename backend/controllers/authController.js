@@ -15,7 +15,6 @@ import {
   getRefreshToken,
 } from '../utils/security/cookieConfig.js';
 import { emailService } from '../services/emailService.js';
-import { authAuditService } from '../services/authAuditService.js';
 import logger from '../config/logger.js';
 
 const RESEND_VERIFICATION_COOLDOWN_MS = 60 * 1000;
@@ -87,9 +86,6 @@ export const register = async (req, res) => {
       role: user.role,
     });
 
-    // Audit log
-    authAuditService.logRegisterSuccess(req, user);
-
     // Set HTTP-only cookies for secure token storage
     setAuthCookies(res, tokens);
 
@@ -138,7 +134,6 @@ export const login = async (req, res) => {
 
     if (!user) {
       logger.warn('Login attempt with non-existent email', { email });
-      authAuditService.logLoginFailed(req, email, 'User not found');
       return sendError(res, 401, 'Invalid credentials');
     }
 
@@ -148,14 +143,12 @@ export const login = async (req, res) => {
         userId: user._id,
         lockUntil: user.lockUntil,
       });
-      authAuditService.logLoginBlockedLocked(req, user);
       return sendError(res, 423, 'Account is temporarily locked. Please try again later.');
     }
 
     // Check if account is active
     if (!user.isActive) {
       logger.warn('Login attempt on inactive account', { userId: user._id });
-      authAuditService.logLoginFailed(req, email, 'Account inactive');
       return sendError(res, 401, 'Account is inactive');
     }
 
@@ -165,17 +158,6 @@ export const login = async (req, res) => {
     if (!isPasswordValid) {
       logger.warn('Failed login attempt', { email });
       await user.incLoginAttempts();
-      authAuditService.logLoginFailed(req, email, 'Invalid password');
-
-      // Check if this failure caused account lock
-      const updatedUser = await User.findById(user._id);
-      if (updatedUser?.isLocked) {
-        authAuditService.logAccountLocked(req, user._id, email, updatedUser.loginAttempts);
-      }
-
-      // Check for brute force
-      authAuditService.detectBruteForce(req.ip);
-
       return sendError(res, 401, 'Invalid credentials');
     }
 
@@ -198,9 +180,6 @@ export const login = async (req, res) => {
       userId: user._id,
       email: user.email,
     });
-
-    // Audit log
-    authAuditService.logLoginSuccess(req, user);
 
     // Set HTTP-only cookies for secure token storage
     setAuthCookies(res, tokens);
@@ -283,9 +262,6 @@ export const refreshToken = async (req, res) => {
         userId: user._id,
       });
 
-      // Audit: Log potential token theft
-      authAuditService.logTokenTheftDetected(req, user._id);
-
       // Security: Clear all tokens on suspected theft
       await user.clearAllRefreshTokens();
       clearAuthCookies(res);
@@ -317,9 +293,6 @@ export const refreshToken = async (req, res) => {
     });
 
     logger.info('Tokens rotated successfully', { userId: user._id });
-
-    // Audit log
-    authAuditService.logTokenRefresh(req, user._id, true);
 
     sendSuccess(res, 200, 'Token refreshed', {
       accessToken: newAccessToken,
@@ -360,9 +333,6 @@ export const logout = async (req, res) => {
         }
         logger.info('User logged out', { userId: user._id });
       }
-
-      // Audit log
-      authAuditService.logLogout(req, user._id, logoutAll);
     }
 
     // Clear HTTP-only cookies
@@ -512,9 +482,6 @@ export const forgotPassword = async (req, res) => {
 
     logger.info('Password reset email sent', { userId: user._id, email: user.email });
 
-    // Audit log
-    authAuditService.logPasswordResetRequest(req, email, true);
-
     sendSuccess(
       res,
       200,
@@ -548,7 +515,6 @@ export const resetPassword = async (req, res) => {
 
     if (!user) {
       logger.warn('Invalid or expired password reset token');
-      authAuditService.logPasswordReset(req, null, false, 'Invalid or expired token');
       return sendError(res, 400, 'Invalid or expired reset token. Please request a new one.');
     }
 
@@ -565,9 +531,6 @@ export const resetPassword = async (req, res) => {
     await user.save();
 
     logger.info('Password reset successful', { userId: user._id });
-
-    // Audit log
-    authAuditService.logPasswordReset(req, user._id, true);
 
     sendSuccess(
       res,
@@ -602,7 +565,6 @@ export const verifyEmail = async (req, res) => {
 
     if (!user) {
       logger.warn('Invalid or expired email verification token');
-      authAuditService.logEmailVerification(req, null, false, 'Invalid or expired token');
       return sendError(
         res,
         400,
@@ -617,9 +579,6 @@ export const verifyEmail = async (req, res) => {
     await user.save({ validateBeforeSave: false });
 
     logger.info('Email verified successfully', { userId: user._id, email: user.email });
-
-    // Audit log
-    authAuditService.logEmailVerification(req, user._id, true);
 
     sendSuccess(res, 200, 'Email verified successfully.');
   } catch (error) {
@@ -721,7 +680,6 @@ export const changePassword = async (req, res) => {
       logger.warn('Change password failed - incorrect current password', {
         userId: user._id,
       });
-      authAuditService.logPasswordChange(req, user._id, false, 'Incorrect current password');
       return sendError(res, 401, 'Current password is incorrect');
     }
 
@@ -739,9 +697,6 @@ export const changePassword = async (req, res) => {
     logger.info('Password changed successfully - all sessions invalidated', {
       userId: user._id,
     });
-
-    // Audit log
-    authAuditService.logPasswordChange(req, user._id, true);
 
     sendSuccess(
       res,

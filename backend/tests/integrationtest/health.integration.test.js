@@ -231,14 +231,12 @@ describe('Health Check API Integration Tests', () => {
   });
 
   // =============================================================================
-  // API Documentation
+  // API Documentation (Swagger removed in MVP)
   // =============================================================================
   describe('GET /api-docs', () => {
-    it('should serve Swagger documentation', async () => {
+    it('should return 404 as Swagger docs are not available in MVP', async () => {
       const res = await request.get('/api-docs/');
-
-      // Should return HTML or redirect
-      expect([200, 301, 302, 500]).toContain(res.status);
+      expect(res.status).toBe(404);
     });
   });
 });

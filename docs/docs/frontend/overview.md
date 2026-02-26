@@ -96,15 +96,17 @@ frontend/
 
 | Route | Description | Permission |
 |-------|-------------|------------|
-| `/chat` | Chat interface | All members |
+| `/assessments` | DORA third-party ICT risk assessments | All members |
+| `/copilot` | DORA compliance AI copilot (Q&A) | All members |
+| `/sources` | Data sources hub (Notion + coming soon: files, Confluence, URLs) | Owner/Member |
 | `/conversations` | Conversation history | All members |
-| `/workspaces` | Workspace management | All members |
+| `/analytics` | Usage analytics | Owner/Member |
 | `/members` | Member management | Owner only |
-| `/notion` | Notion integration | Owner/Admin |
-| `/analytics` | Usage analytics | Owner/Admin |
+| `/workspaces` | Workspace management | All members |
 | `/notifications` | Notifications | All members |
 | `/settings` | User settings | All members |
-| `/admin` | Admin dashboard | Admins only |
+| `/chat` | Redirects to `/copilot` (backwards compat) | — |
+| `/notion` | Notion workspace integration settings | Owner/Member |
 
 ## Provider Hierarchy
 

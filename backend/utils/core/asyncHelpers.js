@@ -129,7 +129,6 @@ export async function* streamWithTimeout(
   chunkTimeoutMs = 10000
 ) {
   let timeoutId;
-  let _isFirstChunk = true;
 
   const resetTimeout = (ms) => {
     if (timeoutId) clearTimeout(timeoutId);
@@ -142,7 +141,7 @@ export async function* streamWithTimeout(
 
   try {
     const stream = await chain.stream(input, options);
-    let _timeoutPromise = resetTimeout(initialTimeoutMs);
+    resetTimeout(initialTimeoutMs);
 
     for await (const chunk of stream) {
       // Cancel the timeout for this chunk
@@ -151,8 +150,7 @@ export async function* streamWithTimeout(
       yield chunk;
 
       // Set timeout for next chunk (shorter after first chunk received)
-      _isFirstChunk = false;
-      _timeoutPromise = resetTimeout(chunkTimeoutMs);
+      resetTimeout(chunkTimeoutMs);
     }
 
     clearTimeout(timeoutId);

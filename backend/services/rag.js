@@ -27,19 +27,35 @@ import { processCitations, analyzeCitationCoverage } from '../utils/rag/citation
 import { processOutput } from '../utils/rag/outputValidator.js';
 import { buildQdrantFilter, retrieveAdditionalDocuments } from './rag/queryRetrieval.js';
 import { trackQueryAnalytics, buildRAGResult } from './rag/analyticsTracker.js';
-import { guardrailsConfig } from '../config/guardrails.js';
 
-// Intent-aware routing
-import { IntentType } from './intent/intentClassifier.js';
-import { queryRouter } from './intent/queryRouter.js';
-import { executeStrategy } from './intent/retrievalStrategies.js';
-import { CHITCHAT_RESPONSES, OUT_OF_SCOPE_RESPONSE } from './intent/intentHandlers.js';
+// Inline guardrails config (guardrails.js removed in MVP)
+const guardrailsConfig = {
+  output: {
+    hallucinationBlocking: { strictMode: false },
+    confidenceHandling: {
+      messages: {
+        blocked:
+          "I don't have enough reliable information to answer this question accurately. Please try rephrasing or check your source documents.",
+      },
+    },
+    piiMasking: { enabled: false },
+  },
+  generation: {
+    retry: {
+      enabled: false,
+      minConfidenceForRetry: 0.3,
+      cooldownMs: 0,
+      retryTimeoutMs: 30000,
+    },
+  },
+  retrieval: {
+    maxRetryDocuments: 20,
+    sparseSearch: { useInvertedIndex: false },
+  },
+};
 
-// M3 Compressed Memory Layer
-import { entityMemory } from './memory/entityMemory.js';
-
-// LangSmith tracing
-import { getCallbacks } from '../config/langsmith.js';
+// LangSmith tracing stub (langsmith.js removed in MVP)
+const getCallbacks = () => [];
 
 // Default dependencies
 import { getDefaultLLM } from '../config/llm.js';
@@ -47,10 +63,8 @@ import { getVectorStore as defaultVectorStoreFactory } from '../config/vectorSto
 import { ragCache as defaultCache } from '../utils/rag/ragCache.js';
 import { answerFormatter as defaultAnswerFormatter } from './answerFormatter.js';
 import defaultLogger from '../config/logger.js';
-import { Analytics as DefaultAnalytics } from '../models/Analytics.js';
 import { Message as DefaultMessage } from '../models/Message.js';
 import { Conversation as DefaultConversation } from '../models/Conversation.js';
-import { NotionWorkspace as DefaultNotionWorkspace } from '../models/NotionWorkspace.js';
 
 /**
  * @typedef {Object} RAGDependencies
@@ -112,10 +126,8 @@ class RAGService {
     this.logger = dependencies.logger || defaultLogger;
 
     const models = dependencies.models || {};
-    this.Analytics = models.Analytics || DefaultAnalytics;
     this.Message = models.Message || DefaultMessage;
     this.Conversation = models.Conversation || DefaultConversation;
-    this.NotionWorkspace = models.NotionWorkspace || DefaultNotionWorkspace;
 
     this.retriever = null;
     this.rephraseChain = null;
@@ -134,7 +146,7 @@ class RAGService {
   }
 
   async _doInit() {
-    this.logger.info('Initializing RAG system for Notion...', { service: 'rag' });
+    this.logger.info('Initializing RAG system...', { service: 'rag' });
 
     // Initialize LLM - use injected LLM or get from provider factory
     if (this._injectedLLM) {
@@ -200,37 +212,12 @@ class RAGService {
 
   async _resolveQdrantWorkspaceId(workspaceId) {
     if (!workspaceId || workspaceId === 'default') return 'default';
-    try {
-      const notionWs = await this.NotionWorkspace.findById(workspaceId);
-      if (notionWs?.workspaceId) {
-        this.logger.info('Resolved workspace ID for Qdrant filter', {
-          service: 'rag',
-          mongoId: String(workspaceId),
-          notionWorkspaceId: notionWs.workspaceId,
-        });
-        return notionWs.workspaceId;
-      }
-    } catch {
-      this.logger.debug('WorkspaceId is not a MongoDB ObjectId, using as-is', {
-        service: 'rag',
-        workspaceId,
-      });
-    }
-    return workspaceId;
+    return String(workspaceId);
   }
 
   async _generateAnswer(question, context, history, metadata = {}) {
     const chain = ragPrompt.pipe(this.llm).pipe(new StringOutputParser());
-    const callbacks = getCallbacks({
-      runName: metadata.runName || 'rag-query',
-      metadata: {
-        questionLength: question.length,
-        sourcesCount: metadata.sourcesCount || 0,
-        hasHistory: history.length > 0,
-        ...metadata,
-      },
-      sessionId: metadata.sessionId,
-    });
+    const callbacks = getCallbacks();
 
     const invokeInput = {
       context,
@@ -427,7 +414,7 @@ class RAGService {
     });
 
     await trackQueryAnalytics({
-      Analytics: this.Analytics,
+      Analytics: null,
       cache: this.cache,
       logger: this.logger,
       requestId,
@@ -452,7 +439,7 @@ class RAGService {
   async _handleCacheHit(cached, question, requestId, conversationId = null, workspaceId = null) {
     this.logger.info('Returning cached answer', { service: 'rag', requestId, workspaceId });
     await trackQueryAnalytics({
-      Analytics: this.Analytics,
+      Analytics: null,
       cache: this.cache,
       logger: this.logger,
       requestId,
@@ -469,7 +456,6 @@ class RAGService {
       conversationId,
       filters = null,
       onEvent = null,
-      routing: externalRouting = null,
       responseInstruction: callerInstruction = '',
     } = options;
 
@@ -520,56 +506,13 @@ class RAGService {
       .sort({ timestamp: 1 });
     const history = this._convertToHistory(messages);
 
-    // Intent-aware routing — use caller-provided routing or classify here
-    const routing =
-      externalRouting ||
-      (await queryRouter.route(question, {
-        conversationHistory: messages.map((m) => ({ role: m.role, content: m.content })),
-      }));
-
-    this.logger.info('Query routed', {
-      service: 'rag',
-      requestId,
-      intent: routing.intent,
-      confidence: routing.confidence,
-      strategy: routing.strategy,
-      skipRAG: routing.skipRAG,
-      externalRouting: !!externalRouting,
-    });
-
-    // Handle non-RAG intents (chitchat, out_of_scope)
-    if (routing.skipRAG) {
-      return this._handleNonRAGIntent(question, routing, {
-        conversationId,
-        startTime,
-        requestId,
-        emit,
-      });
-    }
-
-    // Build memory context
-    let memoryContext = { entityContext: '', summaryContext: '' };
-    try {
-      memoryContext = await entityMemory.buildMemoryContext(question, workspaceId, conversationId);
-      if (memoryContext.entityContext || memoryContext.summaryContext) {
-        this.logger.info('Built M3 memory context', {
-          service: 'rag',
-          entitiesCount: memoryContext.mentionedEntities?.length || 0,
-          summariesCount: memoryContext.relevantSummaries?.length || 0,
-        });
-      }
-    } catch (memoryError) {
-      this.logger.warn('Failed to build memory context, continuing without', {
-        service: 'rag',
-        error: memoryError.message,
-      });
-    }
+    const memoryContext = { entityContext: '', summaryContext: '' };
 
     emit('status', { message: 'Retrieving context...', queryId: requestId });
 
     const searchQuery = await this._rephraseQuery(question, history);
 
-    // Resolve Notion workspace UUID for Qdrant filtering
+    // Resolve workspace UUID for Qdrant filtering
     const qdrantWorkspaceId = await this._resolveQdrantWorkspaceId(workspaceId);
 
     let qdrantFilter = null;
@@ -593,28 +536,25 @@ class RAGService {
       throw error;
     }
 
-    emit('status', { message: 'Searching documents...' });
+    // Direct vector store retrieval
+    const rawDocs = await this.retriever.invoke(searchQuery, { filter: qdrantFilter });
+    const rerankedDocs = rerankDocuments(rawDocs, searchQuery, 15);
 
-    // Execute intent-aware retrieval strategy
-    const retrieval = await executeStrategy(
-      routing.strategy,
-      searchQuery,
-      this.retriever,
-      this.vectorStore,
-      routing.config,
-      {
-        filter: qdrantFilter,
-        entities: routing.entities || [],
-        workspaceId: qdrantWorkspaceId,
-      }
-    );
+    const retrieval = {
+      documents: rerankedDocs,
+      allQueries: [searchQuery],
+      metrics: {
+        strategy: 'direct',
+        docsCollected: rawDocs.length,
+        docsAfterRerank: rerankedDocs.length,
+      },
+    };
 
-    this.logger.info('Strategy execution complete', {
+    this.logger.info('Retrieval complete', {
       service: 'rag',
       requestId,
-      strategy: routing.strategy,
-      docsRetrieved: retrieval.documents.length,
-      metrics: retrieval.metrics,
+      docsCollected: rawDocs.length,
+      docsAfterRerank: rerankedDocs.length,
     });
 
     const { context: docContext, sources } = this._prepareContext(retrieval.documents);
@@ -658,12 +598,7 @@ class RAGService {
     emit('status', { message: 'Generating answer...' });
 
     try {
-      const routingInstruction = routing.responsePrompt
-        ? `\n   RESPONSE FORMAT INSTRUCTION:\n   ${routing.responsePrompt}`
-        : '';
-      const combinedInstruction = [routingInstruction, callerInstruction]
-        .filter(Boolean)
-        .join('\n');
+      const combinedInstruction = callerInstruction || '';
 
       const response = await this._generateAnswer(question, context, history, {
         runName: 'rag-query',
@@ -808,60 +743,6 @@ class RAGService {
       });
       throw error;
     }
-  }
-
-  async _handleNonRAGIntent(question, routing, { conversationId, startTime, requestId, emit }) {
-    let response;
-
-    if (routing.intent === IntentType.CHITCHAT) {
-      response = CHITCHAT_RESPONSES[Math.floor(Math.random() * CHITCHAT_RESPONSES.length)];
-    } else if (routing.intent === IntentType.OUT_OF_SCOPE) {
-      response = OUT_OF_SCOPE_RESPONSE;
-    } else {
-      response =
-        "Could you provide more context or rephrase your question? I'd be happy to help you find information from your documents.";
-    }
-
-    emit('status', { message: 'Generating response...', queryId: requestId });
-
-    // Stream response character by character for consistent UX
-    for (const char of response) {
-      emit('chunk', { text: char });
-    }
-
-    await this._saveMessages(conversationId, question, response);
-
-    emit('metadata', {
-      confidence: routing.confidence,
-      intent: routing.intent,
-      citationCount: 0,
-      citedSources: [],
-      isGrounded: true,
-      hasHallucinations: false,
-      isRelevant: true,
-      reasoning: `Handled as ${routing.intent} intent without RAG retrieval`,
-    });
-    emit('saved', { conversationId });
-    emit('done', { message: 'Streaming complete' });
-
-    const formattedAnswer = await this.answerFormatter.format(response, question);
-
-    return {
-      answer: response,
-      formattedAnswer,
-      sources: [],
-      validation: {
-        isLowQuality: false,
-        confidence: routing.confidence,
-        issues: [],
-        isGrounded: true,
-        hasHallucinations: false,
-      },
-      citedSources: [],
-      intent: { type: routing.intent, confidence: routing.confidence },
-      conversationId,
-      totalTime: Date.now() - startTime,
-    };
   }
 
   /**

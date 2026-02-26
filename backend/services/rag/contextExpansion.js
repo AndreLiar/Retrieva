@@ -391,7 +391,7 @@ export async function fetchDocumentSummaryChunk(workspaceId, sourceId) {
     }
 
     return null;
-  } catch (_err) {
+  } catch {
     logger.debug('No summary chunk found', {
       service: 'context-expansion',
       sourceId,

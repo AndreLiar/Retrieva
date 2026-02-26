@@ -149,6 +149,24 @@ X-Workspace-Id: 507f1f77bcf86cd799439011
 | POST | `/mcp-sources/:id/sync` | Trigger a sync job |
 | GET | `/mcp-sources/:id/stats` | Document counts and sync stats |
 
+### Compliance (DORA Articles)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/compliance/domains` | List all DORA domains with article counts |
+| GET | `/compliance/articles` | List articles, filter by domain or chapter |
+| GET | `/compliance/articles/:article` | Get a single article with full regulatory text |
+
+### Data Sources (File / URL / Confluence)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/data-sources` | Create a data source (file upload or JSON) |
+| GET | `/data-sources` | List data sources for a workspace |
+| GET | `/data-sources/:id` | Get a single data source |
+| POST | `/data-sources/:id/sync` | Trigger a re-sync |
+| DELETE | `/data-sources/:id` | Delete source and soft-delete indexed documents |
+
 ## Health Check
 
 ```bash

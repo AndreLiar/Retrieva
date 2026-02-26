@@ -5,13 +5,16 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
-  MessageSquare,
-  Zap,
-  Shield,
+  ShieldCheck,
   Database,
   ArrowRight,
-  Sparkles,
-  BookOpen,
+  FileSearch,
+  Bot,
+  Lock,
+  Plug,
+  Globe,
+  Upload,
+  CheckCircle2,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -23,14 +26,13 @@ export default function LandingPage() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const isInitialized = useAuthStore((state) => state.isInitialized);
 
-  // Redirect authenticated users to chat
+  // Redirect authenticated users to the primary feature
   useEffect(() => {
     if (isInitialized && isAuthenticated) {
-      router.push('/chat');
+      router.push('/assessments');
     }
   }, [isAuthenticated, isInitialized, router]);
 
-  // Show loading while checking auth
   if (!isInitialized) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -39,7 +41,6 @@ export default function LandingPage() {
     );
   }
 
-  // If authenticated, show nothing while redirecting
   if (isAuthenticated) {
     return null;
   }
@@ -50,7 +51,7 @@ export default function LandingPage() {
       <header className="border-b">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Sparkles className="h-6 w-6 text-primary" />
+            <ShieldCheck className="h-6 w-6 text-primary" />
             <span className="font-bold text-xl">Retrieva</span>
           </div>
           <div className="flex items-center gap-4">
@@ -65,20 +66,24 @@ export default function LandingPage() {
         </div>
       </header>
 
-      {/* Hero Section */}
+      {/* Hero */}
       <section className="container mx-auto px-4 py-24 text-center">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border bg-muted text-sm text-muted-foreground mb-6">
+            <ShieldCheck className="h-3.5 w-3.5 text-primary" />
+            DORA Regulation (EU) 2022/2554
+          </div>
           <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6">
-            Your Knowledge Base,{' '}
-            <span className="text-primary">Supercharged with AI</span>
+            DORA Compliance Intelligence{' '}
+            <span className="text-primary">for Financial Entities</span>
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
-            Connect your Notion workspace and get instant, accurate answers from your documents.
-            Powered by advanced RAG technology.
+            Automate third-party ICT risk assessments, identify compliance gaps against DORA
+            requirements, and get instant answers from an AI copilot trained on your documentation.
           </p>
           <div className="flex gap-4 justify-center">
             <Link href="/register">
@@ -95,71 +100,166 @@ export default function LandingPage() {
         </motion.div>
       </section>
 
-      {/* Features Section */}
+      {/* Features */}
       <section className="container mx-auto px-4 py-24">
         <h2 className="text-3xl font-bold text-center mb-12">
-          Everything you need to unlock your knowledge
+          Everything you need to meet DORA obligations
         </h2>
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
           <FeatureCard
-            icon={<MessageSquare className="h-8 w-8" />}
-            title="Smart Q&A"
-            description="Ask questions in natural language and get accurate answers with source citations."
+            icon={<FileSearch className="h-8 w-8" />}
+            title="Automated Gap Analysis"
+            description="Upload vendor ICT documentation and get a structured DORA compliance gap report in minutes."
           />
           <FeatureCard
             icon={<Database className="h-8 w-8" />}
-            title="Notion Integration"
-            description="Connect your Notion workspace and automatically sync your documents."
+            title="Multi-Source Ingestion"
+            description="Connect sources natively or via MCP — files, URLs, Confluence, Notion, GitHub, Slack, or any custom system. One unified knowledge base."
           />
           <FeatureCard
-            icon={<Zap className="h-8 w-8" />}
-            title="Fast & Accurate"
-            description="Get instant responses powered by semantic search and LLM technology."
+            icon={<Bot className="h-8 w-8" />}
+            title="DORA Copilot"
+            description="Ask compliance questions in natural language. The agentic copilot searches your docs and DORA articles."
           />
           <FeatureCard
-            icon={<Shield className="h-8 w-8" />}
-            title="Secure & Private"
-            description="Your data stays private with enterprise-grade security and encryption."
+            icon={<Lock className="h-8 w-8" />}
+            title="Enterprise-Grade Security"
+            description="Workspace isolation, PII detection, audit logging, and encrypted secrets — built for regulated industries."
           />
         </div>
       </section>
 
-      {/* How It Works */}
+      {/* Connect Anything */}
       <section className="bg-muted/50 py-24">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-12">
-            How It Works
-          </h2>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-12"
+          >
+            <h2 className="text-3xl font-bold mb-4">Connect any knowledge source</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Simple built-in connectors for common tools. Open MCP protocol for everything else.
+              Both paths feed the same high-quality RAG pipeline.
+            </p>
+          </motion.div>
+
+          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            {/* Native */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="rounded-lg border bg-card p-6"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 rounded-md bg-primary/10 text-primary">
+                  <Upload className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="font-semibold">Native Integrations</h3>
+                  <p className="text-xs text-muted-foreground">Zero infrastructure required</p>
+                </div>
+              </div>
+              <ul className="space-y-2 text-sm text-muted-foreground mb-4">
+                {[
+                  'Notion workspace sync',
+                  'File upload — PDF, DOCX, XLSX',
+                  'Web URL crawling',
+                  'Confluence Cloud (direct API)',
+                ].map((item) => (
+                  <li key={item} className="flex items-center gap-2">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-green-500 shrink-0" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+              <p className="text-xs text-muted-foreground border-t pt-3">
+                Fill in a form — Retrieva handles the rest.
+              </p>
+            </motion.div>
+
+            {/* MCP */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="rounded-lg border bg-card p-6"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 rounded-md bg-primary/10 text-primary">
+                  <Plug className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="font-semibold">MCP Protocol</h3>
+                  <p className="text-xs text-muted-foreground">Connect anything, your way</p>
+                </div>
+              </div>
+              <ul className="space-y-2 text-sm text-muted-foreground mb-4">
+                {[
+                  'GitHub, Jira, Slack, Google Drive',
+                  'Notion via official MCP server',
+                  'Internal wikis & proprietary systems',
+                  'Any custom MCP-compatible server',
+                ].map((item) => (
+                  <li key={item} className="flex items-center gap-2">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-green-500 shrink-0" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+              <p className="text-xs text-muted-foreground border-t pt-3">
+                Run your own MCP server — Retrieva indexes it automatically.
+              </p>
+            </motion.div>
+          </div>
+
+          <motion.p
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            className="text-center text-sm text-muted-foreground mt-8 flex items-center justify-center gap-2"
+          >
+            <Globe className="h-4 w-4" />
+            As the MCP ecosystem grows, Retrieva gains new source types with zero backend changes.
+          </motion.p>
+        </div>
+      </section>
+
+      {/* How it works */}
+      <section className="bg-muted/30 py-24">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl font-bold text-center mb-12">How It Works</h2>
           <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
             <StepCard
               number="1"
-              icon={<BookOpen className="h-6 w-6" />}
-              title="Connect Notion"
-              description="Link your Notion workspace with one click using OAuth."
+              icon={<Database className="h-6 w-6" />}
+              title="Connect Sources"
+              description="Link your Notion workspace or upload vendor contracts, policies, and ICT documentation."
             />
             <StepCard
               number="2"
-              icon={<Zap className="h-6 w-6" />}
-              title="Auto-Sync"
-              description="Your documents are automatically indexed and kept up to date."
+              icon={<ShieldCheck className="h-6 w-6" />}
+              title="Run Assessment"
+              description="Our AI agent analyses documents against DORA obligations and identifies specific compliance gaps."
             />
             <StepCard
               number="3"
-              icon={<MessageSquare className="h-6 w-6" />}
-              title="Ask Questions"
-              description="Start asking questions and get instant, sourced answers."
+              icon={<Bot className="h-6 w-6" />}
+              title="Ask the Copilot"
+              description="Query your compliance posture in plain language and download structured gap reports."
             />
           </div>
         </div>
       </section>
 
-      {/* CTA Section */}
+      {/* CTA */}
       <section className="container mx-auto px-4 py-24 text-center">
-        <h2 className="text-3xl font-bold mb-4">
-          Ready to get started?
-        </h2>
+        <h2 className="text-3xl font-bold mb-4">Ready to simplify DORA compliance?</h2>
         <p className="text-muted-foreground mb-8 max-w-xl mx-auto">
-          Join teams who are already using Retrieva to unlock insights from their knowledge base.
+          Join compliance teams already using Retrieva to automate third-party ICT risk assessments
+          and meet their DORA obligations.
         </p>
         <Link href="/register">
           <Button size="lg" className="gap-2">
@@ -171,7 +271,12 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className="border-t py-8">
         <div className="container mx-auto px-4 text-center text-muted-foreground text-sm">
-          <p>&copy; {new Date().getFullYear()} Retrieva. All rights reserved.</p>
+          <p>
+            &copy; {new Date().getFullYear()} Retrieva.{' '}
+            <span className="opacity-60">
+              Built for DORA (Regulation EU 2022/2554) compliance.
+            </span>
+          </p>
         </div>
       </footer>
     </div>
@@ -181,7 +286,7 @@ export default function LandingPage() {
 function FeatureCard({
   icon,
   title,
-  description
+  description,
 }: {
   icon: React.ReactNode;
   title: string;
@@ -205,7 +310,7 @@ function StepCard({
   number,
   icon,
   title,
-  description
+  description,
 }: {
   number: string;
   icon: React.ReactNode;

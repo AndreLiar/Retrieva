@@ -13,8 +13,18 @@
 import { ChatOllama } from '@langchain/ollama';
 import { z } from 'zod';
 import dotenv from 'dotenv';
-import { guardrailsConfig } from './guardrails.js';
 import logger from './logger.js';
+
+// Inline generation defaults (guardrails.js removed in MVP)
+const guardrailsConfig = {
+  generation: {
+    temperature: 0.1,
+    maxTokens: 2048,
+    stopSequences: [],
+    seed: null,
+    timeout: 60000,
+  },
+};
 
 dotenv.config();
 

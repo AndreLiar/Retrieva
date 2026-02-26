@@ -305,7 +305,7 @@ export async function indexDocumentsBatched(docs, options = {}) {
 async function ensureCollection(client, vectorSize) {
   try {
     await client.getCollection(COLLECTION_NAME);
-  } catch (_err) {
+  } catch {
     // Collection doesn't exist, create it
     logger.info('Creating Qdrant collection', {
       service: 'vector-store',

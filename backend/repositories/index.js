@@ -22,12 +22,7 @@
 export { BaseRepository } from './BaseRepository.js';
 
 // Repository classes and singleton instances
-export { AnalyticsRepository, analyticsRepository } from './AnalyticsRepository.js';
 export { SyncJobRepository, syncJobRepository } from './SyncJobRepository.js';
 export { DocumentSourceRepository, documentSourceRepository } from './DocumentSourceRepository.js';
 export { MessageRepository, messageRepository } from './MessageRepository.js';
 export { ConversationRepository, conversationRepository } from './ConversationRepository.js';
-export {
-  NotionWorkspaceRepository,
-  notionWorkspaceRepository,
-} from './NotionWorkspaceRepository.js';

@@ -19,7 +19,6 @@ services:
       dockerfile: Dockerfile
       args:
         - NEXT_PUBLIC_API_URL=http://localhost:3007/api/v1
-        - NEXT_PUBLIC_WS_URL=http://localhost:3007
         - NEXT_PUBLIC_APP_NAME=Retrieva
     container_name: rag-frontend
     ports:
@@ -50,8 +49,6 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - QDRANT_URL=http://qdrant:6333
-      - OLLAMA_BASE_URL=http://host.docker.internal:11434
-      - RAGAS_SERVICE_URL=http://ragas-service:8001
     depends_on:
       mongodb:
         condition: service_healthy
@@ -67,28 +64,8 @@ services:
     restart: unless-stopped
 
   # ===========================================================================
-  # RAGAS Evaluation Service (Python)
+  # MongoDB Database
   # ===========================================================================
-  ragas-service:
-    build:
-      context: ./ragas-service
-      dockerfile: Dockerfile
-    container_name: rag-ragas
-    ports:
-      - "8001:8001"
-    env_file:
-      - ./ragas-service/.env
-    environment:
-      - OLLAMA_BASE_URL=http://host.docker.internal:11434
-    networks:
-      - rag-network
-    restart: unless-stopped
-
-  # ===========================================================================
-  # MongoDB Database (Official MongoDB Community Server)
-  # ===========================================================================
-  # Using mongodb/mongodb-community-server for faster updates and official support
-  # Alternative: mongo:7.0 (Docker Official Image)
   mongodb:
     image: mongodb/mongodb-community-server:7.0-ubuntu2204
     container_name: rag-mongodb

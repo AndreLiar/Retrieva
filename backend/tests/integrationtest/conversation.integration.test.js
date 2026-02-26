@@ -189,15 +189,14 @@ describe('Conversation API Integration Tests', () => {
       .send({ email: testUser2.email, password: testUser2.password });
     user2Token = login2.body.data.accessToken;
 
-    // Create a workspace for user 1 using NotionWorkspace
-    const NotionWorkspace = mongoose.model('NotionWorkspace');
-    const workspace = await NotionWorkspace.create({
-      workspaceId: 'test-workspace-conv',
-      workspaceName: 'Test Workspace',
+    // Create a workspace for user 1 using Workspace
+    const Workspace = mongoose.model('Workspace');
+    const workspace = await Workspace.create({
+      name: 'Test Workspace',
       userId: user1Id,
-      accessToken: 'test-encrypted-token',
+      syncStatus: 'synced',
     });
-    workspaceId = workspace.workspaceId;
+    workspaceId = workspace._id.toString();
 
     // Create workspace members for both users
     const WorkspaceMember = mongoose.model('WorkspaceMember');

@@ -11,8 +11,10 @@
 
 import mongoose from 'mongoose';
 import logger from '../../config/logger.js';
-import { guardrailsConfig } from '../../config/guardrails.js';
 import InvertedIndexManager from './invertedIndexManager.js';
+
+// Inline sparse search config (guardrails.js removed in MVP)
+const guardrailsConfig = { retrieval: { sparseSearch: { useInvertedIndex: false } } };
 
 // BM25 parameters
 const BM25_K1 = 1.5;

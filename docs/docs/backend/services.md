@@ -10,30 +10,19 @@ Services contain the core business logic of the application. They are called by 
 
 ### RAG Service (`services/rag.js`)
 
-The main RAG orchestration service.
+The main RAG orchestration service. Handles query pre-processing, safety checks, caching, and answer generation. Delegates **document retrieval** entirely to the RAG Agent (see below).
 
 ```javascript
 class RAGService {
-  constructor(dependencies = {}) {
-    this.llm = dependencies.llm || null;
-    this.vectorStoreFactory = dependencies.vectorStoreFactory;
-    this.cache = dependencies.cache;
-    this.answerFormatter = dependencies.answerFormatter;
-    this.logger = dependencies.logger;
-  }
-
-  async init() {
-    // Initialize LLM, vector store, and chains
-  }
-
   async askWithConversation(question, options) {
-    // Main entry point for RAG queries
-    // 1. Check cache
-    // 2. Route query (intent classification)
-    // 3. Retrieve documents
-    // 4. Generate answer
-    // 5. Validate answer
-    // 6. Cache and return
+    // 1. Safety & guardrail checks (PII, hallucination blocklist)
+    // 2. Check Redis cache (question × workspaceId)
+    // 3. Rephrase query for standalone search
+    // 4. Run RAG Agent → collect documents
+    // 5. Rerank documents (RRF + BM25, top-15)
+    // 6. Compress context → generate streaming answer
+    // 7. Validate answer (LLM Judge)
+    // 8. Cache + persist to MongoDB
   }
 }
 ```
@@ -42,12 +31,34 @@ class RAGService {
 
 | Method | Description |
 |--------|-------------|
-| `init()` | Initialize LLM and vector store |
+| `init()` | Initialize LLM, vector store, and chains |
 | `askWithConversation()` | Process RAG query with conversation context |
 | `_rephraseQuery()` | Rephrase query for standalone search |
 | `_prepareContext()` | Format documents for LLM context |
-| `_generateAnswer()` | Generate answer with streaming support |
+| `_generateAnswer()` | Generate streaming answer via Azure OpenAI |
 | `_processAnswer()` | Validate answer with LLM Judge |
+
+### RAG Agent (`services/ragAgent.js`)
+
+LangGraph ReAct agent that autonomously retrieves context across multiple sources. Called by `rag.js` instead of the old fixed retrieval strategies.
+
+```javascript
+export async function runRetrievalAgent({ question, vectorStore, workspaceId, qdrantFilter, history, emit, llm }) {
+  // Builds 4 tools, runs createReactAgent loop (max 30 steps)
+  // Returns: { documents: LangChain Document[] }
+}
+```
+
+**Agent Tools:**
+
+| Tool | Source | Max results |
+|------|--------|-------------|
+| `search_knowledge_base` | `langchain-rag` Qdrant collection (tenant-filtered) | k ≤ 15 per call |
+| `search_dora_articles` | `compliance_kb` Qdrant collection; optional domain filter | 8 per call |
+| `lookup_vendor_assessment` | MongoDB `assessments` collection (regex vendor match) | 1 record |
+| `done_searching` | — signals retrieval complete | — |
+
+Documents from all tool calls are deduplicated (by first 200 chars of content) and returned as a flat array for reranking.
 
 ### Intent Classifier (`services/intent/intentClassifier.js`)
 
@@ -95,28 +106,7 @@ export const queryRouter = {
 
 ### Retrieval Strategies (`services/intent/retrievalStrategies.js`)
 
-Implements different retrieval strategies.
-
-```javascript
-export async function executeStrategy(strategy, query, retriever, vectorStore, config, options) {
-  switch (strategy) {
-    case 'focused':
-      return executeFocusedStrategy(query, retriever, config, options);
-    case 'multi-aspect':
-      return executeMultiAspectStrategy(query, retriever, vectorStore, config, options);
-    case 'deep':
-      return executeDeepStrategy(query, retriever, vectorStore, config, options);
-    case 'broad':
-      return executeBroadStrategy(query, retriever, config, options);
-    case 'context-only':
-      return { documents: [], metrics: {} };
-    case 'no-retrieval':
-      return { documents: [], metrics: {} };
-    default:
-      return executeFocusedStrategy(query, retriever, config, options);
-  }
-}
-```
+Legacy fixed retrieval strategies (focused, multi-aspect, deep, broad). These are no longer called from the main RAG pipeline — retrieval is now handled by the RAG Agent. The strategies remain available for testing and fallback scenarios.
 
 ## RAG Sub-Services
 
@@ -321,7 +311,7 @@ export function tenantIsolationPlugin(schema) {
 
 ### Email Service (`services/emailService.js`)
 
-Sends transactional emails via the **Resend HTTP API**.
+Sends transactional emails via the **Resend HTTP API**. In **microservice mode** (`EMAIL_SERVICE_URL` is set), this file proxies HTTP calls to the standalone `email-service` (port 3008). When the env var is unset, it calls the Resend HTTP API directly in-process.
 
 ```javascript
 export const emailService = {
@@ -341,6 +331,7 @@ export const emailService = {
 | `RESEND_API_KEY` | - | Resend API key (required for sending) |
 | `SMTP_FROM_NAME` | `RAG Platform` | Display name in "From" field |
 | `RESEND_FROM_EMAIL` | `noreply@retrieva.online` | Sender address (must match verified domain) |
+| `EMAIL_SERVICE_URL` | - | When set, proxy to standalone email-service instead of calling Resend directly |
 
 :::note
 If `RESEND_API_KEY` is not set, the service logs a warning and skips sending. This makes email optional for local development.
@@ -349,6 +340,8 @@ If `RESEND_API_KEY` is not set, the service logs a warning and skips sending. Th
 ### Notification Service (`services/notificationService.js`)
 
 Dual-channel delivery: **WebSocket** (real-time) + **email** (important events).
+
+In **microservice mode** (`NOTIFICATION_SERVICE_URL` is set), this file is a thin HTTP proxy to the standalone `notification-service` (port 3009) which owns the Notification MongoDB collection and Redis pub/sub publishing. When unset, in-process logic is used (no docker-compose required for local dev).
 
 ```javascript
 export const notificationService = {
@@ -362,14 +355,32 @@ export const notificationService = {
 };
 ```
 
-**Delivery logic:**
+**Delivery logic (both modes):**
 
 1. Persist notification in MongoDB
-2. If user is online, deliver via WebSocket (`socket.io`)
+2. If user is online, deliver via WebSocket (in-process emit or Redis pub/sub publish)
 3. If user has email enabled for the notification type **and** priority is not LOW, send email
 4. Urgent/high-priority notifications always attempt email delivery
 
 User preferences are checked per notification type and channel (`inApp`, `email`, `push`).
+
+### Real-Time / Presence Service
+
+Socket.io real-time communication and user presence tracking. Like email and notifications, this follows the **strangler fig** pattern.
+
+**`services/socketService.js`** — When `REALTIME_SERVICE_URL` is set, the monolith publishes events to Redis channels instead of maintaining a Socket.io server. When unset, the full Socket.io server runs in-process (same as before the extraction).
+
+**`services/presenceService.js`** — When `REALTIME_SERVICE_URL` is set, all write operations are no-ops (the `realtime-service` owns presence state) and reads query Redis hashes directly. When unset, an in-memory Map is used.
+
+| Function | Remote mode | Local mode |
+|----------|-------------|------------|
+| `emitToUser()` | Publishes to `realtime:user:{userId}` Redis channel | Emits directly via Socket.io |
+| `emitToWorkspace()` | Publishes to `realtime:workspace:{id}` Redis channel | Emits to Socket.io room |
+| `isUserOnline()` | Reads `presence:user:{userId}` Redis HASH (async) | Checks in-memory Map (sync) |
+| `userConnected()` | no-op | Updates in-memory Map |
+| `getWorkspacePresence()` | Reads `presence:workspace:{id}:members` Redis HASH | Reads in-memory Map |
+
+**Analytics socket events** (`analytics:subscribe`, `analytics:get`) are no-ops in the standalone `realtime-service` — the `liveAnalyticsService` remains in the monolith and is only available in local mode.
 
 ## Service Dependencies
 
@@ -463,3 +474,55 @@ logger.error('Query failed', {
   stack: error.stack,
 });
 ```
+
+---
+
+## Assessment Services
+
+### File Ingestion Service (`services/fileIngestionService.js`)
+
+Parses vendor documents and indexes them into per-assessment Qdrant collections.
+
+**Key functions**
+
+| Function | Description |
+|----------|-------------|
+| `parseFile(buffer, mimetype)` | Dispatches to pdf-parse / xlsx / mammoth depending on file type |
+| `chunkText(text)` | Splits into 600-char overlapping chunks at paragraph/sentence boundaries |
+| `ingestFile(assessmentId, file)` | Parse → chunk → embed → upsert to `assessment_{id}` Qdrant collection |
+| `searchAssessmentChunks(assessmentId, query, k)` | Semantic search within an assessment's collection |
+| `deleteAssessmentCollection(assessmentId)` | Removes the `assessment_{id}` collection from Qdrant on deletion |
+
+### Gap Analysis Agent (`services/gapAnalysisAgent.js`)
+
+Three-step ReAct agent that produces structured compliance gap output.
+
+**Steps**
+
+1. **Extract vendor claims** — runs 8 domain-focused semantic queries against `assessment_{id}` to surface what the vendor documents actually claim
+2. **Retrieve DORA obligations** — queries the shared `compliance_kb` collection per DORA domain with metadata filtering
+3. **Diff & score** — passes both sets to Azure OpenAI with `bindTools()` (function calling) using the `GAP_ANALYSIS_TOOL` schema; falls back to JSON mode if tool calling fails
+
+**Output schema**
+
+```javascript
+{
+  gaps: [{ article, domain, requirement, vendorCoverage, gapLevel, recommendation, sourceChunks }],
+  overallRisk: 'High' | 'Medium' | 'Low',
+  summary: string,
+  domainsAnalyzed: string[]
+}
+```
+
+### Report Generator (`services/reportGenerator.js`)
+
+Generates a Word (.docx) compliance report using the `docx` npm package.
+
+**Sections**
+1. Cover page with vendor name, framework, and date
+2. Executive summary with risk stats table
+3. Full gap analysis table (article, domain, gap level, recommendation)
+4. Domain-by-domain breakdown
+5. Methodology notes
+
+Entry point: `generateReport(assessmentId)` → returns a `Buffer` ready to stream.

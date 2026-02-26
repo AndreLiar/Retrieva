@@ -316,7 +316,7 @@ async function runTests() {
   // Save to file
   try {
     results.saveToFile();
-  } catch (_err) {
+  } catch {
     console.log('\n⚠️  Could not save results to file (tests/results/ directory may not exist)');
   }
 

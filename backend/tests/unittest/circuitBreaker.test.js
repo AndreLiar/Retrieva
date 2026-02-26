@@ -414,7 +414,7 @@ describe('Circuit Breaker', () => {
         try {
           await cb.execute(fn, 'Test API');
         } catch {
-          /* intentional: testing error suppression */
+          /* intentional */
         }
       }
 
@@ -437,12 +437,12 @@ describe('Circuit Breaker', () => {
       try {
         await cb.execute(failingFn, 'Test');
       } catch {
-        /* intentional: testing error suppression */
+        /* intentional */
       }
       try {
         await cb.execute(failingFn, 'Test');
       } catch {
-        /* intentional: testing error suppression */
+        /* intentional */
       }
 
       expect(cb.state).toBe('OPEN');

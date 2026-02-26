@@ -47,8 +47,6 @@ jobs:
         include:
           - service: backend
             context: ./backend
-          - service: ragas-service
-            context: ./ragas-service
           - service: frontend
             context: ./frontend
             build-args: |
@@ -123,13 +121,11 @@ jobs:
               echo "" >> backend/.env
               SOPS_AGE_KEY_FILE=~/.age/key.txt sops --decrypt --input-type dotenv --output-type dotenv backend/.env.resend.production.enc >> backend/.env
             fi
-            SOPS_AGE_KEY_FILE=~/.age/key.txt sops --decrypt --input-type dotenv --output-type dotenv ragas-service/.env.production.enc > ragas-service/.env
-
             # Extract Redis password for docker-compose interpolation
             grep '^REDIS_PASSWORD=' backend/.env > .env 2>/dev/null || true
 
             # ── Tag current images as :rollback (pre-deploy safety net) ───
-            for svc in backend frontend ragas-service; do
+            for svc in backend frontend; do
               img="ghcr.io/andreliar/retrieva/${svc}:latest"
               if docker image inspect "$img" > /dev/null 2>&1; then
                 docker tag "$img" "ghcr.io/andreliar/retrieva/${svc}:rollback"
@@ -163,7 +159,7 @@ jobs:
             # ── Rollback on failure ───────────────────────────────────────
             if [ "$healthy" != "true" ]; then
               echo "CRITICAL: Health checks failed after 6 attempts. Rolling back..."
-              for svc in backend frontend ragas-service; do
+              for svc in backend frontend; do
                 rb="ghcr.io/andreliar/retrieva/${svc}:rollback"
                 if docker image inspect "$rb" > /dev/null 2>&1; then
                   docker tag "$rb" "ghcr.io/andreliar/retrieva/${svc}:latest"

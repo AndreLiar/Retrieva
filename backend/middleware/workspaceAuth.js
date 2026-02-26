@@ -6,7 +6,7 @@
  */
 
 import { WorkspaceMember } from '../models/WorkspaceMember.js';
-import { NotionWorkspace } from '../models/NotionWorkspace.js';
+import { Workspace } from '../models/Workspace.js';
 import { sendError } from '../utils/core/responseFormatter.js';
 import logger from '../config/logger.js';
 
@@ -33,7 +33,7 @@ export const requireWorkspaceAccess = async (req, res, next) => {
       userId,
       status: 'active',
       'permissions.canQuery': true,
-    }).populate('workspaceId', 'workspaceId workspaceName syncStatus');
+    }).populate('workspaceId', 'name syncStatus');
 
     if (memberships.length === 0) {
       logger.warn('User has no workspace access', {
@@ -53,8 +53,8 @@ export const requireWorkspaceAccess = async (req, res, next) => {
       .filter((m) => m.workspaceId && m.workspaceId.syncStatus !== 'error')
       .map((m) => ({
         _id: m.workspaceId._id,
-        workspaceId: m.workspaceId.workspaceId,
-        workspaceName: m.workspaceId.workspaceName,
+        workspaceId: m.workspaceId._id.toString(),
+        workspaceName: m.workspaceId.name,
         role: m.role,
         permissions: m.permissions,
       }));
@@ -122,7 +122,7 @@ export const requireWorkspaceOwner = async (req, res, next) => {
       return sendError(res, 403, 'Only workspace owners can perform this action');
     }
 
-    req.workspace = await NotionWorkspace.findById(workspaceId);
+    req.workspace = await Workspace.findById(workspaceId);
     next();
   } catch (error) {
     logger.error('Workspace owner check error', {
@@ -181,7 +181,7 @@ export async function getUserWorkspaceIds(userId) {
     userId,
     status: 'active',
     'permissions.canQuery': true,
-  }).populate('workspaceId', 'workspaceId');
+  }).populate('workspaceId', '_id');
 
-  return memberships.filter((m) => m.workspaceId).map((m) => m.workspaceId.workspaceId);
+  return memberships.filter((m) => m.workspaceId).map((m) => m.workspaceId._id.toString());
 }

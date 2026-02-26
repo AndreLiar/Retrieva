@@ -245,7 +245,7 @@ export function getCloudProviderType() {
  * @returns {string} Provider type (local or cloud)
  */
 export function selectProvider(context) {
-  const { trustLevel, cloudConsent, preferCloud, fallbackToCloud: _fallbackToCloud } = context;
+  const { trustLevel, cloudConsent, preferCloud, _fallbackToCloud } = context;
 
   // Regulated data must always use local
   if (trustLevel === TrustLevel.REGULATED) {

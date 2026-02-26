@@ -14,6 +14,7 @@ components/
 ├── layout/         # Layout structure
 ├── analytics/      # Analytics dashboard
 ├── notion/         # Notion integration
+├── sources/        # Data source management (file, url, confluence, MCP)
 ├── providers/      # Context providers
 ├── common/         # Shared/utility components
 ├── theme/          # Theme switching
@@ -147,34 +148,22 @@ export function MobileSidebar() {
 
 ### Header
 
-Top navigation bar containing the notification badge, theme toggle, and user menu.
-
-The notification badge uses a **WebSocket-first, poll-as-safety-net** strategy to avoid burning the API rate limit budget:
-
-1. **Mount** — one HTTP call to `GET /notifications/count` fetches the initial count.
-2. **Real-time** — `SocketProvider` listens for `notification:new` socket events and calls `queryClient.setQueryData` to increment the badge count in-place. No HTTP request is made per notification.
-3. **Reconciliation** — a background poll fires every **5 minutes** (`refetchInterval: 300_000`) to correct any drift from missed socket events.
-4. `refetchOnWindowFocus: false` prevents tab-switch focus events from firing extra requests.
+Top navigation with search and user menu.
 
 ```tsx
-// components/layout/header.tsx
 export function Header() {
-  const { data: notificationData } = useQuery({
-    queryKey: ['notifications', 'unread-count'],
-    queryFn: async () => {
-      const response = await notificationsApi.getUnreadCount();
-      return response.data?.unreadCount ?? 0;
-    },
-    refetchInterval: 300_000,    // 5-minute reconciliation poll
-    refetchOnWindowFocus: false, // socket push handles real-time
-  });
-
-  const unreadCount = notificationData || 0;
-  // ...badge renders unreadCount, capped at "9+" display
+  return (
+    <header className="h-16 border-b flex items-center justify-between px-4">
+      <Breadcrumbs />
+      <div className="flex items-center gap-4">
+        <SearchCommand />
+        <NotificationBell />
+        <UserNav />
+      </div>
+    </header>
+  );
 }
 ```
-
-The `SocketProvider` (see Providers below) owns the `setQueryData` increment so the logic is centralised and the `Header` itself requires no socket awareness.
 
 ### WorkspaceSwitcher
 
@@ -322,38 +311,63 @@ interface TokenHealthBannerProps {
 }
 ```
 
-## Providers
+## Sources Components
 
-### SocketProvider
+Components in `components/sources/` drive the **Sources** page (`/sources`) where users connect and manage all data sources.
 
-`components/providers/socket-provider.tsx` is a global provider that bridges Socket.io events into the React Query cache. It owns all real-time cache mutations so individual components stay stateless with respect to WebSocket logic.
+### DataSourceCard
 
-| Socket event | Action |
-|---|---|
-| `notification:new` | `setQueryData(['notifications', 'unread-count'], old + 1)` + invalidate list queries only |
-| `sync:status` | Invalidate all `notion-workspaces` / `notion-sync-*` queries + show toast |
-| `workspace:update` | Invalidate `workspaces` and `workspace-members` queries |
-| `conversation:update` | Invalidate `conversations` queries |
-
-The `notification:new` handler uses `setQueryData` (not `invalidateQueries`) for the unread count to avoid an unnecessary HTTP round-trip. A `predicate` filter on `invalidateQueries` ensures the count cache key (`['notifications', 'unread-count']`) is excluded from the list invalidation that accompanies each new notification event.
+Card for file, URL, and Confluence sources (native ingestion).
 
 ```tsx
-// Notification handler in SocketProvider
-on<NotificationEvent>('notification:new', (notification) => {
-  // Increment badge count with no HTTP call
-  queryClient.setQueryData<number>(
-    ['notifications', 'unread-count'],
-    (old) => (old ?? 0) + 1
-  );
+interface DataSourceCardProps {
+  source: DataSource;       // status, stats, lastSyncedAt
+  workspaceId: string;
+}
+```
 
-  // Invalidate list queries only (count key is intentionally excluded)
-  queryClient.invalidateQueries({
-    predicate: (query) => {
-      const key = query.queryKey;
-      return key[0] === 'notifications' && key[1] !== 'unread-count';
-    },
-  });
-});
+Shows source type icon, status badge (pending / syncing / active / error), document count, last sync date, and sync/delete actions gated by `RequirePermission`.
+
+### FileUploadDialog
+
+Dialog for uploading a PDF, DOCX, or XLSX file (max 25 MB). Submits as `multipart/form-data` via `sourcesApi.create()`.
+
+### UrlAddDialog
+
+Dialog for indexing a public web URL. Submits as JSON `{ sourceType: 'url', config: { url } }`.
+
+### ConfluenceConnectDialog
+
+Dialog for connecting Confluence Cloud. Fields: base URL, space key, email, API token (password). Submits as JSON with encrypted API token stored server-side.
+
+### MCPServerCard
+
+Card for MCP-connected external servers.
+
+```tsx
+interface MCPServerCardProps {
+  source: MCPSource;
+  workspaceId: string;
+}
+```
+
+- Source type icons: `Layers` (Confluence), `HardDrive` (Google Drive), `GitBranch` (GitHub), `TicketCheck` (Jira), `MessageSquare` (Slack), `Plug` (custom)
+- Status badges: pending · syncing (animated) · active · paused · error
+- Shows documents indexed, last sync date, auto-sync interval, and last error string
+- Sync and delete buttons gated by `RequirePermission permission="canTriggerSync"`
+
+### MCPConnectDialog
+
+Dialog for registering a new MCP server. Fields: name, source type (Select), server URL + inline "Test" button, auth token (optional, password), auto-sync toggle (Switch), sync interval hours.
+
+The **Test** button calls `mcpApi.testConnection()` directly (not via React Query mutation) and displays green/red inline feedback below the URL field before the user submits.
+
+```tsx
+interface MCPConnectDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  workspaceId: string;
+}
 ```
 
 ## Common Components
