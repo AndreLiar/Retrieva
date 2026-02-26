@@ -10,7 +10,7 @@ const workspaceMemberSchema = new mongoose.Schema(
   {
     workspaceId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'NotionWorkspace',
+      ref: 'Workspace',
       required: true,
       index: true,
     },
@@ -81,7 +81,7 @@ workspaceMemberSchema.statics.getUserWorkspaces = async function (userId) {
   return this.find({
     userId,
     status: 'active',
-  }).populate('workspaceId', 'workspaceName workspaceIcon syncStatus stats');
+  }).populate('workspaceId', 'name description syncStatus createdAt updatedAt');
 };
 
 /**

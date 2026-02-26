@@ -196,23 +196,7 @@ export const optionalAuth = async (req, res, next) => {
         userAgent: req.headers['user-agent']?.substring(0, 100),
       });
 
-      // Log security event for potential token attacks
-      try {
-        const { logSecurityEvent } = await import('../services/securityLogger.js');
-        logSecurityEvent(
-          'invalid_token_optional_auth',
-          {
-            error: error.message,
-            path: req.path,
-          },
-          {
-            ipAddress: req.ip,
-            userAgent: req.headers['user-agent'],
-          }
-        );
-      } catch {
-        // Don't fail if security logging fails
-      }
+      // Security logging removed (securityLogger service not available in MVP)
     }
 
     next();

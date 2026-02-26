@@ -10,7 +10,9 @@
 
 import { z } from 'zod';
 import logger from '../../config/logger.js';
-import { guardrailsConfig } from '../../config/guardrails.js';
+
+// Inline output config (guardrails.js removed in MVP)
+const guardrailsConfig = { output: { maxResponseLength: 10000 } };
 
 /**
  * RAG answer output schema

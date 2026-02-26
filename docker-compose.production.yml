@@ -136,7 +136,6 @@ services:
     environment:
       - NODE_ENV=production
       - DOCKER_ENV=true
-      - RAGAS_SERVICE_URL=http://ragas-service:8001
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3007/health"]
       interval: 10s
@@ -152,36 +151,6 @@ services:
         reservations:
           cpus: '0.25'
           memory: 512M
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-    networks:
-      - rag-network
-
-  # ---------------------------------------------------------------------------
-  # RAGAS Evaluation Service (Python/FastAPI)
-  # ---------------------------------------------------------------------------
-  ragas-service:
-    image: ghcr.io/andreliar/retrieva/ragas-service:latest
-    container_name: retrieva-ragas
-    ports:
-      - "127.0.0.1:8001:8001"
-    env_file:
-      - ./ragas-service/.env
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 20s
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 768M
     logging:
       driver: "json-file"
       options:

@@ -10,7 +10,16 @@
  */
 
 import logger from '../../config/logger.js';
-import { guardrailsConfig } from '../../config/guardrails.js';
+
+// Inline citation validation config (guardrails.js removed in MVP)
+const guardrailsConfig = {
+  output: {
+    citationValidation: {
+      maxOrphanCitations: 0,
+      minCitationCoverage: 0.3,
+    },
+  },
+};
 
 /**
  * Citation validation result

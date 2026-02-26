@@ -64,7 +64,8 @@ export function withTenantContext(context, fn) {
  * app.use(setTenantContext);
  */
 export function setTenantContext(req, res, next) {
-  const workspaceId = req.workspace?._id?.toString() || req.body?.workspaceId || req.query?.workspaceId;
+  const workspaceId =
+    req.workspace?._id?.toString() || req.body?.workspaceId || req.query?.workspaceId;
   const userId = req.user?.userId || req.user?.id;
 
   if (workspaceId || userId) {
@@ -91,14 +92,21 @@ export function tenantIsolationPlugin(schema, options = {}) {
     schema.add({
       [tenantField]: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'NotionWorkspace',
+        ref: 'Workspace',
         index: true,
       },
     });
   }
 
   // Pre-find hooks - automatically add tenant filter
-  const findHooks = ['find', 'findOne', 'findOneAndUpdate', 'findOneAndDelete', 'count', 'countDocuments'];
+  const findHooks = [
+    'find',
+    'findOne',
+    'findOneAndUpdate',
+    'findOneAndDelete',
+    'count',
+    'countDocuments',
+  ];
 
   findHooks.forEach((hook) => {
     schema.pre(hook, function () {

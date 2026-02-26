@@ -47,7 +47,6 @@ export default defineConfig({
       NODE_ENV: 'test',
       JWT_ACCESS_SECRET: 'test-access-secret-key-at-least-32-chars',
       JWT_REFRESH_SECRET: 'test-refresh-secret-key-at-least-32-chars',
-      RAGAS_SERVICE_URL: 'http://localhost:8001',
       // 32 bytes = 64 hex chars for AES-256 encryption
       ENCRYPTION_KEY: 'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2',
     },

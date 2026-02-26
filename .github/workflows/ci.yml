@@ -2,7 +2,7 @@
 # Continuous Integration Pipeline
 # =============================================================================
 # Runs on pushes to dev/staging, PRs to main/dev/staging, and called by CD
-# Tests backend (Node.js), frontend (Next.js), and ragas-service (Python)
+# Tests backend (Node.js) and frontend (Next.js)
 
 name: CI
 
@@ -15,7 +15,6 @@ on:
 
 env:
   NODE_VERSION: '20.x'
-  PYTHON_VERSION: '3.11'
 
 jobs:
   # ===========================================================================
@@ -159,46 +158,6 @@ jobs:
         continue-on-error: true
 
   # ===========================================================================
-  # RAGAS Service (Python) Tests
-  # ===========================================================================
-  ragas-test:
-    name: RAGAS Service Tests
-    runs-on: ubuntu-latest
-
-    defaults:
-      run:
-        working-directory: ./ragas-service
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-          cache: 'pip'
-          cache-dependency-path: './ragas-service/requirements.txt'
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest pytest-cov
-
-      - name: Run linting
-        run: |
-          pip install flake8
-          flake8 app.py --max-line-length=120 --ignore=E501,W503 || true
-        continue-on-error: true
-
-      - name: Run tests
-        run: pytest --cov=. --cov-report=xml || true
-        continue-on-error: true
-        env:
-          OLLAMA_BASE_URL: http://localhost:11434
-
-  # ===========================================================================
   # Docker Build Verification
   # ===========================================================================
   docker-build:
@@ -210,8 +169,6 @@ jobs:
         include:
           - service: backend
             context: ./backend
-          - service: ragas-service
-            context: ./ragas-service
           - service: frontend
             context: ./frontend
             build-args: |
@@ -241,7 +198,7 @@ jobs:
   # ===========================================================================
   ci-success:
     name: CI Success
-    needs: [backend-test, frontend-test, backend-security, ragas-test, docker-build]
+    needs: [backend-test, frontend-test, backend-security, docker-build]
     runs-on: ubuntu-latest
     if: always()
     steps:

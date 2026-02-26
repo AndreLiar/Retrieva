@@ -19,7 +19,6 @@ services:
       dockerfile: Dockerfile
       args:
         - NEXT_PUBLIC_API_URL=http://localhost:3007/api/v1
-        - NEXT_PUBLIC_WS_URL=http://localhost:3007
         - NEXT_PUBLIC_APP_NAME=Retrieva
     container_name: rag-frontend
     ports:
@@ -50,19 +49,6 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - QDRANT_URL=http://qdrant:6333
-      - OLLAMA_BASE_URL=http://host.docker.internal:11434
-      - RAGAS_SERVICE_URL=http://ragas-service:8001
-      - EMAIL_SERVICE_URL=http://email-service:3008
-      - NOTIFICATION_SERVICE_URL=http://notification-service:3009
-      - REALTIME_SERVICE_URL=http://realtime-service:3010
-      - INTERNAL_API_KEY=${INTERNAL_API_KEY:-}
-      # Override Spaces endpoint so the backend container talks to MinIO internally
-      - DO_SPACES_ENDPOINT=http://minio:9000
-      - DO_SPACES_KEY=minioadmin
-      - DO_SPACES_SECRET=minioadmin
-      - DO_SPACES_BUCKET=retrieva-files
-      - DO_SPACES_REGION=us-east-1
-      - DO_SPACES_FORCE_PATH_STYLE=true
     depends_on:
       mongodb:
         condition: service_healthy
@@ -70,14 +56,6 @@ services:
         condition: service_healthy
       qdrant:
         condition: service_healthy
-      minio:
-        condition: service_healthy
-      email-service:
-        condition: service_started
-      notification-service:
-        condition: service_started
-      realtime-service:
-        condition: service_started
     volumes:
       - ./backend:/app
       - /app/node_modules
@@ -86,105 +64,8 @@ services:
     restart: unless-stopped
 
   # ===========================================================================
-  # Email Service (Phase 1 microservice — Resend dispatcher)
+  # MongoDB Database
   # ===========================================================================
-  email-service:
-    build:
-      context: ./email-service
-      dockerfile: Dockerfile
-    container_name: rag-email-service
-    ports:
-      - "3008:3008"
-    environment:
-      - NODE_ENV=development
-      - PORT=3008
-      - RESEND_API_KEY=${RESEND_API_KEY:-}
-      - SMTP_FROM_NAME=${SMTP_FROM_NAME:-Retrieva}
-      - RESEND_FROM_EMAIL=${RESEND_FROM_EMAIL:-noreply@retrieva.online}
-      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
-      - INTERNAL_API_KEY=${INTERNAL_API_KEY:-}
-    networks:
-      - rag-network
-    restart: unless-stopped
-
-  # ===========================================================================
-  # Notification Service (Phase 2 microservice — persistent notifications)
-  # ===========================================================================
-  notification-service:
-    build:
-      context: ./notification-service
-      dockerfile: Dockerfile
-    container_name: rag-notification-service
-    ports:
-      - "3009:3009"
-    environment:
-      - NODE_ENV=development
-      - PORT=3009
-      - MONGODB_URI=mongodb://mongodb:27017/enterprise_rag
-      - REDIS_URL=redis://redis:6379
-      - EMAIL_SERVICE_URL=http://email-service:3008
-      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
-      - INTERNAL_API_KEY=${INTERNAL_API_KEY:-}
-    depends_on:
-      mongodb:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      email-service:
-        condition: service_started
-    networks:
-      - rag-network
-    restart: unless-stopped
-
-  # ===========================================================================
-  # Realtime Service (Phase 2 microservice — Socket.io + presence)
-  # ===========================================================================
-  realtime-service:
-    build:
-      context: ./realtime-service
-      dockerfile: Dockerfile
-    container_name: rag-realtime-service
-    ports:
-      - "3010:3010"
-    environment:
-      - NODE_ENV=development
-      - PORT=3010
-      - MONGODB_URI=mongodb://mongodb:27017/enterprise_rag
-      - REDIS_URL=redis://redis:6379
-      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
-      - JWT_ACCESS_SECRET=${JWT_ACCESS_SECRET:-}
-    depends_on:
-      mongodb:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    networks:
-      - rag-network
-    restart: unless-stopped
-
-  # ===========================================================================
-  # RAGAS Evaluation Service (Python)
-  # ===========================================================================
-  ragas-service:
-    build:
-      context: ./ragas-service
-      dockerfile: Dockerfile
-    container_name: rag-ragas
-    ports:
-      - "8001:8001"
-    env_file:
-      - ./ragas-service/.env
-    environment:
-      - OLLAMA_BASE_URL=http://host.docker.internal:11434
-    networks:
-      - rag-network
-    restart: unless-stopped
-
-  # ===========================================================================
-  # MongoDB Database (Official MongoDB Community Server)
-  # ===========================================================================
-  # Using mongodb/mongodb-community-server for faster updates and official support
-  # Alternative: mongo:7.0 (Docker Official Image)
   mongodb:
     image: mongodb/mongodb-community-server:7.0-ubuntu2204
     container_name: rag-mongodb
@@ -223,50 +104,6 @@ services:
     restart: unless-stopped
 
   # ===========================================================================
-  # MinIO (Local S3-compatible object storage — mirrors DO Spaces in prod)
-  # ===========================================================================
-  # Web console: http://localhost:9001  (user: minioadmin / pass: minioadmin)
-  # S3 API:      http://localhost:9000
-  minio:
-    image: minio/minio:latest
-    container_name: rag-minio
-    command: server /data --console-address ":9001"
-    ports:
-      - "9000:9000"   # S3 API
-      - "9001:9001"   # Web console
-    environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
-    volumes:
-      - minio_data:/data
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - rag-network
-    restart: unless-stopped
-
-  # One-shot container that creates the retrieva-files bucket on first start
-  minio-init:
-    image: minio/mc:latest
-    container_name: rag-minio-init
-    depends_on:
-      minio:
-        condition: service_healthy
-    entrypoint: >
-      /bin/sh -c "
-      mc alias set local http://minio:9000 minioadmin minioadmin &&
-      mc mb --ignore-existing local/retrieva-files &&
-      echo 'Bucket ready.' &&
-      exit 0
-      "
-    networks:
-      - rag-network
-    restart: "no"
-
-  # ===========================================================================
   # Qdrant Vector Database
   # ===========================================================================
   qdrant:
@@ -301,4 +138,3 @@ volumes:
   mongodb_data:
   redis_data:
   qdrant_data:
-  minio_data:

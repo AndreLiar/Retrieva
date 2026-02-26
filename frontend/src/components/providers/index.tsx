@@ -3,7 +3,6 @@
 import { ThemeProvider } from './theme-provider';
 import { QueryProvider } from './query-provider';
 import { AuthProvider } from './auth-provider';
-import { SocketProvider } from './socket-provider';
 import { Toaster } from '@/components/ui/sonner';
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -16,9 +15,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     >
       <QueryProvider>
         <AuthProvider>
-          <SocketProvider>
-            {children}
-          </SocketProvider>
+          {children}
           <Toaster position="top-right" richColors closeButton />
         </AuthProvider>
       </QueryProvider>

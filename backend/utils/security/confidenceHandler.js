@@ -6,10 +6,21 @@
  * confidence thresholds.
  */
 
-import { guardrailsConfig } from '../../config/guardrails.js';
 import logger from '../../config/logger.js';
 
-const confidenceConfig = guardrailsConfig.output.confidenceHandling;
+// Inline confidence config (guardrails.js removed in MVP)
+const confidenceConfig = {
+  enableBlocking: true,
+  blockThreshold: 0.2,
+  warningThreshold: 0.4,
+  disclaimerThreshold: 0.6,
+  messages: {
+    blocked: 'I cannot provide a reliable answer to this question.',
+    veryLowConfidence: 'Warning: This response has very low confidence.',
+    lowConfidence: 'Note: This response may not be fully accurate.',
+    disclaimer: 'This response is based on available information.',
+  },
+};
 
 /**
  * Confidence level classifications

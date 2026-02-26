@@ -183,16 +183,14 @@ async function createAndLoginUser(request, userData) {
   };
 }
 
-/** Create a WorkspaceMember + NotionWorkspace for a user, return workspaceId */
+/** Create a WorkspaceMember + Workspace for a user, return workspaceId */
 async function createWorkspaceForUser(userId) {
-  const NotionWorkspace = mongoose.model('NotionWorkspace');
+  const Workspace = mongoose.model('Workspace');
   const WorkspaceMember = mongoose.model('WorkspaceMember');
 
-  const workspace = await NotionWorkspace.create({
-    workspaceId: `ws-${userId}`,
-    workspaceName: `Test Workspace`,
-    accessToken: 'encrypted_token',
-    syncStatus: 'active',
+  const workspace = await Workspace.create({
+    name: 'Test Workspace',
+    syncStatus: 'synced',
     userId,
   });
 

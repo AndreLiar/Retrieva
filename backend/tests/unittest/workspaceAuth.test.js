@@ -23,8 +23,8 @@ vi.mock('../../models/WorkspaceMember.js', () => ({
   },
 }));
 
-vi.mock('../../models/NotionWorkspace.js', () => ({
-  NotionWorkspace: {
+vi.mock('../../models/Workspace.js', () => ({
+  Workspace: {
     findById: vi.fn(),
   },
 }));
@@ -36,7 +36,7 @@ import {
   getUserWorkspaceIds,
 } from '../../middleware/workspaceAuth.js';
 import { WorkspaceMember } from '../../models/WorkspaceMember.js';
-import { NotionWorkspace } from '../../models/NotionWorkspace.js';
+import { Workspace } from '../../models/Workspace.js';
 
 describe('Workspace Auth Middleware', () => {
   let mockReq;
@@ -105,7 +105,6 @@ describe('Workspace Auth Middleware', () => {
           {
             workspaceId: {
               _id: 'ws-1',
-              workspaceId: 'notion-ws-1',
               syncStatus: 'error',
             },
             role: 'member',
@@ -131,10 +130,9 @@ describe('Workspace Auth Middleware', () => {
         populate: vi.fn().mockResolvedValue([
           {
             workspaceId: {
-              _id: 'ws-1',
-              workspaceId: 'notion-ws-1',
-              workspaceName: 'Test Workspace',
-              syncStatus: 'completed',
+              _id: { toString: () => 'ws-1' },
+              name: 'Test Workspace',
+              syncStatus: 'synced',
             },
             role: 'member',
             permissions: { canQuery: true },
@@ -146,8 +144,8 @@ describe('Workspace Auth Middleware', () => {
 
       expect(mockReq.authorizedWorkspaces).toHaveLength(1);
       expect(mockReq.authorizedWorkspaces[0]).toMatchObject({
-        _id: 'ws-1',
-        workspaceId: 'notion-ws-1',
+        _id: { toString: expect.any(Function) },
+        workspaceId: 'ws-1',
         workspaceName: 'Test Workspace',
         role: 'member',
       });
@@ -165,10 +163,9 @@ describe('Workspace Auth Middleware', () => {
           },
           {
             workspaceId: {
-              _id: 'ws-2',
-              workspaceId: 'notion-ws-2',
-              workspaceName: 'Valid Workspace',
-              syncStatus: 'completed',
+              _id: { toString: () => 'ws-2' },
+              name: 'Valid Workspace',
+              syncStatus: 'synced',
             },
             role: 'member',
             permissions: { canQuery: true },
@@ -255,7 +252,7 @@ describe('Workspace Auth Middleware', () => {
       });
 
       const mockWorkspace = { _id: 'ws-1', workspaceName: 'Test' };
-      NotionWorkspace.findById.mockResolvedValue(mockWorkspace);
+      Workspace.findById.mockResolvedValue(mockWorkspace);
 
       await requireWorkspaceOwner(mockReq, mockRes, mockNext);
 
@@ -275,7 +272,7 @@ describe('Workspace Auth Middleware', () => {
         status: 'active',
       });
 
-      NotionWorkspace.findById.mockResolvedValue({ _id: 'ws-1' });
+      Workspace.findById.mockResolvedValue({ _id: 'ws-1' });
 
       await requireWorkspaceOwner(mockReq, mockRes, mockNext);
 
@@ -385,8 +382,8 @@ describe('Workspace Auth Middleware', () => {
         populate: vi
           .fn()
           .mockResolvedValue([
-            { workspaceId: { workspaceId: 'notion-ws-1' } },
-            { workspaceId: { workspaceId: 'notion-ws-2' } },
+            { workspaceId: { _id: { toString: () => 'notion-ws-1' } } },
+            { workspaceId: { _id: { toString: () => 'notion-ws-2' } } },
           ]),
       });
 
@@ -401,7 +398,7 @@ describe('Workspace Auth Middleware', () => {
           .fn()
           .mockResolvedValue([
             { workspaceId: null },
-            { workspaceId: { workspaceId: 'notion-ws-2' } },
+            { workspaceId: { _id: { toString: () => 'notion-ws-2' } } },
           ]),
       });
 
