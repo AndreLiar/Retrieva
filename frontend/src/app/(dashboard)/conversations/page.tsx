@@ -132,7 +132,7 @@ export default function ConversationsPage() {
   };
 
   // Show loading while workspaces are still being fetched
-  if (workspacesLoading || (workspaces.length === 0 && !activeWorkspace)) {
+  if (workspacesLoading) {
     return (
       <div className="flex h-full items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -143,7 +143,11 @@ export default function ConversationsPage() {
   if (!activeWorkspace) {
     return (
       <div className="flex h-full items-center justify-center">
-        <p className="text-muted-foreground">Select a workspace to view conversations</p>
+        <p className="text-muted-foreground">
+          {workspaces.length === 0
+            ? 'Create a workspace to get started'
+            : 'Select a workspace to view conversations'}
+        </p>
       </div>
     );
   }
