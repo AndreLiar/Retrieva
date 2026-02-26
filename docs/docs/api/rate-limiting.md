@@ -12,20 +12,21 @@ API rate limits protect the service from abuse and ensure fair usage.
 
 | Endpoint Pattern | Limit | Window |
 |------------------|-------|--------|
-| `/api/v1/*` (default) | 100 requests | 1 minute |
+| `/api/v1/*` (default) | 1 000 requests | 1 hour |
 | `/health` | Unlimited | - |
 | `/sync-status` | Unlimited | - |
 
 ### Endpoint-Specific Limits
 
-| Endpoint | Limit | Window | Notes |
-|----------|-------|--------|-------|
-| `/auth/login` | 10 | 15 minutes | Prevents brute force |
-| `/auth/register` | 5 | 1 hour | Prevents spam accounts |
-| `/auth/refresh` | 30 | 1 hour | Token refresh |
-| `/rag` | 20 | 1 minute | Question answering |
-| `/rag/stream` | 20 | 1 minute | Streaming answers |
-| `/notion/sync` | 5 | 1 hour | Sync triggers |
+These limits run **in addition to** the global budget and are keyed by authenticated user ID where possible (not IP), so shared office NAT addresses do not bleed into each other's quota.
+
+| Endpoint | Limit | Window | Key | Notes |
+|----------|-------|--------|-----|-------|
+| `GET /notifications/count` | 120 | 1 hour | User ID | Badge count; primary delivery is WebSocket push — HTTP only on mount + 5-min reconciliation poll |
+| `POST /rag/query` | 100 (auth) / 20 (anon) | 1 hour | User ID / IP | Each query triggers multiple LLM calls |
+| `POST /rag/stream` | 50 (auth) / 10 (anon) | 1 hour | User ID / IP | Streaming is more resource-intensive |
+| `POST /rag/*` burst | 5 | 10 seconds | User ID / IP | Prevents rapid-fire RAG requests |
+| `POST /ragas/evaluate` | 10 | 1 hour | User ID / IP | Calls external RAGAS service |
 
 ## Response Headers
 
@@ -68,11 +69,21 @@ Retry-After: 45
 
 Rate limits are tracked per:
 
-1. **IP Address** - For unauthenticated requests
-2. **User ID** - For authenticated requests
-3. **Workspace ID** - For workspace-scoped operations
+1. **User ID** — for authenticated requests (preferred; immune to shared-IP issues)
+2. **IP Address** — fallback for unauthenticated requests
 
-Limits are stored in Redis for fast access and distribution across instances.
+Limits use an in-memory store (no Redis dependency). This means limits reset on server restart and are not shared across multiple backend instances, which is acceptable for the current single-instance deployment.
+
+## Notification Badge
+
+The `/notifications/count` endpoint deserves special mention because it is the most frequently hit polling endpoint. To avoid burning through the global 1 000 req/hr budget, the frontend uses **WebSocket push** as the primary update path:
+
+1. On mount, one HTTP call fetches the initial count.
+2. `SocketProvider` listens for `notification:new` events and calls `queryClient.setQueryData` to increment the badge count locally — **zero extra HTTP requests per notification**.
+3. A 5-minute background poll reconciles the count in case a socket event was missed (server restart, brief disconnect).
+4. `refetchOnWindowFocus` is disabled so switching browser tabs does not fire additional requests.
+
+This reduces notification-related HTTP traffic from ~120 requests/hour (old 30-second polling) to ~12 requests/hour (5-minute reconciliation) under normal usage.
 
 ## Handling Rate Limits
 

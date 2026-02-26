@@ -1,0 +1,37 @@
+# Gitleaks configuration
+# https://github.com/gitleaks/gitleaks
+
+title = "Retrieva gitleaks config"
+
+[extend]
+# Extend the default gitleaks ruleset
+useDefault = true
+
+[allowlist]
+description = "Global allowlist"
+paths = [
+  # Encrypted secrets (SOPS) — safe by design
+  '''backend/\.env\..*\.enc$''',
+  '''ragas-service/\.env\..*\.enc$''',
+
+  # Test fixtures and example values
+  '''backend/tests/''',
+  '''backend/\.env\.example$''',
+  '''\.env\.example$''',
+
+  # MCP example server (uses placeholder tokens in comments/docs)
+  '''mcp-servers/''',
+
+  # Lockfiles contain package hashes that can look like secrets
+  '''package-lock\.json$''',
+
+  # CI workflow — contains example/placeholder secret names only
+  '''\.github/workflows/''',
+]
+
+regexes = [
+  # Vitest/Jest test secret patterns
+  '''test[-_]?(secret|key|token|password)[-_]?[a-z0-9]*''',
+  # ENCRYPTION_KEY in tests (known-safe hex string)
+  '''a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2''',
+]
