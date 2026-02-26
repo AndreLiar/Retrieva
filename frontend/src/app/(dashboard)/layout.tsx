@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Header } from '@/components/layout/header';
 import { MobileSidebar } from '@/components/layout/mobile-sidebar';
@@ -15,6 +16,7 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const router = useRouter();
   const setIsMobile = useUIStore((state) => state.setIsMobile);
   const isMobile = useUIStore((state) => state.isMobile);
   const isInitialized = useAuthStore((state) => state.isInitialized);
@@ -33,6 +35,13 @@ export default function DashboardLayout({
     return () => window.removeEventListener('resize', checkMobile);
   }, [setIsMobile]);
 
+  // Redirect to login when session is verified as invalid
+  useEffect(() => {
+    if (isInitialized && !isAuthenticated) {
+      router.replace('/login');
+    }
+  }, [isInitialized, isAuthenticated, router]);
+
   // Fetch workspaces when authenticated
   useEffect(() => {
     if (isAuthenticated && isInitialized) {
@@ -40,8 +49,8 @@ export default function DashboardLayout({
     }
   }, [isAuthenticated, isInitialized, fetchWorkspaces]);
 
-  // Show loading state while initializing
-  if (!isInitialized || isLoading) {
+  // Show loading state while initializing or redirecting unauthenticated users
+  if (!isInitialized || isLoading || !isAuthenticated) {
     return (
       <div className="flex h-screen">
         {/* Sidebar skeleton */}
