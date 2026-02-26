@@ -3,11 +3,11 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
-// /chat has moved to /copilot — keep this redirect so existing bookmarks/links still work
+// /chat redirects to /conversations (Q&A history and chat)
 export default function ChatRedirectPage() {
   const router = useRouter();
   useEffect(() => {
-    router.replace('/copilot');
+    router.replace('/conversations');
   }, [router]);
   return null;
 }
