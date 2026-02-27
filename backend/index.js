@@ -17,6 +17,8 @@ import { answerFormatter } from './services/answerFormatter.js';
 // Import workers to start them with the server
 import './workers/documentIndexWorker.js';
 import './workers/assessmentWorker.js';
+import './workers/questionnaireWorker.js';
+import { seedDefaultTemplate } from './seeds/questionnaireTemplate.seed.js';
 
 const port = process.env.PORT || 3000;
 
@@ -29,6 +31,9 @@ const startServer = async () => {
 
     await connectDB();
 
+    // Seed default questionnaire template (idempotent)
+    await seedDefaultTemplate();
+
     const indexConcurrency = parseInt(process.env.INDEX_WORKER_CONCURRENCY) || 3;
     logger.info('='.repeat(60));
     logger.info('BullMQ Workers Started', { service: 'rag-backend' });
@@ -36,6 +41,7 @@ const startServer = async () => {
       service: 'rag-backend',
     });
     logger.info('  - Assessment Worker: Active', { service: 'rag-backend' });
+    logger.info('  - Questionnaire Worker: Active', { service: 'rag-backend' });
     logger.info('='.repeat(60));
 
     httpServer.listen(port, () => {

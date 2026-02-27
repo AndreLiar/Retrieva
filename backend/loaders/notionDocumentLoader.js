@@ -1,8 +1,6 @@
 import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters';
 import logger from '../config/logger.js';
 
-import { estimateTokens } from '../utils/rag/tokenEstimation.js';
-
 /**
  * Junk patterns — chunks matching these are noise with no retrieval value
  */

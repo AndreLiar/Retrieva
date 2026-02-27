@@ -121,6 +121,28 @@ export const assessmentQueue = new Queue('assessmentJobs', {
 });
 
 /**
+ * Queue for vendor questionnaire scoring jobs
+ * Handles LLM-based per-question scoring and executive summary generation
+ */
+export const questionnaireQueue = new Queue('questionnaireJobs', {
+  connection: redisConnection,
+  defaultJobOptions: {
+    attempts: 3,
+    backoff: {
+      type: 'exponential',
+      delay: 30000,
+    },
+    removeOnComplete: {
+      count: 50,
+      age: 7 * 24 * 60 * 60, // Keep for 7 days
+    },
+    removeOnFail: {
+      count: 100,
+    },
+  },
+});
+
+/**
  * Queue for memory decay and archival operations
  * Handles:
  * - Archiving old conversations
@@ -204,6 +226,7 @@ const queueEventListeners = {
   mcpSync: null,
   assessmentJobs: null,
   dataSourceSync: null,
+  questionnaireJobs: null,
 };
 
 // Log queue events with stored references
@@ -237,6 +260,11 @@ queueEventListeners.dataSourceSync = (error) => {
 };
 dataSourceSyncQueue.on('error', queueEventListeners.dataSourceSync);
 
+queueEventListeners.questionnaireJobs = (error) => {
+  logger.error('Questionnaire jobs queue error:', { error: error.message, stack: error.stack });
+};
+questionnaireQueue.on('error', queueEventListeners.questionnaireJobs);
+
 logger.info('BullMQ queues initialized successfully');
 
 /**
@@ -267,6 +295,10 @@ export const closeQueues = async () => {
       dataSourceSyncQueue.off('error', queueEventListeners.dataSourceSync);
     }
 
+    if (queueEventListeners.questionnaireJobs) {
+      questionnaireQueue.off('error', queueEventListeners.questionnaireJobs);
+    }
+
     await Promise.all([
       notionSyncQueue.close(),
       documentIndexQueue.close(),
@@ -274,6 +306,7 @@ export const closeQueues = async () => {
       mcpSyncQueue.close(),
       assessmentQueue.close(),
       dataSourceSyncQueue.close(),
+      questionnaireQueue.close(),
     ]);
     logger.info('All queues closed gracefully');
   } catch (error) {
@@ -288,6 +321,7 @@ export default {
   mcpSyncQueue,
   assessmentQueue,
   dataSourceSyncQueue,
+  questionnaireQueue,
   scheduleMemoryDecayJob,
   closeQueues,
 };

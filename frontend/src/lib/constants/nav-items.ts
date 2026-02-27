@@ -5,6 +5,7 @@ import {
   Settings,
   Building2,
   ShieldCheck,
+  ClipboardList,
 } from 'lucide-react';
 
 export interface NavItem {
@@ -16,6 +17,7 @@ export interface NavItem {
 
 export const desktopMainNavItems: NavItem[] = [
   { title: 'Gap Analysis', href: '/assessments', icon: ShieldCheck },
+  { title: 'Questionnaires', href: '/questionnaires', icon: ClipboardList, workspaceRoles: ['owner', 'member'] },
   { title: 'Ask AI', href: '/chat', icon: MessageSquare },
   { title: 'Documents', href: '/sources', icon: Database, workspaceRoles: ['owner', 'member'] },
   { title: 'History', href: '/conversations', icon: FolderOpen },
@@ -24,6 +26,7 @@ export const desktopMainNavItems: NavItem[] = [
 
 export const mobileMainNavItems: NavItem[] = [
   { title: 'Gap Analysis', href: '/assessments', icon: ShieldCheck },
+  { title: 'Questionnaires', href: '/questionnaires', icon: ClipboardList, workspaceRoles: ['owner', 'member'] },
   { title: 'Ask AI', href: '/chat', icon: MessageSquare },
   { title: 'Documents', href: '/sources', icon: Database, workspaceRoles: ['owner', 'member'] },
   { title: 'History', href: '/conversations', icon: FolderOpen },

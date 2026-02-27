@@ -195,7 +195,7 @@ async function handleAddOrUpdate(
   sourceId,
   documentContent,
   operation,
-  skipM3 = false,
+  _skipM3 = false,
   job = null,
   sourceType = 'notion'
 ) {
