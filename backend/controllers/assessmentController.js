@@ -207,7 +207,8 @@ export const downloadReport = catchAsync(async (req, res) => {
 
   const safeVendorName = assessment.vendorName.replace(/[^a-z0-9]/gi, '_').slice(0, 50);
   const dateStr = new Date().toISOString().slice(0, 10);
-  const filename = `DORA_Assessment_${safeVendorName}_${dateStr}.docx`;
+  const prefix = assessment.framework === 'CONTRACT_A30' ? 'ContractA30_Review' : 'DORA_Assessment';
+  const filename = `${prefix}_${safeVendorName}_${dateStr}.docx`;
 
   res.setHeader(
     'Content-Type',

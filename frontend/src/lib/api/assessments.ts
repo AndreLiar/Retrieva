@@ -27,7 +27,7 @@ export interface Assessment {
   workspaceId: string;
   name: string;
   vendorName: string;
-  framework: 'DORA';
+  framework: 'DORA' | 'CONTRACT_A30';
   status: AssessmentStatus;
   statusMessage: string;
   documents: AssessmentDocument[];
@@ -90,9 +90,9 @@ export const assessmentsApi = {
   },
 
   /**
-   * Download the DORA compliance report as a .docx file
+   * Download the compliance report as a .docx file
    */
-  downloadReport: async (id: string, vendorName: string) => {
+  downloadReport: async (id: string, vendorName: string, framework?: 'DORA' | 'CONTRACT_A30') => {
     const response = await apiClient.get(`/assessments/${id}/report`, {
       responseType: 'blob',
       timeout: 60_000,
@@ -102,7 +102,8 @@ export const assessmentsApi = {
     const link = document.createElement('a');
     link.href = url;
     const dateStr = new Date().toISOString().slice(0, 10);
-    link.setAttribute('download', `DORA_Assessment_${vendorName.replace(/\s+/g, '_')}_${dateStr}.docx`);
+    const prefix = framework === 'CONTRACT_A30' ? 'ContractA30_Review' : 'DORA_Assessment';
+    link.setAttribute('download', `${prefix}_${vendorName.replace(/\s+/g, '_')}_${dateStr}.docx`);
     document.body.appendChild(link);
     link.click();
     link.remove();

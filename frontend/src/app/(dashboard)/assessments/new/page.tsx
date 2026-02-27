@@ -40,6 +40,7 @@ export default function NewAssessmentPage() {
   const router = useRouter();
   const activeWorkspace = useActiveWorkspace();
   const [files, setFiles] = useState<FileWithId[]>([]);
+  const [framework, setFramework] = useState<'DORA' | 'CONTRACT_A30'>('DORA');
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -52,6 +53,7 @@ export default function NewAssessmentPage() {
       const formData = new FormData();
       formData.append('name', values.name);
       formData.append('vendorName', values.vendorName);
+      formData.append('framework', framework);
       if (activeWorkspace?.id) formData.append('workspaceId', activeWorkspace.id);
       files.forEach((file) => formData.append('files', file));
       return assessmentsApi.create(formData);
@@ -89,9 +91,13 @@ export default function NewAssessmentPage() {
 
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-semibold">New DORA Assessment</h1>
+        <h1 className="text-2xl font-semibold">
+          {framework === 'CONTRACT_A30' ? 'New Contract Review (Art. 30)' : 'New DORA Assessment'}
+        </h1>
         <p className="text-muted-foreground mt-1">
-          Upload vendor ICT documentation to run a gap analysis against Regulation (EU) 2022/2554.
+          {framework === 'CONTRACT_A30'
+            ? 'Upload the ICT contract to check all 12 mandatory DORA Article 30 clauses.'
+            : 'Upload vendor ICT documentation to run a gap analysis against Regulation (EU) 2022/2554.'}
         </p>
       </div>
 
@@ -101,6 +107,29 @@ export default function NewAssessmentPage() {
           onSubmit={form.handleSubmit((v) => createMutation.mutate(v))}
           className="space-y-6"
         >
+          {/* Framework toggle */}
+          <div className="space-y-2">
+            <p className="text-sm font-medium leading-none">Assessment type</p>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant={framework === 'DORA' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setFramework('DORA')}
+              >
+                Gap Analysis (Art. 28/29)
+              </Button>
+              <Button
+                type="button"
+                variant={framework === 'CONTRACT_A30' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setFramework('CONTRACT_A30')}
+              >
+                Contract Review (Art. 30)
+              </Button>
+            </div>
+          </div>
+
           <FormField
             control={form.control}
             name="vendorName"
@@ -137,7 +166,9 @@ export default function NewAssessmentPage() {
 
           {/* File upload */}
           <div className="space-y-2">
-            <p className="text-sm font-medium leading-none">Vendor documents</p>
+            <p className="text-sm font-medium leading-none">
+              {framework === 'CONTRACT_A30' ? 'Contract document' : 'Vendor documents'}
+            </p>
             <FileUploadZone files={files} onChange={setFiles} />
             {files.length === 0 && createMutation.isError && (
               <p className="text-xs text-destructive">

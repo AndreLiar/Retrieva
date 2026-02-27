@@ -55,7 +55,7 @@ const assessmentSchema = new mongoose.Schema(
     },
     framework: {
       type: String,
-      enum: ['DORA'],
+      enum: ['DORA', 'CONTRACT_A30'],
       default: 'DORA',
     },
     status: {
