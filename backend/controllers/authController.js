@@ -611,6 +611,9 @@ export const verifyEmail = async (req, res) => {
       );
     }
 
+    // Capture name before save() re-encrypts it in memory
+    const userName = user.name;
+
     // Mark email as verified
     user.isEmailVerified = true;
     user.emailVerificationToken = undefined;
@@ -618,6 +621,14 @@ export const verifyEmail = async (req, res) => {
     await user.save({ validateBeforeSave: false });
 
     logger.info('Email verified successfully', { userId: user._id, email: user.email });
+
+    // Send welcome email (non-blocking)
+    emailService.sendWelcomeEmail({ toEmail: user.email, toName: userName }).catch((err) => {
+      logger.warn('Failed to send welcome email after verification', {
+        userId: user._id,
+        error: err.message,
+      });
+    });
 
     sendSuccess(res, 200, 'Email verified successfully.');
   } catch (error) {
