@@ -104,7 +104,6 @@ jobs:
           host: ${{ secrets.DEPLOY_HOST }}
           username: deploy
           key: ${{ secrets.DEPLOY_SSH_KEY }}
-          script_stop: true
           script: |
             set -e
             cd /opt/rag
