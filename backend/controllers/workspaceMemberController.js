@@ -82,6 +82,15 @@ export const getWorkspace = catchAsync(async (req, res) => {
       permissions: membership.permissions,
       createdAt: workspace.createdAt,
       updatedAt: workspace.updatedAt,
+      vendorTier: workspace.vendorTier,
+      country: workspace.country,
+      serviceType: workspace.serviceType,
+      contractStart: workspace.contractStart,
+      contractEnd: workspace.contractEnd,
+      nextReviewDate: workspace.nextReviewDate,
+      vendorStatus: workspace.vendorStatus,
+      certifications: workspace.certifications,
+      exitStrategyDoc: workspace.exitStrategyDoc,
     },
   });
 });
@@ -92,7 +101,19 @@ export const getWorkspace = catchAsync(async (req, res) => {
  */
 export const updateWorkspace = catchAsync(async (req, res) => {
   const { workspaceId } = req.params;
-  const { name, description } = req.body;
+  const {
+    name,
+    description,
+    vendorTier,
+    country,
+    serviceType,
+    contractStart,
+    contractEnd,
+    nextReviewDate,
+    vendorStatus,
+    certifications,
+    exitStrategyDoc,
+  } = req.body;
 
   const membership = await WorkspaceMember.findOne({
     workspaceId,
@@ -112,6 +133,19 @@ export const updateWorkspace = catchAsync(async (req, res) => {
 
   if (name?.trim()) workspace.name = name.trim();
   if (description !== undefined) workspace.description = description?.trim() || '';
+
+  if (vendorTier !== undefined) workspace.vendorTier = vendorTier || null;
+  if (country !== undefined) workspace.country = country?.trim() || '';
+  if (serviceType !== undefined) workspace.serviceType = serviceType || null;
+  if (contractStart !== undefined)
+    workspace.contractStart = contractStart ? new Date(contractStart) : null;
+  if (contractEnd !== undefined) workspace.contractEnd = contractEnd ? new Date(contractEnd) : null;
+  if (nextReviewDate !== undefined)
+    workspace.nextReviewDate = nextReviewDate ? new Date(nextReviewDate) : null;
+  if (vendorStatus !== undefined) workspace.vendorStatus = vendorStatus;
+  if (Array.isArray(certifications)) workspace.certifications = certifications;
+  if (exitStrategyDoc !== undefined) workspace.exitStrategyDoc = exitStrategyDoc || null;
+
   await workspace.save();
 
   sendSuccess(res, 200, 'Workspace updated', {
@@ -121,6 +155,15 @@ export const updateWorkspace = catchAsync(async (req, res) => {
       description: workspace.description,
       syncStatus: workspace.syncStatus,
       updatedAt: workspace.updatedAt,
+      vendorTier: workspace.vendorTier,
+      country: workspace.country,
+      serviceType: workspace.serviceType,
+      contractStart: workspace.contractStart,
+      contractEnd: workspace.contractEnd,
+      nextReviewDate: workspace.nextReviewDate,
+      vendorStatus: workspace.vendorStatus,
+      certifications: workspace.certifications,
+      exitStrategyDoc: workspace.exitStrategyDoc,
     },
   });
 });
@@ -172,6 +215,15 @@ export const getMyWorkspaces = catchAsync(async (req, res) => {
       joinedAt: m.invitedAt,
       createdAt: m.workspaceId.createdAt,
       updatedAt: m.workspaceId.updatedAt,
+      vendorTier: m.workspaceId.vendorTier,
+      country: m.workspaceId.country,
+      serviceType: m.workspaceId.serviceType,
+      contractStart: m.workspaceId.contractStart,
+      contractEnd: m.workspaceId.contractEnd,
+      nextReviewDate: m.workspaceId.nextReviewDate,
+      vendorStatus: m.workspaceId.vendorStatus,
+      certifications: m.workspaceId.certifications,
+      exitStrategyDoc: m.workspaceId.exitStrategyDoc,
     }));
 
   sendSuccess(res, 200, 'Workspaces retrieved', { workspaces });
