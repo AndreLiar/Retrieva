@@ -315,14 +315,15 @@ Sends transactional emails via the **Resend HTTP API**. In **microservice mode**
 
 ```javascript
 export const emailService = {
-  sendEmail,                  // Generic email sending
-  sendWorkspaceInvitation,    // Workspace invite with branded template
-  sendWelcomeEmail,           // New user onboarding
-  sendPasswordResetEmail,     // Password reset link (1h expiry)
-  sendEmailVerification,      // Email verification link (24h expiry)
-  sendQuestionnaireInvitation,// Vendor questionnaire link with deadline
-  sendMonitoringAlert,        // Compliance alert emails to workspace owners
-  verifyConnection,           // Test Resend API connectivity
+  sendEmail,                   // Generic email sending
+  sendWorkspaceInvitation,     // Workspace invite with branded template
+  sendWelcomeEmail,            // New user onboarding
+  sendPasswordResetEmail,      // Password reset link (1h expiry)
+  sendEmailVerification,       // Email verification link (24h expiry)
+  sendQuestionnaireInvitation, // Vendor questionnaire link with deadline
+  sendMonitoringAlert,         // Compliance alert emails to workspace owners
+  sendOrganizationInvitation,  // Team invite email with /join?token=XXX link (7-day expiry)
+  verifyConnection,            // Test Resend API connectivity
 };
 ```
 

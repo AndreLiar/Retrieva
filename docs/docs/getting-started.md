@@ -291,9 +291,35 @@ curl http://localhost:6333/health
 curl http://localhost:6333/collections
 ```
 
+## First Login and Onboarding
+
+Retrieva uses an **organization-first B2B model**. Every user must belong to a company account before accessing the dashboard.
+
+### Scenario A — Creating a new organization (first user / CRO)
+
+1. Register at `/register` — no invite token needed
+2. You are redirected to `/onboarding`
+3. Fill in your company name, industry, and country → submit
+4. You land on `/assessments` and the sidebar shows your company name above the workspace switcher
+5. Go to Settings → Team to invite colleagues
+
+### Scenario B — Joining via invite (team member)
+
+1. Admin invites you via Settings → Team → Invite → your email address
+2. You receive an email: *"Maria invited you to join HDI Global SE on Retrieva"*
+3. Click the link → `/join?token=XXX`
+4. If you're not registered yet, you're redirected to `/register?token=XXX&email=you@company.com` — the email is pre-filled
+5. Complete registration → you land directly on `/assessments` (no `/onboarding` step)
+6. All vendor workspaces of the organization are immediately visible
+
+:::info Role mapping
+Your org role (`org_admin`, `analyst`, `viewer`) maps to workspace permissions automatically. See [Organizations API](/api/organizations#role-mapping) for the full mapping table.
+:::
+
 ## Next Steps
 
 - [Architecture Overview](/architecture/overview) — Understand the system design
+- [Organizations API](/api/organizations) — Team onboarding and invitation endpoints
 - [API Reference](/api/overview) — Explore available endpoints
 - [Background Workers](/backend/workers) — BullMQ worker reference
 - [Environment Variables](/deployment/environment-variables) — Full configuration reference

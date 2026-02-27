@@ -75,6 +75,7 @@ const sidebars: SidebarsConfig = {
         'api/rag',
         'api/conversations',
         'api/auth',
+        'api/organizations',
         'api/workspaces',
         'api/assessments',
         'api/data-sources',

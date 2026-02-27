@@ -41,12 +41,25 @@ User Question → RAG Service
 ## Model Hierarchy
 
 ```
-User
-└── Workspace  (vendor isolation boundary)
-    └── WorkspaceMember (owner | member | viewer)
-    └── Assessment (per vendor DORA evaluation)
-        └── DocumentSource (indexed chunks in Qdrant)
+Organization  (company account — e.g. "HDI Global SE")
+└── OrganizationMember  (org_admin | analyst | viewer)
+    └── User  (one user belongs to one org)
+        └── Workspace  (vendor isolation boundary — scoped to org)
+            └── Assessment (per vendor DORA evaluation)
+                └── DocumentSource (indexed chunks in Qdrant)
 ```
+
+### Organization-First B2B Model
+
+All vendor workspaces are scoped to an `Organization`. When a user belongs to an org, they automatically see every workspace that shares the same `organizationId` — no per-workspace invitation is required. Org-level roles map to workspace permissions:
+
+| Org role | Workspace access |
+|----------|-----------------|
+| `org_admin` | owner-level (can invite, configure, query) |
+| `analyst` | member-level (can query, view sources) |
+| `viewer` | viewer-level (read-only) |
+
+Legacy users without an `organizationId` fall back to the previous per-workspace `WorkspaceMember` access model.
 
 ## Backend Request Flow
 
@@ -64,8 +77,10 @@ Routes → Middleware (authenticate, requireWorkspaceAccess, validateBody)
 | `assessmentController.js` | Upload files, start gap analysis, retrieve results |
 | `ragController.js` | Conversational Q&A over indexed documents |
 | `workspaceController.js` | Workspace CRUD + member management |
+| `organizationController.js` | Organization creation, team invitations, member management |
 | `authController.js` | Register, login, logout, token refresh |
 | `conversationController.js` | Conversation history management |
+| `exportController.js` | RoI export (DORA Art. 28 Excel workbook) |
 | `healthController.js` | Service health checks |
 
 ### Workers (BullMQ)
@@ -73,12 +88,15 @@ Routes → Middleware (authenticate, requireWorkspaceAccess, validateBody)
 |--------|-------|---------|
 | `assessmentWorker.js` | `assessmentJobs` | Orchestrates file indexing + DORA gap analysis |
 | `documentIndexWorker.js` | `documentIndex` | Embeds chunks and upserts to Qdrant |
+| `monitoringWorker.js` | `monitoringJobs` | 24-hour schedule: compliance threshold alerts |
 
 ### Key Services
 | Service | Purpose |
 |---------|---------|
 | `services/rag.js` | Core RAG pipeline: retrieval, re-ranking, answer generation |
 | `services/assessmentService.js` | DORA gap analysis logic |
+| `services/alertMonitorService.js` | Compliance threshold checks and alert delivery |
+| `services/roiExportService.js` | EBA-compliant DORA Art. 28(3) XLSX workbook |
 | `services/fileIngestionService.js` | Parses PDF, DOCX, XLSX to plain text |
 | `services/emailService.js` | Transactional email via Resend HTTP API |
 | `services/storageService.js` | File backup via DigitalOcean Spaces (S3-compatible) |
