@@ -16,7 +16,7 @@ interface AuthState {
   updateUser: (userData: Partial<User>) => void;
   setInitialized: () => void;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, name: string) => Promise<void>;
+  register: (email: string, password: string, name: string, inviteToken?: string) => Promise<{ needsOrganization: boolean }>;
   logout: (all?: boolean) => Promise<void>;
   fetchUser: () => Promise<void>;
   initialize: () => Promise<void>;
@@ -67,10 +67,10 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      register: async (email, password, name) => {
+      register: async (email, password, name, inviteToken) => {
         set({ isLoading: true });
         try {
-          const response = await authApi.register({ email, password, name });
+          const response = await authApi.register({ email, password, name, inviteToken });
           if (response.status === 'success' && response.data) {
             set({
               user: response.data.user,
@@ -78,6 +78,7 @@ export const useAuthStore = create<AuthState>()(
               isLoading: false,
             });
           }
+          return { needsOrganization: response.data?.needsOrganization ?? true };
         } catch (error) {
           set({ isLoading: false });
           throw error;

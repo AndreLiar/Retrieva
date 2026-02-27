@@ -1,4 +1,6 @@
 import { User } from '../models/User.js';
+import { Organization } from '../models/Organization.js';
+import { OrganizationMember } from '../models/OrganizationMember.js';
 import {
   generateTokenPair,
   verifyRefreshToken,
@@ -34,7 +36,7 @@ const getDeviceInfo = (req) => {
  */
 export const register = async (req, res) => {
   try {
-    const { email, password, name, role } = req.body;
+    const { email, password, name, role, inviteToken } = req.body;
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });
@@ -65,6 +67,24 @@ export const register = async (req, res) => {
     const deviceInfo = getDeviceInfo(req);
     await user.addRefreshToken(tokenHash, deviceInfo);
 
+    // Process org invite token if provided
+    let organizationId = null;
+    if (inviteToken) {
+      try {
+        const member = await OrganizationMember.findByToken(inviteToken);
+        if (member && member.email === email.toLowerCase()) {
+          await OrganizationMember.activate(member._id, user._id);
+          await User.findByIdAndUpdate(user._id, { organizationId: member.organizationId });
+          organizationId = member.organizationId;
+        }
+      } catch (err) {
+        logger.warn('Invite token processing failed during registration', {
+          userId: user._id,
+          error: err.message,
+        });
+      }
+    }
+
     // Generate email verification token and send email
     const verificationToken = await user.createEmailVerificationToken();
     emailService
@@ -84,6 +104,7 @@ export const register = async (req, res) => {
       userId: user._id,
       email: user.email,
       role: user.role,
+      hasOrg: !!organizationId,
     });
 
     // Set HTTP-only cookies for secure token storage
@@ -100,7 +121,9 @@ export const register = async (req, res) => {
           name, // Use original name from request (user.name is encrypted after save)
           role: user.role,
           isEmailVerified: false,
+          organizationId: organizationId ? organizationId.toString() : null,
         },
+        needsOrganization: !organizationId,
         // Tokens also returned in body for API clients (mobile apps, etc.)
         ...tokens,
       }
@@ -362,6 +385,20 @@ export const getMe = async (req, res) => {
       return sendError(res, 404, 'User not found');
     }
 
+    // Populate organization data if user belongs to one
+    let organization = null;
+    if (user.organizationId) {
+      const org = await Organization.findById(user.organizationId).select('name industry country');
+      if (org) {
+        organization = {
+          id: org._id,
+          name: org.name,
+          industry: org.industry,
+          country: org.country,
+        };
+      }
+    }
+
     sendSuccess(res, 200, 'User profile retrieved', {
       user: {
         id: user._id,
@@ -371,6 +408,8 @@ export const getMe = async (req, res) => {
         isEmailVerified: user.isEmailVerified,
         createdAt: user.createdAt,
         lastLogin: user.lastLogin,
+        organizationId: user.organizationId ? user.organizationId.toString() : null,
+        organization,
       },
     });
   } catch (error) {

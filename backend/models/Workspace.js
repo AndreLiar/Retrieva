@@ -55,6 +55,12 @@ const workspaceSchema = new mongoose.Schema(
       of: Date,
       default: {},
     },
+    organizationId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Organization',
+      default: null,
+      index: true,
+    },
   },
   {
     timestamps: true,

@@ -163,6 +163,11 @@ const userSchema = new mongoose.Schema(
       enum: ['notify', 'auto_reconnect'],
       default: 'notify',
     },
+    organizationId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Organization',
+      default: null,
+    },
   },
   {
     timestamps: true,
