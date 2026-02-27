@@ -36,6 +36,12 @@ const RISK_DESCRIPTION: Record<OverallRisk, string> = {
   High: 'Significant compliance gaps detected — remediation required before contract renewal.',
 };
 
+const RISK_DESCRIPTION_CONTRACT: Record<OverallRisk, string> = {
+  Low: 'The contract broadly satisfies DORA Article 30 mandatory clause requirements.',
+  Medium: 'Several Article 30 clauses are only partially addressed — renegotiation recommended.',
+  High: 'Critical Article 30 clause gaps detected — contract must be renegotiated before use.',
+};
+
 export default function AssessmentDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -67,7 +73,7 @@ export default function AssessmentDetailPage() {
 
   const downloadMutation = useMutation({
     mutationFn: () =>
-      assessmentsApi.downloadReport(id, assessment?.vendorName ?? 'vendor'),
+      assessmentsApi.downloadReport(id, assessment?.vendorName ?? 'vendor', assessment?.framework),
     onError: () => toast.error('Failed to download report'),
   });
 
@@ -112,7 +118,12 @@ export default function AssessmentDetailPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold">{assessment.vendorName}</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-semibold">{assessment.vendorName}</h1>
+            <Badge variant="outline" className="text-xs">
+              {assessment.framework === 'CONTRACT_A30' ? 'Art. 30 Contract Review' : 'DORA Gap Analysis'}
+            </Badge>
+          </div>
           <p className="text-muted-foreground">{assessment.name}</p>
           <p className="text-xs text-muted-foreground mt-1">
             Created {format(new Date(assessment.createdAt), 'dd MMM yyyy HH:mm')}
@@ -184,6 +195,8 @@ export default function AssessmentDetailPage() {
           <p className="text-sm text-muted-foreground max-w-sm">
             {assessment.status === 'indexing'
               ? 'Parsing and embedding your documents into the vector store…'
+              : assessment.framework === 'CONTRACT_A30'
+              ? 'Running contract clause review against all 12 Article 30 requirements…'
               : 'Running the DORA gap analysis against all indexed content…'}
           </p>
         </div>
@@ -206,7 +219,9 @@ export default function AssessmentDetailPage() {
                 </Badge>
               </div>
               <p className="text-sm text-muted-foreground">
-                {RISK_DESCRIPTION[assessment.results.overallRisk]}
+                {assessment.framework === 'CONTRACT_A30'
+                  ? RISK_DESCRIPTION_CONTRACT[assessment.results.overallRisk]
+                  : RISK_DESCRIPTION[assessment.results.overallRisk]}
               </p>
             </div>
 
@@ -245,7 +260,9 @@ export default function AssessmentDetailPage() {
 
           {/* Gap table */}
           <div className="space-y-3">
-            <h2 className="text-lg font-semibold">Gap Analysis</h2>
+            <h2 className="text-lg font-semibold">
+              {assessment.framework === 'CONTRACT_A30' ? 'Clause Review' : 'Gap Analysis'}
+            </h2>
             <GapAnalysisTable gaps={assessment.results.gaps} />
           </div>
 

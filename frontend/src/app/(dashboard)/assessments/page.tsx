@@ -94,8 +94,8 @@ export default function AssessmentsPage() {
   });
 
   const downloadMutation = useMutation({
-    mutationFn: ({ id, vendorName }: { id: string; vendorName: string }) =>
-      assessmentsApi.downloadReport(id, vendorName),
+    mutationFn: ({ id, vendorName, framework }: { id: string; vendorName: string; framework: Assessment['framework'] }) =>
+      assessmentsApi.downloadReport(id, vendorName, framework),
     onError: () => toast.error('Failed to download report'),
   });
 
@@ -168,7 +168,12 @@ export default function AssessmentsPage() {
                   onClick={() => router.push(`/assessments/${a._id}`)}
                 >
                   <TableCell className="font-medium">{a.vendorName}</TableCell>
-                  <TableCell className="text-muted-foreground">{a.name}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {a.name}
+                    {a.framework === 'CONTRACT_A30' && (
+                      <Badge variant="outline" className="text-xs ml-2">Art. 30</Badge>
+                    )}
+                  </TableCell>
                   <TableCell>
                     <Badge variant={STATUS_VARIANT[a.status]}>
                       {a.status === 'indexing' || a.status === 'analyzing' ? (
@@ -201,7 +206,7 @@ export default function AssessmentsPage() {
                           className="h-7 w-7"
                           title="Download report"
                           onClick={() =>
-                            downloadMutation.mutate({ id: a._id, vendorName: a.vendorName })
+                            downloadMutation.mutate({ id: a._id, vendorName: a.vendorName, framework: a.framework })
                           }
                           disabled={downloadMutation.isPending}
                         >
