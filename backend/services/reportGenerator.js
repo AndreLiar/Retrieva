@@ -150,12 +150,15 @@ function gapBadge(level) {
 
 function buildCoverPage(assessment) {
   const risk = assessment.results?.overallRisk || 'N/A';
+  const isContract = assessment.framework === 'CONTRACT_A30';
   return [
     new Paragraph({ children: [new PageBreak()] }),
     new Paragraph({
       children: [
         new TextRun({
-          text: 'DORA Compliance Assessment Report',
+          text: isContract
+            ? 'Article 30 Contract Clause Review'
+            : 'DORA Compliance Assessment Report',
           bold: true,
           size: 56,
           color: COLOUR.primary,
@@ -217,7 +220,9 @@ function buildCoverPage(assessment) {
     new Paragraph({
       children: [
         new TextRun({
-          text: `Regulatory Framework: Regulation (EU) 2022/2554 (DORA)`,
+          text: isContract
+            ? 'Regulatory Framework: DORA Article 30 — ICT Contract Clause Requirements'
+            : 'Regulatory Framework: Regulation (EU) 2022/2554 (DORA)',
           size: 20,
           color: COLOUR.muted,
           italics: true,
@@ -298,6 +303,7 @@ function buildExecutiveSummary(assessment) {
 
 function buildGapTable(assessment) {
   const gaps = assessment.results?.gaps || [];
+  const isContract = assessment.framework === 'CONTRACT_A30';
 
   const rows = [
     new TableRow({
@@ -305,7 +311,7 @@ function buildGapTable(assessment) {
         headerCell('Article', 12),
         headerCell('Domain', 15),
         headerCell('Requirement', 28),
-        headerCell('Vendor Coverage', 25),
+        headerCell(isContract ? 'Contract Coverage' : 'Vendor Coverage', 25),
         headerCell('Gap Level', 10),
         headerCell('Recommendation', 10),
       ],
@@ -334,9 +340,11 @@ function buildGapTable(assessment) {
 
   return [
     new Paragraph({ children: [new PageBreak()] }),
-    heading1('Compliance Gap Analysis'),
+    heading1(isContract ? 'Contract Clause Review' : 'Compliance Gap Analysis'),
     para(
-      `The following table maps each assessed DORA obligation to the evidence found in ${assessment.vendorName}'s documentation.`,
+      isContract
+        ? `The following table maps each DORA Article 30 mandatory clause to the evidence found in the uploaded contract for ${assessment.vendorName}.`
+        : `The following table maps each assessed DORA obligation to the evidence found in ${assessment.vendorName}'s documentation.`,
       { color: COLOUR.muted, italics: true }
     ),
     new Paragraph({ spacing: { before: 200 } }),
@@ -350,7 +358,11 @@ function buildGapTable(assessment) {
 function buildDomainBreakdown(assessment) {
   const gaps = assessment.results?.gaps || [];
   const domains = [...new Set(gaps.map((g) => g.domain))];
-  const sections = [new Paragraph({ children: [new PageBreak()] }), heading1('Domain Breakdown')];
+  const isContract = assessment.framework === 'CONTRACT_A30';
+  const sections = [
+    new Paragraph({ children: [new PageBreak()] }),
+    heading1(isContract ? 'Clause Category Breakdown' : 'Domain Breakdown'),
+  ];
 
   for (const domain of domains) {
     const domainGaps = gaps.filter((g) => g.domain === domain);
@@ -413,7 +425,9 @@ function buildMethodology(assessment) {
     ),
     heading2('Assessment Methodology'),
     para(
-      'Vendor documentation was parsed and semantically indexed. Relevant content was extracted using vector similarity search across multiple compliance-focused query prompts. DORA obligations were retrieved from a pre-loaded regulatory knowledge base containing verbatim article texts. Gap assessment was performed using Azure OpenAI (gpt-4o-mini) function calling to produce structured, auditable output.',
+      assessment.framework === 'CONTRACT_A30'
+        ? 'The uploaded contract was parsed and semantically indexed. Relevant clauses were extracted using vector similarity search across 12 targeted Article 30 compliance queries. Gap assessment was performed using Azure OpenAI (gpt-4o-mini) to produce a structured, auditable clause-by-clause review.'
+        : 'Vendor documentation was parsed and semantically indexed. Relevant content was extracted using vector similarity search across multiple compliance-focused query prompts. DORA obligations were retrieved from a pre-loaded regulatory knowledge base containing verbatim article texts. Gap assessment was performed using Azure OpenAI (gpt-4o-mini) function calling to produce structured, auditable output.',
       { color: COLOUR.text }
     ),
     heading2('Source Documents Analysed'),

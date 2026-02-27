@@ -36,6 +36,100 @@ const DORA_DOMAINS = [
   'Information Sharing',
 ];
 
+const CONTRACT_A30_DOMAINS = [
+  'Service Description',
+  'Data Governance',
+  'Security and Resilience',
+  'Business Continuity',
+  'Subcontracting',
+  'Audit and Inspection',
+  'Termination and Exit',
+  'Regulatory Compliance',
+];
+
+// 12 mandatory DORA Article 30 clauses injected into the system prompt
+const CONTRACT_A30_CLAUSES = [
+  {
+    ref: 'Art.30(2)(a)',
+    category: 'Service Description',
+    text: 'Clear and complete description of all ICT services and functions to be provided',
+  },
+  {
+    ref: 'Art.30(2)(b)',
+    category: 'Data Governance',
+    text: 'Locations (countries/regions) where data will be processed and stored',
+  },
+  {
+    ref: 'Art.30(2)(c)',
+    category: 'Security and Resilience',
+    text: 'Provisions on availability, authenticity, integrity and confidentiality of data',
+  },
+  {
+    ref: 'Art.30(2)(d)',
+    category: 'Data Governance',
+    text: 'Provisions for accessibility, return, recovery and secure deletion of data on exit',
+  },
+  {
+    ref: 'Art.30(2)(e)',
+    category: 'Subcontracting',
+    text: 'Full description of all subcontractors and their data processing locations',
+  },
+  {
+    ref: 'Art.30(2)(f)',
+    category: 'Business Continuity',
+    text: 'ICT service continuity conditions including service level objective amendments',
+  },
+  {
+    ref: 'Art.30(2)(g)',
+    category: 'Business Continuity',
+    text: "Business continuity plan provisions relevant to the financial entity's services",
+  },
+  {
+    ref: 'Art.30(2)(h)',
+    category: 'Termination and Exit',
+    text: 'Termination rights of the financial entity including adequate notice periods',
+  },
+  {
+    ref: 'Art.30(3)(a)',
+    category: 'Service Description',
+    text: 'Full service level descriptions with quantitative and qualitative performance targets',
+  },
+  {
+    ref: 'Art.30(3)(b)',
+    category: 'Regulatory Compliance',
+    text: 'Advance notification obligations for material changes to ICT services',
+  },
+  {
+    ref: 'Art.30(3)(c)',
+    category: 'Audit and Inspection',
+    text: 'Right to carry out full audits and on-site inspections of the ICT provider',
+  },
+  {
+    ref: 'Art.30(3)(d)',
+    category: 'Security and Resilience',
+    text: 'Obligation to assist the financial entity in ICT-related incident management and response',
+  },
+];
+
+const CONTRACT_A30_SYSTEM_PROMPT = `You are a DORA Article 30 contract specialist reviewing ICT third-party contracts for financial entities.
+
+You have two tools:
+- search_contract_document: semantic search over the uploaded contract
+- record_clause_review: record your final clause-by-clause review — call this ONCE when ready
+
+Methodology:
+1. Search the contract with 8–10 targeted queries covering each of the 12 mandatory clauses below.
+2. For each clause, determine: covered / partial / missing.
+3. Call record_clause_review with your complete structured findings.
+
+Scoring:
+- covered: Contract explicitly and clearly satisfies the obligation.
+- partial: Clause is mentioned but incompletely or vaguely.
+- missing: No relevant clause text found.
+
+The 12 mandatory DORA Article 30 clauses to check:
+${CONTRACT_A30_CLAUSES.map((c) => `${c.ref} [${c.category}]: ${c.text}`).join('\n')}`;
+
 function getQdrantClient() {
   const opts = { url: QDRANT_URL };
   if (QDRANT_API_KEY) opts.apiKey = QDRANT_API_KEY;
@@ -225,6 +319,248 @@ function buildTools(assessmentId, client) {
     tools: [searchVendorDocsTool, searchDoraRequirementsTool, recordGapAnalysisTool],
     getResult: () => capturedResult,
   };
+}
+
+// ---------------------------------------------------------------------------
+// CONTRACT_A30: Zod schema + tools + agent
+// ---------------------------------------------------------------------------
+
+const contractClauseItemSchema = z.object({
+  article: z.string().describe('Article reference, e.g. "Art.30(2)(a)"'),
+  domain: z
+    .enum([
+      'Service Description',
+      'Data Governance',
+      'Security and Resilience',
+      'Business Continuity',
+      'Subcontracting',
+      'Audit and Inspection',
+      'Termination and Exit',
+      'Regulatory Compliance',
+    ])
+    .describe('The Article 30 clause category'),
+  requirement: z
+    .string()
+    .describe('The specific Article 30 obligation being assessed (1–2 sentences)'),
+  vendorCoverage: z
+    .string()
+    .describe(
+      'Quote or paraphrase from the contract showing coverage. Empty string if not addressed.'
+    ),
+  gapLevel: z
+    .enum(['covered', 'partial', 'missing'])
+    .describe(
+      'covered = contract explicitly satisfies the obligation; partial = partially addresses it; missing = no evidence'
+    ),
+  recommendation: z
+    .string()
+    .describe('Actionable renegotiation or drafting recommendation. Empty string if covered.'),
+});
+
+const recordClauseReviewSchema = z.object({
+  gaps: z
+    .array(contractClauseItemSchema)
+    .describe('Complete list of clause reviews — one entry per Article 30 clause (12 total)'),
+  overallRisk: z
+    .enum(['High', 'Medium', 'Low'])
+    .describe(
+      'High = multiple missing clauses; Medium = several partial clauses; Low = contract broadly satisfies Article 30'
+    ),
+  summary: z
+    .string()
+    .describe(
+      'Executive summary (3–5 sentences) suitable for a compliance officer or legal counsel'
+    ),
+  domainsAnalyzed: z
+    .array(z.string())
+    .describe('List of Article 30 clause categories covered in this review'),
+});
+
+function buildContractA30Tools(assessmentId, client) {
+  const collectionName = `assessment_${assessmentId}`;
+
+  const searchContractDocumentTool = tool(
+    async ({ query }) => {
+      try {
+        const queryVector = await embeddings.embedQuery(query);
+        const results = await client.search(collectionName, {
+          vector: queryVector,
+          limit: 12,
+          with_payload: true,
+        });
+        if (results.length === 0) {
+          return 'No relevant content found in the contract for this query.';
+        }
+        return results
+          .map((h, i) => {
+            const content = h.payload?.pageContent || '';
+            const file = h.payload?.metadata?.fileName || 'unknown';
+            return `[${i + 1}] (${file}): ${content.slice(0, 500)}`;
+          })
+          .join('\n\n');
+      } catch (err) {
+        return `Search error: ${err.message}`;
+      }
+    },
+    {
+      name: 'search_contract_document',
+      description:
+        'Semantic search over the uploaded ICT contract. Use targeted queries to find clause text relevant to each Article 30 obligation. Call multiple times with different queries.',
+      schema: z.object({
+        query: z.string().describe('Targeted search query about a specific Article 30 clause'),
+      }),
+    }
+  );
+
+  let capturedResult = null;
+
+  const recordClauseReviewTool = tool(
+    async (input) => {
+      capturedResult = input;
+      return 'Clause review recorded successfully. Task complete.';
+    },
+    {
+      name: 'record_clause_review',
+      description:
+        'Call this ONCE when you have searched the contract thoroughly and are ready to submit the complete structured Article 30 clause review.',
+      schema: recordClauseReviewSchema,
+    }
+  );
+
+  return {
+    tools: [searchContractDocumentTool, recordClauseReviewTool],
+    getResult: () => capturedResult,
+  };
+}
+
+async function runContractA30ReActAgent(assessment, emit) {
+  const client = getQdrantClient();
+  const { tools, getResult } = buildContractA30Tools(assessment._id.toString(), client);
+
+  const llm = await createLLM({ temperature: 0, maxTokens: 4096 });
+
+  emit('Building Article 30 contract review agent…', 15);
+
+  const agent = createReactAgent({
+    llm,
+    tools,
+    stateModifier: new SystemMessage(CONTRACT_A30_SYSTEM_PROMPT),
+  });
+
+  emit('Agent reviewing contract against Article 30 clauses…', 25);
+
+  const userMessage = `Review the uploaded ICT contract for vendor '${assessment.vendorName}' against all 12 mandatory DORA Article 30 clauses. Search the contract thoroughly, then call record_clause_review with a complete clause-by-clause structured review covering all 12 obligations.`;
+
+  try {
+    await agent.invoke({ messages: [new HumanMessage(userMessage)] }, { recursionLimit: 40 });
+  } catch (err) {
+    if (!getResult()) {
+      throw err;
+    }
+    logger.warn('Contract A30 agent hit recursion limit but result was captured', {
+      service: 'gap-analysis',
+      error: err.message,
+    });
+  }
+
+  const result = getResult();
+  if (!result) {
+    throw new Error('Contract A30 agent did not call record_clause_review — no result produced');
+  }
+
+  logger.info('Contract A30 ReAct agent completed', {
+    service: 'gap-analysis',
+    assessmentId: assessment._id,
+    clauseCount: result.gaps?.length ?? 0,
+  });
+
+  return result;
+}
+
+async function runContractA30FallbackPipeline(assessment, emit) {
+  const client = getQdrantClient();
+  const collectionName = `assessment_${assessment._id}`;
+
+  emit('Extracting contract clauses (fallback pipeline)…', 15);
+
+  // Step 1: search contract with clause-focused queries
+  const queryPrompts = [
+    'exit plan termination rights notice period',
+    'audit rights on-site inspection access',
+    'service level agreement SLA performance targets quantitative',
+    'data portability return deletion exit',
+    'subcontracting subprocessors third party locations',
+    'termination exit transition assistance',
+    'incident management response assistance notification',
+    'material changes advance notification ICT services',
+    'data location processing storage countries regions',
+    'service description ICT functions scope',
+  ];
+  const allChunks = new Map();
+  for (const query of queryPrompts) {
+    const qv = await embeddings.embedQuery(query);
+    const hits = await client.search(collectionName, {
+      vector: qv,
+      limit: 20,
+      with_payload: true,
+    });
+    for (const h of hits) {
+      const content = h.payload?.pageContent || '';
+      if (content.length > 50 && !allChunks.has(content)) {
+        allChunks.set(content, {
+          content,
+          fileName: h.payload?.metadata?.fileName || 'unknown',
+          score: h.score,
+        });
+      }
+    }
+  }
+  const contractChunks = [...allChunks.values()].sort((a, b) => b.score - a.score);
+
+  emit('Analysing Article 30 clause gaps (fallback pipeline)…', 55);
+
+  const llm = await createLLM({ temperature: 0, maxTokens: 4096 });
+
+  const contractContext = contractChunks
+    .slice(0, 40)
+    .map((c, i) => `[C${i + 1}] ${c.content.slice(0, 300)}`)
+    .join('\n\n');
+
+  const clauseList = CONTRACT_A30_CLAUSES.map((c) => `${c.ref} [${c.category}]: ${c.text}`).join(
+    '\n'
+  );
+
+  const systemPrompt = `You are a DORA Article 30 contract specialist. Review the provided contract excerpts against the 12 mandatory Article 30 clauses.
+
+Respond ONLY with a valid JSON object:
+{
+  "gaps": [{"article":"...","domain":"...","requirement":"...","vendorCoverage":"...","gapLevel":"covered|partial|missing","recommendation":"..."}],
+  "overallRisk": "High|Medium|Low",
+  "summary": "...",
+  "domainsAnalyzed": ["..."]
+}`;
+
+  const userPrompt = `Vendor: ${assessment.vendorName}
+
+MANDATORY DORA ARTICLE 30 CLAUSES:
+${clauseList}
+
+CONTRACT EXCERPTS:
+${contractContext}
+
+Produce a clause-by-clause review covering all 12 Article 30 obligations.`;
+
+  const response = await llm.invoke([
+    { role: 'system', content: systemPrompt },
+    { role: 'user', content: userPrompt },
+  ]);
+
+  const content =
+    typeof response.content === 'string' ? response.content : JSON.stringify(response.content);
+  const jsonMatch = content.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) throw new Error('Contract A30 fallback LLM did not return valid JSON');
+
+  return JSON.parse(jsonMatch[0]);
 }
 
 // ---------------------------------------------------------------------------
@@ -426,29 +762,53 @@ export async function runGapAnalysis({ assessmentId, userId, job }) {
     }
   }
 
-  // Try LangChain ReAct agent; fall back to direct pipeline on error
+  // Branch on framework: CONTRACT_A30 uses its own agent/fallback
   let result;
-  try {
-    result = await runReActAgent(assessment, emit);
-    logger.info('Gap analysis used LangChain ReAct agent', {
-      service: 'gap-analysis',
-      assessmentId,
-    });
-  } catch (agentErr) {
-    logger.warn('LangChain agent failed, using fallback pipeline', {
-      service: 'gap-analysis',
-      assessmentId,
-      error: agentErr.message,
-    });
-    result = await runFallbackPipeline(assessment, emit);
+  if (assessment.framework === 'CONTRACT_A30') {
+    try {
+      result = await runContractA30ReActAgent(assessment, emit);
+      logger.info('Gap analysis used Contract A30 ReAct agent', {
+        service: 'gap-analysis',
+        assessmentId,
+      });
+    } catch (agentErr) {
+      logger.warn('Contract A30 agent failed, using fallback', {
+        service: 'gap-analysis',
+        assessmentId,
+        error: agentErr.message,
+      });
+      result = await runContractA30FallbackPipeline(assessment, emit);
+    }
+  } else {
+    try {
+      result = await runReActAgent(assessment, emit);
+      logger.info('Gap analysis used LangChain ReAct agent', {
+        service: 'gap-analysis',
+        assessmentId,
+      });
+    } catch (agentErr) {
+      logger.warn('LangChain agent failed, using fallback pipeline', {
+        service: 'gap-analysis',
+        assessmentId,
+        error: agentErr.message,
+      });
+      result = await runFallbackPipeline(assessment, emit);
+    }
   }
 
   emit('Finalising results…', 90);
 
+  const VALID_DOMAINS =
+    assessment.framework === 'CONTRACT_A30' ? CONTRACT_A30_DOMAINS : DORA_DOMAINS;
+  const DEFAULT_DOMAIN =
+    assessment.framework === 'CONTRACT_A30' ? 'Service Description' : 'Third-Party Risk';
+  const FALLBACK_DOMAINS =
+    assessment.framework === 'CONTRACT_A30' ? CONTRACT_A30_DOMAINS : DORA_DOMAINS;
+
   // Validate and normalise
   const gaps = (result.gaps || []).map((g) => ({
     article: g.article || 'Unknown',
-    domain: DORA_DOMAINS.includes(g.domain) ? g.domain : 'Third-Party Risk',
+    domain: VALID_DOMAINS.includes(g.domain) ? g.domain : DEFAULT_DOMAIN,
     requirement: g.requirement || '',
     vendorCoverage: g.vendorCoverage || '',
     gapLevel: ['covered', 'partial', 'missing'].includes(g.gapLevel) ? g.gapLevel : 'missing',
@@ -466,7 +826,7 @@ export async function runGapAnalysis({ assessmentId, userId, job }) {
     'results.gaps': gaps,
     'results.overallRisk': overallRisk,
     'results.summary': result.summary || '',
-    'results.domainsAnalyzed': result.domainsAnalyzed || DORA_DOMAINS,
+    'results.domainsAnalyzed': result.domainsAnalyzed || FALLBACK_DOMAINS,
     'results.generatedAt': new Date(),
   });
 
