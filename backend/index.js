@@ -18,7 +18,9 @@ import { answerFormatter } from './services/answerFormatter.js';
 import './workers/documentIndexWorker.js';
 import './workers/assessmentWorker.js';
 import './workers/questionnaireWorker.js';
+import './workers/monitoringWorker.js';
 import { seedDefaultTemplate } from './seeds/questionnaireTemplate.seed.js';
+import { scheduleMonitoringJob } from './config/queue.js';
 
 const port = process.env.PORT || 3000;
 
@@ -34,6 +36,14 @@ const startServer = async () => {
     // Seed default questionnaire template (idempotent)
     await seedDefaultTemplate();
 
+    // Schedule monitoring alerts job (non-critical — runs every 24h)
+    await scheduleMonitoringJob().catch((err) =>
+      logger.error('Failed to schedule monitoring job (non-critical)', {
+        service: 'rag-backend',
+        error: err.message,
+      })
+    );
+
     const indexConcurrency = parseInt(process.env.INDEX_WORKER_CONCURRENCY) || 3;
     logger.info('='.repeat(60));
     logger.info('BullMQ Workers Started', { service: 'rag-backend' });
@@ -42,6 +52,7 @@ const startServer = async () => {
     });
     logger.info('  - Assessment Worker: Active', { service: 'rag-backend' });
     logger.info('  - Questionnaire Worker: Active', { service: 'rag-backend' });
+    logger.info('  - Monitoring Worker: Active (24h schedule)', { service: 'rag-backend' });
     logger.info('='.repeat(60));
 
     httpServer.listen(port, () => {

@@ -108,8 +108,60 @@ const remote = {
   sendEmailVerification: (p) => callEmailService('/internal/email/email-verification', p),
   sendQuestionnaireInvitation: (p) =>
     callEmailService('/internal/email/questionnaire-invitation', p),
+  sendMonitoringAlert: (p) => callEmailService('/internal/email/monitoring-alert', p),
   verifyConnection: () => callEmailService('/internal/email/health', {}),
 };
+
+function buildMonitoringAlertHtml({ toName, workspaceName, alertType, details }) {
+  const settingsUrl = `${FRONTEND_URL}/settings`;
+  const alertMessages = {
+    'cert-expiry-90': `The <strong>${details.certType}</strong> certification for vendor <strong>${workspaceName}</strong> will expire on <strong>${details.expiryDate}</strong> (in ~90 days). Begin the renewal process now to avoid a compliance gap.`,
+    'cert-expiry-30': `The <strong>${details.certType}</strong> certification for vendor <strong>${workspaceName}</strong> expires on <strong>${details.expiryDate}</strong> — only 30 days remaining. Immediate action is required.`,
+    'cert-expiry-7': `URGENT: The <strong>${details.certType}</strong> certification for vendor <strong>${workspaceName}</strong> expires on <strong>${details.expiryDate}</strong>. Only 7 days remain. Take action today.`,
+    'contract-renewal-60': `The ICT service contract with vendor <strong>${workspaceName}</strong> is due for renewal on <strong>${details.contractEnd}</strong> (60 days from now). Schedule a review with your legal team.`,
+    'annual-review-overdue': `The scheduled annual DORA vendor review for <strong>${workspaceName}</strong> was due on <strong>${details.reviewDate}</strong> and has not been completed. Please schedule this review to maintain compliance.`,
+    'assessment-overdue-12mo': `No DORA gap assessment has been run for vendor <strong>${workspaceName}</strong> in over 12 months. The last assessment was ${details.lastAssessmentDate ? `on <strong>${details.lastAssessmentDate}</strong>` : '<strong>never</strong>'}. DORA Article 28 requires periodic reviews.`,
+  };
+  const message =
+    alertMessages[alertType] ||
+    `A compliance alert has been triggered for vendor <strong>${workspaceName}</strong>.`;
+
+  return `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="border-bottom: 3px solid #0f172a; padding-bottom: 16px; margin-bottom: 24px;">
+    <span style="font-weight: 700; font-size: 18px; color: #0f172a;">Retrieva</span>
+    <span style="font-size: 12px; color: #64748b; margin-left: 8px;">Compliance Monitoring</span>
+  </div>
+
+  <p style="margin: 0 0 16px;">Dear ${toName || 'Compliance Team'},</p>
+
+  <p style="margin: 0 0 16px;">${message}</p>
+
+  <div style="background: #fef9c3; border: 1px solid #fde047; border-radius: 8px; padding: 16px; margin: 24px 0;">
+    <p style="margin: 0; font-weight: 600; color: #854d0e;">Action Required</p>
+    <p style="margin: 8px 0 0; font-size: 14px; color: #713f12;">
+      Please log in to Retrieva to review this vendor's compliance status and take the necessary action.
+    </p>
+  </div>
+
+  <div style="text-align: center; margin: 32px 0;">
+    <a href="${settingsUrl}"
+       style="display: inline-block; background: #0f172a; color: #ffffff; text-decoration: none;
+              padding: 14px 32px; border-radius: 6px; font-weight: 600; font-size: 15px;">
+      Open Retrieva
+    </a>
+  </div>
+
+  <div style="border-top: 1px solid #e2e8f0; margin-top: 32px; padding-top: 16px;">
+    <p style="font-size: 12px; color: #94a3b8; margin: 0;">
+      This automated alert was sent by Retrieva compliance monitoring. To manage your notification preferences, visit your account settings.
+    </p>
+  </div>
+</body>
+</html>`;
+}
 
 const local = {
   sendEmail: _sendEmailInProcess,
@@ -221,6 +273,20 @@ const local = {
 </body>
 </html>`;
 
+    return _sendEmailInProcess({ to: toEmail, subject, html });
+  },
+
+  async sendMonitoringAlert({ toEmail, toName, workspaceName, alertType, details }) {
+    const subjects = {
+      'cert-expiry-90': `[90-Day Warning] ${details.certType} certification expiring for ${workspaceName}`,
+      'cert-expiry-30': `[30-Day Warning] ${details.certType} certification expiring soon for ${workspaceName}`,
+      'cert-expiry-7': `[URGENT] ${details.certType} certification expires in 7 days — ${workspaceName}`,
+      'contract-renewal-60': `[Action Required] Contract renewal due in 60 days — ${workspaceName}`,
+      'annual-review-overdue': `[Overdue] Annual vendor review required for ${workspaceName}`,
+      'assessment-overdue-12mo': `[Reminder] No DORA assessment run in 12 months — ${workspaceName}`,
+    };
+    const subject = subjects[alertType] || `Compliance Alert — ${workspaceName}`;
+    const html = buildMonitoringAlertHtml({ toName, workspaceName, alertType, details });
     return _sendEmailInProcess({ to: toEmail, subject, html });
   },
 
