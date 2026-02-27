@@ -20,8 +20,6 @@ Essential tasks before deploying to production.
   openssl rand -hex 32
   ```
 
-- [ ] **Notion webhook secret set** - For webhook signature verification
-
 - [ ] **Azure OpenAI key secured** - Never commit to version control
 
 - [ ] **Resend API key secured** - Store in encrypted `.env.resend.production.enc`
@@ -105,10 +103,12 @@ Essential tasks before deploying to production.
 
 ### Sync & Workers
 
-- [ ] **Worker processes running** - BullMQ workers active
+- [ ] **Worker processes running** - All BullMQ workers active (notionSync, documentIndex, assessment, questionnaire, monitoring)
 - [ ] **Stale job recovery** - `STALE_JOB_TIMEOUT_HOURS` configured
-- [ ] **Rate limits respected** - Notion API limits honored
-- [ ] **Token monitoring enabled** - `NOTION_TOKEN_MONITOR_ENABLED=true`
+- [ ] **Monitoring worker scheduled** - `MONITORING_INTERVAL_HOURS=24` set; repeatable job registered at startup
+- [ ] **Institution name configured** - `INSTITUTION_NAME` set for RoI export RT.01.01 sheet
+- [ ] **Notion rate limits respected** - Notion API limits honored (if Notion connector enabled)
+- [ ] **Token monitoring enabled** - `NOTION_TOKEN_MONITOR_ENABLED=true` (if Notion connector enabled)
 
 ## Monitoring Checklist
 
@@ -222,6 +222,9 @@ db.notionworkspaces.createIndex({ 'members.user': 1 });
 ## Compliance
 
 - [ ] **GDPR compliance** - Data processing documented
-- [ ] **Data retention** - TTL policies implemented
+- [ ] **Data retention** - TTL policies implemented (Analytics auto-delete after 90 days)
 - [ ] **Audit trail** - Access logging enabled
 - [ ] **Privacy policy** - User-facing documentation
+- [ ] **DORA knowledge base seeded** - `npm run seed:compliance` run in production environment
+- [ ] **RoI export tested** - `GET /api/v1/workspaces/roi-export` returns valid XLSX with 4 sheets
+- [ ] **Monitoring alerts tested** - Email delivery confirmed for at least one alert type

@@ -15,6 +15,9 @@ import {
   Globe,
   Upload,
   CheckCircle2,
+  Bell,
+  FileSpreadsheet,
+  ClipboardCheck,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -105,21 +108,31 @@ export default function LandingPage() {
         <h2 className="text-3xl font-bold text-center mb-12">
           Everything you need to meet DORA obligations
         </h2>
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           <FeatureCard
             icon={<FileSearch className="h-8 w-8" />}
             title="Automated Gap Analysis"
             description="Upload vendor ICT documentation and get a structured DORA compliance gap report in minutes."
           />
           <FeatureCard
-            icon={<Database className="h-8 w-8" />}
-            title="Multi-Source Ingestion"
-            description="Connect sources natively or via MCP — files, URLs, Confluence, Notion, GitHub, Slack, or any custom system. One unified knowledge base."
+            icon={<ClipboardCheck className="h-8 w-8" />}
+            title="Vendor Questionnaires"
+            description="Auto-generate security questionnaires, invite vendors to respond, and get LLM-scored compliance results instantly."
           />
           <FeatureCard
             icon={<Bot className="h-8 w-8" />}
             title="DORA Copilot"
             description="Ask compliance questions in natural language. The agentic copilot searches your docs and DORA articles."
+          />
+          <FeatureCard
+            icon={<Bell className="h-8 w-8" />}
+            title="Monitoring Alerts"
+            description="Automated 24-hour alerts for certification expiry (90/30/7 days), contract renewal, and overdue assessments."
+          />
+          <FeatureCard
+            icon={<FileSpreadsheet className="h-8 w-8" />}
+            title="Register of Information"
+            description="One-click EBA-compliant DORA Article 28(3) XLSX export — RT.01.01 to RT.04.01 sheets generated automatically."
           />
           <FeatureCard
             icon={<Lock className="h-8 w-8" />}
@@ -231,24 +244,36 @@ export default function LandingPage() {
       <section className="bg-muted/30 py-24">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-bold text-center mb-12">How It Works</h2>
-          <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 max-w-6xl mx-auto">
             <StepCard
               number="1"
               icon={<Database className="h-6 w-6" />}
-              title="Connect Sources"
-              description="Link your Notion workspace or upload vendor contracts, policies, and ICT documentation."
+              title="Index Documentation"
+              description="Upload vendor contracts, ICT policies, and audit reports. Retrieva parses, chunks, and embeds them automatically."
             />
             <StepCard
               number="2"
               icon={<ShieldCheck className="h-6 w-6" />}
-              title="Run Assessment"
-              description="Our AI agent analyses documents against DORA obligations and identifies specific compliance gaps."
+              title="Run DORA Assessment"
+              description="AI analyses documents against each DORA article and classifies coverage as covered, partial, or missing."
             />
             <StepCard
               number="3"
-              icon={<Bot className="h-6 w-6" />}
-              title="Ask the Copilot"
-              description="Query your compliance posture in plain language and download structured gap reports."
+              icon={<ClipboardCheck className="h-6 w-6" />}
+              title="Send Questionnaire"
+              description="Generate tailored vendor questionnaires. Responses are scored automatically by the LLM judge."
+            />
+            <StepCard
+              number="4"
+              icon={<Bell className="h-6 w-6" />}
+              title="Stay Ahead of Deadlines"
+              description="Receive automated alerts for certification expiry, contract renewal, and overdue annual reviews."
+            />
+            <StepCard
+              number="5"
+              icon={<FileSpreadsheet className="h-6 w-6" />}
+              title="Export Register of Information"
+              description="Download the EBA Article 28(3) RoI workbook with a single click. Ready to submit to regulators."
             />
           </div>
         </div>

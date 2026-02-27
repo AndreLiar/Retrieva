@@ -3,8 +3,8 @@ import type {Config} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 
 const config: Config = {
-  title: 'RAG Platform Documentation',
-  tagline: 'Production-Ready Retrieval-Augmented Generation with Notion Integration',
+  title: 'Retrieva Documentation',
+  tagline: 'DORA Compliance Intelligence Platform for Financial Entities',
   favicon: 'img/favicon.ico',
 
   future: {
@@ -49,9 +49,9 @@ const config: Config = {
       respectPrefersColorScheme: true,
     },
     navbar: {
-      title: 'RAG Platform',
+      title: 'Retrieva',
       logo: {
-        alt: 'RAG Platform Logo',
+        alt: 'Retrieva Logo',
         src: 'img/logo.svg',
       },
       items: [
@@ -125,7 +125,7 @@ const config: Config = {
           ],
         },
       ],
-      copyright: `Copyright © ${new Date().getFullYear()} RAG Platform. Built with Docusaurus.`,
+      copyright: `Copyright © ${new Date().getFullYear()} Retrieva. Built with Docusaurus.`,
     },
     prism: {
       theme: prismThemes.github,

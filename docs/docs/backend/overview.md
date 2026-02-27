@@ -20,6 +20,7 @@ The backend is built with Express 5 and follows a modular architecture with clea
 | Cache | Redis |
 | Queue | BullMQ |
 | Real-Time | Socket.io |
+| Export | xlsx (XLSX workbook generation) |
 | Monitoring | LangSmith (LLM tracing), RAGAS (evaluation) |
 
 ## Directory Structure
@@ -31,7 +32,7 @@ backend/
 ├── config/             # Configuration modules
 │   ├── database.js     # MongoDB connection
 │   ├── redis.js        # Redis connection
-│   ├── queue.js        # BullMQ queues
+│   ├── queue.js        # BullMQ queues + schedulers
 │   ├── llm.js          # LLM provider
 │   ├── embeddings.js   # Embedding model
 │   ├── vectorStore.js  # Qdrant setup
@@ -42,6 +43,10 @@ backend/
 │   ├── authController.js
 │   ├── conversationController.js
 │   ├── notionController.js
+│   ├── workspaceController.js
+│   ├── assessmentController.js
+│   ├── questionnaireController.js
+│   ├── exportController.js       # RoI export
 │   └── analyticsController.js
 ├── middleware/         # Express middleware
 │   ├── auth.js
@@ -57,29 +62,44 @@ backend/
 │   ├── NotionWorkspace.js
 │   ├── DocumentSource.js
 │   ├── SyncJob.js
-│   └── Analytics.js
+│   ├── Analytics.js
+│   ├── Workspace.js              # Vendor registry (DORA Article 28)
+│   ├── WorkspaceMember.js
+│   ├── Assessment.js
+│   ├── VendorQuestionnaire.js
+│   └── DeadLetterJob.js
 ├── routes/             # API routes
 │   ├── ragRoutes.js
 │   ├── authRoutes.js
 │   ├── conversationRoutes.js
 │   ├── notionRoutes.js
+│   ├── workspaceRoutes.js        # /workspaces + /roi-export
+│   ├── assessmentRoutes.js
+│   ├── questionnaireRoutes.js
 │   └── analyticsRoutes.js
 ├── services/           # Business logic
-│   ├── rag.js          # Core RAG service
-│   ├── intent/         # Intent classification
-│   ├── rag/            # RAG sub-modules
-│   ├── memory/         # Conversation memory
-│   ├── context/        # Context management
-│   ├── metrics/        # Observability
-│   ├── emailService.js # Resend email sending
-│   └── notificationService.js # Dual-channel notifications
+│   ├── rag.js                    # Core RAG service
+│   ├── alertMonitorService.js    # Compliance monitoring alert checks
+│   ├── roiExportService.js       # EBA RoI XLSX workbook generator
+│   ├── emailService.js           # Resend email sending
+│   ├── notificationService.js    # Dual-channel notifications
+│   ├── deadLetterQueue.js        # Failed job tracking
+│   ├── intent/                   # Intent classification
+│   ├── rag/                      # RAG sub-modules
+│   ├── memory/                   # Conversation memory
+│   ├── context/                  # Context management
+│   └── metrics/                  # Observability
 ├── utils/              # Utilities
 │   ├── core/           # Core utilities
 │   ├── rag/            # RAG utilities
 │   └── security/       # Security utilities
 ├── workers/            # Background workers
-│   ├── notionSyncWorker.js
-│   └── documentIndexWorker.js
+│   ├── index.js                  # Worker entry + graceful shutdown
+│   ├── notionSyncWorker.js       # Notion workspace sync
+│   ├── documentIndexWorker.js    # Embed + upsert to Qdrant
+│   ├── assessmentWorker.js       # DORA gap analysis
+│   ├── questionnaireWorker.js    # LLM questionnaire scoring
+│   └── monitoringWorker.js       # 24h compliance alert scheduler
 ├── loaders/            # Document loaders
 │   └── notionDocumentLoader.js
 ├── prompts/            # LLM prompts
@@ -101,18 +121,21 @@ Server initialization:
 
 import { connectDB } from './config/database.js';
 import { createServer } from './app.js';
-import { initializeWorkers } from './workers/index.js';
 import { ragService } from './services/rag.js';
+import { scheduleMonitoringJob } from './config/queue.js';
+import './workers/monitoringWorker.js';
 
 async function startServer() {
   // 1. Connect to MongoDB
   await connectDB();
 
-  // 2. Initialize background workers
-  await initializeWorkers();
-
-  // 3. Pre-warm RAG system
+  // 2. Pre-warm RAG system
   await ragService.init();
+
+  // 3. Schedule compliance monitoring job (24h)
+  await scheduleMonitoringJob().catch((err) =>
+    logger.error('Failed to schedule monitoring job (non-critical)', { error: err.message })
+  );
 
   // 4. Start Express server
   const app = await createServer();
@@ -157,13 +180,13 @@ export async function createServer() {
   app.use('/api/v1/auth', authRoutes);
   app.use('/api/v1/conversations', conversationRoutes);
   app.use('/api/v1/notion', notionRoutes);
+  app.use('/api/v1/workspaces', workspaceRoutes);     // includes /roi-export
+  app.use('/api/v1/assessments', assessmentRoutes);
+  app.use('/api/v1/questionnaires', questionnaireRoutes);
   app.use('/api/v1/analytics', analyticsRoutes);
 
   // Health check
   app.get('/health', healthCheck);
-
-  // Swagger docs
-  app.use('/api-docs', swaggerUI.serve, swaggerUI.setup(swaggerSpec));
 
   // Error handling
   app.use(errorHandler);
@@ -302,7 +325,7 @@ logger.error('Operation failed', {
 
 ## Configuration
 
-### Environment Variables
+### Key Environment Variables
 
 ```bash
 # Server
@@ -310,15 +333,14 @@ PORT=3007
 NODE_ENV=development
 
 # MongoDB
-MONGODB_URI=mongodb://localhost:27017/rag
+MONGODB_URI=mongodb://localhost:27017/enterprise_rag
 
 # Redis
-REDIS_HOST=localhost
-REDIS_PORT=6378
+REDIS_URL=redis://localhost:6378
 
 # Qdrant
 QDRANT_URL=http://localhost:6333
-QDRANT_COLLECTION=notion_documents
+QDRANT_COLLECTION_NAME=documents
 
 # Azure OpenAI
 LLM_PROVIDER=azure_openai
@@ -331,13 +353,15 @@ AZURE_OPENAI_EMBEDDING_DEPLOYMENT=text-embedding-3-small
 # JWT
 JWT_ACCESS_SECRET=your-secret
 JWT_REFRESH_SECRET=your-refresh-secret
-JWT_EXPIRES_IN=15m
-JWT_REFRESH_EXPIRES_IN=7d
+JWT_ACCESS_EXPIRY=15m
+JWT_REFRESH_EXPIRY=7d
 
-# Notion
-NOTION_CLIENT_ID=your-client-id
-NOTION_CLIENT_SECRET=your-client-secret
+# Compliance monitoring
+MONITORING_INTERVAL_HOURS=24
+INSTITUTION_NAME=Financial Entity
 ```
+
+See [Environment Variables](/deployment/environment-variables) for the full reference.
 
 ### File Size Limit
 
@@ -352,8 +376,8 @@ npm run test:unit
 # Integration tests
 npm run test:integration
 
-# All tests with coverage
-npm run test:coverage
+# All tests
+npm test
 ```
 
 ## Common Commands
@@ -365,11 +389,12 @@ npm run dev
 # Production
 npm start
 
-# Workers only
-npm run workers
-
 # Qdrant utilities
 npm run qdrant:list
 npm run qdrant:info
 npm run qdrant:collections
+
+# Compliance knowledge base
+npm run seed:compliance
+npm run seed:compliance:reset
 ```
