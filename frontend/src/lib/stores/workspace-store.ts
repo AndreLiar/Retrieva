@@ -23,7 +23,7 @@ interface WorkspaceState {
   setActiveWorkspace: (workspaceId: string | null) => void;
   fetchWorkspaces: () => Promise<void>;
   createWorkspace: (name: string, description?: string) => Promise<Workspace>;
-  updateWorkspace: (id: string, data: { name?: string; description?: string }) => Promise<void>;
+  updateWorkspace: (id: string, data: import('@/lib/api/workspaces').UpdateWorkspaceData) => Promise<void>;
   deleteWorkspace: (id: string) => Promise<void>;
   clearWorkspaces: () => void;
 }
@@ -105,6 +105,16 @@ export const useWorkspaceStore = create<WorkspaceState>()(
                   },
                   status: 'active' as const,
                 },
+                // Vendor profile fields
+                vendorTier: w.vendorTier,
+                country: w.country,
+                serviceType: w.serviceType,
+                contractStart: w.contractStart,
+                contractEnd: w.contractEnd,
+                nextReviewDate: w.nextReviewDate,
+                vendorStatus: w.vendorStatus,
+                certifications: w.certifications,
+                exitStrategyDoc: w.exitStrategyDoc,
               })
             );
             set({ workspaces, isLoading: false });

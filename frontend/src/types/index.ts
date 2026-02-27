@@ -70,6 +70,15 @@ export interface Workspace {
   updatedAt: string;
   syncStatus?: 'idle' | 'syncing' | 'error' | 'completed';
   lastSyncAt?: string;
+  vendorTier?: VendorTier | null;
+  country?: string;
+  serviceType?: VendorServiceType | null;
+  contractStart?: string | null;
+  contractEnd?: string | null;
+  nextReviewDate?: string | null;
+  vendorStatus?: VendorStatus;
+  certifications?: VendorCertification[];
+  exitStrategyDoc?: string | null;
 }
 
 // Raw backend response from /workspaces/my-workspaces
@@ -90,6 +99,15 @@ export interface WorkspaceApiResponse {
   permissions?: WorkspacePermissions;
   joinedAt?: string;
   description?: string;
+  vendorTier?: VendorTier | null;
+  country?: string;
+  serviceType?: VendorServiceType | null;
+  contractStart?: string | null;
+  contractEnd?: string | null;
+  nextReviewDate?: string | null;
+  vendorStatus?: VendorStatus;
+  certifications?: VendorCertification[];
+  exitStrategyDoc?: string | null;
 }
 
 // Normalized workspace with membership (frontend format)
@@ -114,6 +132,28 @@ export interface WorkspaceWithMembership {
     permissions: WorkspacePermissions;
     status: 'active' | 'pending' | 'revoked';
   };
+  // Vendor profile fields (DORA Article 28)
+  vendorTier?: VendorTier | null;
+  country?: string;
+  serviceType?: VendorServiceType | null;
+  contractStart?: string | null;
+  contractEnd?: string | null;
+  nextReviewDate?: string | null;
+  vendorStatus?: VendorStatus;
+  certifications?: VendorCertification[];
+  exitStrategyDoc?: string | null;
+}
+
+// Vendor Profile Types (DORA Article 28)
+export type VendorTier = 'critical' | 'important' | 'standard';
+export type VendorServiceType = 'cloud' | 'software' | 'data' | 'network' | 'other';
+export type VendorStatus = 'active' | 'under-review' | 'exited';
+export type CertificationType = 'ISO27001' | 'SOC2' | 'CSA-STAR' | 'ISO22301';
+
+export interface VendorCertification {
+  type: CertificationType;
+  validUntil: string;
+  status: 'valid' | 'expiring-soon' | 'expired';
 }
 
 // Conversation Types
