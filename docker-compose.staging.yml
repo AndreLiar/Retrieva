@@ -2,16 +2,18 @@
 # Docker Compose - Staging Environment
 # =============================================================================
 # Usage:
-#   docker-compose -f docker-compose.staging.yml up -d
-#   docker-compose -f docker-compose.staging.yml logs -f backend
-#   docker-compose -f docker-compose.staging.yml down
+#   docker compose -f docker-compose.staging.yml up -d
+#   docker compose -f docker-compose.staging.yml logs -f backend
+#   docker compose -f docker-compose.staging.yml down
 #
-# NOTE: This configuration uses EXTERNAL managed services:
-# - MongoDB Atlas for database
-# - External Redis (or local for cost savings)
-# - External Qdrant (or local for cost savings)
+# External Managed Services (NOT in this compose):
+#   - MongoDB Atlas for database  → MONGODB_URI in backend/.env
 #
-# Configure via .env file with staging values.
+# Self-Hosted Services (IN this compose):
+#   - Redis 7-alpine (local, AOF persistence)
+#   - Qdrant v1.13.2 (pinned to match production)
+#
+# Configure via backend/.env file with staging values.
 # =============================================================================
 
 version: '3.8'
@@ -24,7 +26,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-      target: runner  # Use production stage
+      target: runner
     container_name: rag-backend-staging
     ports:
       - "3007:3007"
@@ -32,13 +34,18 @@ services:
       - ./backend/.env
     environment:
       - NODE_ENV=staging
+      - DOCKER_ENV=true
     depends_on:
       redis:
         condition: service_healthy
       qdrant:
-        condition: service_started
-    networks:
-      - rag-network-staging
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3007/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     restart: unless-stopped
     deploy:
       resources:
@@ -53,18 +60,12 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3007/health"]
-      interval: 30s
-      timeout: 10s
-      start_period: 10s
-      retries: 3
+    networks:
+      - rag-network-staging
 
   # ===========================================================================
-  # Redis (Local for staging - can use managed service instead)
+  # Redis (Local for staging)
   # ===========================================================================
-  # For cost-effective staging, run Redis locally
-  # For production-like staging, use managed Redis and remove this service
   redis:
     image: redis:7-alpine
     container_name: rag-redis-staging
@@ -72,28 +73,31 @@ services:
       - "6378:6379"
     volumes:
       - redis_staging_data:/data
-    command: ["redis-server", "--appendonly", "yes"]
+    command: ["redis-server", "--appendonly", "yes", "--appendfsync", "everysec"]
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - rag-network-staging
     restart: unless-stopped
     deploy:
       resources:
         limits:
           cpus: '0.25'
           memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - rag-network-staging
 
   # ===========================================================================
-  # Qdrant Vector Database (Local for staging)
+  # Qdrant Vector Database (pinned to match production)
   # ===========================================================================
-  # For cost-effective staging, run Qdrant locally
-  # For production-like staging, use Qdrant Cloud and remove this service
   qdrant:
-    image: qdrant/qdrant:latest
+    image: qdrant/qdrant:v1.13.2
     container_name: rag-qdrant-staging
     ports:
       - "6333:6333"
@@ -102,14 +106,25 @@ services:
       - qdrant_staging_data:/qdrant/storage
     environment:
       - QDRANT__SERVICE__GRPC_PORT=6334
-    networks:
-      - rag-network-staging
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c ':>/dev/tcp/0.0.0.0/6333' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     restart: unless-stopped
     deploy:
       resources:
         limits:
           cpus: '0.5'
           memory: 1G
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - rag-network-staging
 
 # =============================================================================
 # Networks

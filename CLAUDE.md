@@ -4,14 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Retrieva is a RAG (Retrieval-Augmented Generation) knowledge retrieval platform. It ingests content from Notion workspaces, stores vector embeddings in Qdrant, and provides conversational question-answering via Azure OpenAI (gpt-4o-mini + text-embedding-3-small). The project is a monorepo with three services: a Node.js/Express backend, a Next.js frontend, and a Python RAGAS evaluation service.
+Retrieva is a RAG (Retrieval-Augmented Generation) knowledge retrieval platform. It ingests content from Notion workspaces, stores vector embeddings in Qdrant, and provides conversational question-answering via Azure OpenAI (gpt-4o-mini + text-embedding-3-small). The project is a monorepo with two application services: a Node.js/Express backend and a Next.js frontend.
 
 ## Monorepo Structure
 
 ```
 backend/     - Express 5 API server (ES modules, Node.js 20)
 frontend/    - Next.js 16 App Router (React 19, TypeScript)
-ragas-service/ - Python FastAPI for answer quality evaluation
 infra/       - Terraform (DigitalOcean & Azure)
 nginx/       - Reverse proxy configuration
 docs/        - Docusaurus documentation site
