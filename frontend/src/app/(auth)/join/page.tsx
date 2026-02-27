@@ -31,15 +31,11 @@ function JoinPageContent() {
     email: string;
   } | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!!token);
   const [isAccepting, setIsAccepting] = useState(false);
 
   useEffect(() => {
-    if (!token) {
-      setFetchError('No invite token provided.');
-      setIsLoading(false);
-      return;
-    }
+    if (!token) return;
 
     organizationsApi
       .getInviteInfo(token)
@@ -76,6 +72,19 @@ function JoinPageContent() {
     if (inviteInfo?.email) params.set('email', encodeURIComponent(inviteInfo.email));
     router.push(`/register?${params.toString()}`);
   };
+
+  if (!token) {
+    return (
+      <div className="space-y-4 text-center py-4">
+        <AlertTriangle className="h-12 w-12 text-destructive mx-auto" />
+        <h2 className="text-xl font-semibold">Invite not found</h2>
+        <p className="text-muted-foreground text-sm">No invite token provided.</p>
+        <Button variant="outline" onClick={() => router.push('/login')}>
+          Go to login
+        </Button>
+      </div>
+    );
+  }
 
   if (isLoading || !isInitialized) {
     return (

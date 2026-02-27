@@ -199,6 +199,20 @@ export const login = async (req, res) => {
     const deviceInfo = getDeviceInfo(req);
     await user.addRefreshToken(tokenHash, deviceInfo);
 
+    // Populate organization data so the frontend skips the onboarding gate
+    let organization = null;
+    if (user.organizationId) {
+      const org = await Organization.findById(user.organizationId).select('name industry country');
+      if (org) {
+        organization = {
+          id: org._id,
+          name: org.name,
+          industry: org.industry,
+          country: org.country,
+        };
+      }
+    }
+
     logger.info('User logged in', {
       userId: user._id,
       email: user.email,
@@ -214,6 +228,8 @@ export const login = async (req, res) => {
         name: safeDecrypt(user.name),
         role: user.role,
         isEmailVerified: user.isEmailVerified,
+        organizationId: user.organizationId ? user.organizationId.toString() : null,
+        organization,
       },
       // Tokens also returned in body for API clients (mobile apps, etc.)
       ...tokens,
