@@ -12,6 +12,7 @@ import {
   Check,
   Loader2,
   AlertCircle,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -38,6 +39,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { questionnairesApi } from '@/lib/api/questionnaires';
+import { workspacesApi } from '@/lib/api/workspaces';
 import { useActiveWorkspace } from '@/lib/stores/workspace-store';
 import type { VendorQuestionnaire, QuestionnaireStatus } from '@/lib/api/questionnaires';
 
@@ -112,6 +114,14 @@ export default function QuestionnairesPage() {
     onSettled: () => setDeletingId(null),
   });
 
+  const exportMutation = useMutation({
+    mutationFn: () => workspacesApi.exportRoi(),
+    onError: () =>
+      toast.error('Export failed', {
+        description: 'Could not generate the RoI workbook.',
+      }),
+  });
+
   const copyVendorLink = (q: VendorQuestionnaire) => {
     if (!q.token) {
       toast.error('No link yet — send the questionnaire first');
@@ -148,10 +158,24 @@ export default function QuestionnairesPage() {
             DORA Art.28/30 vendor due diligence questionnaires
           </p>
         </div>
-        <Button onClick={() => router.push('/questionnaires/new')}>
-          <Plus className="h-4 w-4 mr-2" />
-          Send Questionnaire
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={() => exportMutation.mutate()}
+            disabled={exportMutation.isPending}
+          >
+            {exportMutation.isPending ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <FileSpreadsheet className="h-4 w-4 mr-2" />
+            )}
+            Export RoI (Excel)
+          </Button>
+          <Button onClick={() => router.push('/questionnaires/new')}>
+            <Plus className="h-4 w-4 mr-2" />
+            Send Questionnaire
+          </Button>
+        </div>
       </div>
 
       {/* Table */}

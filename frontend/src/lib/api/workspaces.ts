@@ -137,4 +137,25 @@ export const workspacesApi = {
       return response.data;
     },
   },
+
+  /**
+   * Download a DORA Article 28(3) Register of Information XLSX workbook
+   * covering all workspaces accessible by the current user.
+   */
+  exportRoi: async () => {
+    const response = await apiClient.get('/workspaces/roi-export', {
+      responseType: 'blob',
+      timeout: 60_000,
+    });
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const filename = `DORA_Register_of_Information_${dateStr}.xlsx`;
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  },
 };
