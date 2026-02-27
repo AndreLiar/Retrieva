@@ -17,6 +17,7 @@ import assessmentRoutes from './routes/assessmentRoutes.js';
 import dataSourceRoutes from './routes/dataSourceRoutes.js';
 import complianceRoutes from './routes/complianceRoutes.js';
 import questionnaireRoutes from './routes/questionnaireRoutes.js';
+import organizationRoutes from './routes/organizationRoutes.js';
 import logger from './config/logger.js';
 import { globalErrorHandler } from './utils/index.js';
 
@@ -231,6 +232,7 @@ app.use('/api/v1/assessments', assessmentRoutes);
 app.use('/api/v1/data-sources', dataSourceRoutes);
 app.use('/api/v1/compliance', complianceRoutes);
 app.use('/api/v1/questionnaires', questionnaireRoutes);
+app.use('/api/v1/organizations', organizationRoutes);
 
 app.get('/', (req, res) => {
   res.send('Hello from a secure app.js!');

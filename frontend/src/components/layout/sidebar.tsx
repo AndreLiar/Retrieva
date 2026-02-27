@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { WorkspaceSwitcher } from './workspace-switcher';
 import { useUIStore } from '@/lib/stores/ui-store';
+import { useAuthStore } from '@/lib/stores/auth-store';
 import { usePermissions } from '@/lib/hooks/use-permissions';
 import { desktopMainNavItems, bottomNavItems, type NavItem } from '@/lib/constants/nav-items';
 
@@ -17,6 +18,7 @@ export function Sidebar() {
   const sidebarCollapsed = useUIStore((state) => state.sidebarCollapsed);
   const setSidebarCollapsed = useUIStore((state) => state.setSidebarCollapsed);
   const permissions = usePermissions();
+  const user = useAuthStore((state) => state.user);
 
   const filterNavItems = (items: NavItem[]) => {
     return items.filter((item) => {
@@ -69,6 +71,15 @@ export function Sidebar() {
           )}
         </Button>
       </div>
+
+      {/* Organization label */}
+      {!sidebarCollapsed && user?.organization && (
+        <div className="px-3 pt-2 pb-0">
+          <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider truncate">
+            {user.organization.name}
+          </p>
+        </div>
+      )}
 
       {/* Workspace Switcher */}
       {!sidebarCollapsed && (

@@ -109,6 +109,7 @@ const remote = {
   sendQuestionnaireInvitation: (p) =>
     callEmailService('/internal/email/questionnaire-invitation', p),
   sendMonitoringAlert: (p) => callEmailService('/internal/email/monitoring-alert', p),
+  sendOrganizationInvitation: (p) => callEmailService('/internal/email/org-invitation', p),
   verifyConnection: () => callEmailService('/internal/email/health', {}),
 };
 
@@ -273,6 +274,54 @@ const local = {
 </body>
 </html>`;
 
+    return _sendEmailInProcess({ to: toEmail, subject, html });
+  },
+
+  async sendOrganizationInvitation({ toEmail, inviterName, organizationName, role, inviteToken }) {
+    const inviteUrl = `${FRONTEND_URL}/join?token=${inviteToken}`;
+    const roleLabel = { org_admin: 'Admin', analyst: 'Analyst', viewer: 'Viewer' }[role] || role;
+    const subject = `${inviterName} invited you to join ${organizationName} on Retrieva`;
+    const html = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="border-bottom: 3px solid #0f172a; padding-bottom: 16px; margin-bottom: 24px;">
+    <span style="font-weight: 700; font-size: 18px; color: #0f172a;">Retrieva</span>
+    <span style="font-size: 12px; color: #64748b; margin-left: 8px;">Compliance Platform</span>
+  </div>
+
+  <p style="margin: 0 0 16px;">Hi there,</p>
+
+  <p style="margin: 0 0 16px;">
+    <strong>${inviterName}</strong> has invited you to join <strong>${organizationName}</strong>
+    on Retrieva as <strong>${roleLabel}</strong>.
+  </p>
+
+  <p style="margin: 0 0 16px;">
+    Retrieva is a DORA compliance platform that helps financial entities manage third-party ICT risk.
+    As a member of ${organizationName}, you'll have access to all vendor workspaces and compliance tools.
+  </p>
+
+  <div style="text-align: center; margin: 32px 0;">
+    <a href="${inviteUrl}"
+       style="display: inline-block; background: #0f172a; color: #ffffff; text-decoration: none;
+              padding: 14px 32px; border-radius: 6px; font-weight: 600; font-size: 15px;">
+      Accept Invitation
+    </a>
+  </div>
+
+  <p style="font-size: 13px; color: #64748b; margin: 24px 0 0;">
+    If the button above does not work, copy and paste this link into your browser:<br>
+    <a href="${inviteUrl}" style="color: #0f172a; word-break: break-all;">${inviteUrl}</a>
+  </p>
+
+  <div style="border-top: 1px solid #e2e8f0; margin-top: 32px; padding-top: 16px;">
+    <p style="font-size: 12px; color: #94a3b8; margin: 0;">
+      This invitation expires in 7 days. If you did not expect this invitation, you can safely ignore it.
+    </p>
+  </div>
+</body>
+</html>`;
     return _sendEmailInProcess({ to: toEmail, subject, html });
   },
 

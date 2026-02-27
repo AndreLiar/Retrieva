@@ -496,24 +496,74 @@ analyticsSchema.index({ workspaceId: 1, eventType: 1, timestamp: -1 });
 export const Analytics = model('Analytics', analyticsSchema);
 ```
 
+## Organization Model
+
+```javascript
+// models/Organization.js
+
+const organizationSchema = new Schema({
+  name:     { type: String, required: true, trim: true, maxlength: 100 },
+  industry: {
+    type: String,
+    enum: ['insurance', 'banking', 'investment', 'payments', 'other'],
+    default: 'other',
+  },
+  country:  { type: String, maxlength: 100, default: '' },
+  ownerId:  { type: Schema.Types.ObjectId, ref: 'User', required: true },
+}, { timestamps: true });
+
+export const Organization = mongoose.model('Organization', organizationSchema);
+```
+
+Represents a company account (e.g. "HDI Global SE"). Every vendor workspace is scoped to one organization via `Workspace.organizationId`.
+
+## OrganizationMember Model
+
+```javascript
+// models/OrganizationMember.js
+
+const orgMemberSchema = new Schema({
+  organizationId:     { type: Schema.Types.ObjectId, ref: 'Organization', required: true, index: true },
+  userId:             { type: Schema.Types.ObjectId, ref: 'User', default: null }, // null until invite is accepted
+  email:              { type: String, required: true, lowercase: true },
+  role:               { type: String, enum: ['org_admin', 'analyst', 'viewer'], default: 'analyst' },
+  status:             { type: String, enum: ['pending', 'active', 'revoked'], default: 'pending' },
+  inviteTokenHash:    { type: String, select: false },       // SHA-256 of raw invite token
+  inviteTokenExpires: { type: Date },                        // 7-day expiry
+  invitedBy:          { type: Schema.Types.ObjectId, ref: 'User' },
+  joinedAt:           { type: Date },
+}, { timestamps: true });
+
+// Unique: one active membership per email per org
+orgMemberSchema.index({ organizationId: 1, email: 1 }, { unique: true });
+orgMemberSchema.index({ userId: 1 });
+```
+
+### Static helpers
+
+| Helper | Description |
+|--------|-------------|
+| `OrganizationMember.createInvite(orgId, email, role, invitedBy)` | Upserts a pending membership, generates a `crypto.randomBytes(32)` raw token, stores its SHA-256 hash, returns `{ member, rawToken }` |
+| `OrganizationMember.findByToken(rawToken)` | Hashes the raw token and finds a non-expired pending membership |
+| `OrganizationMember.activate(memberId, userId)` | Sets `status='active'`, records `userId` and `joinedAt`, clears the token hash |
+
+The raw invite token is sent in the email URL (`/join?token=XXX`). Only the hash is stored, following the same pattern as `User.createPasswordResetToken`.
+
 ## Model Relationships
 
 ```
-User ─────────────────┬─────────────────────────────────────────┐
-                      │                                         │
-                      ▼                                         │
-           NotionWorkspace ◀──── DocumentSource                │
-                │                     │                         │
-                │                     ▼                         │
-                ▼                 [Qdrant]                      │
-           Conversation ◀───────────────────────────────────────┘
-                │
-                ▼
-            Message
-                │
-                ▼
-           Analytics
+Organization ◀─── OrganizationMember ───► User
+     │                                     │
+     │ (organizationId)                    │ (organizationId)
+     ▼                                     │
+  Workspace ◀──────────────────────────────┘
+     │
+     ├──► WorkspaceMember  (legacy / per-workspace access)
+     ├──► Assessment ─────► DocumentSource ─► [Qdrant]
+     └──► Conversation ───► Message ─────────► Analytics
 ```
+
+Users in an org automatically see all workspaces scoped to that org (`Workspace.organizationId`). Legacy users without an `organizationId` fall back to per-workspace `WorkspaceMember` access.
 
 ## Tenant Isolation Plugin
 

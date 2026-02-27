@@ -12,6 +12,7 @@
 import { WorkspaceMember } from '../models/WorkspaceMember.js';
 import { Workspace } from '../models/Workspace.js';
 import { User } from '../models/User.js';
+import { OrganizationMember } from '../models/OrganizationMember.js';
 import { emailService } from '../services/emailService.js';
 import { catchAsync, sendSuccess, sendError } from '../utils/index.js';
 import logger from '../config/logger.js';
@@ -28,10 +29,14 @@ export const createWorkspace = catchAsync(async (req, res) => {
     return sendError(res, 400, 'Workspace name is required');
   }
 
+  // Attach org if creator belongs to one
+  const orgMembership = await OrganizationMember.findOne({ userId, status: 'active' });
+
   const workspace = await Workspace.create({
     name: name.trim(),
     description: description?.trim() || '',
     userId,
+    organizationId: orgMembership?.organizationId || null,
   });
 
   await WorkspaceMember.addOwner(workspace._id, userId);
@@ -201,6 +206,43 @@ export const deleteWorkspace = catchAsync(async (req, res) => {
 export const getMyWorkspaces = catchAsync(async (req, res) => {
   const userId = req.user.userId;
 
+  // If user belongs to an org, return all org workspaces
+  const orgMembership = await OrganizationMember.findOne({ userId, status: 'active' });
+
+  if (orgMembership) {
+    const orgWorkspaces = await Workspace.find({
+      organizationId: orgMembership.organizationId,
+    });
+
+    const roleMap = { org_admin: 'owner', analyst: 'member', viewer: 'viewer' };
+    const myRole = roleMap[orgMembership.role] || 'member';
+    const canInvite = orgMembership.role === 'org_admin';
+
+    const workspaces = orgWorkspaces.map((ws) => ({
+      id: ws._id.toString(),
+      name: ws.name,
+      description: ws.description,
+      syncStatus: ws.syncStatus,
+      myRole,
+      permissions: { canQuery: true, canViewSources: true, canInvite },
+      joinedAt: orgMembership.joinedAt,
+      createdAt: ws.createdAt,
+      updatedAt: ws.updatedAt,
+      vendorTier: ws.vendorTier,
+      country: ws.country,
+      serviceType: ws.serviceType,
+      contractStart: ws.contractStart,
+      contractEnd: ws.contractEnd,
+      nextReviewDate: ws.nextReviewDate,
+      vendorStatus: ws.vendorStatus,
+      certifications: ws.certifications,
+      exitStrategyDoc: ws.exitStrategyDoc,
+    }));
+
+    return sendSuccess(res, 200, 'Workspaces retrieved', { workspaces });
+  }
+
+  // Fallback: per-workspace membership (legacy / non-org users)
   const memberships = await WorkspaceMember.getUserWorkspaces(userId);
 
   const workspaces = memberships
