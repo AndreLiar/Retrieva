@@ -182,11 +182,59 @@ const local = {
   },
 
   async sendWelcomeEmail({ toEmail, toName }) {
-    return _sendEmailInProcess({
-      to: toEmail,
-      subject: 'Welcome to Retrieva!',
-      html: `<p>Hi ${toName || 'there'}, welcome to Retrieva!</p>`,
-    });
+    const dashboardUrl = `${FRONTEND_URL}/assessments`;
+    const displayName = toName || 'there';
+    const subject = 'Welcome to Retrieva — your DORA compliance platform';
+    const html = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="border-bottom: 3px solid #0f172a; padding-bottom: 16px; margin-bottom: 24px;">
+    <span style="font-weight: 700; font-size: 18px; color: #0f172a;">Retrieva</span>
+    <span style="font-size: 12px; color: #64748b; margin-left: 8px;">DORA Compliance Platform</span>
+  </div>
+
+  <p style="margin: 0 0 16px;">Hi ${displayName},</p>
+
+  <p style="margin: 0 0 16px;">
+    Your email is confirmed — welcome to Retrieva! You're all set to start managing your
+    DORA Article 28 third-party ICT risk programme.
+  </p>
+
+  <p style="margin: 0 0 12px; font-weight: 600;">Here's what you can do right now:</p>
+
+  <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 0 0 10px;">
+    <p style="margin: 0 0 4px; font-weight: 600; color: #0f172a;">📄 DORA Gap Analysis</p>
+    <p style="margin: 0; font-size: 14px; color: #64748b;">Upload vendor documents for an instant AI-powered DORA compliance assessment with gap identification and remediation recommendations.</p>
+  </div>
+
+  <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 0 0 10px;">
+    <p style="margin: 0 0 4px; font-weight: 600; color: #0f172a;">📋 Vendor Questionnaires</p>
+    <p style="margin: 0; font-size: 14px; color: #64748b;">Send DORA Article 28/30 due diligence questionnaires directly to your ICT vendors and track responses in one place.</p>
+  </div>
+
+  <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 0 0 24px;">
+    <p style="margin: 0 0 4px; font-weight: 600; color: #0f172a;">🔔 Compliance Monitoring</p>
+    <p style="margin: 0; font-size: 14px; color: #64748b;">Get automated alerts for certification expiry, contract renewals, and overdue reviews — so nothing falls through the cracks.</p>
+  </div>
+
+  <div style="text-align: center; margin: 32px 0;">
+    <a href="${dashboardUrl}"
+       style="display: inline-block; background: #0f172a; color: #ffffff; text-decoration: none;
+              padding: 14px 32px; border-radius: 6px; font-weight: 600; font-size: 15px;">
+      Go to Dashboard
+    </a>
+  </div>
+
+  <div style="border-top: 1px solid #e2e8f0; margin-top: 32px; padding-top: 16px;">
+    <p style="font-size: 12px; color: #94a3b8; margin: 0;">
+      Retrieva · DORA Article 28 Third-Party ICT Risk Management<br>
+      Questions? Reply to this email and we'll be happy to help.
+    </p>
+  </div>
+</body>
+</html>`;
+    return _sendEmailInProcess({ to: toEmail, subject, html });
   },
 
   async sendPasswordResetEmail({ toEmail, toName, resetToken }) {
@@ -200,11 +248,52 @@ const local = {
 
   async sendEmailVerification({ toEmail, toName, verificationToken }) {
     const verifyUrl = `${FRONTEND_URL}/verify-email?token=${verificationToken}`;
-    return _sendEmailInProcess({
-      to: toEmail,
-      subject: 'Verify Your Email Address',
-      html: `<p>Hi ${toName || 'there'}, <a href="${verifyUrl}">verify your email</a>.</p>`,
-    });
+    const displayName = toName || 'there';
+    const subject = 'Verify your email address — Retrieva';
+    const html = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="border-bottom: 3px solid #0f172a; padding-bottom: 16px; margin-bottom: 24px;">
+    <span style="font-weight: 700; font-size: 18px; color: #0f172a;">Retrieva</span>
+    <span style="font-size: 12px; color: #64748b; margin-left: 8px;">DORA Compliance Platform</span>
+  </div>
+
+  <p style="margin: 0 0 16px;">Hi ${displayName},</p>
+
+  <p style="margin: 0 0 16px;">
+    Thanks for signing up! One last step — please confirm your email address to activate
+    your Retrieva account and start managing your DORA compliance programme.
+  </p>
+
+  <div style="text-align: center; margin: 32px 0;">
+    <a href="${verifyUrl}"
+       style="display: inline-block; background: #0f172a; color: #ffffff; text-decoration: none;
+              padding: 14px 32px; border-radius: 6px; font-weight: 600; font-size: 15px;">
+      Verify Email Address
+    </a>
+  </div>
+
+  <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 24px 0;">
+    <p style="margin: 0; font-size: 14px; color: #64748b;">
+      This link expires in <strong>24 hours</strong>. If you didn't create a Retrieva account,
+      you can safely ignore this email — no action is needed.
+    </p>
+  </div>
+
+  <p style="font-size: 13px; color: #64748b; margin: 24px 0 0;">
+    If the button above doesn't work, copy and paste this link into your browser:<br>
+    <a href="${verifyUrl}" style="color: #0f172a; word-break: break-all;">${verifyUrl}</a>
+  </p>
+
+  <div style="border-top: 1px solid #e2e8f0; margin-top: 32px; padding-top: 16px;">
+    <p style="font-size: 12px; color: #94a3b8; margin: 0;">
+      Retrieva · DORA Article 28 Third-Party ICT Risk Management
+    </p>
+  </div>
+</body>
+</html>`;
+    return _sendEmailInProcess({ to: toEmail, subject, html });
   },
 
   async sendQuestionnaireInvitation({
