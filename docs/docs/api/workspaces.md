@@ -313,6 +313,41 @@ Transfer ownership to another member (owner only).
 
 ---
 
+## Export Register of Information (RoI)
+
+```http
+GET /api/v1/workspaces/roi-export
+```
+
+Generates and downloads an EBA-compliant DORA Article 28(3) Register of Information as an XLSX file. The workbook covers **all workspaces** the authenticated user has access to.
+
+### Response
+
+```
+Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+Content-Disposition: attachment; filename="DORA_Register_of_Information_2026-02-27.xlsx"
+```
+
+Binary XLSX buffer — the browser triggers an automatic file download.
+
+### Workbook sheets
+
+| Sheet | Content |
+|-------|---------|
+| **RT.01.01 Summary** | Institution name, report date, vendor counts by criticality tier |
+| **RT.02.01 ICT Providers** | One row per vendor: country, service type, contract dates, criticality tier, questionnaire score, assessment risk, next review date |
+| **RT.03.01 Certifications** | One row per certification per vendor (type, valid until, status) |
+| **RT.04.01 Gap Summary** | One row per gap from each vendor's latest complete DORA assessment |
+
+### Notes
+
+- Requires authentication; no workspace ID parameter — all accessible workspaces are included.
+- Uses the latest **complete** assessment and latest **complete** questionnaire per workspace.
+- The institution name in RT.01.01 is configured via the `INSTITUTION_NAME` environment variable (default: `Financial Entity`).
+- Timeout: allow at least 60 seconds for large portfolios.
+
+---
+
 ## Role Permissions Matrix
 
 | Permission | Owner | Admin | Member | Viewer |

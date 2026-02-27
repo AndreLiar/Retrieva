@@ -527,3 +527,61 @@ messageSchema.plugin(tenantIsolationPlugin);
 ```
 
 This automatically filters queries by `workspaceId` from the current tenant context.
+
+## Workspace Model
+
+The `Workspace` model represents a vendor in the DORA third-party risk registry.
+
+```javascript
+// models/Workspace.js
+
+const certificationSchema = new Schema({
+  type:       { type: String, enum: ['ISO27001', 'SOC2', 'CSA-STAR', 'ISO22301'], required: true },
+  validUntil: { type: Date, required: true },
+  status:     { type: String, enum: ['valid', 'expiring-soon', 'expired'], default: 'valid' },
+}, { _id: false });
+
+const workspaceSchema = new Schema({
+  name:           { type: String, required: true, maxlength: 100 },
+  description:    { type: String, maxlength: 500, default: '' },
+  userId:         { type: ObjectId, ref: 'User', required: true },  // creator / primary owner
+  syncStatus:     { type: String, enum: ['idle', 'syncing', 'synced', 'error'], default: 'idle' },
+
+  // Vendor profile (DORA Article 28)
+  vendorTier:     { type: String, enum: ['critical', 'important', 'standard'], default: null },
+  country:        { type: String, maxlength: 100, default: '' },
+  serviceType:    { type: String, enum: ['cloud', 'software', 'data', 'network', 'other'], default: null },
+  contractStart:  { type: Date, default: null },
+  contractEnd:    { type: Date, default: null },
+  nextReviewDate: { type: Date, default: null },
+  vendorStatus:   { type: String, enum: ['active', 'under-review', 'exited'], default: 'active' },
+  certifications: [certificationSchema],
+  exitStrategyDoc:{ type: String, default: null },
+
+  // Compliance monitoring deduplication state
+  alertsSentAt:   { type: Map, of: Date, default: {} },
+}, { timestamps: true });
+```
+
+### `alertsSentAt` map
+
+Stores the last time each compliance alert was sent for this workspace. Keys follow the pattern:
+
+| Key | Alert type |
+|-----|-----------|
+| `cert-expiry-90-<certType>` | 90-day cert expiry warning |
+| `cert-expiry-30-<certType>` | 30-day cert expiry warning |
+| `cert-expiry-7-<certType>` | 7-day cert expiry warning |
+| `contract-renewal-60` | Contract renewal due in 60 days |
+| `annual-review-overdue` | Annual review date passed |
+| `assessment-overdue-12mo` | No assessment in 12 months |
+
+The monitoring worker checks this map before sending and skips the alert if it was last sent within 20 hours.
+
+### Pre-save hook
+
+Before saving, the hook auto-computes each certification's `status` field:
+
+- `expired` — `validUntil` is in the past
+- `expiring-soon` — `validUntil` is within 90 days
+- `valid` — otherwise
