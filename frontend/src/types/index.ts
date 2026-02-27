@@ -23,6 +23,13 @@ export interface PaginatedResponse<T> {
 export type GlobalRole = 'user' | 'admin';
 export type WorkspaceRole = 'owner' | 'member' | 'viewer';
 
+export interface UserOrganization {
+  id: string;
+  name: string;
+  industry: string;
+  country: string;
+}
+
 export interface User {
   id: string;
   email: string;
@@ -31,6 +38,8 @@ export interface User {
   isEmailVerified?: boolean;
   createdAt?: string;
   lastLogin?: string;
+  organizationId?: string | null;
+  organization?: UserOrganization | null;
 }
 
 export interface AuthTokens {
@@ -42,6 +51,7 @@ export interface AuthResponse {
   user: User;
   accessToken: string;
   refreshToken: string;
+  needsOrganization?: boolean;
 }
 
 // Workspace Types
@@ -202,6 +212,7 @@ export interface RegisterData {
   email: string;
   password: string;
   name: string;
+  inviteToken?: string;
 }
 
 export interface ForgotPasswordData {

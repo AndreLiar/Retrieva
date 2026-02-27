@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -68,23 +68,33 @@ function PasswordRequirements({ password }: { password: string }) {
   );
 }
 
-export default function RegisterPage() {
+function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const register = useAuthStore((state) => state.register);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
 
+  const inviteToken = searchParams.get('token');
+  const prefillEmail = searchParams.get('email');
+
   const form = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
       name: '',
-      email: '',
+      email: prefillEmail ? decodeURIComponent(prefillEmail) : '',
       password: '',
       confirmPassword: '',
     },
   });
+
+  useEffect(() => {
+    if (prefillEmail) {
+      form.setValue('email', decodeURIComponent(prefillEmail));
+    }
+  }, [prefillEmail, form]);
 
   // ISSUE #53 FIX: Track both isSubmitting and isValid to disable button appropriately
   const { isSubmitting, isValid, isDirty } = form.formState;
@@ -94,10 +104,16 @@ export default function RegisterPage() {
   const onSubmit = async (data: RegisterFormData) => {
     setError(null);
     try {
-      await register(data.email, data.password, data.name);
+      const result = await register(data.email, data.password, data.name, inviteToken || undefined);
       setIsSuccess(true);
       toast.success('Account created! Check your email to verify your account.');
-      setTimeout(() => router.push('/chat'), 2000);
+      setTimeout(() => {
+        if (result.needsOrganization) {
+          router.push('/onboarding');
+        } else {
+          router.push('/assessments');
+        }
+      }, 1500);
     } catch (err) {
       setError(getErrorMessage(err));
     }
@@ -277,5 +293,13 @@ export default function RegisterPage() {
         </Link>
       </div>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense>
+      <RegisterForm />
+    </Suspense>
   );
 }
