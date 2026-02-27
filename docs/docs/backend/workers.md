@@ -12,8 +12,10 @@ The platform uses [BullMQ](https://docs.bullmq.io/) backed by Redis for backgrou
 |--------|-------|-------------|---------|
 | `assessmentWorker.js` | `assessmentJobs` | 2 | Orchestrate file indexing + DORA gap analysis |
 | `documentIndexWorker.js` | `documentIndex` | configured by `INDEX_WORKER_CONCURRENCY` | Embed document chunks and upsert to Qdrant |
+| `questionnaireWorker.js` | `questionnaireJobs` | configured by `QUESTIONNAIRE_WORKER_CONCURRENCY` | LLM scoring for vendor questionnaire responses |
+| `monitoringWorker.js` | `monitoringJobs` | 1 | Run compliance monitoring alert checks every 24 h |
 
-All workers are started by `workers/index.js` which is run alongside the Express server.
+All workers are started automatically when the backend process starts (imported by `backend/index.js`).
 
 ## Assessment Worker (`workers/assessmentWorker.js`)
 
@@ -81,14 +83,47 @@ EMBEDDING_MAX_CONCURRENCY=10   # Parallel embedding API calls
 BATCH_SIZE=10                  # Documents per batch
 ```
 
+## Monitoring Worker (`workers/monitoringWorker.js`)
+
+Runs compliance monitoring checks on a 24-hour schedule. Triggered by a BullMQ repeatable job set up at server startup via `scheduleMonitoringJob()`.
+
+### Job type: `run-monitoring-alerts`
+
+Calls `runMonitoringAlerts()` from `alertMonitorService.js`, which runs 4 checks in parallel:
+
+| Check | Condition | Alert key |
+|-------|-----------|-----------|
+| Certification expiry | `validUntil` within 90 days | `cert-expiry-90-<certType>` |
+| Certification expiry | `validUntil` within 30 days | `cert-expiry-30-<certType>` |
+| Certification expiry | `validUntil` within 7 days | `cert-expiry-7-<certType>` |
+| Contract renewal | `contractEnd` within 60 days | `contract-renewal-60` |
+| Annual review overdue | `nextReviewDate` is in the past | `annual-review-overdue` |
+| Assessment overdue | No complete assessment in 12 months | `assessment-overdue-12mo` |
+
+### Deduplication
+
+Alert state is persisted in `Workspace.alertsSentAt` (a `Map<String, Date>`). Each check skips sending if the alert key was already sent within the last 20 hours. This gives the daily cron 4 hours of drift tolerance.
+
+### Email delivery
+
+Alerts are sent to all **active owners** of the workspace via `emailService.sendMonitoringAlert()`, subject to the owner's `notificationPreferences.email.system_alert` setting.
+
+### Configuration
+
+```bash
+MONITORING_INTERVAL_HOURS=24   # How often the job runs (default: 24)
+```
+
 ## Queue Configuration (`config/queue.js`)
 
 ```javascript
-export const assessmentQueue    = new Queue('assessmentJobs', { ... });
-export const documentIndexQueue = new Queue('documentIndex',  { ... });
+export const assessmentQueue    = new Queue('assessmentJobs',    { ... });
+export const documentIndexQueue = new Queue('documentIndex',     { ... });
+export const questionnaireQueue = new Queue('questionnaireJobs', { ... });
+export const monitoringQueue    = new Queue('monitoringJobs',    { ... });
 ```
 
-Both queues use exponential backoff (3 retries) and Redis for persistence.
+All queues use exponential backoff and Redis for persistence. `scheduleMonitoringJob()` registers the 24-hour repeatable job on startup (mirrors `scheduleMemoryDecayJob()`).
 
 ## Dead Letter Queue
 
@@ -109,12 +144,9 @@ setupDLQListener(documentIndexWorker, 'documentIndex');
 
 ## Running Workers
 
-Workers start automatically when the backend process starts (imported by `app.js` or `workers/index.js`).
+Workers start automatically when the backend process starts (imported by `backend/index.js`).
 
 ```bash
 # Start backend + workers together
 npm run dev
-
-# Workers only (production)
-node backend/workers/index.js
 ```
