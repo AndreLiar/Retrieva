@@ -735,7 +735,7 @@ Respond ONLY with a valid JSON object:
 // Main entry point called by the BullMQ worker
 // ---------------------------------------------------------------------------
 
-export async function runGapAnalysis({ assessmentId, userId, job }) {
+export async function runGapAnalysis({ assessmentId, userId: _userId, job }) {
   logger.info('Gap analysis started', { service: 'gap-analysis', assessmentId });
 
   const assessment = await Assessment.findById(assessmentId);

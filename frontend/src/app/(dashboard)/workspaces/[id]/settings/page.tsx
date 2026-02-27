@@ -2,16 +2,20 @@
 
 import { use, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { ArrowLeft, Loader2, Trash2, Plus, X } from 'lucide-react';
+import { ArrowLeft, Loader2, Trash2, Plus, X, ClipboardList, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
+import { format } from 'date-fns';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { questionnairesApi } from '@/lib/api/questionnaires';
 import {
   Form,
   FormControl,
@@ -91,6 +95,21 @@ export default function WorkspaceSettingsPage({ params }: WorkspaceSettingsPageP
   const { isWorkspaceOwner } = usePermissions();
 
   const workspace = workspaces.find((w) => w.id === id);
+
+  // Fetch latest completed questionnaire for the score card (independent query)
+  const { data: latestQuestionnaire, isLoading: isQLoading } = useQuery({
+    queryKey: ['questionnaire-score-card', id],
+    queryFn: async () => {
+      const res = await questionnairesApi.list({
+        workspaceId: id,
+        status: 'complete',
+        limit: 1,
+        page: 1,
+      });
+      return res.data?.questionnaires?.[0] ?? null;
+    },
+    enabled: !!id,
+  });
 
   const form = useForm<SettingsFormData>({
     resolver: zodResolver(workspaceSettingsSchema),
@@ -472,6 +491,94 @@ export default function WorkspaceSettingsPage({ params }: WorkspaceSettingsPageP
           </div>
         </form>
       </Form>
+
+      {/* ── Questionnaire Score Card ──────────────────────────────────────── */}
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <ClipboardList className="h-4 w-4" />
+            Questionnaire Score
+          </CardTitle>
+          <CardDescription>Latest DORA Art.28/30 due diligence result</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isQLoading ? (
+            <div className="space-y-2">
+              <Skeleton className="h-6 w-32" />
+              <Skeleton className="h-4 w-48" />
+            </div>
+          ) : latestQuestionnaire ? (
+            <div className="space-y-4">
+              <div className="flex items-center gap-4">
+                <span
+                  className={`text-4xl font-bold ${
+                    (latestQuestionnaire.overallScore ?? 0) >= 70
+                      ? 'text-green-600'
+                      : (latestQuestionnaire.overallScore ?? 0) >= 40
+                        ? 'text-amber-600'
+                        : 'text-red-600'
+                  }`}
+                >
+                  {latestQuestionnaire.overallScore ?? '—'}
+                </span>
+                <div>
+                  <span className="text-muted-foreground">/100</span>
+                  <div className="mt-1">
+                    <Badge
+                      variant={
+                        (latestQuestionnaire.overallScore ?? 0) >= 70
+                          ? 'default'
+                          : (latestQuestionnaire.overallScore ?? 0) >= 40
+                            ? 'secondary'
+                            : 'destructive'
+                      }
+                    >
+                      {(latestQuestionnaire.overallScore ?? 0) >= 70
+                        ? 'Low Risk'
+                        : (latestQuestionnaire.overallScore ?? 0) >= 40
+                          ? 'Medium Risk'
+                          : 'High Risk'}
+                    </Badge>
+                  </div>
+                </div>
+                {latestQuestionnaire.respondedAt && (
+                  <span className="text-xs text-muted-foreground ml-2">
+                    Submitted{' '}
+                    {format(new Date(latestQuestionnaire.respondedAt), 'dd MMM yyyy')}
+                  </span>
+                )}
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                <Button variant="outline" size="sm" asChild>
+                  <Link href={`/questionnaires/${latestQuestionnaire._id}`}>
+                    <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
+                    View Full Results
+                  </Link>
+                </Button>
+                <Button variant="outline" size="sm" asChild>
+                  <Link href="/questionnaires/new">
+                    <ClipboardList className="h-3.5 w-3.5 mr-1.5" />
+                    Send New Questionnaire
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-4">
+              <p className="text-sm text-muted-foreground mb-3">
+                No completed questionnaire yet. Send a DORA due diligence questionnaire to this
+                vendor to start tracking their compliance score.
+              </p>
+              <Button variant="outline" size="sm" asChild>
+                <Link href="/questionnaires/new">
+                  <ClipboardList className="h-3.5 w-3.5 mr-1.5" />
+                  Send Questionnaire
+                </Link>
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* ── Danger Zone ───────────────────────────────────────────────────── */}
       <Card className="border-destructive/50 mt-6">

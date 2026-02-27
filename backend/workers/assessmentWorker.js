@@ -25,7 +25,15 @@ const CONCURRENCY = parseInt(process.env.ASSESSMENT_WORKER_CONCURRENCY) || 2;
 // ---------------------------------------------------------------------------
 
 async function processFileIndex(job) {
-  const { assessmentId, documentIndex, buffer, fileName, fileType, vendorName, userId } = job.data;
+  const {
+    assessmentId,
+    documentIndex,
+    buffer,
+    fileName,
+    fileType,
+    vendorName,
+    userId: _userId,
+  } = job.data;
 
   // `buffer` arrives as a plain object from JSON serialization — convert back to Buffer
   const fileBuffer = Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer.data || buffer);

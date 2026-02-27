@@ -106,6 +106,8 @@ const remote = {
   sendWelcomeEmail: (p) => callEmailService('/internal/email/welcome', p),
   sendPasswordResetEmail: (p) => callEmailService('/internal/email/password-reset', p),
   sendEmailVerification: (p) => callEmailService('/internal/email/email-verification', p),
+  sendQuestionnaireInvitation: (p) =>
+    callEmailService('/internal/email/questionnaire-invitation', p),
   verifyConnection: () => callEmailService('/internal/email/health', {}),
 };
 
@@ -150,6 +152,76 @@ const local = {
       subject: 'Verify Your Email Address',
       html: `<p>Hi ${toName || 'there'}, <a href="${verifyUrl}">verify your email</a>.</p>`,
     });
+  },
+
+  async sendQuestionnaireInvitation({
+    toEmail,
+    toName,
+    senderName,
+    workspaceName,
+    token,
+    expiresAt,
+  }) {
+    const formUrl = `${FRONTEND_URL}/q/${token}`;
+    const deadline = expiresAt
+      ? new Date(expiresAt).toLocaleDateString('en-GB', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        })
+      : '30 days from today';
+
+    const subject = `[Action Required] DORA Due Diligence Questionnaire from ${workspaceName}`;
+    const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="border-bottom: 3px solid #0f172a; padding-bottom: 16px; margin-bottom: 24px;">
+    <span style="font-weight: 700; font-size: 18px; color: #0f172a;">Retrieva</span>
+    <span style="font-size: 12px; color: #64748b; margin-left: 8px;">Third-Party Risk</span>
+  </div>
+
+  <p style="margin: 0 0 16px;">Dear ${toName || 'Vendor Contact'},</p>
+
+  <p style="margin: 0 0 16px;">
+    <strong>${senderName}</strong> at <strong>${workspaceName}</strong> has requested that you complete a
+    DORA Article 28/30 Due Diligence Questionnaire as part of their third-party ICT risk management programme.
+  </p>
+
+  <p style="margin: 0 0 16px;">
+    The questionnaire covers 20 questions across 8 DORA compliance categories including ICT governance,
+    security controls, incident management, and business continuity. Your responses will be treated
+    confidentially and used solely for compliance assessment purposes.
+  </p>
+
+  <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 24px 0;">
+    <p style="margin: 0 0 8px; font-weight: 600;">Response deadline: ${deadline}</p>
+    <p style="margin: 0; font-size: 14px; color: #64748b;">This link will expire on ${deadline}. No login is required.</p>
+  </div>
+
+  <div style="text-align: center; margin: 32px 0;">
+    <a href="${formUrl}"
+       style="display: inline-block; background: #0f172a; color: #ffffff; text-decoration: none;
+              padding: 14px 32px; border-radius: 6px; font-weight: 600; font-size: 15px;">
+      Complete Questionnaire
+    </a>
+  </div>
+
+  <p style="font-size: 13px; color: #64748b; margin: 24px 0 0;">
+    If the button above does not work, copy and paste this link into your browser:<br>
+    <a href="${formUrl}" style="color: #0f172a; word-break: break-all;">${formUrl}</a>
+  </p>
+
+  <div style="border-top: 1px solid #e2e8f0; margin-top: 32px; padding-top: 16px;">
+    <p style="font-size: 12px; color: #94a3b8; margin: 0;">
+      This email was sent on behalf of ${workspaceName} via Retrieva. If you believe you received this in error, please ignore it.
+    </p>
+  </div>
+</body>
+</html>`;
+
+    return _sendEmailInProcess({ to: toEmail, subject, html });
   },
 
   verifyConnection: _verifyConnectionInProcess,
