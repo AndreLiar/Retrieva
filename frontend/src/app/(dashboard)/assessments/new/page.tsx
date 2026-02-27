@@ -53,7 +53,7 @@ export default function NewAssessmentPage() {
       formData.append('name', values.name);
       formData.append('vendorName', values.vendorName);
       if (activeWorkspace?.id) formData.append('workspaceId', activeWorkspace.id);
-      files.forEach((file) => formData.append('documents', file));
+      files.forEach((file) => formData.append('files', file));
       return assessmentsApi.create(formData);
     },
     onSuccess: (res) => {
