@@ -6,6 +6,10 @@ import type {
   WorkspaceMembership,
   WorkspaceRole,
   WorkspacePermissions,
+  VendorTier,
+  VendorServiceType,
+  VendorStatus,
+  CertificationType,
 } from '@/types';
 
 export interface CreateWorkspaceData {
@@ -16,6 +20,15 @@ export interface CreateWorkspaceData {
 export interface UpdateWorkspaceData {
   name?: string;
   description?: string;
+  vendorTier?: VendorTier | null;
+  country?: string;
+  serviceType?: VendorServiceType | null;
+  contractStart?: string | null;
+  contractEnd?: string | null;
+  nextReviewDate?: string | null;
+  vendorStatus?: VendorStatus;
+  certifications?: Array<{ type: CertificationType; validUntil: string }>;
+  exitStrategyDoc?: string | null;
 }
 
 export interface InviteMemberData {
