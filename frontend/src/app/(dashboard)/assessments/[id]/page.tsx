@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import {
   ArrowLeft,
@@ -45,7 +45,6 @@ const RISK_DESCRIPTION_CONTRACT: Record<OverallRisk, string> = {
 export default function AssessmentDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const queryClient = useQueryClient();
   const { data: assessment, isLoading, isError } = useQuery({
     queryKey: ['assessment', id],
     queryFn: async () => {
