@@ -33,7 +33,6 @@ frontend/
 │   │   ├── chat/               # Chat feature components
 │   │   ├── layout/             # Layout components (sidebar, header)
 │   │   ├── analytics/          # Analytics dashboard
-│   │   ├── notion/             # Notion integration
 │   │   ├── providers/          # Context providers
 │   │   ├── common/             # Shared components
 │   │   └── ui/                 # Radix UI components
@@ -97,8 +96,9 @@ frontend/
 | Route | Description | Permission |
 |-------|-------------|------------|
 | `/assessments` | DORA third-party ICT risk assessments | All members |
+| `/questionnaires` | Vendor security questionnaires + Export RoI | All members |
 | `/copilot` | DORA compliance AI copilot (Q&A) | All members |
-| `/sources` | Data sources hub (Notion + coming soon: files, Confluence, URLs) | Owner/Member |
+| `/sources` | Data sources hub (files, Notion, Confluence, URLs) | Owner/Member |
 | `/conversations` | Conversation history | All members |
 | `/analytics` | Usage analytics | Owner/Member |
 | `/members` | Member management | Owner only |
