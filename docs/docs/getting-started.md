@@ -4,7 +4,7 @@ sidebar_position: 2
 
 # Getting Started
 
-This guide will help you set up the RAG Platform for local development.
+This guide will help you set up Retrieva for local development.
 
 ## Prerequisites
 
@@ -14,7 +14,10 @@ Before you begin, ensure you have:
 - **npm** 10+ (`npm --version`)
 - **Docker** and Docker Compose (for infrastructure services)
 - **Azure OpenAI** resource with API access
-- **Notion Account** with developer access
+
+:::tip Optional integrations
+Notion OAuth credentials are only required if you want to enable the Notion workspace sync connector. The core DORA assessment workflow (file upload, questionnaires, monitoring, RoI export) works without Notion.
+:::
 
 ## Infrastructure Setup
 
@@ -96,18 +99,32 @@ ENCRYPTION_KEY=your-64-character-hex-encryption-key
 # Frontend URL (for OAuth redirects)
 FRONTEND_URL=http://localhost:3000
 
-# Notion OAuth
-NOTION_CLIENT_ID=your-notion-client-id
-NOTION_CLIENT_SECRET=your-notion-client-secret
-NOTION_REDIRECT_URI=http://localhost:3007/api/v1/notion/callback
+# Compliance monitoring
+MONITORING_INTERVAL_HOURS=24
+INSTITUTION_NAME=Financial Entity
 
-# Email (optional for local dev)
+# Email (optional for local dev — emails will be skipped if not set)
 RESEND_API_KEY=
-SMTP_FROM_NAME=RAG Platform
+SMTP_FROM_NAME=Retrieva
 RESEND_FROM_EMAIL=noreply@yourdomain.com
+
+# Notion OAuth (optional — only needed for Notion connector)
+NOTION_CLIENT_ID=
+NOTION_CLIENT_SECRET=
+NOTION_REDIRECT_URI=http://localhost:3007/api/v1/notion/callback
 ```
 
-### 3. Start Development Server
+### 3. Seed the Compliance Knowledge Base
+
+Before running DORA assessments, seed the DORA articles into the compliance knowledge base:
+
+```bash
+npm run seed:compliance
+```
+
+This command is idempotent — safe to run multiple times.
+
+### 4. Start Development Server
 
 ```bash
 npm run dev
@@ -115,7 +132,7 @@ npm run dev
 
 The backend will be available at `http://localhost:3007`.
 
-### 4. Verify Setup
+### 5. Verify Setup
 
 Check the health endpoint:
 
@@ -155,6 +172,8 @@ Edit `.env.local`:
 
 ```bash
 NEXT_PUBLIC_API_URL=http://localhost:3007/api/v1
+NEXT_PUBLIC_WS_URL=http://localhost:3007
+NEXT_PUBLIC_APP_NAME=Retrieva
 ```
 
 ### 3. Start Development Server
@@ -164,41 +183,6 @@ npm run dev
 ```
 
 The frontend will be available at `http://localhost:3000`.
-
-## Notion Integration
-
-### 1. Create a Notion Integration
-
-1. Go to [Notion Developers](https://www.notion.so/my-integrations)
-2. Click "New integration"
-3. Name it (e.g., "RAG Platform")
-4. Select your workspace
-5. Copy the **Internal Integration Token** (for development)
-6. Copy the **OAuth Client ID** and **Client Secret** (for production)
-
-### 2. Configure OAuth (Production)
-
-For production, set up OAuth:
-
-1. In your integration settings, add the redirect URI:
-   ```
-   https://your-domain.com/api/v1/notion/callback
-   ```
-
-2. Update your `.env`:
-   ```bash
-   NOTION_CLIENT_ID=your-client-id
-   NOTION_CLIENT_SECRET=your-client-secret
-   NOTION_REDIRECT_URI=https://your-domain.com/api/v1/notion/callback
-   ```
-
-### 3. Connect Your Workspace
-
-1. Log in to the platform
-2. Navigate to Settings → Integrations
-3. Click "Connect Notion"
-4. Authorize the integration
-5. Select pages to sync
 
 ## Running Tests
 
@@ -213,8 +197,8 @@ npm run test:unit
 # Integration tests
 npm run test:integration
 
-# All tests with coverage
-npm run test:coverage
+# All tests
+npm test
 ```
 
 ### Frontend Tests
@@ -235,13 +219,14 @@ npm run dev
 # Production
 npm start
 
-# Workers only
-npm run workers
-
 # Qdrant utilities
 npm run qdrant:list        # List documents
 npm run qdrant:info        # Collection info
 npm run qdrant:collections # List collections
+
+# Seed compliance knowledge base
+npm run seed:compliance
+npm run seed:compliance:reset  # Wipe and re-seed
 ```
 
 ### Frontend
@@ -252,9 +237,6 @@ npm run dev
 
 # Build for production
 npm run build
-
-# Start production server
-npm start
 
 # Lint
 npm run lint
@@ -311,6 +293,7 @@ curl http://localhost:6333/collections
 
 ## Next Steps
 
-- [Architecture Overview](/architecture/overview) - Understand the system design
-- [API Reference](/api/overview) - Explore available endpoints
-- [Backend Development](/backend/overview) - Deep dive into backend code
+- [Architecture Overview](/architecture/overview) — Understand the system design
+- [API Reference](/api/overview) — Explore available endpoints
+- [Background Workers](/backend/workers) — BullMQ worker reference
+- [Environment Variables](/deployment/environment-variables) — Full configuration reference
