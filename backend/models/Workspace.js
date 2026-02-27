@@ -50,6 +50,11 @@ const workspaceSchema = new mongoose.Schema(
     vendorStatus: { type: String, enum: ['active', 'under-review', 'exited'], default: 'active' },
     certifications: [certificationSchema],
     exitStrategyDoc: { type: String, default: null },
+    alertsSentAt: {
+      type: Map,
+      of: Date,
+      default: {},
+    },
   },
   {
     timestamps: true,

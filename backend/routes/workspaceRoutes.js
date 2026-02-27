@@ -16,6 +16,7 @@ import {
 } from '../controllers/workspaceMemberController.js';
 import { authenticate } from '../middleware/auth.js';
 import { canInviteMembers } from '../middleware/workspaceAuth.js';
+import { exportRoi } from '../controllers/exportController.js';
 
 const router = express.Router();
 
@@ -24,6 +25,7 @@ router.use(authenticate);
 // Workspace CRUD
 router.post('/', createWorkspace);
 router.get('/my-workspaces', getMyWorkspaces);
+router.get('/roi-export', exportRoi);
 router.get('/:workspaceId', getWorkspace);
 router.patch('/:workspaceId', updateWorkspace);
 router.delete('/:workspaceId', deleteWorkspace);

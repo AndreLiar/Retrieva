@@ -5,6 +5,7 @@ import logger from './logger.js';
 
 const SYNC_MAX_RETRIES = parseInt(process.env.SYNC_MAX_RETRIES) || 3;
 const MEMORY_DECAY_INTERVAL_HOURS = parseInt(process.env.MEMORY_DECAY_INTERVAL_HOURS) || 24;
+const MONITORING_INTERVAL_HOURS = parseInt(process.env.MONITORING_INTERVAL_HOURS) || 24;
 
 /**
  * Queue for Notion workspace synchronization jobs
@@ -143,6 +144,31 @@ export const questionnaireQueue = new Queue('questionnaireJobs', {
 });
 
 /**
+ * Queue for compliance monitoring alert jobs
+ * Handles:
+ * - Certification expiry alerts (90/30/7 days)
+ * - Contract renewal alerts (60 days)
+ * - Annual review overdue alerts
+ * - Assessment overdue alerts (12 months)
+ */
+export const monitoringQueue = new Queue('monitoringJobs', {
+  connection: redisConnection,
+  defaultJobOptions: {
+    attempts: 2,
+    backoff: {
+      type: 'exponential',
+      delay: 60_000,
+    },
+    removeOnComplete: {
+      count: 10,
+    },
+    removeOnFail: {
+      count: 20,
+    },
+  },
+});
+
+/**
  * Queue for memory decay and archival operations
  * Handles:
  * - Archiving old conversations
@@ -218,6 +244,40 @@ export async function scheduleMemoryDecayJob() {
   });
 }
 
+/**
+ * Schedule recurring monitoring alerts job
+ * Runs every 24 hours by default
+ */
+export async function scheduleMonitoringJob() {
+  const jobName = 'run-monitoring-alerts';
+
+  const existingJobs = await withTimeout(monitoringQueue.getRepeatableJobs(), QUEUE_OP_TIMEOUT);
+  for (const job of existingJobs) {
+    if (job.name === jobName) {
+      await withTimeout(monitoringQueue.removeRepeatableByKey(job.key), QUEUE_OP_TIMEOUT);
+    }
+  }
+
+  await withTimeout(
+    monitoringQueue.add(
+      jobName,
+      { scheduled: true },
+      {
+        repeat: {
+          every: MONITORING_INTERVAL_HOURS * 60 * 60 * 1000,
+        },
+        jobId: 'monitoring-alerts-scheduled',
+      }
+    ),
+    QUEUE_OP_TIMEOUT
+  );
+
+  logger.info('Monitoring alerts job scheduled', {
+    service: 'queue',
+    intervalHours: MONITORING_INTERVAL_HOURS,
+  });
+}
+
 // ISSUE #34 FIX: Store event listener references for cleanup
 const queueEventListeners = {
   notionSync: null,
@@ -227,6 +287,7 @@ const queueEventListeners = {
   assessmentJobs: null,
   dataSourceSync: null,
   questionnaireJobs: null,
+  monitoringJobs: null,
 };
 
 // Log queue events with stored references
@@ -265,6 +326,11 @@ queueEventListeners.questionnaireJobs = (error) => {
 };
 questionnaireQueue.on('error', queueEventListeners.questionnaireJobs);
 
+queueEventListeners.monitoringJobs = (error) => {
+  logger.error('Monitoring jobs queue error:', { error: error.message, stack: error.stack });
+};
+monitoringQueue.on('error', queueEventListeners.monitoringJobs);
+
 logger.info('BullMQ queues initialized successfully');
 
 /**
@@ -299,6 +365,10 @@ export const closeQueues = async () => {
       questionnaireQueue.off('error', queueEventListeners.questionnaireJobs);
     }
 
+    if (queueEventListeners.monitoringJobs) {
+      monitoringQueue.off('error', queueEventListeners.monitoringJobs);
+    }
+
     await Promise.all([
       notionSyncQueue.close(),
       documentIndexQueue.close(),
@@ -307,6 +377,7 @@ export const closeQueues = async () => {
       assessmentQueue.close(),
       dataSourceSyncQueue.close(),
       questionnaireQueue.close(),
+      monitoringQueue.close(),
     ]);
     logger.info('All queues closed gracefully');
   } catch (error) {
@@ -322,6 +393,8 @@ export default {
   assessmentQueue,
   dataSourceSyncQueue,
   questionnaireQueue,
+  monitoringQueue,
   scheduleMemoryDecayJob,
+  scheduleMonitoringJob,
   closeQueues,
 };
