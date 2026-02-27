@@ -43,6 +43,7 @@ services:
       - ./backend/.env
     environment:
       - NODE_ENV=development
+      - DOCKER_ENV=true
       - PORT=3007
       - MONGODB_URI=mongodb://mongodb:27017/enterprise_rag
       - REDIS_URL=redis://redis:6379
