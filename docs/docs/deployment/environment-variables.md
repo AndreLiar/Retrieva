@@ -182,7 +182,14 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 | `GUARDRAIL_LLM_SEED` | - | Seed for reproducibility |
 | `GUARDRAIL_USE_SEED_CRITICAL` | `false` | Enable for evaluation |
 
-### Monitoring
+### Compliance Monitoring
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `MONITORING_INTERVAL_HOURS` | `24` | How often the compliance monitoring alert worker runs (hours) |
+| `INSTITUTION_NAME` | `Financial Entity` | Institution name written into the RT.01.01 sheet of the RoI export |
+
+### LangSmith / RAGAS Monitoring
 
 | Variable | Description |
 |----------|-------------|

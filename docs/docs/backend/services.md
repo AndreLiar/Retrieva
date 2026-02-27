@@ -315,12 +315,14 @@ Sends transactional emails via the **Resend HTTP API**. In **microservice mode**
 
 ```javascript
 export const emailService = {
-  sendEmail,                // Generic email sending
-  sendWorkspaceInvitation,  // Workspace invite with branded template
-  sendWelcomeEmail,         // New user onboarding
-  sendPasswordResetEmail,   // Password reset link (1h expiry)
-  sendEmailVerification,    // Email verification link (24h expiry)
-  verifyConnection,         // Test Resend API connectivity
+  sendEmail,                  // Generic email sending
+  sendWorkspaceInvitation,    // Workspace invite with branded template
+  sendWelcomeEmail,           // New user onboarding
+  sendPasswordResetEmail,     // Password reset link (1h expiry)
+  sendEmailVerification,      // Email verification link (24h expiry)
+  sendQuestionnaireInvitation,// Vendor questionnaire link with deadline
+  sendMonitoringAlert,        // Compliance alert emails to workspace owners
+  verifyConnection,           // Test Resend API connectivity
 };
 ```
 
@@ -476,6 +478,61 @@ Three-step ReAct agent that produces structured compliance gap output.
   domainsAnalyzed: string[]
 }
 ```
+
+### Alert Monitor Service (`services/alertMonitorService.js`)
+
+Runs compliance threshold checks across all workspaces and delivers email alerts to workspace owners.
+
+**Entry point:** `runMonitoringAlerts()` — called by `monitoringWorker.js` on the 24-hour schedule.
+
+```javascript
+export async function runMonitoringAlerts() {
+  // Runs 4 checks in parallel via Promise.allSettled():
+  //   checkCertificationExpiry()  — 90/30/7 day windows
+  //   checkContractRenewal()      — 60 days before contractEnd
+  //   checkAnnualReviewOverdue()  — nextReviewDate in the past
+  //   checkAssessmentOverdue()    — no complete assessment in 12 months
+}
+```
+
+**Deduplication:** Before sending, each check reads `workspace.alertsSentAt.get(alertKey)`. If the timestamp is within the last 20 hours the alert is skipped. After sending, `workspace.alertsSentAt` is updated via `Workspace.updateOne` (no full document save).
+
+**Alert keys** stored in `Workspace.alertsSentAt`:
+
+| Key pattern | Trigger |
+|-------------|---------|
+| `cert-expiry-90-<certType>` | Cert expires within 90 days |
+| `cert-expiry-30-<certType>` | Cert expires within 30 days |
+| `cert-expiry-7-<certType>` | Cert expires within 7 days |
+| `contract-renewal-60` | `contractEnd` within 60 days |
+| `annual-review-overdue` | `nextReviewDate` < now |
+| `assessment-overdue-12mo` | No complete assessment in 12 months |
+
+### RoI Export Service (`services/roiExportService.js`)
+
+Generates an EBA-compliant DORA Article 28(3) Register of Information as an XLSX workbook.
+
+**Entry point:** `generateRoiWorkbook(userId)` — called by `exportController.js`.
+
+```javascript
+export async function generateRoiWorkbook(userId) {
+  // 1. Fetch all workspaces the user has access to (via WorkspaceMember)
+  // 2. Aggregate latest complete assessment per workspace
+  // 3. Aggregate latest complete questionnaire per workspace
+  // 4. Build 4-sheet XLSX workbook and return as Buffer
+}
+```
+
+**Sheets produced:**
+
+| Sheet | EBA reference | Content |
+|-------|---------------|---------|
+| RT.01.01 Summary | — | Institution name, report date, vendor counts by tier |
+| RT.02.01 ICT Providers | DORA Art. 28(3) | One row per vendor: country, service type, contract dates, criticality, scores |
+| RT.03.01 Certifications | — | One row per certification per vendor |
+| RT.04.01 Gap Summary | — | One row per gap from latest complete assessment |
+
+Uses the `xlsx` npm package (`XLSX.utils.aoa_to_sheet`, `XLSX.write`). The institution name is read from `process.env.INSTITUTION_NAME` (default: `'Financial Entity'`).
 
 ### Report Generator (`services/reportGenerator.js`)
 
