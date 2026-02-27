@@ -22,7 +22,7 @@ export default function DashboardLayout({
   const isInitialized = useAuthStore((state) => state.isInitialized);
   const isLoading = useAuthStore((state) => state.isLoading);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  const user = useAuthStore((state) => state.user);
+  const organizationId = useAuthStore((state) => state.user?.organizationId);
   const fetchWorkspaces = useWorkspaceStore((state) => state.fetchWorkspaces);
 
   // Handle responsive behavior
@@ -45,10 +45,10 @@ export default function DashboardLayout({
 
   // Redirect to onboarding if user has no org
   useEffect(() => {
-    if (isInitialized && isAuthenticated && user && !user.organizationId) {
+    if (isInitialized && isAuthenticated && !organizationId) {
       router.replace('/onboarding');
     }
-  }, [isInitialized, isAuthenticated, user?.organizationId, router]);
+  }, [isInitialized, isAuthenticated, organizationId, router]);
 
   // Fetch workspaces when authenticated
   useEffect(() => {
