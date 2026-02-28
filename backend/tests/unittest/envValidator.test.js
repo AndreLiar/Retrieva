@@ -122,8 +122,7 @@ describe('Environment Validator', () => {
     it('should return environment configuration info', () => {
       process.env.NODE_ENV = 'test';
       process.env.PORT = '4000';
-      process.env.SMTP_USER = 'test@example.com';
-      process.env.SMTP_PASSWORD = 'password';
+      process.env.RESEND_API_KEY = 're_test_key';
       process.env.NOTION_CLIENT_ID = 'client-id';
       process.env.NOTION_CLIENT_SECRET = 'client-secret';
 
@@ -132,20 +131,20 @@ describe('Environment Validator', () => {
       expect(info.nodeEnv).toBe('test');
       expect(info.port).toBe('4000');
       expect(info.mongoConfigured).toBe(true);
-      expect(info.smtpConfigured).toBe(true);
+      expect(info.emailConfigured).toBe(true);
       expect(info.notionConfigured).toBe(true);
     });
 
     it('should report false for unconfigured services', () => {
       delete process.env.REDIS_URL;
       delete process.env.QDRANT_URL;
-      delete process.env.SMTP_USER;
+      delete process.env.RESEND_API_KEY;
 
       const info = getEnvInfo();
 
       expect(info.redisConfigured).toBe(false);
       expect(info.qdrantConfigured).toBe(false);
-      expect(info.smtpConfigured).toBe(false);
+      expect(info.emailConfigured).toBe(false);
     });
 
     it('should use defaults when not set', () => {

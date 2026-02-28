@@ -21,9 +21,7 @@ const REQUIRED_ENV_VARS = {
   ],
 
   // Database - Required for data persistence
-  database: [
-    { name: 'MONGODB_URI', description: 'MongoDB connection string' },
-  ],
+  database: [{ name: 'MONGODB_URI', description: 'MongoDB connection string' }],
 
   // Infrastructure - Required in production for core functionality
   infrastructure: [
@@ -32,9 +30,7 @@ const REQUIRED_ENV_VARS = {
   ],
 
   // LLM - Required in production but provider-dependent
-  llm: [
-    { name: 'LLM_PROVIDER', description: 'LLM provider (azure_openai, ollama)' },
-  ],
+  llm: [{ name: 'LLM_PROVIDER', description: 'LLM provider (azure_openai, ollama)' }],
 
   // Optional but recommended for full functionality
   recommended: [
@@ -106,7 +102,9 @@ export function validateEnv(options = {}) {
       if (isProduction || strict) {
         errors.push(result.error);
       } else {
-        warnings.push(`${varConfig.name} not configured - ${varConfig.description} (required in production)`);
+        warnings.push(
+          `${varConfig.name} not configured - ${varConfig.description} (required in production)`
+        );
       }
     }
   }
@@ -118,7 +116,9 @@ export function validateEnv(options = {}) {
       if (isProduction || strict) {
         errors.push(result.error);
       } else {
-        warnings.push(`${varConfig.name} not configured - ${varConfig.description} (required in production)`);
+        warnings.push(
+          `${varConfig.name} not configured - ${varConfig.description} (required in production)`
+        );
       }
     }
   }
@@ -185,7 +185,7 @@ export function getEnvInfo() {
     redisConfigured: !!process.env.REDIS_URL,
     qdrantConfigured: !!process.env.QDRANT_URL,
     llmProvider: process.env.LLM_PROVIDER || 'not configured',
-    smtpConfigured: !!(process.env.SMTP_USER && process.env.SMTP_PASSWORD),
+    emailConfigured: !!process.env.RESEND_API_KEY,
     notionConfigured: !!(process.env.NOTION_CLIENT_ID && process.env.NOTION_CLIENT_SECRET),
     frontendUrl: process.env.FRONTEND_URL || 'not configured',
   };
