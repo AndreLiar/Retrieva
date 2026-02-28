@@ -24,6 +24,9 @@ import {
   FileText,
   Bell,
   ChevronRight,
+  BellOff,
+  RefreshCw,
+  TrendingUp,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -45,7 +48,7 @@ import { assessmentsApi } from '@/lib/api/assessments';
 import { questionnairesApi } from '@/lib/api/questionnaires';
 import type { Assessment, OverallRisk, AssessmentStatus } from '@/lib/api/assessments';
 import type { VendorQuestionnaire } from '@/lib/api/questionnaires';
-import type { VendorTier, VendorStatus, VendorCertification, WorkspaceWithMembership } from '@/types';
+import type { VendorTier, VendorStatus, WorkspaceWithMembership } from '@/types';
 
 interface WorkspacePageProps {
   params: Promise<{ id: string }>;
@@ -88,20 +91,6 @@ function ContractDaysChip({ contractEnd }: { contractEnd: string }) {
   return <span className={`text-xs font-medium ${color}`}>({days < 0 ? `${Math.abs(days)}d overdue` : `+${days}d`})</span>;
 }
 
-function CertBadge({ cert }: { cert: VendorCertification }) {
-  const Icon    = cert.status === 'valid' ? ShieldCheck : cert.status === 'expiring-soon' ? AlertTriangle : XCircle;
-  const colors  = cert.status === 'valid'
-    ? 'bg-green-50 text-green-800 border-green-200'
-    : cert.status === 'expiring-soon'
-      ? 'bg-amber-50 text-amber-800 border-amber-200'
-      : 'bg-red-50 text-red-800 border-red-200';
-  return (
-    <span className={`inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full border ${colors}`}>
-      <Icon className="h-3 w-3" />
-      {cert.type} · valid until {format(new Date(cert.validUntil), 'MMM yyyy')}
-    </span>
-  );
-}
 
 // ─── Compliance Checklist ─────────────────────────────────────────────────────
 
@@ -283,6 +272,232 @@ function ComplianceChecklist({
   );
 }
 
+// ─── Monitoring Dashboard ─────────────────────────────────────────────────────
+
+/** Returns days remaining (positive) or days overdue (negative). */
+function daysFrom(date: string | Date | null | undefined): number | null {
+  if (!date) return null;
+  return Math.ceil((new Date(date).getTime() - new Date().getTime()) / 86_400_000);
+}
+
+function DaysChip({ days, suffix = '' }: { days: number; suffix?: string }) {
+  if (days < 0)
+    return <span className="text-xs font-medium text-destructive">{Math.abs(days)}d overdue</span>;
+  if (days <= 7)
+    return <span className="text-xs font-medium text-destructive">in {days}d{suffix}</span>;
+  if (days <= 30)
+    return <span className="text-xs font-medium text-amber-600">in {days}d{suffix}</span>;
+  if (days <= 90)
+    return <span className="text-xs font-medium text-amber-500">in {days}d{suffix}</span>;
+  return <span className="text-xs font-medium text-green-600">in {days}d{suffix}</span>;
+}
+
+interface MonitoringSignal {
+  label: string;
+  value: string;
+  days: number | null;
+  status: 'ok' | 'warning' | 'critical' | 'missing';
+}
+
+function SignalRow({ signal }: { signal: MonitoringSignal }) {
+  const Icon =
+    signal.status === 'ok'       ? ShieldCheck
+    : signal.status === 'warning'  ? AlertTriangle
+    : signal.status === 'critical' ? XCircle
+    : Circle;
+  const iconColor =
+    signal.status === 'ok'       ? 'text-green-500'
+    : signal.status === 'warning'  ? 'text-amber-500'
+    : signal.status === 'critical' ? 'text-destructive'
+    : 'text-muted-foreground/40';
+
+  return (
+    <div className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0 border-b last:border-0">
+      <Icon className={`h-4 w-4 shrink-0 ${iconColor}`} />
+      <div className="flex-1 min-w-0">
+        <span className="text-sm font-medium">{signal.label}</span>
+        <span className="text-xs text-muted-foreground ml-2">{signal.value}</span>
+      </div>
+      {signal.days !== null ? (
+        <DaysChip days={signal.days} />
+      ) : (
+        <span className="text-xs text-muted-foreground">—</span>
+      )}
+    </div>
+  );
+}
+
+function MonitoringDashboard({
+  workspace,
+  assessments,
+}: {
+  workspace: WorkspaceWithMembership;
+  assessments: Assessment[];
+}) {
+  const workspaceId = workspace.id;
+  const hasCerts    = (workspace.certifications?.length ?? 0) > 0;
+  const hasReview   = !!workspace.nextReviewDate;
+  const isConfigured = hasCerts || hasReview || !!workspace.contractEnd;
+
+  if (!isConfigured) {
+    return (
+      <Card className="mb-4 border-dashed">
+        <CardContent className="flex flex-col items-center justify-center gap-3 py-8 text-center">
+          <BellOff className="h-9 w-9 text-muted-foreground/40" />
+          <div>
+            <p className="text-sm font-medium text-muted-foreground">Monitoring not configured</p>
+            <p className="text-xs text-muted-foreground mt-1 max-w-xs">
+              Add certifications, contract end date, or a next review date to enable automated
+              24-hour compliance alert emails.
+            </p>
+          </div>
+          <Link href={`/workspaces/${workspaceId}/settings`}>
+            <Button size="sm" variant="outline">
+              <Settings className="h-4 w-4 mr-2" />
+              Configure in Settings
+            </Button>
+          </Link>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Build signal list
+  const signals: MonitoringSignal[] = [];
+
+  // Certifications
+  for (const cert of workspace.certifications ?? []) {
+    const d = daysFrom(cert.validUntil);
+    signals.push({
+      label: cert.type,
+      value: cert.validUntil ? `expires ${format(new Date(cert.validUntil), 'dd MMM yyyy')}` : '',
+      days: d,
+      status:
+        d === null       ? 'missing'
+        : d < 0          ? 'critical'
+        : d <= 30        ? 'critical'
+        : d <= 90        ? 'warning'
+        : 'ok',
+    });
+  }
+
+  // Contract renewal
+  if (workspace.contractEnd) {
+    const d = daysFrom(workspace.contractEnd);
+    signals.push({
+      label: 'Contract renewal',
+      value: `ends ${format(new Date(workspace.contractEnd), 'dd MMM yyyy')}`,
+      days: d,
+      status:
+        d === null  ? 'missing'
+        : d < 0     ? 'critical'
+        : d <= 30   ? 'critical'
+        : d <= 60   ? 'warning'
+        : 'ok',
+    });
+  }
+
+  // Annual review
+  if (workspace.nextReviewDate) {
+    const d = daysFrom(workspace.nextReviewDate);
+    signals.push({
+      label: 'Annual review',
+      value: `due ${format(new Date(workspace.nextReviewDate), 'dd MMM yyyy')}`,
+      days: d,
+      status:
+        d === null  ? 'missing'
+        : d < 0     ? 'critical'
+        : d <= 30   ? 'warning'
+        : 'ok',
+    });
+  }
+
+  // Last assessment
+  const lastAssessment = assessments
+    .filter((a) => a.status === 'complete')
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0] ?? null;
+  const assessmentDaysAgo = lastAssessment
+    ? Math.floor((new Date().getTime() - new Date(lastAssessment.createdAt).getTime()) / 86_400_000)
+    : null;
+  signals.push({
+    label: 'Last DORA assessment',
+    value: lastAssessment
+      ? `run ${format(new Date(lastAssessment.createdAt), 'dd MMM yyyy')} (${assessmentDaysAgo}d ago)`
+      : 'No assessment run yet',
+    days: lastAssessment ? -(assessmentDaysAgo ?? 0) : null,   // negative = "ago" display
+    status: !lastAssessment ? 'missing' : (assessmentDaysAgo ?? 0) > 365 ? 'warning' : 'ok',
+  });
+
+  const criticalCount = signals.filter((s) => s.status === 'critical').length;
+  const warningCount  = signals.filter((s) => s.status === 'warning').length;
+
+  const overallStatus =
+    criticalCount > 0 ? 'critical'
+    : warningCount > 0 ? 'warning'
+    : 'ok';
+
+  return (
+    <Card className="mb-4">
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+              Automated Monitoring
+            </CardTitle>
+            <Badge
+              className={
+                overallStatus === 'ok'
+                  ? 'bg-green-100 text-green-800 border-green-200 hover:bg-green-100 text-xs'
+                  : overallStatus === 'warning'
+                  ? 'bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-100 text-xs'
+                  : 'text-xs'
+              }
+              variant={overallStatus === 'critical' ? 'destructive' : 'outline'}
+            >
+              {overallStatus === 'ok' ? '● Active' : overallStatus === 'warning' ? '⚠ Attention' : '✕ Action required'}
+            </Badge>
+          </div>
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <RefreshCw className="h-3 w-3" />
+            24h scan
+          </div>
+        </div>
+        {(criticalCount > 0 || warningCount > 0) && (
+          <p className="text-xs text-muted-foreground mt-1">
+            {criticalCount > 0 && <span className="text-destructive font-medium">{criticalCount} critical · </span>}
+            {warningCount > 0  && <span className="text-amber-600 font-medium">{warningCount} warning · </span>}
+            Alert emails sent to workspace owner
+          </p>
+        )}
+      </CardHeader>
+      <CardContent className="pt-0 divide-y-0">
+        {signals.map((s, i) => <SignalRow key={i} signal={s} />)}
+        {/* Trend shortcut */}
+        {lastAssessment && (
+          <div className="pt-3 flex items-center justify-between">
+            <span className="text-xs text-muted-foreground flex items-center gap-1">
+              <TrendingUp className="h-3 w-3" />
+              Last risk: <strong className="ml-1">{lastAssessment.results?.overallRisk ?? '—'}</strong>
+              {lastAssessment.results?.gaps?.length != null && (
+                <span className="ml-2 text-muted-foreground">
+                  ({lastAssessment.results.gaps.filter((g) => g.gapLevel === 'missing').length} missing ·{' '}
+                  {lastAssessment.results.gaps.filter((g) => g.gapLevel === 'partial').length} partial)
+                </span>
+              )}
+            </span>
+            <Link href={`/assessments/${lastAssessment._id}`}>
+              <Button size="sm" variant="ghost" className="h-7 px-2 text-xs">
+                View report
+                <ChevronRight className="h-3 w-3 ml-1" />
+              </Button>
+            </Link>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function WorkspacePage({ params }: WorkspacePageProps) {
@@ -400,6 +615,12 @@ export default function WorkspacePage({ params }: WorkspacePageProps) {
         questionnaires={questionnaires ?? []}
       />
 
+      {/* ── Monitoring Dashboard (Step 5) ─────────────────────────────────── */}
+      <MonitoringDashboard
+        workspace={workspace}
+        assessments={assessments ?? []}
+      />
+
       {/* Profile + Contract row */}
       <div className="grid gap-4 md:grid-cols-2 mb-4">
         <Card>
@@ -468,33 +689,6 @@ export default function WorkspacePage({ params }: WorkspacePageProps) {
           </CardContent>
         </Card>
       </div>
-
-      {/* Certifications */}
-      <Card className="mb-4">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-            Certifications
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {workspace.certifications && workspace.certifications.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
-              {workspace.certifications.map((cert, i) => (
-                <CertBadge key={i} cert={cert} />
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              No certifications added.{' '}
-              {isOwner && (
-                <Link href={`/workspaces/${id}/settings`} className="underline underline-offset-2">
-                  Add certifications in Settings
-                </Link>
-              )}
-            </p>
-          )}
-        </CardContent>
-      </Card>
 
       {/* DORA Gap Assessments */}
       <Card>
