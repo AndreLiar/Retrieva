@@ -22,7 +22,8 @@ import logger from '../config/logger.js';
  * POST /api/v1/workspaces
  */
 export const createWorkspace = catchAsync(async (req, res) => {
-  const { name, description } = req.body;
+  const { name, description, vendorTier, serviceType, country, contractStart, contractEnd } =
+    req.body;
   const userId = req.user.userId;
 
   if (!name?.trim()) {
@@ -37,6 +38,11 @@ export const createWorkspace = catchAsync(async (req, res) => {
     description: description?.trim() || '',
     userId,
     organizationId: orgMembership?.organizationId || null,
+    vendorTier: vendorTier || null,
+    serviceType: serviceType || null,
+    country: country?.trim() || '',
+    contractStart: contractStart || null,
+    contractEnd: contractEnd || null,
   });
 
   await WorkspaceMember.addOwner(workspace._id, userId);
@@ -48,6 +54,11 @@ export const createWorkspace = catchAsync(async (req, res) => {
       id: workspace._id.toString(),
       name: workspace.name,
       description: workspace.description,
+      vendorTier: workspace.vendorTier,
+      serviceType: workspace.serviceType,
+      country: workspace.country,
+      contractStart: workspace.contractStart,
+      contractEnd: workspace.contractEnd,
       syncStatus: workspace.syncStatus,
       createdAt: workspace.createdAt,
       updatedAt: workspace.updatedAt,
