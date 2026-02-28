@@ -88,6 +88,7 @@ export interface Workspace {
   nextReviewDate?: string | null;
   vendorStatus?: VendorStatus;
   certifications?: VendorCertification[];
+  vendorFunctions?: VendorFunction[];
   exitStrategyDoc?: string | null;
 }
 
@@ -117,6 +118,7 @@ export interface WorkspaceApiResponse {
   nextReviewDate?: string | null;
   vendorStatus?: VendorStatus;
   certifications?: VendorCertification[];
+  vendorFunctions?: VendorFunction[];
   exitStrategyDoc?: string | null;
 }
 
@@ -151,6 +153,7 @@ export interface WorkspaceWithMembership {
   nextReviewDate?: string | null;
   vendorStatus?: VendorStatus;
   certifications?: VendorCertification[];
+  vendorFunctions?: VendorFunction[];
   exitStrategyDoc?: string | null;
 }
 
@@ -159,6 +162,17 @@ export type VendorTier = 'critical' | 'important' | 'standard';
 export type VendorServiceType = 'cloud' | 'software' | 'data' | 'network' | 'other';
 export type VendorStatus = 'active' | 'under-review' | 'exited';
 export type CertificationType = 'ISO27001' | 'SOC2' | 'CSA-STAR' | 'ISO22301';
+export type VendorFunction =
+  | 'payment_processing'
+  | 'settlement_clearing'
+  | 'core_banking'
+  | 'risk_management'
+  | 'regulatory_reporting'
+  | 'fraud_detection'
+  | 'data_storage'
+  | 'network_infrastructure'
+  | 'identity_access_management'
+  | 'business_continuity';
 
 export interface VendorCertification {
   type: CertificationType;
