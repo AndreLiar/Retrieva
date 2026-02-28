@@ -18,9 +18,8 @@
  * - AZURE_OPENAI_*: For Azure OpenAI provider
  */
 
-// Re-export everything from the provider abstraction
+// Re-export from the provider abstraction
 export {
-  // Provider factory (recommended for new code)
   createLLM,
   getDefaultLLM,
   getJudgeLLM,
@@ -28,16 +27,7 @@ export {
   getCurrentProvider,
   getProviderConfig,
   LLM_PROVIDERS,
-
-  // Backward compatible exports
-  llm,
-  judgeLlm,
-  createLLMWithTimeout,
-  withTimeout,
   invokeWithTimeout,
   createCancellableLLMCall,
   validateLLMResponse,
-  safeInvoke,
-  getLLMConfig,
-  getJudgeLLMConfig,
 } from './llmProvider.js';
