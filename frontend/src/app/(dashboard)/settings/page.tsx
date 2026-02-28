@@ -5,7 +5,7 @@ import { useMutation } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Loader2, User, Mail, Shield, Bell, CheckCircle, AlertCircle } from 'lucide-react';
+import { Loader2, User, Mail, Shield, Bell, CheckCircle, AlertCircle, Users } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import axios from 'axios';
@@ -377,6 +377,24 @@ export default function SettingsPage() {
               }
             />
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Team Management Link */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            Team
+          </CardTitle>
+          <CardDescription>
+            Invite colleagues, manage roles, and control who can access the compliance platform
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Link href="/settings/team">
+            <Button variant="outline">Manage Team</Button>
+          </Link>
         </CardContent>
       </Card>
 
