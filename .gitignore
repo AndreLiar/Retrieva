@@ -86,3 +86,6 @@ CLAUDE.md
 # Age private keys
 # =============================================================================
 *.age.key
+
+# Local test process materials (PDFs, templates, test runs)
+testprocess/

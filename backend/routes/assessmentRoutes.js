@@ -5,6 +5,8 @@ import {
   getAssessment,
   downloadReport,
   deleteAssessment,
+  setRiskDecision,
+  setClauseSignoff,
 } from '../controllers/assessmentController.js';
 import { authenticate } from '../middleware/auth.js';
 import { requireWorkspaceAccess } from '../middleware/workspaceAuth.js';
@@ -43,6 +45,20 @@ router.get('/:id', authenticate, requireWorkspaceAccess, getAssessment);
  * @access Private
  */
 router.get('/:id/report', authenticate, requireWorkspaceAccess, downloadReport);
+
+/**
+ * @route  PATCH /api/v1/assessments/:id/risk-decision
+ * @desc   Record a formal risk decision (proceed / conditional / reject)
+ * @access Private
+ */
+router.patch('/:id/risk-decision', authenticate, requireWorkspaceAccess, setRiskDecision);
+
+/**
+ * @route  PATCH /api/v1/assessments/:id/clause-signoff
+ * @desc   Sign off a single Art. 30 contract clause (accepted / rejected / waived)
+ * @access Private — CONTRACT_A30 assessments only
+ */
+router.patch('/:id/clause-signoff', authenticate, requireWorkspaceAccess, setClauseSignoff);
 
 /**
  * @route  DELETE /api/v1/assessments/:id
