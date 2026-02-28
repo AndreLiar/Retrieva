@@ -13,6 +13,12 @@ import {
   AlertCircle,
   ChevronDown,
   ChevronUp,
+  CheckCircle2,
+  AlertTriangle,
+  XCircle,
+  FileSearch,
+  FileText,
+  ChevronRight,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -191,6 +197,116 @@ function AnswerRow({ q }: { q: QuestionnaireQuestion }) {
 }
 
 // ---------------------------------------------------------------------------
+// Risk Decision Panel (Step 3 gateway)
+// ---------------------------------------------------------------------------
+
+function RiskDecisionPanel({ q }: { q: VendorQuestionnaire }) {
+  const router = useRouter();
+  const score = q.overallScore ?? 0;
+
+  const missingGaps = q.questions.filter((qq) => qq.gapLevel === 'missing');
+  const partialGaps = q.questions.filter((qq) => qq.gapLevel === 'partial');
+  const totalGaps   = missingGaps.length + partialGaps.length;
+
+  type Decision = 'proceed' | 'conditional' | 'reject';
+  const decision: Decision = score >= 70 ? 'proceed' : score >= 40 ? 'conditional' : 'reject';
+
+  const config = {
+    proceed: {
+      Icon: CheckCircle2,
+      iconClass: 'text-green-600',
+      borderClass: 'border-green-200 bg-green-50 dark:bg-green-950/20 dark:border-green-800',
+      badge: 'bg-green-100 text-green-800 border-green-200',
+      label: 'Proceed to contracting',
+      headline: 'Vendor meets baseline DORA requirements.',
+      detail: `Score of ${score}/100 indicates acceptable ICT risk posture. ${totalGaps > 0 ? `${totalGaps} partial gap(s) should be addressed via contract clauses.` : 'No critical gaps identified.'}`,
+      next: [
+        { label: 'Review Contract (Art. 30)', icon: FileText, href: '/assessments/new?framework=CONTRACT_A30' },
+      ],
+    },
+    conditional: {
+      Icon: AlertTriangle,
+      iconClass: 'text-amber-600',
+      borderClass: 'border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800',
+      badge: 'bg-amber-100 text-amber-800 border-amber-200',
+      label: 'Proceed with conditions',
+      headline: 'Vendor may proceed to contracting with remediation conditions.',
+      detail: `Score of ${score}/100. ${missingGaps.length} critical gap(s) must be addressed in the contract or via a vendor remediation plan before signature.`,
+      next: [
+        { label: 'Run Gap Analysis', icon: FileSearch, href: '/assessments/new' },
+        { label: 'Review Contract (Art. 30)', icon: FileText, href: '/assessments/new?framework=CONTRACT_A30' },
+      ],
+    },
+    reject: {
+      Icon: XCircle,
+      iconClass: 'text-destructive',
+      borderClass: 'border-destructive/30 bg-destructive/5',
+      badge: 'bg-red-100 text-red-800 border-red-200',
+      label: 'Do not proceed',
+      headline: 'Significant ICT risk gaps — contracting not recommended.',
+      detail: `Score of ${score}/100. ${missingGaps.length} critical gap(s) identified. Request a vendor remediation plan and re-assess before contracting.`,
+      next: [
+        { label: 'Run Gap Analysis', icon: FileSearch, href: '/assessments/new' },
+      ],
+    },
+  }[decision];
+
+  return (
+    <Card className={`border-2 ${config.borderClass}`}>
+      <CardHeader className="pb-3">
+        <div className="flex items-center gap-2">
+          <config.Icon className={`h-5 w-5 ${config.iconClass}`} />
+          <CardTitle className="text-base">Contracting Decision</CardTitle>
+          <span className={`ml-auto text-xs font-medium px-2 py-0.5 rounded-full border ${config.badge}`}>
+            {config.label}
+          </span>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div>
+          <p className="text-sm font-medium">{config.headline}</p>
+          <p className="text-sm text-muted-foreground mt-1">{config.detail}</p>
+        </div>
+
+        {/* Critical gaps list */}
+        {missingGaps.length > 0 && (
+          <div className="rounded-md border bg-background p-3 space-y-1">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+              Critical gaps requiring action
+            </p>
+            {missingGaps.map((gap) => (
+              <div key={gap.id} className="flex items-start gap-2 text-sm">
+                <XCircle className="h-3.5 w-3.5 text-destructive mt-0.5 shrink-0" />
+                <span><span className="font-medium">{gap.category}</span> · {gap.text.slice(0, 80)}…</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Next step actions */}
+        <div className="flex gap-2 flex-wrap pt-1">
+          <p className="w-full text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            Next step
+          </p>
+          {config.next.map((action) => (
+            <Button
+              key={action.label}
+              size="sm"
+              variant={decision === 'proceed' ? 'default' : 'outline'}
+              onClick={() => router.push(action.href)}
+            >
+              <action.icon className="h-4 w-4 mr-1.5" />
+              {action.label}
+              <ChevronRight className="h-3.5 w-3.5 ml-1" />
+            </Button>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
 
@@ -353,6 +469,11 @@ export default function QuestionnaireDetailPage({
             )}
           </CardContent>
         </Card>
+      )}
+
+      {/* Risk Decision Panel — next step gateway */}
+      {q.status === 'complete' && q.overallScore !== undefined && (
+        <RiskDecisionPanel q={q} />
       )}
 
       {/* Scoring in progress */}

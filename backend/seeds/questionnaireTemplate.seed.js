@@ -1,7 +1,10 @@
 import { QuestionnaireTemplate } from '../models/QuestionnaireTemplate.js';
 import logger from '../config/logger.js';
 
+const SEED_VERSION = '1.1';
+
 export const DORA_QUESTIONS = [
+  // ── ICT Governance ──────────────────────────────────────────────────────────
   {
     id: 'q01',
     doraArticle: 'Art.28(1)',
@@ -16,6 +19,8 @@ export const DORA_QUESTIONS = [
     text: 'Do you maintain a complete and up-to-date inventory of ICT assets (hardware, software, data, and network components) that support the services you deliver to us? How is this inventory kept current?',
     hint: 'Describe your asset management process, tooling used, and how frequently the inventory is reviewed and updated.',
   },
+
+  // ── Security Controls ────────────────────────────────────────────────────────
   {
     id: 'q03',
     doraArticle: 'Art.9(2)',
@@ -38,6 +43,36 @@ export const DORA_QUESTIONS = [
     hint: 'Include your scanning frequency, exception process, and evidence of patch compliance metrics.',
   },
   {
+    id: 'q21',
+    doraArticle: 'Art.9(2)',
+    category: 'Security Controls',
+    text: 'Do you hold an ISO 27001 certification and/or a SOC 2 Type II report covering the services you deliver to us? If yes, please provide the certification body, scope, and most recent certificate or report date.',
+    hint: 'Provide the certificate number, issuing body (e.g. BSI, Bureau Veritas), coverage scope, and expiry date. If you hold both, list each. If neither, describe the compensating controls in place.',
+  },
+  {
+    id: 'q22',
+    doraArticle: 'Art.9(2)',
+    category: 'Security Controls',
+    text: 'Is multi-factor authentication (MFA) enforced for all user and administrator access to systems that process or store our data — including remote access, cloud management consoles, and any privileged interfaces?',
+    hint: 'Specify MFA method (TOTP, hardware token, push notification) and confirm whether MFA is enforced without exception or if there are policy bypass scenarios.',
+  },
+  {
+    id: 'q23',
+    doraArticle: 'Art.9(2)',
+    category: 'Security Controls',
+    text: 'Do you implement role-based access control (RBAC) for systems supporting our services? How are roles defined, assigned, reviewed, and revoked — particularly for joiners, movers, and leavers?',
+    hint: 'Include the frequency of access reviews, who approves role assignments, and how you handle emergency access grants.',
+  },
+  {
+    id: 'q24',
+    doraArticle: 'Art.9(4)',
+    category: 'Security Controls',
+    text: 'Describe your security logging and monitoring capabilities for systems supporting our services. Are all access events, administrative actions, and anomalous activity logged? What is your log retention period and how are logs protected from tampering?',
+    hint: 'Include your SIEM tooling, log retention policy (minimum 12 months recommended under DORA), alerting thresholds, and any third-party SOC involvement.',
+  },
+
+  // ── Incident Management ──────────────────────────────────────────────────────
+  {
     id: 'q06',
     doraArticle: 'Art.17(1)',
     category: 'Incident Management',
@@ -58,6 +93,8 @@ export const DORA_QUESTIONS = [
     text: 'Describe your post-incident review process. How do you share lessons learned with affected clients, and how do you track remediation of root causes?',
     hint: 'Include the format of post-incident reports (PIRs), typical delivery timelines, and how corrective actions are tracked to closure.',
   },
+
+  // ── Business Continuity ──────────────────────────────────────────────────────
   {
     id: 'q09',
     doraArticle: 'Art.11(1)',
@@ -79,6 +116,8 @@ export const DORA_QUESTIONS = [
     text: 'Describe your backup procedures for data and systems supporting our services. Where are backups stored geographically, and how is redundancy achieved?',
     hint: 'Include backup frequency, retention periods, geographic separation, encryption of backups, and restoration test frequency.',
   },
+
+  // ── Audit Rights ─────────────────────────────────────────────────────────────
   {
     id: 'q12',
     doraArticle: 'Art.30(3)(c)',
@@ -93,6 +132,8 @@ export const DORA_QUESTIONS = [
     text: 'How frequently do you conduct penetration testing and ICT resilience testing on systems supporting our services? What is the scope, and are results shared with clients?',
     hint: 'Include frequency (internal and third-party), scope, methodology, and your policy for sharing executive summaries or remediation evidence.',
   },
+
+  // ── Subcontracting ───────────────────────────────────────────────────────────
   {
     id: 'q14',
     doraArticle: 'Art.28(2)(e)',
@@ -107,6 +148,15 @@ export const DORA_QUESTIONS = [
     text: 'How do you conduct due diligence on material subcontractors before onboarding and on an ongoing basis? How do you monitor their ICT and security performance?',
     hint: 'Include your subcontractor assessment process, monitoring frequency, and how you manage subcontractor incidents that affect your clients.',
   },
+  {
+    id: 'q25',
+    doraArticle: 'Art.28(2)(e)',
+    category: 'Subcontracting',
+    text: 'Do you use hyperscale cloud infrastructure providers (such as Amazon Web Services, Microsoft Azure, or Google Cloud Platform) to deliver any part of the services provided to us? If yes, which providers, in which regions, and for which service components?',
+    hint: 'Identify which services run on which cloud, the specific regions (e.g. eu-west-1, germanywestcentral), and whether data sovereignty commitments apply. Note any multi-cloud or hybrid arrangements.',
+  },
+
+  // ── Data Governance ──────────────────────────────────────────────────────────
   {
     id: 'q16',
     doraArticle: 'Art.30(2)(b)',
@@ -129,12 +179,30 @@ export const DORA_QUESTIONS = [
     hint: 'Include data export formats, delivery timeline, confirmation of deletion, and any third-party certification of secure disposal.',
   },
   {
+    id: 'q26',
+    doraArticle: 'Art.30(2)(b)',
+    category: 'Data Governance',
+    text: 'Are you GDPR compliant? Do you have a signed Data Processing Agreement (DPA) in place or are you willing to execute one? Have you appointed a Data Protection Officer (DPO)?',
+    hint: 'Confirm GDPR compliance status, DPA availability (or link to your standard DPA), and DPO contact details. Reference any relevant supervisory authority registration.',
+  },
+  {
+    id: 'q27',
+    doraArticle: 'Art.30(2)(b)',
+    category: 'Data Governance',
+    text: 'For any transfers of our data outside the European Economic Area (EEA), what legal transfer mechanisms do you rely on — for example, Standard Contractual Clauses (SCCs), Adequacy Decisions, or Binding Corporate Rules?',
+    hint: 'Identify the specific mechanism per destination country, confirm SCCs are up-to-date (2021 EU SCCs), and note any transfer impact assessments (TIAs) conducted.',
+  },
+
+  // ── Exit Planning ────────────────────────────────────────────────────────────
+  {
     id: 'q19',
     doraArticle: 'Art.30(2)(h)',
     category: 'Exit Planning',
     text: 'Describe the exit assistance and transition support you would provide to enable us to migrate to an alternative provider. What is included and for how long?',
     hint: 'Include transition planning support, data migration assistance, knowledge transfer, and any costs associated with exit support.',
   },
+
+  // ── Regulatory History ───────────────────────────────────────────────────────
   {
     id: 'q20',
     doraArticle: 'Art.28(8)',
@@ -145,29 +213,50 @@ export const DORA_QUESTIONS = [
 ];
 
 /**
- * Idempotent seed — skips if the default template already exists.
+ * Idempotent seed — creates the default template if absent, upgrades it if the
+ * version is older than SEED_VERSION.
  */
 export async function seedDefaultTemplate() {
   try {
-    const exists = await QuestionnaireTemplate.findOne({ isDefault: true });
-    if (exists) {
-      logger.info('Default questionnaire template already exists — skipping seed', {
-        service: 'seed',
-        templateId: exists._id,
-      });
+    const existing = await QuestionnaireTemplate.findOne({ isDefault: true });
+
+    if (existing) {
+      if (existing.version === SEED_VERSION) {
+        logger.info('Default questionnaire template is up to date — skipping seed', {
+          service: 'seed',
+          version: SEED_VERSION,
+          templateId: existing._id,
+        });
+        return;
+      }
+
+      // Upgrade to new version
+      existing.questions = DORA_QUESTIONS;
+      existing.version = SEED_VERSION;
+      await existing.save();
+      logger.info(
+        `Default questionnaire template upgraded to v${SEED_VERSION} (${DORA_QUESTIONS.length} questions)`,
+        {
+          service: 'seed',
+          templateId: existing._id,
+        }
+      );
       return;
     }
 
     await QuestionnaireTemplate.create({
       name: 'DORA Art.28/30 Due Diligence',
-      version: '1.0',
+      version: SEED_VERSION,
       isDefault: true,
       questions: DORA_QUESTIONS,
     });
 
-    logger.info('Default questionnaire template seeded (20 DORA questions)', {
-      service: 'seed',
-    });
+    logger.info(
+      `Default questionnaire template seeded (${DORA_QUESTIONS.length} questions, v${SEED_VERSION})`,
+      {
+        service: 'seed',
+      }
+    );
   } catch (err) {
     logger.error('Failed to seed default questionnaire template', {
       service: 'seed',
