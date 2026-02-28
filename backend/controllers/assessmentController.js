@@ -228,6 +228,100 @@ export const downloadReport = catchAsync(async (req, res) => {
 });
 
 /**
+ * PATCH /api/v1/assessments/:id/risk-decision
+ *
+ * Record a formal compliance risk decision (proceed / conditional / reject).
+ * Any workspace member may record a decision; the decision is timestamped
+ * and attributed to the calling user.
+ */
+export const setRiskDecision = catchAsync(async (req, res) => {
+  const { id } = req.params;
+  const { decision, rationale } = req.body;
+  const authorizedWorkspaceIds = req.authorizedWorkspaces?.map((w) => w._id.toString()) || [];
+
+  if (!['proceed', 'conditional', 'reject'].includes(decision)) {
+    return sendError(res, 400, "decision must be 'proceed', 'conditional', or 'reject'");
+  }
+
+  const assessment = await Assessment.findById(id);
+  if (!assessment) throw new AppError('Assessment not found', 404);
+  if (!authorizedWorkspaceIds.includes(assessment.workspaceId.toString())) {
+    throw new AppError('Access denied to this assessment', 403);
+  }
+
+  assessment.riskDecision = {
+    decision,
+    setBy: req.user.userId,
+    setByName: req.user.name || req.user.email || '',
+    rationale: rationale?.trim() || '',
+    setAt: new Date(),
+  };
+  await assessment.save();
+
+  logger.info('Risk decision recorded', {
+    service: 'assessment-controller',
+    assessmentId: id,
+    decision,
+    userId: req.user.userId,
+  });
+
+  sendSuccess(res, 200, 'Risk decision recorded', { riskDecision: assessment.riskDecision });
+});
+
+/**
+ * PATCH /api/v1/assessments/:id/clause-signoff
+ *
+ * Record a compliance officer's sign-off on a single Art. 30 clause.
+ * Upserts: calling again for the same clauseRef replaces the previous sign-off.
+ */
+export const setClauseSignoff = catchAsync(async (req, res) => {
+  const { id } = req.params;
+  const { clauseRef, status, note } = req.body;
+  const authorizedWorkspaceIds = req.authorizedWorkspaces?.map((w) => w._id.toString()) || [];
+
+  if (!clauseRef) return sendError(res, 400, 'clauseRef is required');
+  if (!['accepted', 'rejected', 'waived'].includes(status)) {
+    return sendError(res, 400, "status must be 'accepted', 'rejected', or 'waived'");
+  }
+
+  const assessment = await Assessment.findById(id);
+  if (!assessment) throw new AppError('Assessment not found', 404);
+  if (!authorizedWorkspaceIds.includes(assessment.workspaceId.toString())) {
+    throw new AppError('Access denied to this assessment', 403);
+  }
+  if (assessment.framework !== 'CONTRACT_A30') {
+    return sendError(res, 400, 'Clause sign-off is only applicable to CONTRACT_A30 assessments');
+  }
+
+  const signoff = {
+    clauseRef,
+    status,
+    signedBy: req.user.userId,
+    signedByName: req.user.name || req.user.email || '',
+    note: note?.trim() || '',
+    signedAt: new Date(),
+  };
+
+  const existingIdx = assessment.clauseSignoffs.findIndex((s) => s.clauseRef === clauseRef);
+  if (existingIdx >= 0) {
+    assessment.clauseSignoffs[existingIdx] = signoff;
+  } else {
+    assessment.clauseSignoffs.push(signoff);
+  }
+  await assessment.save();
+
+  logger.info('Clause sign-off recorded', {
+    service: 'assessment-controller',
+    assessmentId: id,
+    clauseRef,
+    status,
+    userId: req.user.userId,
+  });
+
+  sendSuccess(res, 200, 'Clause sign-off recorded', { clauseSignoffs: assessment.clauseSignoffs });
+});
+
+/**
  * DELETE /api/v1/assessments/:id
  *
  * Delete an assessment and its Qdrant collection.

@@ -6,6 +6,7 @@ import {
   Building2,
   ShieldCheck,
   ClipboardList,
+  BarChart3,
 } from 'lucide-react';
 
 export interface NavItem {
@@ -16,12 +17,13 @@ export interface NavItem {
 }
 
 export const desktopMainNavItems: NavItem[] = [
+  { title: 'Risk Register', href: '/risk-register', icon: BarChart3 },
+  { title: 'Vendors', href: '/workspaces', icon: Building2 },
   { title: 'Gap Analysis', href: '/assessments', icon: ShieldCheck },
   { title: 'Questionnaires', href: '/questionnaires', icon: ClipboardList, workspaceRoles: ['owner', 'member'] },
   { title: 'Ask AI', href: '/chat', icon: MessageSquare },
   { title: 'Documents', href: '/sources', icon: Database, workspaceRoles: ['owner', 'member'] },
   { title: 'History', href: '/conversations', icon: FolderOpen },
-  { title: 'Vendors', href: '/workspaces', icon: Building2 },
 ];
 
 export const mobileMainNavItems: NavItem[] = [
