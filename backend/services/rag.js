@@ -977,33 +977,5 @@ class RAGService {
   }
 }
 
-export async function createRAGService(dependencies = {}) {
-  const service = new RAGService(dependencies);
-  await service.init();
-  return service;
-}
-
-export function createRAGServiceSync(dependencies = {}) {
-  return new RAGService(dependencies);
-}
-
-let _singletonInstance = null;
-let _singletonPromise = null;
-
-export async function getRAGService() {
-  if (_singletonInstance) return _singletonInstance;
-  if (_singletonPromise) return _singletonPromise;
-
-  _singletonPromise = createRAGService();
-  _singletonInstance = await _singletonPromise;
-  _singletonPromise = null;
-  return _singletonInstance;
-}
-
-export function resetRAGService() {
-  _singletonInstance = null;
-  _singletonPromise = null;
-}
-
 export const ragService = new RAGService();
 export { RAGService };
