@@ -15,6 +15,11 @@ import type {
 export interface CreateWorkspaceData {
   name: string;
   description?: string;
+  vendorTier?: VendorTier | null;
+  serviceType?: VendorServiceType | null;
+  country?: string;
+  contractStart?: string | null;
+  contractEnd?: string | null;
 }
 
 export interface UpdateWorkspaceData {
