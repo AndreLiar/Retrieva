@@ -9,6 +9,7 @@ import type {
   VendorTier,
   VendorServiceType,
   VendorStatus,
+  VendorFunction,
   CertificationType,
 } from '@/types';
 
@@ -33,6 +34,7 @@ export interface UpdateWorkspaceData {
   nextReviewDate?: string | null;
   vendorStatus?: VendorStatus;
   certifications?: Array<{ type: CertificationType; validUntil: string }>;
+  vendorFunctions?: VendorFunction[];
   exitStrategyDoc?: string | null;
 }
 

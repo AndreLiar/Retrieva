@@ -49,6 +49,26 @@ const workspaceSchema = new mongoose.Schema(
     nextReviewDate: { type: Date, default: null },
     vendorStatus: { type: String, enum: ['active', 'under-review', 'exited'], default: 'active' },
     certifications: [certificationSchema],
+    vendorFunctions: {
+      type: [
+        {
+          type: String,
+          enum: [
+            'payment_processing',
+            'settlement_clearing',
+            'core_banking',
+            'risk_management',
+            'regulatory_reporting',
+            'fraud_detection',
+            'data_storage',
+            'network_infrastructure',
+            'identity_access_management',
+            'business_continuity',
+          ],
+        },
+      ],
+      default: [],
+    },
     exitStrategyDoc: { type: String, default: null },
     alertsSentAt: {
       type: Map,

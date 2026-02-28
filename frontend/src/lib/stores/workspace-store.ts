@@ -114,6 +114,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
                 nextReviewDate: w.nextReviewDate,
                 vendorStatus: w.vendorStatus,
                 certifications: w.certifications,
+                vendorFunctions: w.vendorFunctions,
                 exitStrategyDoc: w.exitStrategyDoc,
               })
             );

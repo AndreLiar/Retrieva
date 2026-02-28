@@ -65,6 +65,18 @@ const workspaceSettingsSchema = z.object({
     type: z.enum(['ISO27001', 'SOC2', 'CSA-STAR', 'ISO22301']),
     validUntil: z.string().min(1, 'Expiry date required'),
   })).optional(),
+  vendorFunctions: z.array(z.enum([
+    'payment_processing',
+    'settlement_clearing',
+    'core_banking',
+    'risk_management',
+    'regulatory_reporting',
+    'fraud_detection',
+    'data_storage',
+    'network_infrastructure',
+    'identity_access_management',
+    'business_continuity',
+  ])).optional(),
 });
 
 type SettingsFormData = z.infer<typeof workspaceSettingsSchema>;
@@ -79,6 +91,19 @@ function toDateInputValue(val: string | null | undefined): string {
     return '';
   }
 }
+
+const ICT_FUNCTIONS: { value: string; label: string }[] = [
+  { value: 'payment_processing',         label: 'Payment Processing' },
+  { value: 'settlement_clearing',        label: 'Settlement & Clearing' },
+  { value: 'core_banking',               label: 'Core Banking' },
+  { value: 'risk_management',            label: 'Risk Management' },
+  { value: 'regulatory_reporting',       label: 'Regulatory Reporting' },
+  { value: 'fraud_detection',            label: 'Fraud Detection' },
+  { value: 'data_storage',               label: 'Data Storage' },
+  { value: 'network_infrastructure',     label: 'Network Infrastructure' },
+  { value: 'identity_access_management', label: 'Identity & Access Mgmt' },
+  { value: 'business_continuity',        label: 'Business Continuity' },
+];
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -124,6 +149,7 @@ export default function WorkspaceSettingsPage({ params }: WorkspaceSettingsPageP
       nextReviewDate: '',
       vendorStatus: 'active',
       certifications: [],
+      vendorFunctions: [],
     },
   });
 
@@ -149,6 +175,7 @@ export default function WorkspaceSettingsPage({ params }: WorkspaceSettingsPageP
           type: c.type,
           validUntil: toDateInputValue(c.validUntil),
         })) ?? [],
+        vendorFunctions: (workspace.vendorFunctions ?? []) as SettingsFormData['vendorFunctions'],
       });
     }
   }, [workspace, form]);
@@ -177,6 +204,7 @@ export default function WorkspaceSettingsPage({ params }: WorkspaceSettingsPageP
           type: c.type,
           validUntil: c.validUntil,
         })),
+        vendorFunctions: data.vendorFunctions,
       });
     },
     onSuccess: () => {
@@ -476,6 +504,39 @@ export default function WorkspaceSettingsPage({ params }: WorkspaceSettingsPageP
                   <Plus className="h-3.5 w-3.5 mr-1.5" />
                   Add Certification
                 </Button>
+              </div>
+
+              {/* ICT Function Categories (DORA Art. 28(3)(a)) */}
+              <div>
+                <FormLabel className="block mb-1">ICT Function Categories</FormLabel>
+                <p className="text-xs text-muted-foreground mb-3">
+                  DORA Art. 28(3)(a) — Select all ICT capabilities this vendor supports for your entity.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {ICT_FUNCTIONS.map(({ value, label }) => {
+                    const selected = (form.watch('vendorFunctions') as string[] ?? []).includes(value);
+                    return (
+                      <Button
+                        key={value}
+                        type="button"
+                        variant={selected ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => {
+                          const current = (form.getValues('vendorFunctions') as string[]) ?? [];
+                          form.setValue(
+                            'vendorFunctions',
+                            (selected
+                              ? current.filter((v) => v !== value)
+                              : [...current, value]) as SettingsFormData['vendorFunctions'],
+                            { shouldDirty: true }
+                          );
+                        }}
+                      >
+                        {label}
+                      </Button>
+                    );
+                  })}
+                </div>
               </div>
             </CardContent>
           </Card>

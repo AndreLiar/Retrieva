@@ -22,8 +22,16 @@ import logger from '../config/logger.js';
  * POST /api/v1/workspaces
  */
 export const createWorkspace = catchAsync(async (req, res) => {
-  const { name, description, vendorTier, serviceType, country, contractStart, contractEnd } =
-    req.body;
+  const {
+    name,
+    description,
+    vendorTier,
+    serviceType,
+    country,
+    contractStart,
+    contractEnd,
+    vendorFunctions,
+  } = req.body;
   const userId = req.user.userId;
 
   if (!name?.trim()) {
@@ -43,6 +51,7 @@ export const createWorkspace = catchAsync(async (req, res) => {
     country: country?.trim() || '',
     contractStart: contractStart || null,
     contractEnd: contractEnd || null,
+    vendorFunctions: Array.isArray(vendorFunctions) ? vendorFunctions : [],
   });
 
   await WorkspaceMember.addOwner(workspace._id, userId);
@@ -59,6 +68,7 @@ export const createWorkspace = catchAsync(async (req, res) => {
       country: workspace.country,
       contractStart: workspace.contractStart,
       contractEnd: workspace.contractEnd,
+      vendorFunctions: workspace.vendorFunctions,
       syncStatus: workspace.syncStatus,
       createdAt: workspace.createdAt,
       updatedAt: workspace.updatedAt,
@@ -106,6 +116,7 @@ export const getWorkspace = catchAsync(async (req, res) => {
       nextReviewDate: workspace.nextReviewDate,
       vendorStatus: workspace.vendorStatus,
       certifications: workspace.certifications,
+      vendorFunctions: workspace.vendorFunctions,
       exitStrategyDoc: workspace.exitStrategyDoc,
     },
   });
@@ -129,6 +140,7 @@ export const updateWorkspace = catchAsync(async (req, res) => {
     vendorStatus,
     certifications,
     exitStrategyDoc,
+    vendorFunctions,
   } = req.body;
 
   const membership = await WorkspaceMember.findOne({
@@ -160,6 +172,7 @@ export const updateWorkspace = catchAsync(async (req, res) => {
     workspace.nextReviewDate = nextReviewDate ? new Date(nextReviewDate) : null;
   if (vendorStatus !== undefined) workspace.vendorStatus = vendorStatus;
   if (Array.isArray(certifications)) workspace.certifications = certifications;
+  if (Array.isArray(vendorFunctions)) workspace.vendorFunctions = vendorFunctions;
   if (exitStrategyDoc !== undefined) workspace.exitStrategyDoc = exitStrategyDoc || null;
 
   await workspace.save();
@@ -179,6 +192,7 @@ export const updateWorkspace = catchAsync(async (req, res) => {
       nextReviewDate: workspace.nextReviewDate,
       vendorStatus: workspace.vendorStatus,
       certifications: workspace.certifications,
+      vendorFunctions: workspace.vendorFunctions,
       exitStrategyDoc: workspace.exitStrategyDoc,
     },
   });
@@ -247,6 +261,7 @@ export const getMyWorkspaces = catchAsync(async (req, res) => {
       nextReviewDate: ws.nextReviewDate,
       vendorStatus: ws.vendorStatus,
       certifications: ws.certifications,
+      vendorFunctions: ws.vendorFunctions,
       exitStrategyDoc: ws.exitStrategyDoc,
     }));
 
@@ -276,6 +291,7 @@ export const getMyWorkspaces = catchAsync(async (req, res) => {
       nextReviewDate: m.workspaceId.nextReviewDate,
       vendorStatus: m.workspaceId.vendorStatus,
       certifications: m.workspaceId.certifications,
+      vendorFunctions: m.workspaceId.vendorFunctions,
       exitStrategyDoc: m.workspaceId.exitStrategyDoc,
     }));
 
