@@ -32,14 +32,7 @@ export {
 export { sendSuccess, sendError, sendPaginatedResponse } from './core/responseFormatter.js';
 
 // String helpers
-export {
-  truncate,
-  capitalize,
-  slugify,
-  extractKeywords,
-  sanitizeFilename,
-  generateRandomString,
-} from './core/stringHelpers.js';
+export { truncate, capitalize, slugify } from './core/stringHelpers.js';
 
 // Date helpers
 export {
