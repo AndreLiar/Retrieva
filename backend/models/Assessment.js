@@ -1,5 +1,30 @@
 import mongoose from 'mongoose';
 
+// ── Formal risk decision recorded by a compliance officer ──────────────────────
+const riskDecisionSchema = new mongoose.Schema(
+  {
+    decision: { type: String, enum: ['proceed', 'conditional', 'reject'], required: true },
+    setBy: { type: String, required: true }, // userId
+    setByName: { type: String, default: '' },
+    rationale: { type: String, default: '' },
+    setAt: { type: Date, default: Date.now },
+  },
+  { _id: false }
+);
+
+// ── Art. 30 clause-level sign-off ──────────────────────────────────────────────
+const clauseSignoffSchema = new mongoose.Schema(
+  {
+    clauseRef: { type: String, required: true }, // e.g. 'Art.30(2)(a)'
+    status: { type: String, enum: ['accepted', 'rejected', 'waived'], required: true },
+    signedBy: { type: String, required: true }, // userId
+    signedByName: { type: String, default: '' },
+    note: { type: String, default: '' },
+    signedAt: { type: Date, default: Date.now },
+  },
+  { _id: false }
+);
+
 const gapSchema = new mongoose.Schema(
   {
     article: { type: String, required: true }, // e.g. "DORA Article 28(4)(a)"
@@ -77,6 +102,9 @@ const assessmentSchema = new mongoose.Schema(
       domainsAnalyzed: [String],
     },
     reportPath: { type: String }, // path to generated .docx
+    // Formal compliance decisions (set by compliance officer after review)
+    riskDecision: { type: riskDecisionSchema, default: null },
+    clauseSignoffs: [clauseSignoffSchema],
     createdBy: {
       type: String,
       required: true,

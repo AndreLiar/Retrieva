@@ -26,8 +26,11 @@ import { Separator } from '@/components/ui/separator';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AssessmentProgressStepper } from '@/components/assessment/AssessmentProgressStepper';
 import { GapAnalysisTable } from '@/components/assessment/GapAnalysisTable';
+import { InherentResidualPanel, WeightedDomainChart, FormalRiskDecision } from '@/components/assessment/RiskScoringPanel';
+import { Art30ClauseScorecardWithSignoff, NegotiationRoundBadge } from '@/components/assessment/ClauseSignoffPanel';
 import { assessmentsApi } from '@/lib/api/assessments';
-import type { Assessment, OverallRisk, Gap } from '@/lib/api/assessments';
+import { workspacesApi } from '@/lib/api/workspaces';
+import type { Assessment, OverallRisk } from '@/lib/api/assessments';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -49,114 +52,10 @@ const RISK_DESCRIPTION_CONTRACT: Record<OverallRisk, string> = {
   High: 'Critical Article 30 clause gaps detected — contract must be renegotiated before use.',
 };
 
-// The 12 mandatory Art. 30 clauses — mirrors gapAnalysisAgent.js CONTRACT_A30_CLAUSES
-const ART30_CLAUSES = [
-  { ref: 'Art.30(2)(a)', category: 'Service Description',    text: 'Clear and complete description of all ICT services and functions to be provided' },
-  { ref: 'Art.30(2)(b)', category: 'Data Governance',        text: 'Locations (countries/regions) where data will be processed and stored' },
-  { ref: 'Art.30(2)(c)', category: 'Security & Resilience',  text: 'Provisions on availability, authenticity, integrity and confidentiality of data' },
-  { ref: 'Art.30(2)(d)', category: 'Data Governance',        text: 'Provisions for accessibility, return, recovery and secure deletion of data on exit' },
-  { ref: 'Art.30(2)(e)', category: 'Subcontracting',         text: 'Full description of all subcontractors and their data processing locations' },
-  { ref: 'Art.30(2)(f)', category: 'Business Continuity',    text: 'ICT service continuity conditions including service level objective amendments' },
-  { ref: 'Art.30(2)(g)', category: 'Business Continuity',    text: "Business continuity plan provisions relevant to the financial entity's services" },
-  { ref: 'Art.30(2)(h)', category: 'Termination & Exit',     text: 'Termination rights of the financial entity including adequate notice periods' },
-  { ref: 'Art.30(3)(a)', category: 'Service Description',    text: 'Full service level descriptions with quantitative and qualitative performance targets' },
-  { ref: 'Art.30(3)(b)', category: 'Regulatory Compliance',  text: 'Advance notification obligations for material changes to ICT services' },
-  { ref: 'Art.30(3)(c)', category: 'Audit & Inspection',     text: 'Right to carry out full audits and on-site inspections of the ICT provider' },
-  { ref: 'Art.30(3)(d)', category: 'Security & Resilience',  text: 'Obligation to assist the financial entity in ICT-related incident management' },
-] as const;
-
-// ─── Art. 30 Clause Scorecard ─────────────────────────────────────────────────
-
-function Art30ClauseScorecard({ gaps }: { gaps: Gap[] }) {
-  const results = ART30_CLAUSES.map((clause) => {
-    // Match gap by article ref (exact or starts-with for sub-articles)
-    const matched = gaps.find(
-      (g) => g.article === clause.ref || g.article?.startsWith(clause.ref.split('(')[0])
-        && g.domain?.toLowerCase().includes(clause.category.split(' ')[0].toLowerCase())
-    ) ?? gaps.find((g) => g.article === clause.ref);
-
-    const status = matched?.gapLevel ?? 'covered';
-    return { ...clause, status, gap: matched };
-  });
-
-  const covered = results.filter((r) => r.status === 'covered').length;
-  const partial = results.filter((r) => r.status === 'partial').length;
-  const missing = results.filter((r) => r.status === 'missing').length;
-
-  return (
-    <div className="space-y-3">
-      {/* Summary bar */}
-      <div className="flex items-center gap-4 text-sm">
-        <span className="flex items-center gap-1.5 text-green-600 font-medium">
-          <CheckCircle2 className="h-4 w-4" /> {covered} covered
-        </span>
-        <span className="flex items-center gap-1.5 text-amber-600 font-medium">
-          <AlertTriangle className="h-4 w-4" /> {partial} partial
-        </span>
-        <span className="flex items-center gap-1.5 text-destructive font-medium">
-          <XCircle className="h-4 w-4" /> {missing} missing
-        </span>
-      </div>
-
-      {/* Clause list */}
-      <div className="rounded-md border divide-y overflow-hidden">
-        {results.map((clause) => {
-          const Icon =
-            clause.status === 'covered' ? CheckCircle2
-            : clause.status === 'partial' ? AlertTriangle
-            : XCircle;
-          const iconClass =
-            clause.status === 'covered' ? 'text-green-500'
-            : clause.status === 'partial' ? 'text-amber-500'
-            : 'text-destructive';
-          const rowClass =
-            clause.status === 'missing'
-              ? 'bg-destructive/5'
-              : clause.status === 'partial'
-              ? 'bg-amber-50/50 dark:bg-amber-950/10'
-              : '';
-
-          return (
-            <div key={clause.ref} className={`px-4 py-3 ${rowClass}`}>
-              <div className="flex items-start gap-3">
-                <Icon className={`h-4 w-4 mt-0.5 shrink-0 ${iconClass}`} />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-mono text-xs font-semibold text-muted-foreground">
-                      {clause.ref}
-                    </span>
-                    <Badge variant="outline" className="text-xs">{clause.category}</Badge>
-                    <Badge
-                      variant={
-                        clause.status === 'covered' ? 'default'
-                        : clause.status === 'partial' ? 'secondary'
-                        : 'destructive'
-                      }
-                      className="text-xs capitalize ml-auto"
-                    >
-                      {clause.status}
-                    </Badge>
-                  </div>
-                  <p className="text-sm mt-1">{clause.text}</p>
-                  {clause.gap?.recommendation && clause.status !== 'covered' && (
-                    <p className={`text-xs mt-1 ${clause.status === 'missing' ? 'text-destructive' : 'text-amber-600 dark:text-amber-400'}`}>
-                      → {clause.gap.recommendation}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
 // ─── Next Steps Panel ─────────────────────────────────────────────────────────
 
 function NextStepsPanel({ assessment }: { assessment: Assessment }) {
-  const router = useRouter();
+  const router    = useRouter();
   const isDora    = assessment.framework === 'DORA';
   const risk      = assessment.results?.overallRisk;
   const wsId      = assessment.workspaceId;
@@ -164,6 +63,37 @@ function NextStepsPanel({ assessment }: { assessment: Assessment }) {
   const partialN  = assessment.results?.gaps.filter((g) => g.gapLevel === 'partial').length ?? 0;
 
   if (isDora) {
+    // If compliance formally rejected, show blocked state
+    if (assessment.riskDecision?.decision === 'reject') {
+      return (
+        <Card className="border-destructive/40 bg-destructive/5">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <XCircle className="h-5 w-5 text-destructive" />
+              Vendor Rejected — Progression Blocked
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              A formal <strong>Reject</strong> decision has been recorded. This vendor cannot be
+              onboarded under current controls. To reverse, record a new risk decision above.
+            </p>
+            {assessment.riskDecision.rationale && (
+              <p className="text-sm text-muted-foreground italic">
+                Reason: &quot;{assessment.riskDecision.rationale}&quot;
+              </p>
+            )}
+            {wsId && (
+              <Button size="sm" variant="outline" onClick={() => router.push(`/workspaces/${wsId}`)}>
+                <Building2 className="h-4 w-4 mr-1.5" />
+                Back to Vendor
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      );
+    }
+
     const isHighRisk = risk === 'High';
     return (
       <Card className={isHighRisk ? 'border-destructive/40 bg-destructive/5' : 'border-primary/30 bg-primary/5'}>
@@ -180,7 +110,8 @@ function NextStepsPanel({ assessment }: { assessment: Assessment }) {
         <CardContent className="space-y-3">
           {isHighRisk ? (
             <p className="text-sm text-muted-foreground">
-              <strong>{missingN} critical gap(s)</strong> were found. Request a vendor remediation plan to address these before proceeding to contract review. When the remediation plan is received, run the Art. 30 contract review to check all 12 mandatory clauses.
+              <strong>{missingN} critical gap(s)</strong> were found. Request a vendor remediation
+              plan before proceeding to contract review, or record a Conditional decision above.
             </p>
           ) : (
             <p className="text-sm text-muted-foreground">
@@ -217,7 +148,7 @@ function NextStepsPanel({ assessment }: { assessment: Assessment }) {
   // CONTRACT_A30 complete
   const clausesMissing = assessment.results?.gaps.filter((g) => g.gapLevel === 'missing').length ?? 0;
   const clausesPartial = assessment.results?.gaps.filter((g) => g.gapLevel === 'partial').length ?? 0;
-  const contractOk = clausesMissing === 0 && clausesPartial === 0;
+  const contractOk     = clausesMissing === 0 && clausesPartial === 0;
 
   return (
     <Card className={clausesMissing > 0 ? 'border-destructive/40 bg-destructive/5' : clausesPartial > 0 ? 'border-amber-300 bg-amber-50/50 dark:bg-amber-950/10' : 'border-green-300 bg-green-50/50 dark:bg-green-950/10'}>
@@ -238,7 +169,7 @@ function NextStepsPanel({ assessment }: { assessment: Assessment }) {
           {contractOk
             ? 'All 12 mandatory DORA Article 30 clauses are satisfied. This contract is ready for execution.'
             : clausesMissing > 0
-            ? `${clausesMissing} clause(s) are missing from the contract and must be added before execution. ${clausesPartial > 0 ? `${clausesPartial} further clause(s) need strengthening.` : ''}`
+            ? `${clausesMissing} clause(s) are missing and must be added before execution.${clausesPartial > 0 ? ` ${clausesPartial} further clause(s) need strengthening.` : ''}`
             : `${clausesPartial} clause(s) are partially addressed — renegotiation recommended before signature.`}
         </p>
         <div className="flex gap-2 flex-wrap">
@@ -266,6 +197,7 @@ function NextStepsPanel({ assessment }: { assessment: Assessment }) {
 export default function AssessmentDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+
   const { data: assessment, isLoading, isError } = useQuery({
     queryKey: ['assessment', id],
     queryFn: async () => {
@@ -280,10 +212,30 @@ export default function AssessmentDetailPage() {
     },
   });
 
+  // Workspace for inherent risk (DORA only)
+  const { data: workspace } = useQuery({
+    queryKey: ['workspace', assessment?.workspaceId],
+    queryFn: async () => {
+      const res = await workspacesApi.get(assessment!.workspaceId);
+      return res.data?.workspace ?? null;
+    },
+    enabled: !!assessment?.workspaceId && assessment?.framework === 'DORA',
+  });
+
+  // Sibling CONTRACT_A30 assessments for negotiation round indicator
+  const { data: siblingA30 } = useQuery({
+    queryKey: ['assessments', assessment?.workspaceId, 'CONTRACT_A30'],
+    queryFn: async () => {
+      const res = await assessmentsApi.list({ workspaceId: assessment!.workspaceId, limit: 50 });
+      return (res.data?.assessments ?? []).filter((a) => a.framework === 'CONTRACT_A30');
+    },
+    enabled: !!assessment?.workspaceId && assessment?.framework === 'CONTRACT_A30',
+  });
+
   const prevStatus = assessment?.status;
   useEffect(() => {
     if (prevStatus === 'complete') {
-      toast.success('Gap analysis complete — report ready');
+      toast.success('Analysis complete — report ready');
     } else if (prevStatus === 'failed') {
       toast.error('Assessment failed');
     }
@@ -325,12 +277,7 @@ export default function AssessmentDetailPage() {
     <div className="p-6 max-w-4xl mx-auto space-y-6">
       {/* Back */}
       <div className="flex items-center gap-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="-ml-2"
-          onClick={() => router.push('/assessments')}
-        >
+        <Button variant="ghost" size="sm" className="-ml-2" onClick={() => router.push('/assessments')}>
           <ArrowLeft className="h-4 w-4 mr-1" />
           Assessments
         </Button>
@@ -352,11 +299,15 @@ export default function AssessmentDetailPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <h1 className="text-2xl font-semibold">{assessment.vendorName}</h1>
             <Badge variant="outline" className="text-xs">
               {isA30 ? 'Art. 30 Contract Review' : 'DORA Gap Analysis'}
             </Badge>
+            {/* Negotiation round badge for CONTRACT_A30 */}
+            {isA30 && siblingA30 && (
+              <NegotiationRoundBadge assessments={siblingA30} currentId={id} />
+            )}
           </div>
           <p className="text-muted-foreground">{assessment.name}</p>
           <p className="text-xs text-muted-foreground mt-1">
@@ -364,10 +315,7 @@ export default function AssessmentDetailPage() {
           </p>
         </div>
         {isComplete && (
-          <Button
-            onClick={() => downloadMutation.mutate()}
-            disabled={downloadMutation.isPending}
-          >
+          <Button onClick={() => downloadMutation.mutate()} disabled={downloadMutation.isPending}>
             {downloadMutation.isPending ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
@@ -405,11 +353,7 @@ export default function AssessmentDetailPage() {
                 {(doc.fileSize / (1024 * 1024)).toFixed(1)} MB
               </span>
               <Badge
-                variant={
-                  doc.status === 'indexed' ? 'default'
-                  : doc.status === 'failed'  ? 'destructive'
-                  : 'outline'
-                }
+                variant={doc.status === 'indexed' ? 'default' : doc.status === 'failed' ? 'destructive' : 'outline'}
                 className="text-xs"
               >
                 {doc.status}
@@ -445,18 +389,15 @@ export default function AssessmentDetailPage() {
               <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
                 Overall Risk
               </p>
-              <div className="flex items-center gap-2">
-                <Badge variant={RISK_VARIANT[assessment.results.overallRisk]} className="text-sm px-3 py-1">
-                  {assessment.results.overallRisk}
-                </Badge>
-              </div>
+              <Badge variant={RISK_VARIANT[assessment.results.overallRisk]} className="text-sm px-3 py-1">
+                {assessment.results.overallRisk}
+              </Badge>
               <p className="text-sm text-muted-foreground">
                 {isA30
                   ? RISK_DESCRIPTION_CONTRACT[assessment.results.overallRisk]
                   : RISK_DESCRIPTION[assessment.results.overallRisk]}
               </p>
             </div>
-
             <div className="flex-1 rounded-lg border p-4 space-y-2">
               <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
                 Summary
@@ -479,13 +420,21 @@ export default function AssessmentDetailPage() {
             ))}
           </div>
 
-          {/* Art. 30 Clause Scorecard (CONTRACT_A30 only) or generic gap table */}
+          {/* ── DORA-specific panels (Step 3 fixes) ── */}
+          {!isA30 && (
+            <>
+              <InherentResidualPanel assessment={assessment} workspace={workspace ?? null} />
+              <WeightedDomainChart assessment={assessment} />
+            </>
+          )}
+
+          {/* Gap detail table / Art. 30 clause scorecard with sign-off */}
           <div className="space-y-3">
             <h2 className="text-lg font-semibold">
               {isA30 ? 'Article 30 Clause Scorecard' : 'Gap Analysis'}
             </h2>
             {isA30 ? (
-              <Art30ClauseScorecard gaps={assessment.results.gaps} />
+              <Art30ClauseScorecardWithSignoff assessment={assessment} />
             ) : (
               <GapAnalysisTable gaps={assessment.results.gaps} />
             )}
@@ -497,7 +446,12 @@ export default function AssessmentDetailPage() {
             Domains analyzed: {assessment.results.domainsAnalyzed.join(', ')}
           </p>
 
-          {/* Next Steps Panel */}
+          {/* ── Formal Risk Decision (DORA only) ── */}
+          {!isA30 && (
+            <FormalRiskDecision assessment={assessment} assessmentId={id} />
+          )}
+
+          {/* Next Steps */}
           <NextStepsPanel assessment={assessment} />
         </div>
       )}
