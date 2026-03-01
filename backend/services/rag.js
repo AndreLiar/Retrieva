@@ -54,8 +54,7 @@ const guardrailsConfig = {
   },
 };
 
-// LangSmith tracing stub (langsmith.js removed in MVP)
-const getCallbacks = () => [];
+import { getCallbacks } from '../config/langsmith.js';
 
 // Default dependencies
 import { getDefaultLLM } from '../config/llm.js';
@@ -217,7 +216,13 @@ class RAGService {
 
   async _generateAnswer(question, context, history, metadata = {}) {
     const chain = ragPrompt.pipe(this.llm).pipe(new StringOutputParser());
-    const callbacks = getCallbacks();
+    const callbacks = getCallbacks({
+      runName: 'rag-answer-generation',
+      feature: 'rag',
+      userId: metadata.userId,
+      workspaceId: metadata.workspaceId,
+      sessionId: metadata.conversationId,
+    });
 
     const invokeInput = {
       context,

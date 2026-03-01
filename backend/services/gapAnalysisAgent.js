@@ -21,6 +21,7 @@ import { Assessment } from '../models/Assessment.js';
 import { embeddings } from '../config/embeddings.js';
 import { createLLM } from '../config/llmProvider.js';
 import logger from '../config/logger.js';
+import { getCallbacks } from '../config/langsmith.js';
 
 const QDRANT_URL = process.env.QDRANT_URL || 'http://localhost:6333';
 const QDRANT_API_KEY = process.env.QDRANT_API_KEY;
@@ -451,8 +452,16 @@ async function runContractA30ReActAgent(assessment, emit) {
 
   const userMessage = `Review the uploaded ICT contract for vendor '${assessment.vendorName}' against all 12 mandatory DORA Article 30 clauses. Search the contract thoroughly, then call record_clause_review with a complete clause-by-clause structured review covering all 12 obligations.`;
 
+  const contractCallbacks = getCallbacks({
+    runName: 'contract-a30-review',
+    feature: 'contract-review',
+    sessionId: assessment._id?.toString(),
+  });
   try {
-    await agent.invoke({ messages: [new HumanMessage(userMessage)] }, { recursionLimit: 40 });
+    await agent.invoke(
+      { messages: [new HumanMessage(userMessage)] },
+      { recursionLimit: 40, callbacks: contractCallbacks }
+    );
   } catch (err) {
     if (!getResult()) {
       throw err;
@@ -550,10 +559,17 @@ ${contractContext}
 
 Produce a clause-by-clause review covering all 12 Article 30 obligations.`;
 
-  const response = await llm.invoke([
-    { role: 'system', content: systemPrompt },
-    { role: 'user', content: userPrompt },
-  ]);
+  const a30FallbackCallbacks = getCallbacks({
+    feature: 'contract-review-fallback',
+    sessionId: assessment._id?.toString(),
+  });
+  const response = await llm.invoke(
+    [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt },
+    ],
+    { callbacks: a30FallbackCallbacks }
+  );
 
   const content =
     typeof response.content === 'string' ? response.content : JSON.stringify(response.content);
@@ -593,10 +609,15 @@ async function runReActAgent(assessment, emit) {
 
 Search vendor documents thoroughly, retrieve DORA requirements for all seven domains (General Provisions, ICT Risk Management, Incident Reporting, Resilience Testing, Third-Party Risk, ICT Third-Party Oversight, Information Sharing), then call record_gap_analysis with your complete structured findings covering all applicable chapters.`;
 
+  const doraCallbacks = getCallbacks({
+    runName: 'dora-gap-analysis',
+    feature: 'gap-analysis',
+    sessionId: assessment._id?.toString(),
+  });
   try {
     await agent.invoke(
       { messages: [new HumanMessage(userMessage)] },
-      { recursionLimit: 40 } // max graph steps (each tool call = 2 steps: invoke + result)
+      { recursionLimit: 40, callbacks: doraCallbacks } // max graph steps (each tool call = 2 steps: invoke + result)
     );
   } catch (err) {
     // Recursion limit hit but result may already be captured
@@ -718,10 +739,17 @@ Respond ONLY with a valid JSON object:
 
   const userPrompt = `Vendor: ${assessment.vendorName}\n\nDORA OBLIGATIONS:\n${doraContext}\n\nVENDOR EVIDENCE:\n${vendorContext}\n\nProduce a gap analysis with at least 15 gaps spanning all DORA chapters (Articles 5–49).`;
 
-  const response = await llm.invoke([
-    { role: 'system', content: systemPrompt },
-    { role: 'user', content: userPrompt },
-  ]);
+  const doraFallbackCallbacks = getCallbacks({
+    feature: 'gap-analysis-fallback',
+    sessionId: assessment._id?.toString(),
+  });
+  const response = await llm.invoke(
+    [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt },
+    ],
+    { callbacks: doraFallbackCallbacks }
+  );
 
   const content =
     typeof response.content === 'string' ? response.content : JSON.stringify(response.content);
