@@ -9,6 +9,7 @@ import {
   AlertCircle,
   RefreshCw,
   Trash2,
+  Download,
 } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
@@ -149,6 +150,19 @@ export function DataSourceCard({ dataSource, workspaceId }: DataSourceCardProps)
               Sync
             </Button>
           </RequirePermission>
+
+          {dataSource.storageKey && dataSource.sourceType === 'file' && (
+            <Button
+              size="sm"
+              variant="ghost"
+              title="Download original file"
+              onClick={() =>
+                sourcesApi.downloadFile(dataSource._id, dataSource.config?.fileName ?? dataSource.name)
+              }
+            >
+              <Download className="h-3 w-3" />
+            </Button>
+          )}
 
           <RequirePermission permission="canTriggerSync">
             <Button

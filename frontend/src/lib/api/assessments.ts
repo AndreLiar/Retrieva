@@ -39,6 +39,7 @@ export interface AssessmentDocument {
   fileType: string;
   fileSize: number;
   status: 'uploading' | 'indexed' | 'failed';
+  storageKey?: string | null;
 }
 
 export interface Assessment {
@@ -164,5 +165,27 @@ export const assessmentsApi = {
       { clauseRef, status, note }
     );
     return response.data;
+  },
+
+  /**
+   * Download an original vendor document from DigitalOcean Spaces.
+   */
+  downloadAssessmentFile: async (
+    assessmentId: string,
+    docIndex: number,
+    fileName: string
+  ): Promise<void> => {
+    const response = await apiClient.get(
+      `/assessments/${assessmentId}/files/${docIndex}`,
+      { responseType: 'blob', timeout: 60_000 }
+    );
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', fileName);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
   },
 };

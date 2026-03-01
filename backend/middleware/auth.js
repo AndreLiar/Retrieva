@@ -88,6 +88,7 @@ export const authenticate = async (req, res, next) => {
       email: user.email,
       role: user.role,
       name: user.name,
+      organizationId: user.organizationId || null,
     };
 
     logger.debug('User authenticated', {

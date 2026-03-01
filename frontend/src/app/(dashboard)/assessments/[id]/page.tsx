@@ -16,6 +16,7 @@ import {
   ChevronRight,
   Building2,
   FileSearch,
+  Download,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -358,6 +359,17 @@ export default function AssessmentDetailPage() {
               >
                 {doc.status}
               </Badge>
+              {doc.storageKey && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 shrink-0"
+                  title="Download document"
+                  onClick={() => assessmentsApi.downloadAssessmentFile(id, i, doc.fileName)}
+                >
+                  <Download className="h-3.5 w-3.5" />
+                </Button>
+              )}
             </li>
           ))}
         </ul>
