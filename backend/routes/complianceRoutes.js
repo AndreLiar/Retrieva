@@ -1,5 +1,10 @@
 import { Router } from 'express';
-import { listArticles, getArticle, listDomains } from '../controllers/complianceController.js';
+import {
+  listArticles,
+  getArticle,
+  listDomains,
+  getMetadata,
+} from '../controllers/complianceController.js';
 import { authenticate } from '../middleware/auth.js';
 
 const router = Router();
@@ -8,6 +13,13 @@ const router = Router();
  * All compliance routes require authentication.
  * No workspace access needed — this is shared reference data.
  */
+
+/**
+ * @route  GET /api/v1/compliance/metadata
+ * @desc   Knowledge base version, lastVerified date, sources — shows when KB was last reviewed
+ * @access Private
+ */
+router.get('/metadata', authenticate, getMetadata);
 
 /**
  * @route  GET /api/v1/compliance/domains
