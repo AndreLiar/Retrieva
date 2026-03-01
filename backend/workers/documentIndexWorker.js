@@ -2,7 +2,7 @@ import { Worker } from 'bullmq';
 import { redisConnection } from '../config/redis.js';
 import { DocumentSource } from '../models/DocumentSource.js';
 import { getVectorStore } from '../config/vectorStore.js';
-import { prepareNotionDocumentForIndexing } from '../loaders/notionDocumentLoader.js';
+import { prepareDocumentForIndexing } from '../loaders/documentLoader.js';
 import logger from '../config/logger.js';
 import { connectDB } from '../config/database.js';
 
@@ -131,7 +131,7 @@ async function processIndexJob(job) {
     operation,
     vectorStoreIds,
     skipM3 = false,
-    sourceType = 'notion',
+    sourceType = 'file',
   } = job.data;
 
   logger.info(
@@ -197,7 +197,7 @@ async function handleAddOrUpdate(
   operation,
   _skipM3 = false,
   job = null,
-  sourceType = 'notion'
+  sourceType = 'file'
 ) {
   logger.info(
     `${operation === 'add' ? 'Adding' : 'Updating'} document ${sourceId} to vector store`
@@ -238,10 +238,9 @@ async function handleAddOrUpdate(
 
   await updateProgress({ phase: 'chunking', sourceId });
 
-  // Prepare document chunks.
-  // For Notion: semantic block-based chunking (blocks provided).
-  // For MCP sources: blocks are absent; falls back to character-based splitting.
-  let chunks = await prepareNotionDocumentForIndexing(
+  // Prepare document chunks using character-based splitting.
+  // blocks field is passed through for future block-aware chunking support.
+  let chunks = await prepareDocumentForIndexing(
     documentContent,
     workspaceId,
     documentContent.blocks ?? null,

@@ -152,7 +152,7 @@ app.use((req, res, next) => {
   }
 
   // Sync operations get even longer timeout
-  if (req.path.includes('/sync') || req.path.includes('/notion')) {
+  if (req.path.includes('/sync')) {
     timeout = SYNC_TIMEOUT_MS;
   }
 

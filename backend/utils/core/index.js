@@ -45,9 +45,6 @@ export { truncate, slugify, capitalize } from './stringHelpers.js';
 // Date Helpers
 export { formatDate, parseDate, getRelativeTime } from './dateHelpers.js';
 
-// Notion Rate Limiter
-export { notionRateLimiter, NotionRateLimiter } from './notionRateLimiter.js';
-
 // Request Helpers
 export {
   getUserId,
