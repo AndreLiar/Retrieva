@@ -43,7 +43,7 @@ Create a new assessment and start the ingestion + analysis pipeline.
       "vendorName": "Acme Cloud",
       "status": "indexing",
       "documents": [
-        { "fileName": "policy.pdf", "fileType": "application/pdf", "fileSize": 204800, "status": "uploading" }
+        { "fileName": "policy.pdf", "fileType": "application/pdf", "fileSize": 204800, "status": "uploading", "storageKey": "organizations/org-1/workspaces/ws-123/assessments/asmnt-1/0_policy.pdf" }
       ],
       "createdAt": "2025-06-01T10:00:00.000Z"
     }
@@ -116,6 +116,27 @@ Get a single assessment including full gap results.
   }
 }
 ```
+
+---
+
+### `GET /assessments/:id/files/:docIndex`
+
+Download an original uploaded vendor document by its zero-based index in `assessment.documents`.
+
+**Path parameters**
+
+| Name | Description |
+|------|-------------|
+| `id` | Assessment ID |
+| `docIndex` | Zero-based document index (e.g. `0` for the first uploaded file) |
+
+**Response `200`**
+
+- `Content-Type: application/octet-stream`
+- `Content-Disposition: attachment; filename="{original filename}"`
+- Body: raw file bytes (streamed from DigitalOcean Spaces)
+
+Returns `404` when the document's `storageKey` is `null` (Spaces not configured at upload time).
 
 ---
 
