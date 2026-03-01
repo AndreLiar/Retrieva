@@ -177,7 +177,6 @@ export default function LandingPage() {
               </div>
               <ul className="space-y-2 text-sm text-muted-foreground mb-4">
                 {[
-                  'Notion workspace sync',
                   'File upload — PDF, DOCX, XLSX',
                   'Web URL crawling',
                   'Confluence Cloud (direct API)',
@@ -212,7 +211,6 @@ export default function LandingPage() {
               <ul className="space-y-2 text-sm text-muted-foreground mb-4">
                 {[
                   'GitHub, Jira, Slack, Google Drive',
-                  'Notion via official MCP server',
                   'Internal wikis & proprietary systems',
                   'Any custom MCP-compatible server',
                 ].map((item) => (

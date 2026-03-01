@@ -123,8 +123,6 @@ describe('Environment Validator', () => {
       process.env.NODE_ENV = 'test';
       process.env.PORT = '4000';
       process.env.RESEND_API_KEY = 're_test_key';
-      process.env.NOTION_CLIENT_ID = 'client-id';
-      process.env.NOTION_CLIENT_SECRET = 'client-secret';
 
       const info = getEnvInfo();
 
@@ -132,7 +130,6 @@ describe('Environment Validator', () => {
       expect(info.port).toBe('4000');
       expect(info.mongoConfigured).toBe(true);
       expect(info.emailConfigured).toBe(true);
-      expect(info.notionConfigured).toBe(true);
     });
 
     it('should report false for unconfigured services', () => {
