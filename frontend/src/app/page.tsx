@@ -11,8 +11,6 @@ import {
   FileSearch,
   Bot,
   Lock,
-  Plug,
-  Globe,
   Upload,
   CheckCircle2,
   Bell,
@@ -151,18 +149,17 @@ export default function LandingPage() {
             viewport={{ once: true }}
             className="text-center mb-12"
           >
-            <h2 className="text-3xl font-bold mb-4">Connect any knowledge source</h2>
+            <h2 className="text-3xl font-bold mb-4">Connect your knowledge sources</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Simple built-in connectors for common tools. Open MCP protocol for everything else.
-              Both paths feed the same high-quality RAG pipeline.
+              Upload documents, crawl URLs, or sync from Confluence — all feeding the same
+              high-quality RAG pipeline.
             </p>
           </motion.div>
 
-          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            {/* Native */}
+          <div className="max-w-lg mx-auto">
             <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               className="rounded-lg border bg-card p-6"
             >
@@ -171,7 +168,7 @@ export default function LandingPage() {
                   <Upload className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="font-semibold">Native Integrations</h3>
+                  <h3 className="font-semibold">Built-in Connectors</h3>
                   <p className="text-xs text-muted-foreground">Zero infrastructure required</p>
                 </div>
               </div>
@@ -191,50 +188,7 @@ export default function LandingPage() {
                 Fill in a form — Retrieva handles the rest.
               </p>
             </motion.div>
-
-            {/* MCP */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              className="rounded-lg border bg-card p-6"
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 rounded-md bg-primary/10 text-primary">
-                  <Plug className="h-5 w-5" />
-                </div>
-                <div>
-                  <h3 className="font-semibold">MCP Protocol</h3>
-                  <p className="text-xs text-muted-foreground">Connect anything, your way</p>
-                </div>
-              </div>
-              <ul className="space-y-2 text-sm text-muted-foreground mb-4">
-                {[
-                  'GitHub, Jira, Slack, Google Drive',
-                  'Internal wikis & proprietary systems',
-                  'Any custom MCP-compatible server',
-                ].map((item) => (
-                  <li key={item} className="flex items-center gap-2">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-green-500 shrink-0" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-              <p className="text-xs text-muted-foreground border-t pt-3">
-                Run your own MCP server — Retrieva indexes it automatically.
-              </p>
-            </motion.div>
           </div>
-
-          <motion.p
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            className="text-center text-sm text-muted-foreground mt-8 flex items-center justify-center gap-2"
-          >
-            <Globe className="h-4 w-4" />
-            As the MCP ecosystem grows, Retrieva gains new source types with zero backend changes.
-          </motion.p>
         </div>
       </section>
 

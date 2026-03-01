@@ -31,29 +31,6 @@ export const documentIndexQueue = new Queue('documentIndex', {
 });
 
 /**
- * Queue for MCP data source synchronization jobs
- * Handles syncing documents from external MCP-compatible data sources
- * (Confluence, GitHub, Google Drive, etc.)
- */
-export const mcpSyncQueue = new Queue('mcpSync', {
-  connection: redisConnection,
-  defaultJobOptions: {
-    attempts: SYNC_MAX_RETRIES,
-    backoff: {
-      type: 'exponential',
-      delay: 60000, // Start with 1 minute
-    },
-    removeOnComplete: {
-      count: 20,
-      age: 3 * 24 * 60 * 60, // Remove after 3 days
-    },
-    removeOnFail: {
-      count: 50,
-    },
-  },
-});
-
-/**
  * Queue for generic data source synchronization jobs (file, url, confluence).
  * Each job fetches/chunks content and enqueues to documentIndexQueue.
  */
@@ -260,7 +237,6 @@ export async function scheduleMonitoringJob() {
 const queueEventListeners = {
   documentIndex: null,
   memoryDecay: null,
-  mcpSync: null,
   assessmentJobs: null,
   dataSourceSync: null,
   questionnaireJobs: null,
@@ -277,11 +253,6 @@ queueEventListeners.memoryDecay = (error) => {
   logger.error('Memory decay queue error:', { error: error.message, stack: error.stack });
 };
 memoryDecayQueue.on('error', queueEventListeners.memoryDecay);
-
-queueEventListeners.mcpSync = (error) => {
-  logger.error('MCP sync queue error:', { error: error.message, stack: error.stack });
-};
-mcpSyncQueue.on('error', queueEventListeners.mcpSync);
 
 queueEventListeners.assessmentJobs = (error) => {
   logger.error('Assessment jobs queue error:', { error: error.message, stack: error.stack });
@@ -318,10 +289,6 @@ export const closeQueues = async () => {
     if (queueEventListeners.memoryDecay) {
       memoryDecayQueue.off('error', queueEventListeners.memoryDecay);
     }
-    if (queueEventListeners.mcpSync) {
-      mcpSyncQueue.off('error', queueEventListeners.mcpSync);
-    }
-
     if (queueEventListeners.assessmentJobs) {
       assessmentQueue.off('error', queueEventListeners.assessmentJobs);
     }
@@ -341,7 +308,6 @@ export const closeQueues = async () => {
     await Promise.all([
       documentIndexQueue.close(),
       memoryDecayQueue.close(),
-      mcpSyncQueue.close(),
       assessmentQueue.close(),
       dataSourceSyncQueue.close(),
       questionnaireQueue.close(),
@@ -356,7 +322,6 @@ export const closeQueues = async () => {
 export default {
   documentIndexQueue,
   memoryDecayQueue,
-  mcpSyncQueue,
   assessmentQueue,
   dataSourceSyncQueue,
   questionnaireQueue,
