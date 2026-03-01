@@ -2,12 +2,18 @@
 /**
  * seedComplianceKb.js
  *
- * One-time (idempotent) script that embeds the DORA regulation articles
- * into a shared, read-only Qdrant collection: `compliance_kb`.
+ * Embeds DORA regulation articles + EBA/ESMA/EIOPA RTS entries into the
+ * shared, read-only Qdrant collection: `compliance_kb`.
  *
- * Usage:
+ * Modes:
  *   node backend/scripts/seedComplianceKb.js
- *   node backend/scripts/seedComplianceKb.js --reset   (delete and re-seed)
+ *       Smart sync (default) — skips if Qdrant point count matches JSON article
+ *       count. Re-seeds automatically when new articles are added. Suitable for
+ *       automated CD pipeline execution.
+ *
+ *   node backend/scripts/seedComplianceKb.js --reset
+ *       Force full rebuild — deletes the collection and re-seeds from scratch.
+ *       Use when article text has been updated (not just new articles added).
  *
  * The collection is shared across all assessments (read-only reference data).
  */
@@ -45,7 +51,7 @@ const AZURE_OPENAI_INSTANCE_NAME =
 // ---------------------------------------------------------------------------
 
 function getQdrantClient() {
-  const opts = { url: QDRANT_URL };
+  const opts = { url: QDRANT_URL, checkCompatibility: false };
   if (QDRANT_API_KEY) opts.apiKey = QDRANT_API_KEY;
   return new QdrantClient(opts);
 }
@@ -60,14 +66,26 @@ function getEmbeddings() {
   });
 }
 
-function loadArticles() {
+/**
+ * Load knowledge base from JSON.
+ * Supports both old format (plain array) and new format ({ version, articles }).
+ * Returns { articles, meta }.
+ */
+function loadData() {
   const filePath = path.join(__dirname, '../data/compliance/dora-articles.json');
-  return JSON.parse(readFileSync(filePath, 'utf-8'));
+  const raw = JSON.parse(readFileSync(filePath, 'utf-8'));
+  if (Array.isArray(raw)) {
+    return { articles: raw, meta: { version: '1.0', lastVerified: null, sources: [] } };
+  }
+  return {
+    articles: raw.articles,
+    meta: { version: raw.version, lastVerified: raw.lastVerified, sources: raw.sources || [] },
+  };
 }
 
 /**
- * Build the text we embed for each article:
- * Combines article header + obligations + full text for maximum retrieval coverage.
+ * Build the text we embed for each article.
+ * Combines header + obligations + full text for maximum retrieval coverage.
  */
 function buildEmbedText(article) {
   const obligationsText = article.obligations?.join('; ') || '';
@@ -90,6 +108,15 @@ async function collectionExists(client) {
   }
 }
 
+async function getCollectionPointCount(client) {
+  try {
+    const info = await client.getCollection(COMPLIANCE_KB_COLLECTION);
+    return info.points_count || 0;
+  } catch {
+    return 0;
+  }
+}
+
 async function createCollection(client) {
   await client.createCollection(COMPLIANCE_KB_COLLECTION, {
     vectors: {
@@ -102,47 +129,14 @@ async function createCollection(client) {
   console.log(`Created Qdrant collection: ${COMPLIANCE_KB_COLLECTION}`);
 }
 
-// ---------------------------------------------------------------------------
-// Main
-// ---------------------------------------------------------------------------
-
-async function seed() {
-  const args = process.argv.slice(2);
-  const reset = args.includes('--reset');
-
-  const client = getQdrantClient();
+async function embedAndUpsert(client, articles) {
   const embeddings = getEmbeddings();
-
-  console.log(`Connecting to Qdrant at ${QDRANT_URL}…`);
-
-  const exists = await collectionExists(client);
-
-  if (exists && !reset) {
-    const info = await client.getCollection(COMPLIANCE_KB_COLLECTION);
-    const count = info.points_count || 0;
-    console.log(`Collection "${COMPLIANCE_KB_COLLECTION}" already exists with ${count} points.`);
-    console.log('Run with --reset to delete and re-seed.');
-    process.exit(0);
-  }
-
-  if (exists && reset) {
-    console.log(`Deleting existing collection "${COMPLIANCE_KB_COLLECTION}"…`);
-    await client.deleteCollection(COMPLIANCE_KB_COLLECTION);
-  }
-
-  await createCollection(client);
-
-  const articles = loadArticles();
-  console.log(`Loaded ${articles.length} articles from dora-articles.json`);
-
-  // Build texts for embedding
   const texts = articles.map(buildEmbedText);
 
-  console.log('Embedding articles (this may take 30–60 seconds)…');
+  console.log(`Embedding ${articles.length} entries (this may take 30–90 seconds)…`);
   const vectors = await embeddings.embedDocuments(texts);
-  console.log(`Embedded ${vectors.length} articles.`);
+  console.log(`Embedded ${vectors.length} entries.`);
 
-  // Upsert to Qdrant
   const points = articles.map((article, i) => ({
     id: randomUUID(),
     vector: vectors[i],
@@ -160,14 +154,66 @@ async function seed() {
   }));
 
   await client.upsert(COMPLIANCE_KB_COLLECTION, { wait: true, points });
+}
 
-  console.log(`\n✓ Seeded ${points.length} DORA articles into "${COMPLIANCE_KB_COLLECTION}".`);
-  console.log('Domains indexed:');
+// ---------------------------------------------------------------------------
+// Main
+// ---------------------------------------------------------------------------
+
+async function seed() {
+  const args = process.argv.slice(2);
+  const forceReset = args.includes('--reset');
+
+  const client = getQdrantClient();
+  const { articles, meta } = loadData();
+
+  console.log(`Connecting to Qdrant at ${QDRANT_URL}…`);
+  console.log(`Knowledge base: v${meta.version}, lastVerified: ${meta.lastVerified || 'unknown'}`);
+  console.log(`Total entries to sync: ${articles.length}`);
+
+  const exists = await collectionExists(client);
+
+  if (exists && !forceReset) {
+    // ── Smart sync: compare point count to article count ──────────────────
+    const currentCount = await getCollectionPointCount(client);
+
+    if (currentCount === articles.length) {
+      console.log(
+        `✓ Collection "${COMPLIANCE_KB_COLLECTION}" is up to date (${currentCount} points = ${articles.length} entries). No action needed.`
+      );
+      process.exit(0);
+    }
+
+    console.log(
+      `Point count mismatch — Qdrant: ${currentCount}, JSON: ${articles.length}. Re-seeding…`
+    );
+    await client.deleteCollection(COMPLIANCE_KB_COLLECTION);
+  } else if (exists && forceReset) {
+    console.log(`--reset flag: deleting existing collection "${COMPLIANCE_KB_COLLECTION}"…`);
+    await client.deleteCollection(COMPLIANCE_KB_COLLECTION);
+  }
+
+  await createCollection(client);
+  await embedAndUpsert(client, articles);
+
+  console.log(`\n✓ Seeded ${articles.length} entries into "${COMPLIANCE_KB_COLLECTION}".`);
+
+  // Print domain summary
+  const byRegulation = articles.reduce((acc, a) => {
+    acc[a.regulation] = (acc[a.regulation] || 0) + 1;
+    return acc;
+  }, {});
+  console.log('Regulation breakdown:');
+  for (const [reg, count] of Object.entries(byRegulation)) {
+    console.log(`  - ${reg}: ${count} entries`);
+  }
+
   const domains = [...new Set(articles.map((a) => a.domain))];
-  domains.forEach((d) => {
+  console.log('Domains indexed:');
+  for (const d of domains) {
     const count = articles.filter((a) => a.domain === d).length;
-    console.log(`  - ${d}: ${count} articles`);
-  });
+    console.log(`  - ${d}: ${count} entries`);
+  }
 
   process.exit(0);
 }
