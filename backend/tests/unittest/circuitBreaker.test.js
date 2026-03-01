@@ -17,7 +17,7 @@ vi.mock('../../config/logger.js', () => ({
   },
 }));
 
-import CircuitBreaker, { notionCircuitBreaker } from '../../utils/core/circuitBreaker.js';
+import CircuitBreaker from '../../utils/core/circuitBreaker.js';
 
 describe('Circuit Breaker', () => {
   beforeEach(() => {
@@ -454,22 +454,6 @@ describe('Circuit Breaker', () => {
       await cb.execute(successFn, 'Test');
 
       expect(cb.state).toBe('CLOSED');
-    });
-  });
-
-  // ============================================================================
-  // notionCircuitBreaker singleton tests
-  // ============================================================================
-  describe('notionCircuitBreaker singleton', () => {
-    it('should be an instance of CircuitBreaker', () => {
-      expect(notionCircuitBreaker).toBeInstanceOf(CircuitBreaker);
-    });
-
-    it('should have configured options for Notion', () => {
-      expect(notionCircuitBreaker.failureThreshold).toBe(5);
-      expect(notionCircuitBreaker.successThreshold).toBe(2);
-      expect(notionCircuitBreaker.timeout).toBe(60000);
-      expect(notionCircuitBreaker.windowSize).toBe(10);
     });
   });
 });

@@ -1,5 +1,5 @@
 /**
- * Middleware to load Notion workspace by ID
+ * Middleware to load workspace by ID
  * Adds workspace to req.workspace for use in subsequent handlers
  *
  * SECURITY: Implements BOLA protection - verifies user has access to workspace

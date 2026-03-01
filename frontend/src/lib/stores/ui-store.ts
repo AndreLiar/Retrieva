@@ -62,7 +62,6 @@ export const MODAL_IDS = {
   CREATE_WORKSPACE: 'create-workspace',
   INVITE_MEMBER: 'invite-member',
   CONFIRM_DELETE: 'confirm-delete',
-  CONNECT_NOTION: 'connect-notion',
   USER_SETTINGS: 'user-settings',
 } as const;
 

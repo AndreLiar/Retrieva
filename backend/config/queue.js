@@ -8,28 +8,6 @@ const MEMORY_DECAY_INTERVAL_HOURS = parseInt(process.env.MEMORY_DECAY_INTERVAL_H
 const MONITORING_INTERVAL_HOURS = parseInt(process.env.MONITORING_INTERVAL_HOURS) || 24;
 
 /**
- * Queue for Notion workspace synchronization jobs
- * Handles full sync, incremental sync, and scheduled sync operations
- */
-export const notionSyncQueue = new Queue('notionSync', {
-  connection: redisConnection,
-  defaultJobOptions: {
-    attempts: SYNC_MAX_RETRIES,
-    backoff: {
-      type: 'exponential',
-      delay: 60000, // Start with 1 minute
-    },
-    removeOnComplete: {
-      count: 20,
-      age: 3 * 24 * 60 * 60, // Remove after 3 days
-    },
-    removeOnFail: {
-      count: 50,
-    },
-  },
-});
-
-/**
  * Queue for document indexing operations
  * Processes individual documents and indexes them in Qdrant
  * ISSUE #18 FIX: Changed to exponential backoff for better retry behavior
@@ -48,29 +26,6 @@ export const documentIndexQueue = new Queue('documentIndex', {
     },
     removeOnFail: {
       count: 100,
-    },
-  },
-});
-
-/**
- * Queue for MCP data source synchronization jobs
- * Handles syncing documents from external MCP-compatible data sources
- * (Confluence, GitHub, Google Drive, etc.)
- */
-export const mcpSyncQueue = new Queue('mcpSync', {
-  connection: redisConnection,
-  defaultJobOptions: {
-    attempts: SYNC_MAX_RETRIES,
-    backoff: {
-      type: 'exponential',
-      delay: 60000, // Start with 1 minute
-    },
-    removeOnComplete: {
-      count: 20,
-      age: 3 * 24 * 60 * 60, // Remove after 3 days
-    },
-    removeOnFail: {
-      count: 50,
     },
   },
 });
@@ -280,10 +235,8 @@ export async function scheduleMonitoringJob() {
 
 // ISSUE #34 FIX: Store event listener references for cleanup
 const queueEventListeners = {
-  notionSync: null,
   documentIndex: null,
   memoryDecay: null,
-  mcpSync: null,
   assessmentJobs: null,
   dataSourceSync: null,
   questionnaireJobs: null,
@@ -291,11 +244,6 @@ const queueEventListeners = {
 };
 
 // Log queue events with stored references
-queueEventListeners.notionSync = (error) => {
-  logger.error('Notion sync queue error:', { error: error.message, stack: error.stack });
-};
-notionSyncQueue.on('error', queueEventListeners.notionSync);
-
 queueEventListeners.documentIndex = (error) => {
   logger.error('Document index queue error:', { error: error.message, stack: error.stack });
 };
@@ -305,11 +253,6 @@ queueEventListeners.memoryDecay = (error) => {
   logger.error('Memory decay queue error:', { error: error.message, stack: error.stack });
 };
 memoryDecayQueue.on('error', queueEventListeners.memoryDecay);
-
-queueEventListeners.mcpSync = (error) => {
-  logger.error('MCP sync queue error:', { error: error.message, stack: error.stack });
-};
-mcpSyncQueue.on('error', queueEventListeners.mcpSync);
 
 queueEventListeners.assessmentJobs = (error) => {
   logger.error('Assessment jobs queue error:', { error: error.message, stack: error.stack });
@@ -340,19 +283,12 @@ logger.info('BullMQ queues initialized successfully');
 export const closeQueues = async () => {
   try {
     // Remove event listeners to prevent memory leaks
-    if (queueEventListeners.notionSync) {
-      notionSyncQueue.off('error', queueEventListeners.notionSync);
-    }
     if (queueEventListeners.documentIndex) {
       documentIndexQueue.off('error', queueEventListeners.documentIndex);
     }
     if (queueEventListeners.memoryDecay) {
       memoryDecayQueue.off('error', queueEventListeners.memoryDecay);
     }
-    if (queueEventListeners.mcpSync) {
-      mcpSyncQueue.off('error', queueEventListeners.mcpSync);
-    }
-
     if (queueEventListeners.assessmentJobs) {
       assessmentQueue.off('error', queueEventListeners.assessmentJobs);
     }
@@ -370,10 +306,8 @@ export const closeQueues = async () => {
     }
 
     await Promise.all([
-      notionSyncQueue.close(),
       documentIndexQueue.close(),
       memoryDecayQueue.close(),
-      mcpSyncQueue.close(),
       assessmentQueue.close(),
       dataSourceSyncQueue.close(),
       questionnaireQueue.close(),
@@ -386,10 +320,8 @@ export const closeQueues = async () => {
 };
 
 export default {
-  notionSyncQueue,
   documentIndexQueue,
   memoryDecayQueue,
-  mcpSyncQueue,
   assessmentQueue,
   dataSourceSyncQueue,
   questionnaireQueue,

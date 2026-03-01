@@ -346,7 +346,7 @@ export default function SettingsPage() {
             <div>
               <p className="font-medium">Sync Alerts</p>
               <p className="text-sm text-muted-foreground">
-                Get notified when Notion syncs complete or fail
+                Get notified when document syncs complete or fail
               </p>
             </div>
             <Switch

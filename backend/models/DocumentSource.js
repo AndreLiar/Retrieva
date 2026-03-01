@@ -18,7 +18,6 @@ const documentSourceSchema = new mongoose.Schema(
     sourceType: {
       type: String,
       enum: [
-        'notion',
         'gdrive',
         'confluence',
         'github',

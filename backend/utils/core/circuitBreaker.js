@@ -194,12 +194,4 @@ class CircuitBreaker {
   }
 }
 
-// Singleton instance for Notion API
-export const notionCircuitBreaker = new CircuitBreaker({
-  failureThreshold: 5, // Open after 5 consecutive failures
-  successThreshold: 2, // Close after 2 successes in half-open
-  timeout: 60000, // Wait 60s before trying again
-  windowSize: 10, // Track last 10 requests
-});
-
 export default CircuitBreaker;

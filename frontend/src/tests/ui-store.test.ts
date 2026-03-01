@@ -214,10 +214,6 @@ describe('UI Store', () => {
       expect(MODAL_IDS.CONFIRM_DELETE).toBe('confirm-delete');
     });
 
-    it('should have CONNECT_NOTION constant', () => {
-      expect(MODAL_IDS.CONNECT_NOTION).toBe('connect-notion');
-    });
-
     it('should have USER_SETTINGS constant', () => {
       expect(MODAL_IDS.USER_SETTINGS).toBe('user-settings');
     });

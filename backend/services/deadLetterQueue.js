@@ -13,7 +13,7 @@
 
 import { DeadLetterJob } from '../models/DeadLetterJob.js';
 import logger from '../config/logger.js';
-import { notionSyncQueue, documentIndexQueue, memoryDecayQueue } from '../config/queue.js';
+import { documentIndexQueue, memoryDecayQueue } from '../config/queue.js';
 
 /**
  * Route a failed job to the Dead Letter Queue
@@ -224,23 +224,14 @@ export async function getDLQStats() {
  * Get pending DLQ entries with pagination
  */
 export async function getPendingDLQEntries(options = {}) {
-  const {
-    queueName = null,
-    workspaceId = null,
-    limit = 50,
-    offset = 0,
-  } = options;
+  const { queueName = null, workspaceId = null, limit = 50, offset = 0 } = options;
 
   const query = { status: 'pending' };
   if (queueName) query.queueName = queueName;
   if (workspaceId) query.workspaceId = workspaceId;
 
   const [entries, total] = await Promise.all([
-    DeadLetterJob.find(query)
-      .sort({ failedAt: -1 })
-      .skip(offset)
-      .limit(limit)
-      .lean(),
+    DeadLetterJob.find(query).sort({ failedAt: -1 }).skip(offset).limit(limit).lean(),
     DeadLetterJob.countDocuments(query),
   ]);
 
@@ -299,7 +290,6 @@ export async function bulkDismissOld(olderThanDays = 7, dismissedBy = 'system') 
  */
 function getQueueByName(queueName) {
   const queues = {
-    notionSync: notionSyncQueue,
     documentIndex: documentIndexQueue,
     memoryDecay: memoryDecayQueue,
   };
