@@ -777,5 +777,107 @@
       "Limit information sharing to aims of enhancing digital operational resilience",
       "Ensure information-sharing operates within trusted communities of financial entities"
     ]
+  },
+  {
+    "regulation": "DORA",
+    "article": "Article 46",
+    "title": "Designation of Competent Authorities",
+    "domain": "Information Sharing",
+    "text": "1. Without prejudice to the competence of the European Central Bank regarding specific supervisory tasks conferred on it pursuant to Council Regulation (EU) No 1024/2013, the supervision of compliance with this Regulation shall be carried out by the competent authorities designated in accordance with the relevant sector-specific Union legislation applicable to financial entities.\n\n2. Each Member State shall designate one or more competent authorities responsible for supervising the application of this Regulation in respect of each category of financial entity listed in Article 2(1). Where a Member State designates more than one competent authority, it shall clearly delineate the respective tasks of those authorities and designate a single contact point for international cooperation and supervisory coordination purposes.\n\n3. Financial entities shall identify their designated competent authority under this Regulation and maintain up-to-date records of all competent authorities with jurisdiction over their activities.\n\n4. Competent authorities designated under this Article shall have all supervisory, investigatory and sanctioning powers necessary to fulfil their duties under this Regulation. Their powers shall be exercised in a proportionate and effective manner, having due regard to the size, systemic importance, nature, scale and complexity of the financial entity.",
+    "obligations": [
+      "Identify and record the competent authority designated to supervise DORA compliance for your entity type and jurisdiction",
+      "Maintain up-to-date records of all competent authorities with jurisdiction over your activities",
+      "Cooperate fully with your designated competent authority on all DORA-related supervisory activities",
+      "Provide information and assistance to the single contact point for international cooperation when requested",
+      "Respond promptly to all supervisory enquiries from your designated competent authority"
+    ]
+  },
+  {
+    "regulation": "DORA",
+    "article": "Article 47",
+    "title": "Cooperation among Competent Authorities",
+    "domain": "Information Sharing",
+    "text": "1. Competent authorities shall cooperate closely with each other and, where relevant, with the Lead Overseers designated under Article 31, including by exchanging all information that is necessary for the purpose of carrying out their duties under this Regulation using their powers whether or not referred to in this Regulation.\n\n2. Competent authorities shall, at least annually, provide the relevant ESAs with aggregated information on all administrative penalties and remedial measures imposed in accordance with this Regulation, indicating the type of breach and the nature of the administrative penalty or remedial measure imposed.\n\n3. Financial entities shall cooperate with their competent authority in the facilitation of supervisory cooperation between authorities from different Member States or jurisdictions.\n\n4. Where a financial entity operates in multiple Member States, competent authorities concerned shall exchange information and coordinate supervisory activities to ensure consistent application of this Regulation. Financial entities must designate a clear contact point for each relevant competent authority.",
+    "obligations": [
+      "Cooperate with all competent authorities from Member States where you operate or provide services",
+      "Designate a clear internal contact point for each relevant competent authority",
+      "Facilitate information exchange between competent authorities when requested",
+      "Respond to supervisory requests from competent authorities from other Member States where relevant",
+      "Support cross-border supervisory coordination activities as required"
+    ]
+  },
+  {
+    "regulation": "DORA",
+    "article": "Article 48",
+    "title": "Cooperation with EBA, ESMA and EIOPA",
+    "domain": "Information Sharing",
+    "text": "1. The competent authorities designated pursuant to Article 46 shall cooperate closely with the European Banking Authority (EBA), the European Securities and Markets Authority (ESMA) and the European Insurance and Occupational Pensions Authority (EIOPA) (together, the 'ESAs') on all matters relating to the application of this Regulation.\n\n2. Without delay and on a voluntary basis, financial entities that detect a significant cyber threat shall notify the relevant competent authority thereof. The competent authority may in turn transmit information to relevant ESAs, Lead Overseers and relevant public authorities where warranted by the systemic nature of the threat.\n\n3. Financial entities shall provide ESAs with all information required for the performance of their duties under this Regulation upon request.\n\n4. ESAs shall develop common regulatory technical standards (RTS) and implementing technical standards (ITS) to give practical effect to DORA's requirements. Financial entities must comply with all RTS and ITS adopted pursuant to this Regulation.",
+    "obligations": [
+      "Voluntarily and promptly notify competent authorities of significant cyber threats detected",
+      "Provide all information requested by ESAs (EBA, ESMA, EIOPA) for performance of their duties",
+      "Comply with all Regulatory Technical Standards (RTS) and Implementing Technical Standards (ITS) adopted under DORA",
+      "Monitor and implement ESA guidelines and recommendations relevant to your entity type",
+      "Support ESA supervisory convergence initiatives and respond to ESA information-gathering exercises"
+    ]
+  },
+  {
+    "regulation": "DORA",
+    "article": "Article 49",
+    "title": "Cooperation with Third-Country Authorities",
+    "domain": "Information Sharing",
+    "text": "1. Competent authorities may conclude administrative cooperation arrangements with supervisory authorities of third countries in the area of digital operational resilience, including information exchange and mutual assistance in supervisory activities.\n\n2. Financial entities operating in both Member States and third countries shall facilitate the exchange of supervisory information between competent authorities and third-country supervisory authorities, to the extent permitted by applicable law and contractual arrangements.\n\n3. Where relevant, competent authorities shall inform their counterpart third-country authorities of significant ICT incidents affecting financial entities operating in those countries. Financial entities shall cooperate with this cross-border information flow.\n\n4. Financial entities that are subsidiaries of third-country groups shall ensure that group-level DORA compliance information is available to their Union competent authorities, even where the parent entity is established outside the Union.",
+    "obligations": [
+      "Facilitate exchange of supervisory information between Union and third-country supervisory authorities when requested",
+      "Ensure group-level DORA compliance information is accessible to Union competent authorities for third-country group subsidiaries",
+      "Cooperate with cross-border information exchange on significant ICT incidents affecting multi-jurisdiction operations",
+      "Maintain records of cross-border ICT service dependencies that may be relevant to third-country supervisory cooperation",
+      "Ensure contractual arrangements with ICT providers support necessary cross-border supervisory disclosure"
+    ]
+  },
+  {
+    "regulation": "DORA",
+    "article": "Article 50",
+    "title": "Administrative Penalties and Remedial Measures",
+    "domain": "ICT Third-Party Oversight",
+    "text": "1. Competent authorities shall have all supervisory and investigatory powers necessary to fulfil their duties under this Regulation. These include:\n\n(a) access to any document, data, procedure or any other material in any format, wherever stored;\n(b) on-site inspections or investigations at any business premises, land or property;\n(c) requests for explanations from management body members and staff;\n(d) interim measures in accordance with national law where there is immediate and significant risk to financial stability;\n(e) temporary bans on any person from exercising managerial responsibilities;\n(f) requirements to adopt measures to bring conduct into conformity with this Regulation, and to cease conduct that is in breach of this Regulation.\n\n2. Without prejudice to the right to provide explanations, financial entities shall cooperate with competent authority investigations, on-site inspections and information requests. Obstruction of supervisory activities is a breach of this Regulation.\n\n3. Financial entities must implement remedial measures within the timeframes specified by the competent authority.",
+    "obligations": [
+      "Provide competent authorities with access to all documents, data, procedures and materials in any format requested",
+      "Cooperate fully with on-site inspections and investigations at business premises",
+      "Ensure management body members and staff respond to competent authority requests for explanations",
+      "Implement all remedial measures within timeframes specified by the competent authority",
+      "Refrain from obstructing supervisory activities — obstruction constitutes a breach of DORA",
+      "Comply with interim measures ordered by competent authorities in cases of significant risk to financial stability",
+      "Cease any conduct determined by the competent authority to be in breach of this Regulation"
+    ]
+  },
+  {
+    "regulation": "DORA",
+    "article": "Article 51",
+    "title": "Administrative Penalties",
+    "domain": "ICT Third-Party Oversight",
+    "text": "1. Without prejudice to the right of competent authorities to impose supervisory measures, Member States shall lay down rules on administrative penalties and other administrative measures applicable to breaches of this Regulation and shall take all measures necessary to ensure that they are implemented.\n\n2. Administrative penalties for financial entities that are legal persons shall not exceed:\n(a) EUR 10,000,000 or, if higher, 2% of the total annual worldwide turnover according to the latest available accounts for breaches of the ICT risk management, incident reporting, resilience testing, and third-party risk management requirements;\n(b) EUR 5,000,000 for natural persons.\n\n3. When determining the appropriate administrative penalty, competent authorities shall take into account all relevant circumstances, including:\n(a) the gravity and the duration of the breach;\n(b) the degree of responsibility of the natural or legal person;\n(c) the financial strength of the natural or legal person responsible;\n(d) the importance of profits gained or losses avoided;\n(e) the losses incurred by third parties as a result of the breach;\n(f) the level of cooperation with the competent authority;\n(g) previous breaches;\n(h) any remedial measures adopted.\n\n4. Competent authorities may publish administrative penalties imposed.",
+    "obligations": [
+      "Maintain full compliance with ICT risk management requirements to avoid penalties of up to EUR 10,000,000 or 2% of global annual turnover",
+      "Ensure management individuals are aware of personal liability of up to EUR 5,000,000 for DORA breaches",
+      "Demonstrate cooperation with competent authority as a mitigating factor in any penalty proceedings",
+      "Adopt and document remedial measures promptly to reduce penalty exposure",
+      "Maintain records demonstrating compliance efforts to support proportionality arguments in enforcement proceedings",
+      "Ensure board-level awareness of DORA penalty regime and financial exposure"
+    ]
+  },
+  {
+    "regulation": "DORA",
+    "article": "Article 52",
+    "title": "Criminal Sanctions",
+    "domain": "ICT Third-Party Oversight",
+    "text": "1. Where Member States have decided, in accordance with national law, to lay down criminal sanctions for breaches of provisions that are subject to administrative penalties under this Regulation, they shall ensure that appropriate measures are in place so that competent authorities have all necessary powers to liaise with judicial, prosecuting or criminal justice authorities within their jurisdiction to receive specific information related to criminal investigations or proceedings commenced for breaches of this Regulation.\n\n2. Natural persons responsible for DORA breaches within financial entities may face both criminal sanctions (where provided by national law) and administrative penalties, without prejudice to the non bis in idem principle.\n\n3. Financial entities shall maintain internal governance frameworks that attribute clear individual responsibility for DORA compliance, enabling identification of responsible natural persons in enforcement proceedings.\n\n4. Competent authorities shall cooperate with criminal justice authorities where criminal proceedings arise from DORA breaches. Financial entities shall cooperate with both regulatory and criminal investigations.",
+    "obligations": [
+      "Maintain internal governance frameworks that clearly attribute individual responsibility for DORA compliance obligations",
+      "Ensure senior management and board members are personally aware of potential criminal liability for DORA breaches under national law",
+      "Cooperate with criminal justice authorities in any investigation related to DORA breaches",
+      "Implement documented escalation procedures ensuring rapid disclosure of potential DORA breaches to board level",
+      "Maintain records demonstrating personal compliance oversight by responsible individuals",
+      "Ensure legal counsel is engaged to assess national criminal sanction provisions applicable to DORA breaches"
+    ]
   }
 ]
