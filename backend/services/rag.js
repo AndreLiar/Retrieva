@@ -542,7 +542,7 @@ class RAGService {
     }
 
     // Direct vector store retrieval
-    const rawDocs = await this.retriever.invoke(searchQuery, { filter: qdrantFilter });
+    const rawDocs = await this.vectorStore.similaritySearch(searchQuery, 15, qdrantFilter);
     const rerankedDocs = rerankDocuments(rawDocs, searchQuery, 15);
 
     const retrieval = {
