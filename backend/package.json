@@ -42,7 +42,6 @@
     "@langchain/openai": "^1.2.1",
     "@langchain/qdrant": "^1.0.1",
     "@modelcontextprotocol/sdk": "^1.26.0",
-    "@notionhq/client": "^2.3.0",
     "axios": "^1.13.2",
     "bcryptjs": "^3.0.3",
     "bullmq": "^5.66.4",

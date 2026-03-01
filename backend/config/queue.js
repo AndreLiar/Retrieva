@@ -8,28 +8,6 @@ const MEMORY_DECAY_INTERVAL_HOURS = parseInt(process.env.MEMORY_DECAY_INTERVAL_H
 const MONITORING_INTERVAL_HOURS = parseInt(process.env.MONITORING_INTERVAL_HOURS) || 24;
 
 /**
- * Queue for Notion workspace synchronization jobs
- * Handles full sync, incremental sync, and scheduled sync operations
- */
-export const notionSyncQueue = new Queue('notionSync', {
-  connection: redisConnection,
-  defaultJobOptions: {
-    attempts: SYNC_MAX_RETRIES,
-    backoff: {
-      type: 'exponential',
-      delay: 60000, // Start with 1 minute
-    },
-    removeOnComplete: {
-      count: 20,
-      age: 3 * 24 * 60 * 60, // Remove after 3 days
-    },
-    removeOnFail: {
-      count: 50,
-    },
-  },
-});
-
-/**
  * Queue for document indexing operations
  * Processes individual documents and indexes them in Qdrant
  * ISSUE #18 FIX: Changed to exponential backoff for better retry behavior
@@ -280,7 +258,6 @@ export async function scheduleMonitoringJob() {
 
 // ISSUE #34 FIX: Store event listener references for cleanup
 const queueEventListeners = {
-  notionSync: null,
   documentIndex: null,
   memoryDecay: null,
   mcpSync: null,
@@ -291,11 +268,6 @@ const queueEventListeners = {
 };
 
 // Log queue events with stored references
-queueEventListeners.notionSync = (error) => {
-  logger.error('Notion sync queue error:', { error: error.message, stack: error.stack });
-};
-notionSyncQueue.on('error', queueEventListeners.notionSync);
-
 queueEventListeners.documentIndex = (error) => {
   logger.error('Document index queue error:', { error: error.message, stack: error.stack });
 };
@@ -340,9 +312,6 @@ logger.info('BullMQ queues initialized successfully');
 export const closeQueues = async () => {
   try {
     // Remove event listeners to prevent memory leaks
-    if (queueEventListeners.notionSync) {
-      notionSyncQueue.off('error', queueEventListeners.notionSync);
-    }
     if (queueEventListeners.documentIndex) {
       documentIndexQueue.off('error', queueEventListeners.documentIndex);
     }
@@ -370,7 +339,6 @@ export const closeQueues = async () => {
     }
 
     await Promise.all([
-      notionSyncQueue.close(),
       documentIndexQueue.close(),
       memoryDecayQueue.close(),
       mcpSyncQueue.close(),
@@ -386,7 +354,6 @@ export const closeQueues = async () => {
 };
 
 export default {
-  notionSyncQueue,
   documentIndexQueue,
   memoryDecayQueue,
   mcpSyncQueue,

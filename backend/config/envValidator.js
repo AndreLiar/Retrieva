@@ -186,7 +186,6 @@ export function getEnvInfo() {
     qdrantConfigured: !!process.env.QDRANT_URL,
     llmProvider: process.env.LLM_PROVIDER || 'not configured',
     emailConfigured: !!process.env.RESEND_API_KEY,
-    notionConfigured: !!(process.env.NOTION_CLIENT_ID && process.env.NOTION_CLIENT_SECRET),
     frontendUrl: process.env.FRONTEND_URL || 'not configured',
   };
 }
