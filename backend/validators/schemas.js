@@ -85,26 +85,6 @@ export const updateConversationSchema = z.object({
     .optional(),
 });
 
-// Notion Workspace Schemas
-export const connectWorkspaceSchema = z.object({
-  accessToken: z.string().min(1, 'Access token is required'),
-  workspaceName: z
-    .string()
-    .min(1, 'Workspace name is required')
-    .max(100, 'Workspace name too long'),
-  workspaceIcon: z.string().optional(),
-  syncIntervalHours: z
-    .number()
-    .int()
-    .min(1)
-    .max(168, 'Sync interval too long (max 1 week)')
-    .default(6),
-});
-
-export const triggerSyncSchema = z.object({
-  fullSync: z.boolean().default(false),
-});
-
 // Analytics Schemas
 export const analyticsSummarySchema = z.object({
   startDate: z.string().datetime().optional(),
