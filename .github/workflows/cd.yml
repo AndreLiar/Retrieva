@@ -175,6 +175,15 @@ jobs:
               exit 1
             fi
 
+            # ── Sync compliance knowledge base (smart sync, non-fatal) ────
+            # Compares Qdrant point count to JSON article count.
+            # No-op if already in sync; re-seeds automatically when articles
+            # are added. Does NOT block deployment on failure.
+            echo "Syncing compliance knowledge base..."
+            docker exec retrieva-backend node scripts/seedComplianceKb.js \
+              && echo "Compliance KB sync complete" \
+              || echo "WARN: Compliance KB sync failed — KB may be stale, manual re-seed needed"
+
             # ── Cleanup ──────────────────────────────────────────────────
             docker image prune -f
 
