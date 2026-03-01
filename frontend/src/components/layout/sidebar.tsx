@@ -92,7 +92,9 @@ export function Sidebar() {
       <ScrollArea className="flex-1 px-3">
         <nav className="flex flex-col gap-1 py-2">
           {visibleMainNav.map((item) => {
-            const isActive = pathname === item.href;
+            const isActive =
+            pathname === item.href ||
+            (item.href === '/conversations' && pathname.startsWith('/conversations/'));
             return (
               <Button
                 key={item.href}
