@@ -169,45 +169,27 @@ export async function retrieveAdditionalDocuments(queries, retriever, vectorStor
 }
 ```
 
-## Notion Services
+## Object Storage (`config/storage.js`)
 
-### Notion OAuth (`services/notionOAuth.js`)
-
-Handles Notion OAuth flow.
+Provides persistent file storage using **DigitalOcean Spaces** (S3-compatible). All objects are stored under an org-scoped key prefix to enforce multi-tenant isolation. The module degrades gracefully when Spaces env vars are absent — uploads are skipped and download endpoints return 404.
 
 ```javascript
-export const notionOAuth = {
-  getAuthorizationUrl(state) {
-    // Generate OAuth URL
-  },
+// Key builders
+buildDataSourceKey(orgId, workspaceId, dataSourceId, fileName)
+// → organizations/{orgId}/workspaces/{wsId}/datasources/{dsId}/{fileName}
 
-  async exchangeCode(code) {
-    // Exchange code for access token
-  },
-
-  async refreshToken(refreshToken) {
-    // Refresh access token
-  },
-};
+buildAssessmentFileKey(orgId, workspaceId, assessmentId, docIndex, fileName)
+// → organizations/{orgId}/workspaces/{wsId}/assessments/{assessmentId}/{index}_{fileName}
 ```
 
-### Notion Transformer (`services/notionTransformer.js`)
+| Export | Description |
+|--------|-------------|
+| `isStorageConfigured()` | Returns `true` when all four `DO_SPACES_*` env vars are set |
+| `uploadFile(key, buffer, mimeType)` | Uploads a buffer to Spaces, returns the key |
+| `downloadFileStream(key)` | Returns a readable stream — pipe directly to Express `res` |
+| `deleteFile(key)` | Deletes an object; no-op when storage is not configured |
 
-Transforms Notion blocks to text/markdown.
-
-```javascript
-export const transformBlocksToText = (blocks, indentLevel = 0) => {
-  // Convert Notion blocks to markdown
-};
-
-export const groupBlocksSemantically = (blocks) => {
-  // Group blocks for semantic chunking
-};
-
-export const extractPageMetadata = (properties) => {
-  // Extract metadata from Notion properties
-};
-```
+**Configuration env vars:** `DO_SPACES_KEY`, `DO_SPACES_SECRET`, `DO_SPACES_ENDPOINT`, `DO_SPACES_BUCKET`, `DO_SPACES_REGION` (default: `fra1`).
 
 ## Memory Services
 

@@ -92,15 +92,19 @@ Generate encryption key:
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
-### Notion Integration
+### Object Storage (DigitalOcean Spaces)
 
-| Variable | Description |
-|----------|-------------|
-| `NOTION_CLIENT_ID` | OAuth client ID |
-| `NOTION_CLIENT_SECRET` | OAuth client secret |
-| `NOTION_REDIRECT_URI` | OAuth callback URL |
-| `NOTION_WEBHOOK_SECRET` | Webhook signature verification |
-| `NOTION_API_RATE_LIMIT` | `2` - API calls per second |
+Persistent file storage for uploaded data source files and assessment documents. All variables are optional — when unset the upload step is silently skipped and download buttons are hidden in the UI.
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `DO_SPACES_KEY` | - | Spaces access key ID |
+| `DO_SPACES_SECRET` | - | Spaces secret access key |
+| `DO_SPACES_ENDPOINT` | - | Spaces endpoint URL (e.g. `https://fra1.digitaloceanspaces.com`) |
+| `DO_SPACES_BUCKET` | - | Bucket name |
+| `DO_SPACES_REGION` | `fra1` | Bucket region |
+
+Files are stored under `organizations/{orgId}/workspaces/{wsId}/...` enforcing org-level isolation. Files are served via a backend proxy — no pre-signed URLs are exposed to clients.
 
 ### RAG Configuration
 
@@ -163,15 +167,6 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 | `STALE_JOB_TIMEOUT_HOURS` | `2` | Hours before job is stale |
 | `MAX_SYNC_RECOVERY_ATTEMPTS` | `2` | Max recovery attempts |
 | `SYNC_PROGRESS_TIMEOUT_MINUTES` | `30` | Minutes without progress |
-
-### Token Health Monitoring
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `NOTION_TOKEN_MONITOR_ENABLED` | `true` | Enable token monitoring |
-| `TOKEN_CHECK_INTERVAL_HOURS` | `6` | Check frequency |
-| `NOTION_AUTO_RECONNECT` | `false` | Auto reconnection |
-| `NOTION_TOKEN_EMAIL_NOTIFICATIONS` | `true` | Email on token expiry |
 
 ### Guardrails
 
@@ -279,10 +274,12 @@ JWT_REFRESH_SECRET=
 # Encryption (REQUIRED - generate with: openssl rand -hex 32)
 ENCRYPTION_KEY=
 
-# Notion OAuth
-NOTION_CLIENT_ID=
-NOTION_CLIENT_SECRET=
-NOTION_REDIRECT_URI=http://localhost:3007/api/v1/notion/callback
+# Object Storage (DigitalOcean Spaces) — optional, files stored in-memory only when unset
+DO_SPACES_KEY=
+DO_SPACES_SECRET=
+DO_SPACES_ENDPOINT=https://fra1.digitaloceanspaces.com
+DO_SPACES_BUCKET=
+DO_SPACES_REGION=fra1
 
 # Email (optional for local dev - emails will be skipped if not set)
 RESEND_API_KEY=
@@ -316,8 +313,6 @@ echo "JWT_REFRESH_SECRET=$(openssl rand -base64 48)"
 # Encryption Key (32-byte hex)
 echo "ENCRYPTION_KEY=$(openssl rand -hex 32)"
 
-# Notion Webhook Secret
-echo "NOTION_WEBHOOK_SECRET=$(openssl rand -base64 32)"
 ```
 
 ## Environment-Specific Configurations

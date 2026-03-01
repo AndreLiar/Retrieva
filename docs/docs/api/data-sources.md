@@ -81,6 +81,7 @@ Supported file types: **pdf**, **docx**, **xlsx**, **xls** (max 25 MB).
       "name": "DORA Compliance Guide",
       "sourceType": "file",
       "status": "pending",
+      "storageKey": "organizations/org-1/workspaces/ws-123/datasources/ds-abc123/document.pdf",
       "config": {
         "fileName": "document.pdf",
         "fileType": "pdf",
@@ -161,6 +162,26 @@ Requires `canTriggerSync` workspace permission.
 
 ---
 
+## Download the original file
+
+```http
+GET /api/v1/data-sources/:id/download
+```
+
+Streams the original uploaded file back to the client. Only available for `sourceType: file` data sources when DigitalOcean Spaces is configured and a `storageKey` was recorded on creation.
+
+Returns `404` when:
+- the data source does not exist
+- `storageKey` is `null` (Spaces not configured at upload time, or non-file source)
+
+### Response `200`
+
+- `Content-Type: application/octet-stream`
+- `Content-Disposition: attachment; filename="{original filename}"`
+- Body: raw file bytes (streamed directly from Spaces)
+
+---
+
 ## Delete a data source
 
 ```http
@@ -169,6 +190,7 @@ DELETE /api/v1/data-sources/:id
 
 1. Soft-deletes all related `DocumentSource` records (`syncStatus: 'deleted'`).
 2. Hard-deletes the `DataSource` document from MongoDB.
+3. If `storageKey` is set, deletes the file from DigitalOcean Spaces (non-blocking — a warning is logged on failure but the delete still succeeds).
 
 Qdrant vectors for soft-deleted records are pruned on the next document index pass.
 
