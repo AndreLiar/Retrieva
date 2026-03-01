@@ -85,7 +85,6 @@ vi.mock('../../services/authAuditService.js', () => ({
 
 vi.mock('../../config/queue.js', () => ({
   assessmentQueue: { add: vi.fn().mockResolvedValue({ id: 'j1' }), on: vi.fn() },
-  notionSyncQueue: { add: vi.fn().mockResolvedValue({}), on: vi.fn() },
   documentIndexQueue: { add: vi.fn().mockResolvedValue({}), on: vi.fn() },
   memoryDecayQueue: { add: vi.fn().mockResolvedValue({}), on: vi.fn() },
   monitoringQueue: { add: vi.fn().mockResolvedValue({}), on: vi.fn() },
@@ -126,12 +125,6 @@ vi.mock('../../config/embeddings.js', () => ({
     embedQuery: vi.fn().mockResolvedValue([0.1, 0.2]),
     embedDocuments: vi.fn().mockResolvedValue([[0.1, 0.2]]),
   },
-}));
-
-vi.mock('@notionhq/client', () => ({
-  Client: vi
-    .fn()
-    .mockImplementation(() => ({ search: vi.fn().mockResolvedValue({ results: [] }) })),
 }));
 
 // ---------------------------------------------------------------------------

@@ -76,9 +76,7 @@ export default function WorkspacesPage() {
 
     if (connected === 'true') {
       if (isNew === 'true') {
-        toast.success(`Workspace "${workspaceName}" connected successfully!`, {
-          description: 'Your Notion pages are being synced.',
-        });
+        toast.success(`Workspace "${workspaceName}" connected successfully!`);
       } else {
         toast.success(`Workspace "${workspaceName}" reconnected`, {
           description: 'Credentials have been updated.',
@@ -86,10 +84,9 @@ export default function WorkspacesPage() {
       }
 
       fetchWorkspaces();
-      queryClient.invalidateQueries({ queryKey: ['notion-workspaces'] });
       router.replace('/workspaces', { scroll: false });
     } else if (error) {
-      toast.error('Failed to connect Notion workspace', {
+      toast.error('Failed to connect workspace', {
         description: errorDescription || error,
       });
       router.replace('/workspaces', { scroll: false });

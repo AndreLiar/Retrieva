@@ -152,16 +152,7 @@ const userSchema = new mongoose.Schema(
         sync_failed: { type: Boolean, default: true },
         system_alert: { type: Boolean, default: true },
         token_limit_reached: { type: Boolean, default: true },
-        notion_token_expired: { type: Boolean, default: true },
       },
-    },
-    // Notion token handling preference
-    // 'notify' - Send email when token expires (default)
-    // 'auto_reconnect' - Attempt automatic reconnection (future)
-    notionTokenPreference: {
-      type: String,
-      enum: ['notify', 'auto_reconnect'],
-      default: 'notify',
     },
     organizationId: {
       type: mongoose.Schema.Types.ObjectId,
