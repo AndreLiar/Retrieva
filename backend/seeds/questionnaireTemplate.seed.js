@@ -1,7 +1,7 @@
 import { QuestionnaireTemplate } from '../models/QuestionnaireTemplate.js';
 import logger from '../config/logger.js';
 
-const SEED_VERSION = '1.1';
+const SEED_VERSION = '1.2';
 
 export const DORA_QUESTIONS = [
   // ── ICT Governance ──────────────────────────────────────────────────────────
@@ -209,6 +209,49 @@ export const DORA_QUESTIONS = [
     category: 'Regulatory History',
     text: 'Have you experienced any material ICT incidents or been subject to regulatory actions, sanctions, or significant audit findings in the past 24 months? If so, please summarise.',
     hint: 'This includes ICT-related regulatory investigations, fines, enforcement notices, or material incidents disclosed to regulators.',
+  },
+
+  // ── Concentration Risk ───────────────────────────────────────────────────────
+  {
+    id: 'q28',
+    doraArticle: 'Art.29',
+    category: 'Concentration Risk',
+    text: 'How many financial entities (banks, insurers, investment firms, payment institutions) rely on you for critical or important ICT services? Are you aware of your designation as a potential concentration risk provider under DORA Article 29?',
+    hint: 'Provide an approximate count of financial entity clients globally and in the EU. Indicate whether you have been identified by any financial entity or regulator as a concentration risk under DORA. Include any self-assessment of your systemic importance.',
+  },
+  {
+    id: 'q29',
+    doraArticle: 'Art.29(3)',
+    category: 'Concentration Risk',
+    text: 'Do you have a documented policy for managing your own role as a potential ICT concentration risk? How do you ensure service continuity and avoid single points of failure that could affect multiple financial entity clients simultaneously?',
+    hint: 'Describe infrastructure redundancy, geographic distribution, capacity management, and any measures taken to avoid correlated failures across your financial entity client base.',
+  },
+
+  // ── Change Management ────────────────────────────────────────────────────────
+  {
+    id: 'q30',
+    doraArticle: 'Art.30(3)(b)',
+    category: 'Change Management',
+    text: 'What is your process for notifying us of material changes to ICT services, infrastructure, subcontractors, or security posture? What advance notice period do you provide, and what constitutes a "material change" under your policy?',
+    hint: 'Provide your formal change notification policy: definition of material change, minimum notice period (DORA requires advance notification), communication channel, and escalation path for urgent changes. Include examples of changes that would trigger notification.',
+  },
+
+  // ── ICT Staff Training ───────────────────────────────────────────────────────
+  {
+    id: 'q31',
+    doraArticle: 'Art.13(6)',
+    category: 'ICT Staff Training',
+    text: 'Describe your ICT security awareness and training programme for staff with access to systems supporting our services. How frequently is training conducted, and how do you verify completion and effectiveness?',
+    hint: 'Include frequency of mandatory training, topics covered (phishing, social engineering, secure coding, incident response), training delivery method, completion tracking, and metrics used to assess effectiveness. Note any sector-specific DORA or financial services compliance training.',
+  },
+
+  // ── Resilience Testing ───────────────────────────────────────────────────────
+  {
+    id: 'q32',
+    doraArticle: 'Art.26',
+    category: 'Resilience Testing',
+    text: 'Have you participated in, or are you prepared to support, Threat-Led Penetration Testing (TLPT) exercises conducted under the DORA framework (or equivalent TIBER-EU/TIBER-XX frameworks) for the ICT services you deliver to financial entities?',
+    hint: 'Indicate whether you have previously participated in TLPT or TIBER exercises as a critical service provider. Describe your TLPT cooperation process: contact person, documentation available to testers, and any constraints on test scope. If not yet required, describe your red team testing programme.',
   },
 ];
 
