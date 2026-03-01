@@ -17,6 +17,7 @@ import {
   getOne,
   triggerSync,
   deleteSource,
+  downloadDataSourceFile,
 } from '../controllers/dataSourceController.js';
 
 const router = Router();
@@ -64,5 +65,12 @@ router.post('/:id/sync', triggerSync);
  * @access Private
  */
 router.delete('/:id', deleteSource);
+
+/**
+ * @route  GET /api/v1/data-sources/:id/download
+ * @desc   Download the original uploaded file from DigitalOcean Spaces
+ * @access Private
+ */
+router.get('/:id/download', downloadDataSourceFile);
 
 export default router;

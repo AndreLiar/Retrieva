@@ -4,6 +4,7 @@ import {
   listAssessments,
   getAssessment,
   downloadReport,
+  downloadAssessmentFile,
   deleteAssessment,
   setRiskDecision,
   setClauseSignoff,
@@ -59,6 +60,13 @@ router.patch('/:id/risk-decision', authenticate, requireWorkspaceAccess, setRisk
  * @access Private — CONTRACT_A30 assessments only
  */
 router.patch('/:id/clause-signoff', authenticate, requireWorkspaceAccess, setClauseSignoff);
+
+/**
+ * @route  GET /api/v1/assessments/:id/files/:docIndex
+ * @desc   Download an original vendor document from DigitalOcean Spaces
+ * @access Private
+ */
+router.get('/:id/files/:docIndex', authenticate, requireWorkspaceAccess, downloadAssessmentFile);
 
 /**
  * @route  DELETE /api/v1/assessments/:id

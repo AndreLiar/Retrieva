@@ -54,6 +54,7 @@ const documentSchema = new mongoose.Schema(
       enum: ['uploading', 'indexed', 'failed'],
       default: 'uploading',
     },
+    storageKey: { type: String, default: null }, // DigitalOcean Spaces object key
   },
   { _id: false }
 );

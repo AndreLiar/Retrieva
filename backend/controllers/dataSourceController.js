@@ -11,7 +11,13 @@ import { DocumentSource } from '../models/DocumentSource.js';
 import { dataSourceSyncQueue } from '../config/queue.js';
 import { catchAsync, sendSuccess, sendError, AppError } from '../utils/index.js';
 import logger from '../config/logger.js';
-// File storage is local (no cloud storage in MVP)
+import {
+  isStorageConfigured,
+  buildDataSourceKey,
+  uploadFile,
+  downloadFileStream,
+  deleteFile,
+} from '../config/storage.js';
 
 const MAX_FILE_SIZE_MB = 25;
 
@@ -128,6 +134,27 @@ export const create = catchAsync(async (req, res) => {
     ...(apiToken ? { apiToken } : {}),
     status: 'pending',
   });
+
+  // Upload original file to Spaces for persistent storage (non-critical)
+  if (sourceType === 'file' && isStorageConfigured() && req.file && req.user.organizationId) {
+    try {
+      const key = buildDataSourceKey(
+        req.user.organizationId.toString(),
+        workspaceId,
+        dataSource._id.toString(),
+        req.file.originalname
+      );
+      const storageKey = await uploadFile(key, req.file.buffer, req.file.mimetype);
+      await DataSource.findByIdAndUpdate(dataSource._id, { storageKey });
+      dataSource.storageKey = storageKey;
+    } catch (err) {
+      logger.warn('DataSource file upload to Spaces failed (non-critical)', {
+        service: 'datasource-controller',
+        dataSourceId: dataSource._id,
+        error: err.message,
+      });
+    }
+  }
 
   // Enqueue initial sync immediately
   await dataSourceSyncQueue.add(
@@ -273,6 +300,17 @@ export const deleteSource = catchAsync(async (req, res) => {
 
   await DataSource.findByIdAndDelete(req.params.id);
 
+  // Clean up Spaces file if present (non-critical)
+  if (dataSource.storageKey) {
+    deleteFile(dataSource.storageKey).catch((err) =>
+      logger.warn('Failed to delete Spaces file', {
+        service: 'datasource-controller',
+        key: dataSource.storageKey,
+        error: err.message,
+      })
+    );
+  }
+
   logger.info('DataSource deleted', {
     service: 'datasource-controller',
     dataSourceId: dsIdStr,
@@ -280,4 +318,35 @@ export const deleteSource = catchAsync(async (req, res) => {
   });
 
   sendSuccess(res, 200, 'Data source deleted');
+});
+
+/**
+ * GET /api/v1/data-sources/:id/download
+ * Stream the original uploaded file from DigitalOcean Spaces.
+ */
+export const downloadDataSourceFile = catchAsync(async (req, res) => {
+  const dataSource = await DataSource.findById(req.params.id).lean();
+  if (!dataSource) {
+    throw new AppError('Data source not found', 404);
+  }
+
+  // Workspace membership check (same pattern as getOne)
+  const authorizedIds = (req.authorizedWorkspaces || []).flatMap((w) => [
+    (w.workspaceId || '').toString(),
+    (w._id || '').toString(),
+  ]);
+  if (!authorizedIds.includes(dataSource.workspaceId)) {
+    throw new AppError('Access denied to this data source', 403);
+  }
+
+  if (!dataSource.storageKey) {
+    throw new AppError('No file stored for this data source', 404);
+  }
+
+  const stream = await downloadFileStream(dataSource.storageKey);
+  const fileName = dataSource.storageKey.split('/').pop();
+
+  res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+  res.setHeader('Content-Type', 'application/octet-stream');
+  stream.pipe(res);
 });
