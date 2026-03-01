@@ -5,6 +5,12 @@ import { handleFileUpload } from '../middleware/fileUpload.js';
 import { generateReport } from '../services/reportGenerator.js';
 import { catchAsync, sendSuccess, sendError, AppError } from '../utils/index.js';
 import logger from '../config/logger.js';
+import {
+  isStorageConfigured,
+  buildAssessmentFileKey,
+  uploadFile,
+  downloadFileStream,
+} from '../config/storage.js';
 
 /**
  * POST /api/v1/assessments
@@ -58,6 +64,38 @@ export const createAssessment = catchAsync(async (req, res) => {
     userId,
     fileCount: req.files.length,
   });
+
+  // Upload files to Spaces for persistent storage (non-critical — failures don't block processing)
+  if (isStorageConfigured() && req.user.organizationId) {
+    await Promise.all(
+      req.files.map(async (file, i) => {
+        const key = buildAssessmentFileKey(
+          req.user.organizationId.toString(),
+          workspaceId,
+          assessment._id.toString(),
+          i,
+          file.originalname
+        );
+        const storageKey = await uploadFile(key, file.buffer, file.mimetype).catch((err) => {
+          logger.warn('Assessment file upload to Spaces failed (non-critical)', {
+            service: 'assessment-controller',
+            assessmentId: assessment._id,
+            fileIndex: i,
+            error: err.message,
+          });
+          return null;
+        });
+        if (storageKey) {
+          assessment.documents[i].storageKey = storageKey;
+        }
+      })
+    );
+    // Persist storageKeys if any uploads succeeded
+    const hasStorageKeys = assessment.documents.some((d) => d.storageKey);
+    if (hasStorageKeys) {
+      await assessment.save();
+    }
+  }
 
   // Enqueue a fileIndex job per uploaded file
   const fileJobs = req.files.map((file, i) =>
@@ -319,6 +357,40 @@ export const setClauseSignoff = catchAsync(async (req, res) => {
   });
 
   sendSuccess(res, 200, 'Clause sign-off recorded', { clauseSignoffs: assessment.clauseSignoffs });
+});
+
+/**
+ * GET /api/v1/assessments/:id/files/:docIndex
+ *
+ * Stream an original uploaded vendor document from DigitalOcean Spaces.
+ */
+export const downloadAssessmentFile = catchAsync(async (req, res) => {
+  const { id, docIndex } = req.params;
+  const authorizedWorkspaceIds = req.authorizedWorkspaces?.map((w) => w._id.toString()) || [];
+
+  const assessment = await Assessment.findById(id).lean();
+  if (!assessment) {
+    throw new AppError('Assessment not found', 404);
+  }
+
+  if (!authorizedWorkspaceIds.includes(assessment.workspaceId.toString())) {
+    throw new AppError('Access denied to this assessment', 403);
+  }
+
+  const idx = parseInt(docIndex, 10);
+  const doc = assessment.documents[idx];
+  if (!doc?.storageKey) {
+    throw new AppError('No file stored for this document', 404);
+  }
+
+  const stream = await downloadFileStream(doc.storageKey);
+  // Strip the leading "{index}_" prefix added by buildAssessmentFileKey
+  const rawName = doc.storageKey.split('/').pop();
+  const fileName = rawName.replace(/^\d+_/, '');
+
+  res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+  res.setHeader('Content-Type', 'application/octet-stream');
+  stream.pipe(res);
 });
 
 /**

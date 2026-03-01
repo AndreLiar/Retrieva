@@ -37,6 +37,7 @@ export interface DataSource {
   lastSyncJobId?: string;
   stats: DataSourceStats;
   errorLog?: Array<{ timestamp: string; error: string }>;
+  storageKey?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -151,5 +152,23 @@ export const sourcesApi = {
    */
   delete: async (id: string): Promise<void> => {
     await apiClient.delete(`/data-sources/${id}`);
+  },
+
+  /**
+   * Download the original uploaded file from DigitalOcean Spaces.
+   */
+  downloadFile: async (id: string, fileName: string): Promise<void> => {
+    const response = await apiClient.get(`/data-sources/${id}/download`, {
+      responseType: 'blob',
+      timeout: 60_000,
+    });
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', fileName);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
   },
 };
