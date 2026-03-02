@@ -35,6 +35,7 @@ const sidebars: SidebarsConfig = {
       items: [
         'frontend/overview',
         'frontend/components',
+        'frontend/pricing',
         'frontend/state-management',
         'frontend/hooks',
       ],
