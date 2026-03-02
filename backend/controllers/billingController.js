@@ -13,7 +13,7 @@
  * @module controllers/billingController
  */
 
-import { stripe, PRICE_TO_PLAN, STRIPE_STATUS_MAP } from '../config/stripe.js';
+import { getStripe, PRICE_TO_PLAN, STRIPE_STATUS_MAP } from '../config/stripe.js';
 import { Organization } from '../models/Organization.js';
 import { emailService } from '../services/emailService.js';
 import { sendError } from '../utils/index.js';
@@ -26,7 +26,7 @@ const WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
 // ---------------------------------------------------------------------------
 
 async function findOrgByCustomerId(customerId) {
-  const customer = await stripe.customers.retrieve(customerId);
+  const customer = await getStripe().customers.retrieve(customerId);
   if (!customer || customer.deleted) return null;
 
   const orgId = customer.metadata?.organizationId;
@@ -137,7 +137,7 @@ export async function handleStripeWebhook(req, res) {
 
   let event;
   try {
-    event = stripe.webhooks.constructEvent(req.body, sig, WEBHOOK_SECRET);
+    event = getStripe().webhooks.constructEvent(req.body, sig, WEBHOOK_SECRET);
   } catch (err) {
     logger.warn('Stripe webhook signature verification failed', {
       service: 'billing',

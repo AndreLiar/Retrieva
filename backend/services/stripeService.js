@@ -7,7 +7,7 @@
  * @module services/stripeService
  */
 
-import { stripe } from '../config/stripe.js';
+import { getStripe } from '../config/stripe.js';
 import logger from '../config/logger.js';
 
 const TRIAL_PERIOD_DAYS = 20;
@@ -24,6 +24,7 @@ const TRIAL_PERIOD_DAYS = 20;
  * @returns {{ customerId: string, subscriptionId: string, trialEndsAt: Date }}
  */
 export async function setupOrgBilling(orgId, email, name) {
+  const stripe = getStripe();
   const customer = await stripe.customers.create({
     email,
     name,

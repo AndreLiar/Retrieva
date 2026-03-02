@@ -1,6 +1,14 @@
 import Stripe from 'stripe';
 
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-04-10' });
+// Lazy singleton — avoids instantiation failure when STRIPE_SECRET_KEY is not
+// set (e.g. in test environments). The instance is created on first use.
+let _stripe = null;
+export function getStripe() {
+  if (!_stripe) {
+    _stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-04-10' });
+  }
+  return _stripe;
+}
 
 export const PLAN_LIMITS = {
   starter: { vendors: 10, members: 3 },
