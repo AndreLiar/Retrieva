@@ -265,6 +265,7 @@ describe('Auth Middleware', () => {
         email: 'test@example.com',
         role: 'user',
         name: 'Test User',
+        organizationId: null,
       });
       expect(mockNext).toHaveBeenCalled();
     });
