@@ -5,7 +5,7 @@ import { useMutation } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Loader2, User, Mail, Shield, Bell, CheckCircle, AlertCircle, Users } from 'lucide-react';
+import { Loader2, User, Mail, Shield, Bell, CheckCircle, AlertCircle, Users, CreditCard } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import axios from 'axios';
@@ -399,7 +399,7 @@ export default function SettingsPage() {
       </Card>
 
       {/* Security Settings Link */}
-      <Card>
+      <Card className="mb-6">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5" />
@@ -412,6 +412,24 @@ export default function SettingsPage() {
         <CardContent>
           <Link href="/settings/security">
             <Button variant="outline">Manage Security Settings</Button>
+          </Link>
+        </CardContent>
+      </Card>
+
+      {/* Billing Link */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CreditCard className="h-5 w-5" />
+            Billing
+          </CardTitle>
+          <CardDescription>
+            Manage your subscription and payment methods
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Link href="/settings/billing">
+            <Button variant="outline">Manage billing</Button>
           </Link>
         </CardContent>
       </Card>

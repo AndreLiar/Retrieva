@@ -2,18 +2,18 @@
  * Billing Routes
  *
  * POST /api/v1/billing/webhook — Stripe webhook (no auth, raw body)
+ * POST /api/v1/billing/portal  — Create Stripe Customer Portal session (authenticated)
  *
  * Note: the webhook route is mounted with express.raw() BEFORE express.json()
- * in app.js. This file registers any future authenticated billing endpoints
- * (e.g., portal redirect) that will be added in Week 2.
+ * in app.js.
  */
 
 import express from 'express';
+import { authenticate } from '../middleware/auth.js';
+import { createPortalSession } from '../controllers/billingController.js';
 
 const router = express.Router();
 
-// Webhook is registered directly in app.js with express.raw() to preserve
-// the raw body required for Stripe signature verification.
-// This router is mounted for future authenticated billing endpoints.
+router.post('/portal', authenticate, createPortalSession);
 
 export default router;

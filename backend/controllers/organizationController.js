@@ -118,6 +118,9 @@ export const getMyOrganization = catchAsync(async (req, res) => {
       name: org.name,
       industry: org.industry,
       country: org.country,
+      plan: org.plan || 'starter',
+      planStatus: org.planStatus || 'trialing',
+      trialEndsAt: org.trialEndsAt || null,
     },
     role: membership.role,
   });
