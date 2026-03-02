@@ -24,8 +24,8 @@ The platform was built across four delivery phases:
 
 | Phase | Feature | Status |
 |-------|---------|--------|
-| Phase 1 | RAG foundation — knowledge ingestion, vector search, AI copilot | ✅ Production |
-| Phase 2 | Multi-source ingestion — files, URLs, Notion, Confluence; DORA assessment UI | ✅ Production |
+| Phase 1 | DORA Copilot foundation — knowledge ingestion, vector search, conversational Q&A | ✅ Production |
+| Phase 2 | Multi-source ingestion (files, URLs, Confluence, Notion connector); DORA gap assessment UI | ✅ Production |
 | Phase 3 | Vendor questionnaires with LLM scoring | ✅ Production |
 | Phase 4 | Monitoring alerts + Register of Information export | ✅ Production |
 

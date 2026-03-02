@@ -102,8 +102,9 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - QDRANT_URL=http://qdrant:6333
-      - OLLAMA_BASE_URL=http://host.docker.internal:11434
       - RAGAS_SERVICE_URL=http://ragas-service:8001
+      # Azure OpenAI — set via .env file (not hardcoded here)
+      # LLM_PROVIDER=azure_openai, AZURE_OPENAI_API_KEY, AZURE_OPENAI_ENDPOINT, etc.
     depends_on:
       mongodb:
         condition: service_healthy
@@ -126,8 +127,6 @@ services:
     container_name: rag-ragas
     ports:
       - "8001:8001"
-    environment:
-      - OLLAMA_BASE_URL=http://host.docker.internal:11434
     networks:
       - rag-network
     restart: unless-stopped

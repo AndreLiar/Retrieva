@@ -314,7 +314,7 @@ export const emailService = {
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `RESEND_API_KEY` | - | Resend API key (required for sending) |
-| `SMTP_FROM_NAME` | `RAG Platform` | Display name in "From" field |
+| `SMTP_FROM_NAME` | `Retrieva` | Display name in "From" field |
 | `RESEND_FROM_EMAIL` | `noreply@retrieva.online` | Sender address (must match verified domain) |
 | `EMAIL_SERVICE_URL` | - | When set, proxy to standalone email-service instead of calling Resend directly |
 

@@ -12,58 +12,63 @@ Mongoose models define the data schema and provide an interface to MongoDB.
 // models/User.js
 
 const userSchema = new Schema({
-  email: {
-    type: String,
-    required: true,
-    unique: true,
-    lowercase: true,
-    trim: true,
+  email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+  password: { type: String, required: true, select: false },
+  name: { type: String, required: true, trim: true },  // field-level AES-256-GCM encrypted
+  role: { type: String, enum: ['user', 'admin'], default: 'user' },
+  isActive: { type: Boolean, default: true },
+
+  // Multi-device session management (up to 5 active sessions per user)
+  refreshTokens: [{
+    tokenHash:  { type: String, required: true },  // SHA-256 of raw token
+    deviceInfo: { type: String, default: 'unknown' },
+    createdAt:  { type: Date, default: Date.now },
+    expiresAt:  { type: Date, required: true },
+  }],
+
+  lastLogin: Date,
+  loginAttempts: { type: Number, default: 0 },
+  lockUntil: Date,  // account locks for 2h after 5 failed attempts
+
+  // Email verification
+  isEmailVerified:            { type: Boolean, default: false },
+  emailVerificationToken:     { type: String, select: false },  // SHA-256 hash
+  emailVerificationExpires:   { type: Date, select: false },
+  emailVerificationLastSentAt: Date,
+
+  // Password reset
+  passwordResetToken:   { type: String, select: false },  // SHA-256 hash
+  passwordResetExpires: { type: Date, select: false },
+
+  // Per-channel, per-event notification preferences
+  notificationPreferences: {
+    inApp: { workspace_invitation: Boolean, sync_completed: Boolean, system_alert: Boolean, /* ... */ },
+    email: { workspace_invitation: Boolean, sync_failed: Boolean, system_alert: Boolean, /* ... */ },
   },
-  password: {
-    type: String,
-    required: true,
-    select: false,  // Don't include in queries by default
-  },
-  name: {
-    type: String,
-    required: true,
-    trim: true,
-  },
-  status: {
-    type: String,
-    enum: ['active', 'inactive', 'suspended'],
-    default: 'active',
-  },
-  role: {
-    type: String,
-    enum: ['user', 'admin'],
-    default: 'user',
-  },
-  refreshToken: {
-    type: String,
-    select: false,
-  },
-  lastLoginAt: Date,
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
+
+  // Organization membership (null for legacy users — falls back to WorkspaceMember)
+  organizationId: { type: ObjectId, ref: 'Organization', default: null },
+}, { timestamps: true });
+
+// Virtual: account is locked
+userSchema.virtual('isLocked').get(function() {
+  return !!(this.lockUntil && this.lockUntil > Date.now());
 });
-
-// Password hashing
-userSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) return next();
-  this.password = await bcrypt.hash(this.password, 12);
-  next();
-});
-
-// Password comparison
-userSchema.methods.comparePassword = async function(candidatePassword) {
-  return bcrypt.compare(candidatePassword, this.password);
-};
-
-export const User = model('User', userSchema);
 ```
+
+**Key methods:**
+
+| Method | Description |
+|--------|-------------|
+| `comparePassword(candidate)` | bcrypt compare |
+| `incLoginAttempts()` | Increment failed logins; locks after 5 |
+| `resetLoginAttempts()` | Clear count on successful login |
+| `addRefreshToken(hash, device, days)` | Add hashed token (max 5 sessions) |
+| `consumeRefreshToken(hash)` | Find + remove token (rotation) |
+| `clearAllRefreshTokens()` | Logout all devices |
+| `createPasswordResetToken()` | Returns raw token; stores SHA-256 hash |
+| `createEmailVerificationToken()` | Returns raw token; stores SHA-256 hash |
+| `verifyEmail(rawToken)` | Sets `isEmailVerified = true` |
 
 ## NotionWorkspace Model
 
@@ -179,10 +184,9 @@ export const NotionWorkspace = model('NotionWorkspace', notionWorkspaceSchema);
 
 const conversationSchema = new Schema({
   workspaceId: {
-    type: Schema.Types.ObjectId,
-    ref: 'NotionWorkspace',
-    required: true,
+    type: Schema.Types.Mixed,  // String or ObjectId — vendor workspace
     index: true,
+    default: 'default',
   },
   userId: {
     type: Schema.Types.ObjectId,
@@ -282,80 +286,73 @@ export const Message = model('Message', messageSchema);
 
 ## DocumentSource Model
 
+Tracks indexed documents from all data sources. The actual vectors are in Qdrant; this model stores metadata and sync state.
+
 ```javascript
 // models/DocumentSource.js
 
 const documentSourceSchema = new Schema({
-  workspaceId: {
-    type: String,
-    required: true,
-    index: true,
-  },
+  workspaceId: { type: String, required: true, index: true },
+
+  // Source type — covers all supported connectors
   sourceType: {
     type: String,
-    enum: ['notion', 'pdf', 'web'],
-    default: 'notion',
-  },
-  sourceId: {
-    type: String,
+    enum: ['file', 'pdf', 'docx', 'xlsx', 'url', 'confluence',
+           'gdrive', 'github', 'jira', 'slack', 'text', 'custom'],
     required: true,
   },
-  documentType: {
+  sourceId: { type: String, required: true },
+  documentType: { type: String, enum: ['page', 'database', 'file', 'folder'], required: true },
+
+  // Document classification for access control
+  classification: {
     type: String,
-    enum: ['page', 'database', 'file'],
-    default: 'page',
+    enum: ['public', 'internal', 'confidential', 'restricted'],
+    default: 'internal',
   },
-  title: {
-    type: String,
-    required: true,
-  },
+
+  title: { type: String, required: true },  // field-level AES-256-GCM encrypted
   url: String,
-  contentHash: {
-    type: String,
-    index: true,
-  },
+  parentId: String,
+  path: String,
+  contentHash: String,
+  lastModifiedInSource: Date,
+  lastSyncedAt: Date,
+
   syncStatus: {
     type: String,
-    enum: ['pending', 'indexed', 'error', 'deleted'],
+    enum: ['pending', 'synced', 'error', 'deleted'],
     default: 'pending',
   },
-  chunkCount: {
-    type: Number,
-    default: 0,
-  },
   vectorStoreIds: [String],
-  lastModifiedInSource: Date,
-  lastIndexedAt: Date,
-  metadata: {
-    author: String,
-    createdAt: Date,
-    properties: Schema.Types.Mixed,
-    parentId: String,
-    parentType: String,
-  },
-  error: {
-    message: String,
+  chunkCount: { type: Number, default: 0 },
+
+  // Embedding version tracking (for migration support)
+  embeddingMetadata: {
+    version: String,
+    provider: { type: String, enum: ['local', 'cloud'] },
+    model: String,
+    dimensions: Number,
     timestamp: Date,
-    retryCount: Number,
   },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
-});
+
+  metadata: { author: String, tags: [String], properties: Mixed, customFields: Mixed },
+
+  // Error log (max 10 entries, messages capped at 2000 chars)
+  errorLog: [{ timestamp: Date, error: String, retryCount: Number }],
+}, { timestamps: true });
 
 // Compound unique index
 documentSourceSchema.index({ workspaceId: 1, sourceId: 1 }, { unique: true });
-
-// Mark as deleted
-documentSourceSchema.methods.markAsDeleted = async function() {
-  this.syncStatus = 'deleted';
-  this.deletedAt = new Date();
-  return this.save();
-};
-
-export const DocumentSource = model('DocumentSource', documentSourceSchema);
 ```
+
+**Key methods:**
+
+| Method | Description |
+|--------|-------------|
+| `markAsSynced(vectorIds, chunkCount, embeddingMeta)` | Set `syncStatus = 'synced'` |
+| `markAsDeleted()` | Set `syncStatus = 'deleted'` |
+| `addError(error, retryCount)` | Append to error log (capped), set `syncStatus = 'error'` |
 
 ## SyncJob Model
 
@@ -461,7 +458,7 @@ export const SyncJob = model('SyncJob', syncJobSchema);
 const analyticsSchema = new Schema({
   workspaceId: {
     type: Schema.Types.ObjectId,
-    ref: 'NotionWorkspace',
+    ref: 'Workspace',
     required: true,
     index: true,
   },
