@@ -16,7 +16,7 @@
 import { getStripe, PRICE_TO_PLAN, STRIPE_STATUS_MAP } from '../config/stripe.js';
 import { Organization } from '../models/Organization.js';
 import { emailService } from '../services/emailService.js';
-import { sendError } from '../utils/index.js';
+import { catchAsync, sendError, sendSuccess } from '../utils/index.js';
 import logger from '../config/logger.js';
 
 const WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
@@ -127,6 +127,26 @@ async function handlePaymentFailed(invoice) {
 
   logger.info('Payment failed — plan set to past_due', { service: 'billing', orgId: org._id });
 }
+
+// ---------------------------------------------------------------------------
+// Webhook entry point (raw body required — mounted before express.json())
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// POST /api/v1/billing/portal — create Stripe Customer Portal session
+// ---------------------------------------------------------------------------
+
+export const createPortalSession = catchAsync(async (req, res) => {
+  const org = await Organization.findById(req.user.organizationId).select('stripeCustomerId');
+  if (!org?.stripeCustomerId) {
+    return sendError(res, 400, 'Billing not yet provisioned for this organization');
+  }
+  const session = await getStripe().billingPortal.sessions.create({
+    customer: org.stripeCustomerId,
+    return_url: `${process.env.FRONTEND_URL}/settings/billing`,
+  });
+  sendSuccess(res, 200, 'Portal session created', { url: session.url });
+});
 
 // ---------------------------------------------------------------------------
 // Webhook entry point (raw body required — mounted before express.json())

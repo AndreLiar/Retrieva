@@ -6,6 +6,9 @@ export interface OrganizationData {
   name: string;
   industry: string;
   country: string;
+  plan?: string;
+  planStatus?: string;
+  trialEndsAt?: string | null;
 }
 
 export interface OrgMember {
