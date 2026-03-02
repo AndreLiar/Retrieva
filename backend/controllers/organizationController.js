@@ -9,6 +9,7 @@ import { Organization } from '../models/Organization.js';
 import { OrganizationMember } from '../models/OrganizationMember.js';
 import { User } from '../models/User.js';
 import { emailService } from '../services/emailService.js';
+import { setupOrgBilling } from '../services/stripeService.js';
 import { catchAsync, sendSuccess, sendError } from '../utils/index.js';
 import { safeDecrypt } from '../utils/security/fieldEncryption.js';
 import logger from '../config/logger.js';
@@ -50,6 +51,31 @@ export const createOrganization = catchAsync(async (req, res) => {
 
   await User.findByIdAndUpdate(userId, { organizationId: org._id });
 
+  // Provision Stripe billing — failure must never block org creation
+  let billingFields = {
+    plan: 'starter',
+    planStatus: 'trialing',
+    trialEndsAt: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000),
+  };
+  try {
+    const billing = await setupOrgBilling(org._id, user.email, org.name);
+    billingFields = {
+      stripeCustomerId: billing.customerId,
+      stripeSubscriptionId: billing.subscriptionId,
+      plan: 'starter',
+      planStatus: 'trialing',
+      trialEndsAt: billing.trialEndsAt,
+    };
+  } catch (err) {
+    logger.error('Stripe billing provisioning failed — using local fallback', {
+      service: 'organization',
+      orgId: org._id,
+      error: err.message,
+    });
+  }
+
+  await Organization.findByIdAndUpdate(org._id, billingFields);
+
   logger.info('Organization created', {
     service: 'organization',
     orgId: org._id,
@@ -62,6 +88,9 @@ export const createOrganization = catchAsync(async (req, res) => {
       name: org.name,
       industry: org.industry,
       country: org.country,
+      plan: billingFields.plan,
+      planStatus: billingFields.planStatus,
+      trialEndsAt: billingFields.trialEndsAt,
     },
   });
 });

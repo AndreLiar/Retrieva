@@ -45,6 +45,14 @@ vi.mock('../../utils/security/fieldEncryption.js', () => ({
   safeEncrypt: vi.fn((v) => v),
 }));
 
+vi.mock('../../services/stripeService.js', () => ({
+  setupOrgBilling: vi.fn().mockResolvedValue({
+    customerId: 'cus_test123',
+    subscriptionId: 'sub_test123',
+    trialEndsAt: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000),
+  }),
+}));
+
 const ORG_OID = new mongoose.Types.ObjectId('cccccccccccccccccccccccc');
 const USER_OID = new mongoose.Types.ObjectId('dddddddddddddddddddddddd');
 const MBR_OID = new mongoose.Types.ObjectId('eeeeeeeeeeeeeeeeeeeeeeee');
@@ -77,6 +85,7 @@ vi.mock('../../models/Organization.js', () => ({
   Organization: {
     create: vi.fn(),
     findById: vi.fn(),
+    findByIdAndUpdate: vi.fn(),
   },
 }));
 

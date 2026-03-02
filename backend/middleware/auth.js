@@ -47,6 +47,9 @@ import logger from '../config/logger.js';
  * @returns {Promise<void>}
  */
 export const authenticate = async (req, res, next) => {
+  // Idempotent — skip if already authenticated by an outer middleware
+  if (req.user) return next();
+
   try {
     // Get token from cookie or Authorization header
     const token = getAccessToken(req);
@@ -177,6 +180,7 @@ export const optionalAuth = async (req, res, next) => {
           email: user.email,
           role: user.role,
           name: user.name,
+          organizationId: user.organizationId || null,
         };
       } else if (user && !user.isActive) {
         // SECURITY FIX: Log inactive user token usage
