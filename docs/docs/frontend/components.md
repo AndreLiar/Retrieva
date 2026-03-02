@@ -13,6 +13,7 @@ components/
 ├── chat/           # Chat feature components
 ├── layout/         # Layout structure
 ├── analytics/      # Analytics dashboard
+├── marketing/      # Public marketing components (PricingSection)
 ├── notion/         # Notion integration
 ├── sources/        # Data source management (file, url, confluence, MCP)
 ├── providers/      # Context providers
@@ -369,6 +370,41 @@ interface MCPConnectDialogProps {
   workspaceId: string;
 }
 ```
+
+## Marketing Components
+
+Components in `components/marketing/` are used exclusively on public (unauthenticated) pages.
+They have no auth dependency and can be rendered as client or server components as needed.
+
+### PricingSection
+
+`components/marketing/pricing-section.tsx` — shared pricing grid used by both the landing page
+(`/`) and the standalone `/pricing` route.
+
+```tsx
+// No props required — all data is static
+export function PricingSection() { ... }
+```
+
+**Features:**
+
+- **Billing toggle** — monthly / annual pill buttons; annual shows a green `−20%` badge
+- **4-plan grid** — Starter, Professional, Business, Enterprise in a `sm:grid-cols-2 lg:grid-cols-4` layout
+- **Highlighted plan** — Professional has `ring-2 ring-primary` border + absolute "Most Popular" badge
+- **Feature rows** — 10 rows per card (vendors, members, DORA assessments, questionnaires,
+  AI Copilot queries, data sources, EBA export, cert/contract alerts, support, free trial)
+- **Animations** — `framer-motion` `whileInView` fade-up with 0.1 s stagger per card
+
+**Plan data:**
+
+| Plan | Monthly | Annual | Highlight |
+|------|---------|--------|-----------|
+| Starter | €199/mo | €159/mo | — |
+| Professional | €499/mo | €399/mo | Most Popular |
+| Business | €999/mo | €799/mo | — |
+| Enterprise | Custom | Custom | — |
+
+**CTA routing:** Enterprise → `/contact`; all others → `/register`.
 
 ## Common Components
 

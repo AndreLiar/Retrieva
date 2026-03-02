@@ -33,6 +33,7 @@ frontend/
 │   │   ├── chat/               # Chat feature components
 │   │   ├── layout/             # Layout components (sidebar, header)
 │   │   ├── analytics/          # Analytics dashboard
+│   │   ├── marketing/          # Public marketing components (pricing, etc.)
 │   │   ├── providers/          # Context providers
 │   │   ├── common/             # Shared components
 │   │   └── ui/                 # Radix UI components
@@ -80,6 +81,14 @@ frontend/
 ```
 
 ## Route Structure
+
+### Public Routes
+
+| Route | File | Description |
+|-------|------|-------------|
+| `/` | `app/page.tsx` | Landing page (hero, features, how-it-works, pricing, CTA) |
+| `/pricing` | `app/pricing/page.tsx` | Standalone pricing page with plan comparison and FAQ |
+| `/contact` | `app/contact/page.tsx` | Enterprise sales contact page |
 
 ### Auth Routes `(auth)/`
 
