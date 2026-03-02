@@ -21,6 +21,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/lib/stores/auth-store';
 import { ThemeToggle } from '@/components/theme/theme-toggle';
+import { PricingSection } from '@/components/marketing/pricing-section';
 
 export default function LandingPage() {
   const router = useRouter();
@@ -57,6 +58,9 @@ export default function LandingPage() {
           </div>
           <div className="flex items-center gap-4">
             <ThemeToggle />
+            <Link href="/pricing">
+              <Button variant="ghost">Pricing</Button>
+            </Link>
             <Link href="/login">
               <Button variant="ghost">Sign In</Button>
             </Link>
@@ -230,6 +234,9 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* Pricing */}
+      <PricingSection />
 
       {/* CTA */}
       <section className="container mx-auto px-4 py-24 text-center">
