@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # API Overview
 
-The RAG Platform provides a RESTful API for all operations. All endpoints are prefixed with `/api/v1`.
+Retrieva provides a RESTful API for all operations. All endpoints are prefixed with `/api/v1`.
 
 ## Base URL
 
@@ -104,8 +104,12 @@ X-Workspace-Id: 507f1f77bcf86cd799439011
 | POST | `/auth/register` | Register user |
 | POST | `/auth/login` | Login |
 | POST | `/auth/logout` | Logout |
-| POST | `/auth/refresh` | Refresh token |
+| POST | `/auth/refresh` | Refresh access token |
 | GET | `/auth/me` | Get current user |
+| POST | `/auth/forgot-password` | Request password reset email |
+| POST | `/auth/reset-password` | Reset password with token |
+| POST | `/auth/verify-email` | Verify email address with token |
+| POST | `/auth/resend-verification` | Resend email verification link |
 
 ### Notion
 
@@ -117,16 +121,50 @@ X-Workspace-Id: 507f1f77bcf86cd799439011
 | GET | `/notion/sync-status` | Get sync status |
 | GET | `/notion/workspaces` | List workspaces |
 
-### Workspaces
+### Workspaces (Vendor Registry)
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/workspaces` | List user workspaces |
-| GET | `/workspaces/:id` | Get workspace |
-| PATCH | `/workspaces/:id` | Update workspace |
+| GET | `/workspaces` | List workspaces for the current user / org |
+| POST | `/workspaces` | Create a new vendor workspace |
+| GET | `/workspaces/:id` | Get workspace details |
+| PATCH | `/workspaces/:id` | Update vendor profile (tier, country, contracts, certs) |
 | DELETE | `/workspaces/:id` | Delete workspace |
-| POST | `/workspaces/:id/members` | Add member |
-| DELETE | `/workspaces/:id/members/:userId` | Remove member |
+| POST | `/workspaces/:id/members` | Add workspace member |
+| DELETE | `/workspaces/:id/members/:userId` | Remove workspace member |
+| GET | `/workspaces/roi-export` | Download EBA DORA Art. 28(3) RoI XLSX workbook |
+
+### Assessments
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/assessments` | List assessments for a workspace |
+| POST | `/assessments` | Create assessment and upload vendor documents |
+| GET | `/assessments/:id` | Get assessment details and gap results |
+| DELETE | `/assessments/:id` | Delete assessment |
+| GET | `/assessments/:id/report` | Download Word (.docx) compliance report |
+
+### Questionnaires
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/questionnaires` | List questionnaires for a workspace |
+| POST | `/questionnaires` | Create and send a vendor questionnaire |
+| GET | `/questionnaires/:id` | Get questionnaire with scoring results |
+| PATCH | `/questionnaires/:id` | Update questionnaire |
+| DELETE | `/questionnaires/:id` | Delete questionnaire |
+
+### Organizations
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/organizations` | Create a new organization (first-time onboarding) |
+| GET | `/organizations/me` | Get current user's organization |
+| PATCH | `/organizations/:id` | Update organization |
+| POST | `/organizations/:id/invite` | Invite a team member (sends email with `/join` link) |
+| GET | `/organizations/:id/members` | List organization members |
+| PATCH | `/organizations/:id/members/:memberId` | Change member role |
+| DELETE | `/organizations/:id/members/:memberId` | Revoke membership |
 
 ### Analytics
 
@@ -177,24 +215,14 @@ Returns service health status:
 
 ```json
 {
-  "status": "healthy",
-  "version": "1.0.0",
-  "timestamp": "2024-01-01T00:00:00.000Z",
-  "services": {
-    "mongodb": "connected",
-    "redis": "connected",
-    "qdrant": "connected",
-    "ollama": "connected"
+  "status": "success",
+  "message": "Service is healthy",
+  "data": {
+    "status": "up",
+    "timestamp": "2024-01-01T00:00:00.000Z",
+    "uptime": 123.456
   }
 }
-```
-
-## Swagger Documentation
-
-Interactive API documentation is available at:
-
-```
-http://localhost:3007/api-docs
 ```
 
 ## Rate Limiting

@@ -160,12 +160,13 @@ const compressedDocs = await compressDocuments(documents, query, {
 ```javascript
 const ragPrompt = ChatPromptTemplate.fromMessages([
   ['system', `
-    You are an expert AI assistant with access to the user's Notion workspace.
+    You are an expert DORA compliance AI assistant. You have access to the organisation's
+    uploaded vendor ICT documentation, DORA regulatory articles, and completed gap assessments.
 
     CRITICAL INSTRUCTIONS:
     1. Use ONLY information from provided context
     2. ALWAYS cite sources using [Source N] format
-    3. If information not found, say so
+    3. If information not found, say so explicitly
     4. NEVER invent or hallucinate information
 
     CONTEXT:
@@ -274,14 +275,13 @@ Key environment variables:
 ```bash
 # Retrieval
 QDRANT_URL=http://localhost:6333
-QDRANT_COLLECTION=notion_documents
-RETRIEVAL_TOP_K=10
+QDRANT_COLLECTION_NAME=documents          # default collection for workspace knowledge base
 
-# LLM
-OLLAMA_BASE_URL=http://localhost:11434
-LLM_MODEL=llama3.2:latest
-LLM_TEMPERATURE=0.1
-LLM_MAX_TOKENS=2048
+# LLM (Azure OpenAI — production default)
+LLM_PROVIDER=azure_openai
+AZURE_OPENAI_LLM_DEPLOYMENT=gpt-4o-mini
+LLM_TEMPERATURE=0.3
+LLM_MAX_TOKENS=2000
 
 # Timeouts
 LLM_INVOKE_TIMEOUT=60000
@@ -291,6 +291,7 @@ LLM_STREAM_CHUNK_TIMEOUT=10000
 # Quality
 MIN_CONFIDENCE_THRESHOLD=0.4
 ENABLE_HALLUCINATION_BLOCKING=true
+GUARDRAIL_STRICT_HALLUCINATION_BLOCKING=true
 ```
 
 ## Error Handling

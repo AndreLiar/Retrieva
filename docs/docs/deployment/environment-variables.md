@@ -189,7 +189,7 @@ Files are stored under `organizations/{orgId}/workspaces/{wsId}/...` enforcing o
 | Variable | Description |
 |----------|-------------|
 | `LANGSMITH_API_KEY` | LangSmith API key |
-| `LANGSMITH_PROJECT` | `rag-notion` - Project name |
+| `LANGSMITH_PROJECT` | `retrieva` - Project name |
 | `LANGSMITH_ENABLED` | `true` - Enable tracing |
 | `RAGAS_SERVICE_URL` | `http://localhost:8001` |
 | `RAGAS_TIMEOUT` | `60000` - Evaluation timeout |
@@ -206,7 +206,7 @@ Files are stored under `organizations/{orgId}/workspaces/{wsId}/...` enforcing o
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `RESEND_API_KEY` | - | Resend API key for sending emails |
-| `SMTP_FROM_NAME` | `RAG Platform` | Display name in the "From" field |
+| `SMTP_FROM_NAME` | `Retrieva` | Display name in the "From" field |
 | `RESEND_FROM_EMAIL` | `noreply@retrieva.online` | Sender email address (must match a verified Resend domain) |
 
 :::note
@@ -243,7 +243,7 @@ In docker-compose development all three microservice URLs are automatically set 
 |----------|---------|-------------|
 | `NEXT_PUBLIC_API_URL` | `http://localhost:3007/api/v1` | Backend API URL |
 | `NEXT_PUBLIC_WS_URL` | `http://localhost:3007` | WebSocket URL |
-| `NEXT_PUBLIC_APP_NAME` | `RAG Platform` | Application name |
+| `NEXT_PUBLIC_APP_NAME` | `Retrieva` | Application name |
 
 ## Environment File Template
 
@@ -283,7 +283,7 @@ DO_SPACES_REGION=fra1
 
 # Email (optional for local dev - emails will be skipped if not set)
 RESEND_API_KEY=
-SMTP_FROM_NAME=RAG Platform
+SMTP_FROM_NAME=Retrieva
 RESEND_FROM_EMAIL=noreply@yourdomain.com
 
 # Frontend
@@ -296,7 +296,7 @@ ALLOWED_ORIGINS=http://localhost:3000
 ```bash
 NEXT_PUBLIC_API_URL=http://localhost:3007/api/v1
 NEXT_PUBLIC_WS_URL=http://localhost:3007
-NEXT_PUBLIC_APP_NAME=RAG Platform
+NEXT_PUBLIC_APP_NAME=Retrieva
 ```
 
 ## Secret Generation

@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # Security Overview
 
-The RAG Platform implements multiple security layers to protect user data and ensure safe AI operations.
+Retrieva implements multiple security layers to protect user data and ensure safe AI operations.
 
 ## Security Architecture
 
@@ -113,7 +113,7 @@ The platform addresses the [OWASP Top 10 for LLM Applications](https://owasp.org
 
 ### Data Protection
 
-- AES-256 encryption for Notion tokens
+- AES-256-GCM encryption for sensitive tokens (OAuth access tokens, Notion credentials, API keys)
 - Tenant isolation at database level
 - Mandatory workspace filter on vector queries
 - No cross-tenant data access
@@ -185,7 +185,7 @@ Events logged:
 If you discover a security vulnerability:
 
 1. **Do not** disclose publicly
-2. Email security@example.com
+2. Email security@retrieva.online
 3. Include detailed reproduction steps
 4. Allow 90 days for remediation
 
