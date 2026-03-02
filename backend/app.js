@@ -21,6 +21,7 @@ import organizationRoutes from './routes/organizationRoutes.js';
 import billingRoutes from './routes/billingRoutes.js';
 import { handleStripeWebhook } from './controllers/billingController.js';
 import { requireActivePlan } from './middleware/requireActivePlan.js';
+import { optionalAuth } from './middleware/auth.js';
 import logger from './config/logger.js';
 import { globalErrorHandler } from './utils/index.js';
 
@@ -238,14 +239,18 @@ app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/organizations', organizationRoutes);
 app.use('/api/v1/billing', billingRoutes);
 
-// Paid routes — require an active or trialing plan
-app.use('/api/v1', requireActivePlan, ragRoutes);
-app.use('/api/v1/conversations', requireActivePlan, conversationRoutes);
-app.use('/api/v1/workspaces', requireActivePlan, workspaceRoutes);
-app.use('/api/v1/assessments', requireActivePlan, assessmentRoutes);
-app.use('/api/v1/data-sources', requireActivePlan, dataSourceRoutes);
-app.use('/api/v1/compliance', requireActivePlan, complianceRoutes);
-app.use('/api/v1/questionnaires', requireActivePlan, questionnaireRoutes);
+// Paid routes — optionalAuth sets req.user when a token is present so the
+// plan guard can check it; public sub-routes (e.g. questionnaire respond)
+// have no token and pass through to the router's own authenticate.
+// authenticate is idempotent so the router's router.use(authenticate) is a
+// no-op when req.user is already set by optionalAuth.
+app.use('/api/v1', optionalAuth, requireActivePlan, ragRoutes);
+app.use('/api/v1/conversations', optionalAuth, requireActivePlan, conversationRoutes);
+app.use('/api/v1/workspaces', optionalAuth, requireActivePlan, workspaceRoutes);
+app.use('/api/v1/assessments', optionalAuth, requireActivePlan, assessmentRoutes);
+app.use('/api/v1/data-sources', optionalAuth, requireActivePlan, dataSourceRoutes);
+app.use('/api/v1/compliance', optionalAuth, requireActivePlan, complianceRoutes);
+app.use('/api/v1/questionnaires', optionalAuth, requireActivePlan, questionnaireRoutes);
 
 app.get('/', (req, res) => {
   res.send('Hello from a secure app.js!');
