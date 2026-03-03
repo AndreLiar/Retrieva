@@ -273,9 +273,9 @@ await cache.set(question, result, workspaceId, conversationId);
 Key environment variables:
 
 ```bash
-# Retrieval
+# Retrieval (Qdrant)
 QDRANT_URL=http://localhost:6333
-QDRANT_COLLECTION_NAME=documents          # default collection for workspace knowledge base
+QDRANT_COLLECTION_NAME=documents          # workspace knowledge base collection
 
 # LLM (Azure OpenAI — production default)
 LLM_PROVIDER=azure_openai
@@ -283,14 +283,20 @@ AZURE_OPENAI_LLM_DEPLOYMENT=gpt-4o-mini
 LLM_TEMPERATURE=0.3
 LLM_MAX_TOKENS=2000
 
+# Embeddings (Azure OpenAI — text-embedding-3-small, 1536 dims, Cosine)
+EMBEDDING_PROVIDER=azure
+AZURE_OPENAI_EMBEDDING_DEPLOYMENT=text-embedding-3-small
+EMBEDDING_MAX_CONCURRENCY=10              # parallel embedding API calls (S0 tier: 5-10 safe)
+EMBEDDING_BATCH_MAX_CHUNKS=50            # max chunks per batch request
+EMBEDDING_BATCH_MAX_TOKENS=8192          # max tokens per batch request
+EMBEDDING_CONTEXT_TOKENS=8192            # model context window (drives per-chunk truncation)
+
 # Timeouts
 LLM_INVOKE_TIMEOUT=60000
 LLM_STREAM_INITIAL_TIMEOUT=30000
 LLM_STREAM_CHUNK_TIMEOUT=10000
 
 # Quality
-MIN_CONFIDENCE_THRESHOLD=0.4
-ENABLE_HALLUCINATION_BLOCKING=true
 GUARDRAIL_STRICT_HALLUCINATION_BLOCKING=true
 ```
 

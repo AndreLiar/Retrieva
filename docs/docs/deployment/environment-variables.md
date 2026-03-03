@@ -213,22 +213,20 @@ Files are stored under `organizations/{orgId}/workspaces/{wsId}/...` enforcing o
 The email service uses the **Resend HTTP API** over HTTPS (port 443). No SMTP ports (25, 465, 587) are needed — this is important because DigitalOcean blocks outbound SMTP traffic.
 :::
 
-### Microservice URLs
+### Optional Microservice Extension Points
 
-These variables enable the standalone microservice mode. When **unset**, the monolith falls back to its built-in in-process implementation so local dev works without Docker.
+The following env vars are **not set in production** and are not required for development. They exist as future extension points — when set, each corresponding service is delegated to a standalone process instead of running in-process in the backend.
 
-| Variable | Dev value | Description |
-|----------|-----------|-------------|
-| `EMAIL_SERVICE_URL` | `http://localhost:3008` | Email microservice (port 3008). Leave unset to use in-process Resend sending. |
-| `NOTIFICATION_SERVICE_URL` | `http://localhost:3009` | Notification microservice (port 3009). Leave unset to use in-process notification logic. |
-| `REALTIME_SERVICE_URL` | `http://localhost:3010` | Realtime/presence microservice (port 3010). When set, Socket.io is delegated to this service and the monolith publishes events via Redis pub/sub. Clients should set `NEXT_PUBLIC_WS_URL` to this URL. |
-| `INTERNAL_API_KEY` | - | Shared secret sent as `X-Internal-Api-Key` header on service-to-service calls. Optional; leave blank in local dev. |
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `EMAIL_SERVICE_URL` | unset | When set, email is proxied to a standalone email service instead of calling Resend directly in-process. |
+| `NOTIFICATION_SERVICE_URL` | unset | When set, notifications are proxied to a standalone notification service instead of in-process delivery. |
+| `REALTIME_SERVICE_URL` | unset | When set, Socket.io events are published via Redis pub/sub to a standalone realtime service. |
+| `INTERNAL_API_KEY` | unset | Shared secret for `X-Internal-Api-Key` headers on service-to-service calls (only relevant if any `*_SERVICE_URL` is set). |
 | `INTERNAL_REQUEST_TIMEOUT_MS` | `10000` | Timeout (ms) for internal HTTP calls between services. |
-| `SERVICE_NAME` | `monolith` | Identifies this service in `X-Service-Name` headers on internal calls. |
+| `SERVICE_NAME` | `monolith` | Identifies this service in `X-Service-Name` request headers. |
 
-:::tip
-In docker-compose development all three microservice URLs are automatically set to their container names (e.g. `http://notification-service:3009`). See [Docker Deployment](./docker) for the full compose setup.
-:::
+**Leave all of these unset** in development and production — the backend handles email, notifications, and real-time fully in-process.
 
 ### Logging
 

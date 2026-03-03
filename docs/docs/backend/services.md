@@ -293,7 +293,7 @@ export function tenantIsolationPlugin(schema) {
 
 ### Email Service (`services/emailService.js`)
 
-Sends transactional emails via the **Resend HTTP API**. In **microservice mode** (`EMAIL_SERVICE_URL` is set), this file proxies HTTP calls to the standalone `email-service` (port 3008). When the env var is unset, it calls the Resend HTTP API directly in-process.
+Sends transactional emails via the **Resend HTTP API** directly in-process. The env var `EMAIL_SERVICE_URL` exists as a future extension point that would delegate to a standalone service — it is **not set in production**; all email sending happens inside the backend process.
 
 ```javascript
 export const emailService = {
@@ -324,9 +324,7 @@ If `RESEND_API_KEY` is not set, the service logs a warning and skips sending. Th
 
 ### Notification Service (`services/notificationService.js`)
 
-Dual-channel delivery: **WebSocket** (real-time) + **email** (important events).
-
-In **microservice mode** (`NOTIFICATION_SERVICE_URL` is set), this file is a thin HTTP proxy to the standalone `notification-service` (port 3009) which owns the Notification MongoDB collection and Redis pub/sub publishing. When unset, in-process logic is used (no docker-compose required for local dev).
+Dual-channel delivery: **WebSocket** (real-time) + **email** (important events). Runs entirely in-process. The env var `NOTIFICATION_SERVICE_URL` exists as a future extension point — it is **not set in production**.
 
 ```javascript
 export const notificationService = {
@@ -351,21 +349,34 @@ User preferences are checked per notification type and channel (`inApp`, `email`
 
 ### Real-Time / Presence Service
 
-Socket.io real-time communication and user presence tracking. Like email and notifications, this follows the **strangler fig** pattern.
+Socket.io runs **embedded in the backend process** (port 3007). There is no separate realtime service deployed.
 
-**`services/socketService.js`** — When `REALTIME_SERVICE_URL` is set, the monolith publishes events to Redis channels instead of maintaining a Socket.io server. When unset, the full Socket.io server runs in-process (same as before the extraction).
+**`services/socketService.js`** — maintains the in-process Socket.io server and emits events directly to connected rooms.
 
-**`services/presenceService.js`** — When `REALTIME_SERVICE_URL` is set, all write operations are no-ops (the `realtime-service` owns presence state) and reads query Redis hashes directly. When unset, an in-memory Map is used.
+**`services/presenceService.js`** — tracks online users in an in-memory Map. The env var `REALTIME_SERVICE_URL` is a future extension point (would delegate to Redis pub/sub) but is **not set in production**.
 
-| Function | Remote mode | Local mode |
-|----------|-------------|------------|
-| `emitToUser()` | Publishes to `realtime:user:{userId}` Redis channel | Emits directly via Socket.io |
-| `emitToWorkspace()` | Publishes to `realtime:workspace:{id}` Redis channel | Emits to Socket.io room |
-| `isUserOnline()` | Reads `presence:user:{userId}` Redis HASH (async) | Checks in-memory Map (sync) |
-| `userConnected()` | no-op | Updates in-memory Map |
-| `getWorkspacePresence()` | Reads `presence:workspace:{id}:members` Redis HASH | Reads in-memory Map |
+| Function | Description |
+|----------|-------------|
+| `emitToUser(userId, event, data)` | Emit to a specific user's socket room |
+| `emitToWorkspace(workspaceId, event, data)` | Emit to all sockets in a workspace room |
+| `isUserOnline(userId)` | Check in-memory presence Map |
+| `userConnected(userId)` | Register user connection |
+| `getWorkspacePresence(workspaceId)` | List online members of a workspace |
 
-**Analytics socket events** (`analytics:subscribe`, `analytics:get`) are no-ops in the standalone `realtime-service` — the `liveAnalyticsService` remains in the monolith and is only available in local mode.
+### Billing Service (`services/stripeService.js`)
+
+Manages Stripe customer portal sessions and subscription state.
+
+| Function | Description |
+|----------|-------------|
+| `createBillingPortalSession(userId)` | Create a Stripe Customer Portal session URL for self-serve plan management |
+| `handleWebhookEvent(event)` | Process Stripe webhook events (subscription updated, payment failed, etc.) |
+
+**Configuration env vars:** `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`.
+
+The `POST /api/v1/billing/webhook` route uses raw body parsing (before JSON middleware) to preserve the Stripe webhook signature for verification.
+
+---
 
 ## Service Dependencies
 

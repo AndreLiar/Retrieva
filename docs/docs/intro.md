@@ -89,7 +89,7 @@ A BullMQ repeatable job runs every 24 hours and sends email alerts to workspace 
 | Real-Time | Socket.io |
 | Frontend | Next.js 16, React 19, TypeScript |
 | UI Components | shadcn/ui, Tailwind CSS |
-| Monitoring | LangSmith, RAGAS |
+| Monitoring | LangSmith |
 | Export | xlsx (XLSX workbook generation) |
 
 ## Architecture Overview

@@ -15,13 +15,13 @@ Push/PR to main/dev/staging
 ┌─────────────────────────────────────────────────────────────────┐
 │                     CI Workflow (ci.yml)                         │
 │                                                                 │
-│  ┌──────────────┐  ┌──────────────┐  ┌───────────────────────┐ │
-│  │ Backend Tests │  │Frontend Tests│  │ RAGAS Service Tests   │ │
-│  │  (Node.js)   │  │  (Next.js)   │  │     (Python)          │ │
-│  │ + Lint        │  │ + Lint       │  │ + Lint                │ │
-│  │ + MongoDB     │  │ + Vitest     │  │ + Pytest              │ │
-│  │ + Redis       │  │              │  │                       │ │
-│  └──────────────┘  └──────────────┘  └───────────────────────┘ │
+│  ┌──────────────┐  ┌──────────────┐                             │
+│  │ Backend Tests │  │Frontend Tests│                             │
+│  │  (Node.js)   │  │  (Next.js)   │                             │
+│  │ + Lint        │  │ + Lint       │                             │
+│  │ + MongoDB     │  │ + Vitest     │                             │
+│  │ + Redis       │  │              │                             │
+│  └──────────────┘  └──────────────┘                             │
 │  ┌──────────────┐  ┌──────────────┐  ┌───────────────────────┐ │
 │  │   Security   │  │Secret Scanning│  │    SAST (Semgrep)    │ │
 │  │    Audit     │  │  (Gitleaks)  │  │  nodejs/js/owasp/     │ │
@@ -29,8 +29,8 @@ Push/PR to main/dev/staging
 │  └──────────────┘  └──────────────┘  └───────────────────────┘ │
 │  ┌─────────────────────────────────┐  ┌────────────────────────┐│
 │  │    Trivy Filesystem Scan         │  │  Docker Build Check   │ │
-│  │  backend / frontend / ragas     │  │  backend / frontend   │ │
-│  │  HIGH+CRITICAL, ignore-unfixed  │  │  ragas-service        │ │
+│  │  backend / frontend             │  │  backend / frontend   │ │
+│  │  HIGH+CRITICAL, ignore-unfixed  │  │                       │ │
 │  └─────────────────────────────────┘  └────────────────────────┘│
 │                           │                                     │
 │                    CI Success Gate                               │
@@ -66,11 +66,10 @@ Push/PR to main/dev/staging
 | `backend-test` | Lint + run Vitest tests | MongoDB 7.0, Redis 7 |
 | `frontend-test` | Lint + run Vitest tests | None |
 | `backend-security` | `npm audit --audit-level=high --omit=dev` — fails on HIGH/CRITICAL production CVEs | None |
-| `ragas-test` | Flake8 lint + Pytest | None |
 | `secret-scan` | [Gitleaks](https://github.com/gitleaks/gitleaks) scans full git history for committed secrets | None |
 | `sast` | [Semgrep](https://semgrep.dev) static analysis with `p/nodejs`, `p/javascript`, `p/secrets`, `p/owasp-top-ten` rulesets | None |
-| `trivy-scan` | [Trivy](https://trivy.dev) filesystem scan for HIGH/CRITICAL CVEs with fixes available (3-way matrix: backend, frontend, ragas-service) | None |
-| `docker-build` | Build Docker images (no push) for backend, frontend, ragas-service | None |
+| `trivy-scan` | [Trivy](https://trivy.dev) filesystem scan for HIGH/CRITICAL CVEs with fixes available (2-way matrix: backend, frontend) | None |
+| `docker-build` | Build Docker images (no push) for backend and frontend | None |
 | `ci-success` | Gate job — fails if any of the above jobs failed | None |
 
 ### Security Scan Configuration
@@ -116,7 +115,7 @@ env:
 ### Steps
 
 1. **Run CI** — calls the CI workflow as a reusable workflow
-2. **Build & Push** — builds Docker images for `backend`, `frontend`, and `ragas-service`, then pushes to GHCR
+2. **Build & Push** — builds Docker images for `backend` and `frontend`, then pushes to GHCR
 3. **Deploy via SSH** — connects to the production droplet and runs the deployment script:
    - Pull latest code and decrypt secrets (SOPS)
    - Tag current `:latest` images as `:rollback` (pre-deploy safety net)
@@ -132,7 +131,6 @@ Images are pushed to GitHub Container Registry (GHCR):
 ```
 ghcr.io/andreliar/retrieva/backend
 ghcr.io/andreliar/retrieva/frontend
-ghcr.io/andreliar/retrieva/ragas-service
 ```
 
 **Tagging strategy:**
@@ -161,9 +159,8 @@ Production secrets are encrypted at rest using **SOPS** with **age** encryption.
 
 | File | Contents |
 |------|----------|
-| `backend/.env.production.enc` | Main backend secrets (DB URIs, API keys, JWT secrets, etc.) |
+| `backend/.env.production.enc` | Main backend secrets (DB URIs, API keys, JWT secrets, Stripe keys, etc.) |
 | `backend/.env.resend.production.enc` | Email service secrets (`RESEND_API_KEY`, `RESEND_FROM_EMAIL`) |
-| `ragas-service/.env.production.enc` | RAGAS service secrets |
 
 ### Decryption During Deployment
 
@@ -210,19 +207,19 @@ Never commit plaintext `.env` files. Only `.enc` (encrypted) files belong in the
                    │  Nginx  │  (TLS termination, reverse proxy)
                    └────┬────┘
                         │
-          ┌─────────────┼─────────────┐
-          │             │             │
-     ┌────▼────┐  ┌─────▼────┐  ┌────▼────────┐
-     │Frontend │  │ Backend  │  │RAGAS Service │
-     │ :3000   │  │  :3007   │  │   :8001      │
-     └─────────┘  └────┬─────┘  └──────────────┘
-                       │
-          ┌────────────┼────────────┐
-          │            │            │
-     ┌────▼────┐ ┌─────▼───┐ ┌─────▼───┐
-     │MongoDB  │ │  Redis  │ │ Qdrant  │
-     │ :27017  │ │  :6379  │ │  :6333  │
-     └─────────┘ └─────────┘ └─────────┘
+               ┌────────┴────────┐
+               │                 │
+          ┌────▼────┐      ┌─────▼────┐
+          │Frontend │      │ Backend  │
+          │ :3000   │      │  :3007   │
+          └─────────┘      └────┬─────┘
+                                │
+               ┌────────────────┼────────────┐
+               │                │            │
+          ┌────▼────┐    ┌──────▼──┐  ┌──────▼──┐
+          │MongoDB  │    │  Redis  │  │ Qdrant  │
+          │ Atlas   │    │  :6379  │  │  :6333  │
+          └─────────┘    └─────────┘  └─────────┘
 ```
 
 All services run on a single **DigitalOcean droplet** via `docker-compose.production.yml`.
@@ -265,9 +262,8 @@ The backend `/health` endpoint returns service status including database connect
 Before pulling new images, the CD pipeline tags the current `:latest` images as `:rollback`:
 
 ```bash
-docker tag ghcr.io/andreliar/retrieva/backend:latest   ghcr.io/andreliar/retrieva/backend:rollback
-docker tag ghcr.io/andreliar/retrieva/frontend:latest   ghcr.io/andreliar/retrieva/frontend:rollback
-docker tag ghcr.io/andreliar/retrieva/ragas-service:latest ghcr.io/andreliar/retrieva/ragas-service:rollback
+docker tag ghcr.io/andreliar/retrieva/backend:latest  ghcr.io/andreliar/retrieva/backend:rollback
+docker tag ghcr.io/andreliar/retrieva/frontend:latest ghcr.io/andreliar/retrieva/frontend:rollback
 ```
 
 If health checks fail after deployment, the pipeline automatically:
@@ -286,7 +282,7 @@ ssh deploy@<DEPLOY_HOST>
 cd /opt/rag
 
 # Option 1: Use rollback images (if still available)
-for svc in backend frontend ragas-service; do
+for svc in backend frontend; do
   docker tag "ghcr.io/andreliar/retrieva/${svc}:rollback" "ghcr.io/andreliar/retrieva/${svc}:latest"
 done
 docker compose -f docker-compose.production.yml up -d --remove-orphans
