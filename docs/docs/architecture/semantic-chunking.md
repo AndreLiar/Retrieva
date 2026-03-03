@@ -20,7 +20,7 @@ Traditional character-based chunking has problems:
 ## Chunking Pipeline
 
 ```
-Notion Blocks (raw)
+Document Input (PDF / DOCX / XLSX / URL)
         │
         ▼
 ┌───────────────────┐
@@ -53,10 +53,10 @@ LangChain Documents
 
 ## Phase 1: Block Flattening
 
-Nested Notion blocks are flattened while preserving parent context:
+Documents are parsed and flattened into structured blocks while preserving parent context:
 
 ```javascript
-// services/notionTransformer.js
+// services/fileIngestionService.js
 
 const flattenBlocks = (blocks, parentPath = []) => {
   const flattened = [];
@@ -302,7 +302,7 @@ Each chunk includes rich metadata:
     workspaceId: "ws-123",
     sourceId: "page-456",
     documentTitle: "Finance Policy",
-    documentUrl: "https://notion.so/...",
+    documentUrl: "https://retrieva.online/sources/...",
 
     // Semantic metadata
     block_type: "list",

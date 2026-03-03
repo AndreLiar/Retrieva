@@ -12,7 +12,7 @@ The RAG (Retrieval-Augmented Generation) endpoints handle question answering.
 POST /api/v1/rag
 ```
 
-Ask a question and get an answer based on your Notion documents.
+Ask a question and get an answer based on your indexed vendor documents and DORA knowledge base.
 
 ### Headers
 
@@ -65,7 +65,7 @@ Ask a question and get an answer based on your Notion documents.
         "sourceNumber": 1,
         "title": "Return Policy",
         "content": "Returns are accepted within 30 days...",
-        "url": "https://notion.so/...",
+        "url": "https://retrieva.online/sources/...",
         "section": "Refunds",
         "score": 0.92
       }
@@ -74,7 +74,7 @@ Ask a question and get an answer based on your Notion documents.
       {
         "sourceNumber": 1,
         "title": "Return Policy",
-        "url": "https://notion.so/..."
+        "url": "https://retrieva.online/sources/..."
       }
     ],
     "validation": {

@@ -98,7 +98,7 @@ export const loadWorkspace = async (req, res, next) => {
       throw new AppError('Workspace ID required', 400);
     }
 
-    const workspace = await NotionWorkspace.findById(workspaceId);
+    const workspace = await Workspace.findById(workspaceId);
 
     if (!workspace) {
       throw new AppError('Workspace not found', 404);
@@ -304,7 +304,7 @@ async function indexDocument(job) {
   const { workspaceId, sourceId, documentContent } = job.data;
 
   // Chunk the document
-  const chunks = await prepareNotionDocumentForIndexing(
+  const chunks = await prepareDocumentForIndexing(
     documentContent,
     workspaceId  // Every chunk tagged with workspaceId
   );

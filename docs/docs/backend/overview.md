@@ -21,14 +21,12 @@ The backend is built with Express 5 and follows a modular architecture with clea
 | Queue | BullMQ |
 | Real-Time | Socket.io |
 | Export | xlsx (XLSX workbook generation) |
-| Monitoring | LangSmith (LLM tracing), RAGAS (evaluation) |
+| Monitoring | LangSmith (LLM tracing) |
 
 ## Directory Structure
 
 ```
 backend/
-├── adapters/           # External service adapters
-│   └── NotionAdapter.js
 ├── config/             # Configuration modules
 │   ├── database.js     # MongoDB connection
 │   ├── redis.js        # Redis connection
@@ -42,7 +40,6 @@ backend/
 │   ├── ragController.js
 │   ├── authController.js
 │   ├── conversationController.js
-│   ├── notionController.js
 │   ├── workspaceController.js
 │   ├── assessmentController.js
 │   ├── questionnaireController.js
@@ -59,7 +56,6 @@ backend/
 │   ├── User.js
 │   ├── Conversation.js
 │   ├── Message.js
-│   ├── NotionWorkspace.js
 │   ├── DocumentSource.js
 │   ├── SyncJob.js
 │   ├── Analytics.js
@@ -72,7 +68,6 @@ backend/
 │   ├── ragRoutes.js
 │   ├── authRoutes.js
 │   ├── conversationRoutes.js
-│   ├── notionRoutes.js
 │   ├── workspaceRoutes.js        # /workspaces + /roi-export
 │   ├── assessmentRoutes.js
 │   ├── questionnaireRoutes.js
@@ -95,13 +90,10 @@ backend/
 │   └── security/       # Security utilities
 ├── workers/            # Background workers
 │   ├── index.js                  # Worker entry + graceful shutdown
-│   ├── notionSyncWorker.js       # Notion workspace sync
 │   ├── documentIndexWorker.js    # Embed + upsert to Qdrant
 │   ├── assessmentWorker.js       # DORA gap analysis
 │   ├── questionnaireWorker.js    # LLM questionnaire scoring
 │   └── monitoringWorker.js       # 24h compliance alert scheduler
-├── loaders/            # Document loaders
-│   └── notionDocumentLoader.js
 ├── prompts/            # LLM prompts
 │   └── ragPrompt.js
 ├── validators/         # Request validators
@@ -179,7 +171,6 @@ export async function createServer() {
   app.use('/api/v1/rag', ragRoutes);
   app.use('/api/v1/auth', authRoutes);
   app.use('/api/v1/conversations', conversationRoutes);
-  app.use('/api/v1/notion', notionRoutes);
   app.use('/api/v1/workspaces', workspaceRoutes);     // includes /roi-export
   app.use('/api/v1/assessments', assessmentRoutes);
   app.use('/api/v1/questionnaires', questionnaireRoutes);

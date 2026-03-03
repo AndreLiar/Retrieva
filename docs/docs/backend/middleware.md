@@ -162,7 +162,7 @@ export const loadWorkspace = catchAsync(async (req, res, next) => {
     throw new AppError('Workspace ID required', 400);
   }
 
-  const workspace = await NotionWorkspace.findById(workspaceId);
+  const workspace = await Workspace.findById(workspaceId);
 
   if (!workspace) {
     throw new AppError('Workspace not found', 404);
