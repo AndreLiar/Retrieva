@@ -25,11 +25,10 @@ Client-side state management using Zustand and server state with TanStack Query.
 │   │ • activeWorkspace  │              │ • stats            │            │
 │   └────────────────────┘              │ • usage data       │            │
 │   ┌────────────────────┐              └────────────────────┘            │
-│   │ ui-store           │              ┌────────────────────┐            │
-│   │ • sidebar          │              │ Notion             │            │
-│   │ • modals           │              │ • workspaces       │            │
-│   └────────────────────┘              │ • sync status      │            │
-│                                       └────────────────────┘            │
+│   │ ui-store           │                                                 │
+│   │ • sidebar          │                                                 │
+│   │ • modals           │                                                 │
+│   └────────────────────┘                                                │
 │                                                                          │
 └─────────────────────────────────────────────────────────────────────────┘
 ```

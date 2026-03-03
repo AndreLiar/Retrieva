@@ -85,47 +85,6 @@ export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
 }
 ```
 
-### useSyncStatusUpdates
-
-Subscribe to real-time sync progress updates.
-
-```typescript
-interface SyncStatusEvent {
-  workspaceId: string;
-  status: 'started' | 'progress' | 'completed' | 'failed';
-  progress?: {
-    current: number;
-    total: number;
-    stage: string;
-  };
-  error?: string;
-}
-
-export function useSyncStatusUpdates(
-  notionWorkspaceId: string,
-  onUpdate: (event: SyncStatusEvent) => void
-) {
-  const { on, emit } = useSocket();
-
-  useEffect(() => {
-    // Join workspace room
-    emit('join:workspace', notionWorkspaceId);
-
-    // Subscribe to sync events
-    const unsubscribe = on('sync:status', (event: SyncStatusEvent) => {
-      if (event.workspaceId === notionWorkspaceId) {
-        onUpdate(event);
-      }
-    });
-
-    return () => {
-      unsubscribe();
-      emit('leave:workspace', notionWorkspaceId);
-    };
-  }, [notionWorkspaceId, on, emit, onUpdate]);
-}
-```
-
 ### useNotificationUpdates
 
 Subscribe to real-time notifications.

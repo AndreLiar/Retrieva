@@ -236,8 +236,6 @@ Dependency unavailable.
 |------|-------------|
 | SYNC_IN_PROGRESS | Sync already running |
 | SYNC_FAILED | Sync job failed |
-| NOTION_AUTH_EXPIRED | Notion token expired |
-| NOTION_RATE_LIMITED | Notion API rate limited |
 
 ### System Errors
 

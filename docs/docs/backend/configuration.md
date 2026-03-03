@@ -221,19 +221,6 @@ export { qdrantClient };
 import { Queue } from 'bullmq';
 import { redisConnection } from './redis.js';
 
-export const notionSyncQueue = new Queue('notionSync', {
-  connection: redisConnection,
-  defaultJobOptions: {
-    attempts: 3,
-    backoff: {
-      type: 'exponential',
-      delay: 5000,
-    },
-    removeOnComplete: 100,
-    removeOnFail: 50,
-  },
-});
-
 export const documentIndexQueue = new Queue('documentIndex', {
   connection: redisConnection,
   defaultJobOptions: {
