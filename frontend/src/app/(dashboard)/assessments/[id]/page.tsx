@@ -27,11 +27,13 @@ import { Separator } from '@/components/ui/separator';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AssessmentProgressStepper } from '@/components/assessment/AssessmentProgressStepper';
 import { GapAnalysisTable } from '@/components/assessment/GapAnalysisTable';
-import { InherentResidualPanel, WeightedDomainChart, FormalRiskDecision } from '@/components/assessment/RiskScoringPanel';
+import { ResidualRiskMatrix, WeightedDomainChart, FormalRiskDecision } from '@/components/assessment/RiskScoringPanel';
 import { Art30ClauseScorecardWithSignoff, NegotiationRoundBadge } from '@/components/assessment/ClauseSignoffPanel';
 import { assessmentsApi } from '@/lib/api/assessments';
 import { workspacesApi } from '@/lib/api/workspaces';
+import { questionnairesApi } from '@/lib/api/questionnaires';
 import type { Assessment, OverallRisk } from '@/lib/api/assessments';
+import type { VendorQuestionnaire } from '@/lib/api/questionnaires';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -233,6 +235,19 @@ export default function AssessmentDetailPage() {
     enabled: !!assessment?.workspaceId && assessment?.framework === 'CONTRACT_A30',
   });
 
+  // Latest completed questionnaire score for residual risk matrix (DORA only)
+  const { data: wsQuestionnaires } = useQuery({
+    queryKey: ['questionnaires', assessment?.workspaceId, 'risk'],
+    queryFn: async () => {
+      const res = await questionnairesApi.list({ workspaceId: assessment!.workspaceId });
+      return (res.data?.questionnaires ?? []) as VendorQuestionnaire[];
+    },
+    enabled: !!assessment?.workspaceId && assessment?.framework === 'DORA',
+  });
+  const latestCompletedQ = wsQuestionnaires
+    ?.filter((q) => q.status === 'complete')
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+
   const prevStatus = assessment?.status;
   useEffect(() => {
     if (prevStatus === 'complete') {
@@ -432,10 +447,14 @@ export default function AssessmentDetailPage() {
             ))}
           </div>
 
-          {/* ── DORA-specific panels (Step 3 fixes) ── */}
+          {/* ── DORA-specific panels ── */}
           {!isA30 && (
             <>
-              <InherentResidualPanel assessment={assessment} workspace={workspace ?? null} />
+              <ResidualRiskMatrix
+                assessment={assessment}
+                workspace={workspace ?? null}
+                qScore={latestCompletedQ?.overallScore ?? null}
+              />
               <WeightedDomainChart assessment={assessment} />
             </>
           )}
