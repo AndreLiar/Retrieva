@@ -184,15 +184,13 @@ Files are stored under `organizations/{orgId}/workspaces/{wsId}/...` enforcing o
 | `MONITORING_INTERVAL_HOURS` | `24` | How often the compliance monitoring alert worker runs (hours) |
 | `INSTITUTION_NAME` | `Financial Entity` | Institution name written into the RT.01.01 sheet of the RoI export |
 
-### LangSmith / RAGAS Monitoring
+### LangSmith Monitoring
 
 | Variable | Description |
 |----------|-------------|
 | `LANGSMITH_API_KEY` | LangSmith API key |
 | `LANGSMITH_PROJECT` | `retrieva` - Project name |
 | `LANGSMITH_ENABLED` | `true` - Enable tracing |
-| `RAGAS_SERVICE_URL` | `http://localhost:8001` |
-| `RAGAS_TIMEOUT` | `60000` - Evaluation timeout |
 
 ### CORS & Security
 
