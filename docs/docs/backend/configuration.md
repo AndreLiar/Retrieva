@@ -122,23 +122,56 @@ export async function getJudgeLLM() {
 
 ### Embeddings (`config/embeddings.js`)
 
+The embeddings module wraps `AzureOpenAIEmbeddings` from `@langchain/openai` inside a custom `BatchedEmbeddings` class that adds automatic batching, text truncation, and metrics tracking.
+
+**Provider:** Azure OpenAI — `text-embedding-3-small` (1 536-dimension vectors, Cosine distance).
+Hybrid mode (`ENABLE_HYBRID_EMBEDDINGS`) is disabled; Azure is the only active provider.
+
 ```javascript
+// Simplified structure — actual class has ~350 lines
 import { AzureOpenAIEmbeddings } from '@langchain/openai';
 
-let embeddingsModel = null;
+const baseEmbeddings = new AzureOpenAIEmbeddings({
+  azureOpenAIApiKey: process.env.AZURE_OPENAI_API_KEY,
+  azureOpenAIApiInstanceName: AZURE_OPENAI_INSTANCE_NAME, // extracted from AZURE_OPENAI_ENDPOINT
+  azureOpenAIApiDeploymentName: process.env.AZURE_OPENAI_EMBEDDING_DEPLOYMENT || 'text-embedding-3-small',
+  azureOpenAIApiVersion: process.env.AZURE_OPENAI_API_VERSION || '2024-02-15-preview',
+  maxConcurrency: parseInt(process.env.EMBEDDING_MAX_CONCURRENCY) || 10,
+});
 
-export async function getEmbeddings() {
-  if (embeddingsModel) return embeddingsModel;
+export const embeddings = new BatchedEmbeddings(baseEmbeddings, BATCH_CONFIG);
+```
 
-  embeddingsModel = new AzureOpenAIEmbeddings({
-    azureOpenAIApiKey: process.env.AZURE_OPENAI_API_KEY,
-    azureOpenAIApiInstanceName: extractInstanceName(process.env.AZURE_OPENAI_ENDPOINT),
-    azureOpenAIApiDeploymentName: process.env.AZURE_OPENAI_EMBEDDING_DEPLOYMENT || 'text-embedding-3-small',
-    azureOpenAIApiVersion: process.env.AZURE_OPENAI_API_VERSION || '2024-02-15-preview',
-  });
+#### Batch Configuration
 
-  return embeddingsModel;
-}
+```javascript
+export const BATCH_CONFIG = {
+  maxChunks: parseInt(process.env.EMBEDDING_BATCH_MAX_CHUNKS) || 50,  // max chunks per API call
+  maxTokens: parseInt(process.env.EMBEDDING_BATCH_MAX_TOKENS) || 8192, // max tokens per batch
+  charsPerToken: 4,                                                     // estimation ratio
+};
+```
+
+Batches are split whenever either limit (`maxChunks` or `maxTokens`) would be exceeded. Each batch is sent as a single `embedDocuments()` call.
+
+#### Truncation & Retry
+
+Texts exceeding `maxCharsPerChunk` are truncated before embedding. If the API still returns a context-length error, the system retries with progressively shorter inputs:
+
+| Attempt | Text length |
+|---------|------------|
+| 1 | Full (truncated to `maxCharsPerChunk`) |
+| 2 | 50% of original |
+| 3 | 25% of original |
+| 4 | 10% of original (minimum 100 chars) |
+
+#### Metrics
+
+```javascript
+import { getEmbeddingMetrics } from './config/embeddings.js';
+
+const m = getEmbeddingMetrics();
+// { totalChunksEmbedded, totalBatches, chunksPerSecond, avgBatchLatencyMs, errors, truncations }
 ```
 
 ## Vector Store Configuration
@@ -156,7 +189,7 @@ const qdrantClient = new QdrantClient({
 
 export async function getVectorStore(documents = []) {
   const embeddings = await getEmbeddings();
-  const collectionName = process.env.QDRANT_COLLECTION || 'notion_documents';
+  const collectionName = process.env.QDRANT_COLLECTION_NAME || 'documents';
 
   // Ensure collection exists
   const collections = await qdrantClient.getCollections();
@@ -316,19 +349,18 @@ LOG_LEVEL=info
 # ===========================================
 # MongoDB
 # ===========================================
-MONGODB_URI=mongodb://localhost:27017/rag
+MONGODB_URI=mongodb://localhost:27017/enterprise_rag
 
 # ===========================================
 # Redis
 # ===========================================
-REDIS_HOST=localhost
-REDIS_PORT=6378
+REDIS_URL=redis://localhost:6378
 
 # ===========================================
 # Qdrant Vector Store
 # ===========================================
 QDRANT_URL=http://localhost:6333
-QDRANT_COLLECTION=notion_documents
+QDRANT_COLLECTION_NAME=documents
 
 # ===========================================
 # Azure OpenAI
@@ -345,6 +377,14 @@ LLM_MAX_TOKENS=2000
 JUDGE_LLM_MODEL=gpt-4o-mini
 
 # ===========================================
+# Embedding Batching (optional — defaults shown)
+# ===========================================
+EMBEDDING_MAX_CONCURRENCY=10          # parallel API calls (S0 tier: 5-10 safe)
+EMBEDDING_BATCH_MAX_CHUNKS=50         # max chunks per batch request
+EMBEDDING_BATCH_MAX_TOKENS=8192       # max tokens per batch request
+EMBEDDING_CONTEXT_TOKENS=8192         # model context window (for per-chunk truncation)
+
+# ===========================================
 # LLM Timeouts
 # ===========================================
 LLM_INVOKE_TIMEOUT=60000
@@ -354,33 +394,21 @@ LLM_STREAM_CHUNK_TIMEOUT=10000
 # ===========================================
 # JWT Authentication
 # ===========================================
-JWT_SECRET=your-super-secret-jwt-key-change-in-production
-JWT_REFRESH_SECRET=your-super-secret-refresh-key-change-in-production
-JWT_EXPIRES_IN=15m
-JWT_REFRESH_EXPIRES_IN=7d
-
-# ===========================================
-# Notion OAuth
-# ===========================================
-NOTION_CLIENT_ID=your-notion-client-id
-NOTION_CLIENT_SECRET=your-notion-client-secret
-NOTION_REDIRECT_URI=http://localhost:3007/api/v1/notion/callback
+JWT_ACCESS_SECRET=             # generate: openssl rand -base64 48
+JWT_REFRESH_SECRET=            # generate: openssl rand -base64 48
+JWT_ACCESS_EXPIRY=15m
+JWT_REFRESH_EXPIRY=7d
 
 # ===========================================
 # Encryption
 # ===========================================
-ENCRYPTION_KEY=32-byte-hex-key-for-token-encryption
+ENCRYPTION_KEY=                # generate: openssl rand -hex 32
 
 # ===========================================
 # CORS
 # ===========================================
-CORS_ORIGIN=http://localhost:3000
-
-# ===========================================
-# Rate Limiting
-# ===========================================
-RATE_LIMIT_WINDOW_MS=60000
-RATE_LIMIT_MAX=100
+FRONTEND_URL=http://localhost:3000
+ALLOWED_ORIGINS=http://localhost:3000
 
 # ===========================================
 # Chunking Configuration
@@ -392,15 +420,14 @@ MAX_LIST_ITEMS=15
 # ===========================================
 # Sync Configuration
 # ===========================================
-BATCH_SIZE=30
 STALE_JOB_TIMEOUT_HOURS=2
 MAX_SYNC_RECOVERY_ATTEMPTS=2
+SYNC_PROGRESS_TIMEOUT_MINUTES=30
 
 # ===========================================
 # Quality Guardrails
 # ===========================================
-MIN_CONFIDENCE_THRESHOLD=0.4
-STRICT_HALLUCINATION_MODE=false
+GUARDRAIL_STRICT_HALLUCINATION_BLOCKING=true
 ENABLE_CODE_FILTER=true
 
 # ===========================================
@@ -408,7 +435,8 @@ ENABLE_CODE_FILTER=true
 # ===========================================
 LOG_RETRIEVAL_TRACE=false
 LANGSMITH_API_KEY=your-langsmith-key
-LANGSMITH_PROJECT=rag-platform
+LANGSMITH_PROJECT=retrieva
+LANGSMITH_ENABLED=true
 ```
 
 ## Configuration Validation

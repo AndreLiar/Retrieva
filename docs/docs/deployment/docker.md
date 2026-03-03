@@ -15,22 +15,14 @@ Container-based deployment using Docker and Docker Compose.
 │                      Docker Compose Stack (Development)                        │
 ├──────────────────────────────────────────────────────────────────────────────┤
 │                                                                                │
-│  ┌─────────────┐  ┌─────────────┐  ┌──────────────┐  ┌──────────────┐       │
-│  │   Backend   │  │   Frontend  │  │ RAGAS Service│  │ MinIO (S3)   │       │
-│  │  Port: 3007 │  │  Port: 3000 │  │  Port: 8001  │  │  Port: 9000  │       │
-│  └──────┬──────┘  └─────────────┘  └──────────────┘  └──────────────┘       │
+│  ┌─────────────┐  ┌─────────────┐                                             │
+│  │   Backend   │  │   Frontend  │                                             │
+│  │  Port: 3007 │  │  Port: 3000 │                                             │
+│  └──────┬──────┘  └─────────────┘                                             │
 │         │                                                                      │
 │  ┌──────┴──────────────────────────────────────────────────────────┐          │
-│  │                        Microservices                             │          │
-│  │  ┌──────────────┐  ┌──────────────────┐  ┌──────────────────┐  │          │
-│  │  │ email-service│  │notification-svc  │  │  realtime-svc    │  │          │
-│  │  │  Port: 3008  │  │   Port: 3009     │  │   Port: 3010     │  │          │
-│  │  └──────────────┘  └──────────────────┘  └──────────────────┘  │          │
-│  └─────────────────────────────────────────────────────────────────┘          │
-│                                                                                │
-│  ┌────────────────────────────────────────────────────────────────┐           │
-│  │                         rag-network                             │           │
-│  └──────────────┬──────────────────────────────────────┬──────────┘           │
+│  │                         rag-network                              │          │
+│  └──────────────┬──────────────────────────────────────┬───────────┘          │
 │                 │                                        │                     │
 │  ┌──────────────┴──┐  ┌────────────┐          ┌────────┴────┐                │
 │  │    MongoDB      │  │   Redis    │          │   Qdrant    │                │
@@ -47,11 +39,11 @@ Container-based deployment using Docker and Docker Compose.
 │                    Docker Compose Stack (Production)                      │
 ├─────────────────────────────────────────────────────────────────────────┤
 │                                                                          │
-│   ┌──────────────┐     ┌──────────────┐     ┌──────────────┐           │
-│   │   Frontend   │     │   Backend    │     │ RAGAS Service│           │
-│   │  (Next.js)   │     │  (Node.js)   │     │   (Python)   │           │
-│   │  Port: 3000  │     │  Port: 3007  │     │  Port: 8001  │           │
-│   └──────────────┘     └──────┬───────┘     └──────────────┘           │
+│   ┌──────────────┐     ┌──────────────┐                                 │
+│   │   Frontend   │     │   Backend    │                                 │
+│   │  (Next.js)   │     │  (Node.js)   │                                 │
+│   │  Port: 3000  │     │  Port: 3007  │                                 │
+│   └──────────────┘     └──────┬───────┘                                 │
 │                               │                                          │
 │                  ┌────────────┼────────────┐                             │
 │                  │            │            │                             │
@@ -102,7 +94,6 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - QDRANT_URL=http://qdrant:6333
-      - RAGAS_SERVICE_URL=http://ragas-service:8001
       # Azure OpenAI — set via .env file (not hardcoded here)
       # LLM_PROVIDER=azure_openai, AZURE_OPENAI_API_KEY, AZURE_OPENAI_ENDPOINT, etc.
     depends_on:
@@ -115,18 +106,6 @@ services:
     volumes:
       - ./backend:/app
       - /app/node_modules
-    networks:
-      - rag-network
-    restart: unless-stopped
-
-  # RAGAS Evaluation Service (Python)
-  ragas-service:
-    build:
-      context: ./ragas-service
-      dockerfile: Dockerfile
-    container_name: rag-ragas
-    ports:
-      - "8001:8001"
     networks:
       - rag-network
     restart: unless-stopped
@@ -302,36 +281,18 @@ docker-compose build backend
 docker-compose build --no-cache backend
 ```
 
-## Microservices
+## Monolith Architecture Note
 
-Phase 1–2 extractions add three lightweight services alongside the monolith. Each uses the same `strangler fig` pattern — the monolith automatically falls back to its built-in in-process logic when the corresponding `*_SERVICE_URL` env var is **not** set.
+The backend is a **single Node.js process** (port 3007). Email, notifications, and real-time communication are all handled in-process:
 
-| Service | Port | Env var | Fallback |
-|---------|------|---------|---------|
-| `email-service` | 3008 | `EMAIL_SERVICE_URL` | In-process Resend HTTP calls |
-| `notification-service` | 3009 | `NOTIFICATION_SERVICE_URL` | In-process DB + socket delivery |
-| `realtime-service` | 3010 | `REALTIME_SERVICE_URL` | In-process Socket.io server |
+| Capability | How it runs |
+|------------|------------|
+| Email | `services/emailService.js` calls Resend HTTP API directly |
+| Notifications | `services/notificationService.js` uses MongoDB + Socket.io |
+| Real-time / Presence | Socket.io server embedded in the backend Express process |
+| Background jobs | 4 BullMQ workers running in the same process (`assessmentWorker`, `documentIndexWorker`, `questionnaireWorker`, `monitoringWorker`) |
 
-### Redis pub/sub channels (realtime-service)
-
-When `REALTIME_SERVICE_URL` is set, the monolith publishes socket events to Redis instead of emitting directly. The realtime-service subscribes and forwards them to connected clients.
-
-| Channel | Direction | Purpose |
-|---------|-----------|---------|
-| `realtime:user:{userId}` | monolith → realtime-svc | Emit to a specific user |
-| `realtime:workspace:{workspaceId}` | monolith → realtime-svc | Emit to a workspace room |
-| `realtime:query:{queryId}` | monolith → realtime-svc | Emit to a query room |
-| `realtime:broadcast` | monolith → realtime-svc | Broadcast to all connected sockets |
-
-### Redis presence keys (realtime-service → monolith reads)
-
-The realtime-service writes presence state to Redis hashes; the monolith presenceService reads them for query decisions (e.g. whether to email a notification).
-
-| Key | Type | Fields |
-|-----|------|--------|
-| `presence:user:{userId}` | HASH | `status`, `lastSeen`, `name`, `email`, `connections` — expires 600 s |
-| `presence:workspace:{workspaceId}:members` | HASH | `{userId}` → JSON presence data |
-| `presence:typing:{workspaceId}:{conversationId}` | HASH | `{userId}` → JSON typing data — expires 30 s |
+The codebase includes conditional env vars (`EMAIL_SERVICE_URL`, `NOTIFICATION_SERVICE_URL`, `REALTIME_SERVICE_URL`) that would delegate these concerns to separate services — these are **not deployed** but act as future extension points. Leave them unset in both development and production.
 
 ## Health Checks
 
@@ -351,14 +312,6 @@ docker exec rag-redis redis-cli ping
 
 ```bash
 curl http://localhost:3007/health
-```
-
-### Microservices
-
-```bash
-curl http://localhost:3008/health   # email-service
-curl http://localhost:3009/health   # notification-service
-curl http://localhost:3010/health   # realtime-service
 ```
 
 ### Qdrant
@@ -509,7 +462,6 @@ In production, all five services have compose-level healthchecks in `docker-comp
 |---------|---------|----------|---------|---------|--------------|
 | Backend | `wget --spider http://localhost:3007/health` | 10s | 5s | 5 | 30s |
 | Frontend | `wget --spider http://127.0.0.1:3000` | 10s | 5s | 3 | 20s |
-| RAGAS | `curl -f http://localhost:8001/health` | 10s | 5s | 3 | 20s |
 | Redis | `redis-cli -a $REDIS_PASSWORD ping` | 10s | 5s | 5 | — |
 | Qdrant | `bash -c ':>/dev/tcp/0.0.0.0/6333'` | 10s | 5s | 5 | 30s |
 
