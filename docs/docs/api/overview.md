@@ -111,16 +111,6 @@ X-Workspace-Id: 507f1f77bcf86cd799439011
 | POST | `/auth/verify-email` | Verify email address with token |
 | POST | `/auth/resend-verification` | Resend email verification link |
 
-### Notion
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/notion/auth` | Start OAuth flow |
-| GET | `/notion/callback` | OAuth callback |
-| POST | `/notion/sync` | Trigger sync |
-| GET | `/notion/sync-status` | Get sync status |
-| GET | `/notion/workspaces` | List workspaces |
-
 ### Workspaces (Vendor Registry)
 
 | Method | Endpoint | Description |

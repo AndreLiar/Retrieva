@@ -14,7 +14,6 @@ components/
 ├── layout/         # Layout structure
 ├── analytics/      # Analytics dashboard
 ├── marketing/      # Public marketing components (PricingSection)
-├── notion/         # Notion integration
 ├── sources/        # Data source management (file, url, confluence, MCP)
 ├── providers/      # Context providers
 ├── common/         # Shared/utility components
@@ -249,66 +248,6 @@ interface PopularQuestionsProps {
     count: number;
     avgConfidence: number;
   }[];
-}
-```
-
-## Notion Components
-
-### WorkspaceCard
-
-Connected Notion workspace display.
-
-```tsx
-interface WorkspaceCardProps {
-  workspace: NotionWorkspace;
-  onSync: () => void;
-  onDisconnect: () => void;
-}
-```
-
-### SyncStatus
-
-Real-time sync progress indicator.
-
-```tsx
-interface SyncStatusProps {
-  workspaceId: string;
-  status: 'idle' | 'syncing' | 'completed' | 'failed';
-  progress?: {
-    current: number;
-    total: number;
-  };
-}
-```
-
-### SyncProgressPanel
-
-Detailed sync progress with stages.
-
-```tsx
-export function SyncProgressPanel({ workspaceId }: { workspaceId: string }) {
-  // Subscribes to Socket.io sync events
-  useSyncStatusUpdates(workspaceId, handleUpdate);
-
-  return (
-    <div>
-      <Progress value={progress} />
-      <SyncStages stages={stages} />
-      <SyncLogs logs={recentLogs} />
-    </div>
-  );
-}
-```
-
-### TokenHealthBanner
-
-OAuth token status warning.
-
-```tsx
-interface TokenHealthBannerProps {
-  isHealthy: boolean;
-  expiresAt?: Date;
-  onRefresh: () => void;
 }
 ```
 

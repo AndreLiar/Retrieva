@@ -15,10 +15,6 @@ Before you begin, ensure you have:
 - **Docker** and Docker Compose (for infrastructure services)
 - **Azure OpenAI** resource with API access
 
-:::tip Optional integrations
-Notion OAuth credentials are only required if you want to enable the Notion workspace sync connector. The core DORA assessment workflow (file upload, questionnaires, monitoring, RoI export) works without Notion.
-:::
-
 ## Infrastructure Setup
 
 ### 1. Start Required Services
@@ -108,10 +104,6 @@ RESEND_API_KEY=
 SMTP_FROM_NAME=Retrieva
 RESEND_FROM_EMAIL=noreply@yourdomain.com
 
-# Notion OAuth (optional — only needed for Notion connector)
-NOTION_CLIENT_ID=
-NOTION_CLIENT_SECRET=
-NOTION_REDIRECT_URI=http://localhost:3007/api/v1/notion/callback
 ```
 
 ### 3. Seed the Compliance Knowledge Base

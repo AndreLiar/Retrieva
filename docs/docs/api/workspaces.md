@@ -24,7 +24,7 @@ Get all workspaces the user has access to.
       {
         "id": "507f1f77bcf86cd799439011",
         "workspaceName": "Engineering Team",
-        "workspaceId": "notion-workspace-uuid",
+        "workspaceId": "ws-uuid-1234",
         "syncStatus": "active",
         "myRole": "owner",
         "permissions": {
@@ -61,7 +61,7 @@ Get workspace details.
     "workspace": {
       "id": "507f1f77bcf86cd799439011",
       "workspaceName": "Engineering Team",
-      "workspaceId": "notion-workspace-uuid",
+      "workspaceId": "ws-uuid-1234",
       "syncStatus": "active",
       "owner": {
         "id": "507f1f77bcf86cd799439012",

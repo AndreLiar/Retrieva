@@ -84,7 +84,7 @@ Broken Object Level Authorization (BOLA) protection ensures users can only acces
 export const loadWorkspace = async (req, res, next) => {
   const workspaceId = req.headers['x-workspace-id'];
 
-  const workspace = await NotionWorkspace.findById(workspaceId);
+  const workspace = await Workspace.findById(workspaceId);
 
   if (!workspace) {
     throw new AppError('Workspace not found', 404);
@@ -176,15 +176,6 @@ router.post('/ask',
   loadWorkspace,                        // 2. Load workspace, BOLA check
   requireWorkspaceAccess('canQuery'),   // 3. Check canQuery permission
   ragController.ask
-);
-
-// routes/notionRoutes.js
-
-router.post('/sync',
-  authenticate,
-  loadWorkspace,
-  requireWorkspaceAccess('canManageSync'),  // Only admins/owners
-  notionController.triggerSync
 );
 
 // routes/workspaceRoutes.js

@@ -103,12 +103,10 @@ Essential tasks before deploying to production.
 
 ### Sync & Workers
 
-- [ ] **Worker processes running** - All BullMQ workers active (notionSync, documentIndex, assessment, questionnaire, monitoring)
+- [ ] **Worker processes running** - All BullMQ workers active (documentIndex, assessment, questionnaire, monitoring)
 - [ ] **Stale job recovery** - `STALE_JOB_TIMEOUT_HOURS` configured
 - [ ] **Monitoring worker scheduled** - `MONITORING_INTERVAL_HOURS=24` set; repeatable job registered at startup
 - [ ] **Institution name configured** - `INSTITUTION_NAME` set for RoI export RT.01.01 sheet
-- [ ] **Notion rate limits respected** - Notion API limits honored (if Notion connector enabled)
-- [ ] **Token monitoring enabled** - `NOTION_TOKEN_MONITOR_ENABLED=true` (if Notion connector enabled)
 
 ## Monitoring Checklist
 
@@ -130,7 +128,6 @@ Essential tasks before deploying to production.
 
 - [ ] **Error rate alerts** - High error rate notifications
 - [ ] **Latency alerts** - Slow response warnings
-- [ ] **Token expiry alerts** - Notion token health
 - [ ] **Disk/memory alerts** - Resource exhaustion warnings
 
 ## Performance Checklist
@@ -167,10 +164,6 @@ db.messages.createIndex({ createdAt: 1 }, { expireAfterSeconds: 7776000 }); // 9
 // DocumentSource
 db.documentsources.createIndex({ workspaceId: 1, sourceId: 1 });
 db.documentsources.createIndex({ workspaceId: 1, status: 1 });
-
-// NotionWorkspace
-db.notionworkspaces.createIndex({ owner: 1 });
-db.notionworkspaces.createIndex({ 'members.user': 1 });
 ```
 
 ## Deployment Checklist

@@ -113,7 +113,7 @@ The platform addresses the [OWASP Top 10 for LLM Applications](https://owasp.org
 
 ### Data Protection
 
-- AES-256-GCM encryption for sensitive tokens (OAuth access tokens, Notion credentials, API keys)
+- AES-256-GCM encryption for sensitive tokens (OAuth access tokens, API keys)
 - Tenant isolation at database level
 - Mandatory workspace filter on vector queries
 - No cross-tenant data access

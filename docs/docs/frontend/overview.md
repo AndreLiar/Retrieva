@@ -107,7 +107,7 @@ frontend/
 | `/assessments` | DORA third-party ICT risk assessments | All members |
 | `/questionnaires` | Vendor security questionnaires + Export RoI | All members |
 | `/copilot` | DORA compliance AI copilot (Q&A) | All members |
-| `/sources` | Data sources hub (files, Notion, Confluence, URLs) | Owner/Member |
+| `/sources` | Data sources hub (files, Confluence, URLs) | Owner/Member |
 | `/conversations` | Conversation history | All members |
 | `/analytics` | Usage analytics | Owner/Member |
 | `/members` | Member management | Owner only |
@@ -115,7 +115,6 @@ frontend/
 | `/notifications` | Notifications | All members |
 | `/settings` | User settings | All members |
 | `/chat` | Redirects to `/copilot` (backwards compat) | — |
-| `/notion` | Notion workspace integration settings | Owner/Member |
 
 ## Provider Hierarchy
 
@@ -136,7 +135,6 @@ frontend/
 ### Real-Time Updates
 
 - **WebSocket connection** for live notifications
-- **Sync status monitoring** during Notion syncs
 - **Conversation updates** across sessions
 
 ### Streaming Responses

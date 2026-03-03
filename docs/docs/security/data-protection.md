@@ -10,48 +10,6 @@ Encryption, data isolation, and privacy measures.
 
 ### Encryption at Rest
 
-#### Notion Token Encryption
-
-```javascript
-// utils/security/crypto.js
-
-import crypto from 'crypto';
-
-const ALGORITHM = 'aes-256-gcm';
-const IV_LENGTH = 16;
-const AUTH_TAG_LENGTH = 16;
-
-export function encrypt(text) {
-  const key = Buffer.from(process.env.ENCRYPTION_KEY, 'hex');
-  const iv = crypto.randomBytes(IV_LENGTH);
-
-  const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
-  let encrypted = cipher.update(text, 'utf8', 'hex');
-  encrypted += cipher.final('hex');
-
-  const authTag = cipher.getAuthTag();
-
-  return `${iv.toString('hex')}:${authTag.toString('hex')}:${encrypted}`;
-}
-
-export function decrypt(encryptedText) {
-  const key = Buffer.from(process.env.ENCRYPTION_KEY, 'hex');
-  const [ivHex, authTagHex, encrypted] = encryptedText.split(':');
-
-  const iv = Buffer.from(ivHex, 'hex');
-  const authTag = Buffer.from(authTagHex, 'hex');
-
-  // authTagLength: 16 explicitly enforces 128-bit GCM authentication tag verification
-  const decipher = crypto.createDecipheriv(ALGORITHM, key, iv, { authTagLength: 16 });
-  decipher.setAuthTag(authTag);
-
-  let decrypted = decipher.update(encrypted, 'hex', 'utf8');
-  decrypted += decipher.final('utf8');
-
-  return decrypted;
-}
-```
-
 #### Key Management
 
 ```bash
@@ -188,19 +146,13 @@ syncJobSchema.index(
 ```javascript
 async function deleteUser(userId) {
   // 1. Find all user's owned workspaces
-  const workspaces = await NotionWorkspace.find({ owner: userId });
+  const workspaces = await Workspace.find({ userId });
 
   for (const workspace of workspaces) {
     await deleteWorkspace(workspace._id);
   }
 
-  // 2. Remove user from member lists
-  await NotionWorkspace.updateMany(
-    { 'members.user': userId },
-    { $pull: { members: { user: userId } } }
-  );
-
-  // 3. Delete user record
+  // 2. Delete user record
   await User.findByIdAndDelete(userId);
 
   logger.info('User deleted', { userId });
@@ -228,7 +180,7 @@ async function deleteWorkspace(workspaceId) {
   ]);
 
   // 3. Delete workspace record
-  await NotionWorkspace.findByIdAndDelete(workspaceId);
+  await Workspace.findByIdAndDelete(workspaceId);
 
   logger.info('Workspace deleted', { workspaceId });
 }
@@ -252,9 +204,6 @@ userSchema.pre('save', async function(next) {
 ```javascript
 // Refresh tokens stored hashed
 user.refreshToken = await bcrypt.hash(refreshToken, 10);
-
-// Notion tokens stored encrypted
-workspace.accessToken = encrypt(accessToken);
 ```
 
 ### Logging Safety
@@ -282,7 +231,6 @@ function sanitizeError(error) {
 
 - Data portability via export endpoints
 - Right to deletion implemented
-- Consent management for Notion OAuth
 - Data processing logs available
 
 ### Data Minimization

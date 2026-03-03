@@ -335,7 +335,7 @@ What is our vacation policy?
 ## Assistant
 Our vacation policy allows...
 
-[Source 1: HR Handbook](https://notion.so/...)
+[Source 1: HR Handbook](internal://sources/doc-456)
 
 ---
 ```
