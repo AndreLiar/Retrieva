@@ -39,6 +39,8 @@ import { useWorkspaceStore } from '@/lib/stores/workspace-store';
 import { assessmentsApi } from '@/lib/api/assessments';
 import { questionnairesApi } from '@/lib/api/questionnaires';
 import { workspacesApi } from '@/lib/api/workspaces';
+import { buildRiskMatrix } from '@/lib/risk-scoring';
+import type { RiskMatrixResult } from '@/lib/risk-scoring';
 import type { Assessment, OverallRisk } from '@/lib/api/assessments';
 import type { VendorQuestionnaire } from '@/lib/api/questionnaires';
 import type { WorkspaceWithMembership } from '@/types';
@@ -85,6 +87,21 @@ function CertChip({ days }: { days: number | null }) {
   return <span className="text-xs font-medium text-green-600">{days}d</span>;
 }
 
+function RiskScoreChip({ m }: { m: RiskMatrixResult }) {
+  if (!m.hasData && m.inherentScore <= 25)
+    return <span className="text-muted-foreground text-xs">—</span>;
+  const color = m.residualRisk === 'High'
+    ? 'text-destructive'
+    : m.residualRisk === 'Medium'
+    ? 'text-amber-600'
+    : 'text-green-600';
+  return (
+    <span className={`text-xs font-bold tabular-nums ${color}`}>
+      {m.residualScore}<span className="text-muted-foreground font-normal">/100</span>
+    </span>
+  );
+}
+
 // ── Risk register row data builder ────────────────────────────────────────────
 
 interface RegisterRow {
@@ -96,6 +113,7 @@ interface RegisterRow {
   nearestCertDays:   number | null;
   contractDays:      number | null;
   reviewDays:        number | null;
+  riskMatrix:        RiskMatrixResult;
 }
 
 function buildRow(
@@ -131,6 +149,13 @@ function buildRow(
     .filter((d): d is number => d !== null);
   const nearestCertDays = certDays.length > 0 ? Math.min(...certDays) : null;
 
+  const riskMatrix = buildRiskMatrix(
+    workspace.vendorTier,
+    workspace.vendorFunctions,
+    latestDora?.results?.gaps ?? null,
+    latestQ?.status === 'complete' ? (latestQ.overallScore ?? null) : null,
+  );
+
   return {
     workspace,
     latestDora,
@@ -140,6 +165,7 @@ function buildRow(
     nearestCertDays,
     contractDays: daysFrom(workspace.contractEnd),
     reviewDays:   daysFrom(workspace.nextReviewDate),
+    riskMatrix,
   };
 }
 
@@ -248,6 +274,7 @@ export default function RiskRegisterPage() {
                 <TableHead>Tier</TableHead>
                 <TableHead>Service</TableHead>
                 <TableHead>DORA Risk</TableHead>
+                <TableHead>Risk Score</TableHead>
                 <TableHead>Gaps</TableHead>
                 <TableHead>Q Score</TableHead>
                 <TableHead>Contract</TableHead>
@@ -258,7 +285,7 @@ export default function RiskRegisterPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rows.map(({ workspace, latestDora, latestA30, latestQ, stepsComplete, nearestCertDays, reviewDays }) => {
+              {rows.map(({ workspace, latestDora, latestA30, latestQ, stepsComplete, nearestCertDays, reviewDays, riskMatrix }) => {
                 const missing = latestDora?.results?.gaps.filter((g) => g.gapLevel === 'missing').length ?? null;
                 const partial = latestDora?.results?.gaps.filter((g) => g.gapLevel === 'partial').length ?? null;
                 const qScore  = latestQ?.status === 'complete' ? (latestQ.overallScore ?? null) : null;
@@ -285,6 +312,9 @@ export default function RiskRegisterPage() {
                     </TableCell>
                     <TableCell>
                       <RiskBadge risk={latestDora?.results?.overallRisk} />
+                    </TableCell>
+                    <TableCell>
+                      <RiskScoreChip m={riskMatrix} />
                     </TableCell>
                     <TableCell>
                       {latestDora ? (

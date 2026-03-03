@@ -1,12 +1,12 @@
 'use client';
 
 /**
- * RiskScoringPanel — Step 3 gap fixes
+ * RiskScoringPanel — DORA Art. 28(3) Quantified Risk Matrix
  *
- * Adds to DORA gap analysis reports:
- *  1. Inherent vs Residual risk panel
- *  2. Weighted DORA domain breakdown
- *  3. Formal risk decision (proceed / conditional / reject)
+ * Exports:
+ *  1. ResidualRiskMatrix   — Numeric inherent × residual scoring with heat map
+ *  2. WeightedDomainChart  — Weighted DORA domain breakdown bars
+ *  3. FormalRiskDecision   — Compliance decision (proceed / conditional / reject)
  */
 
 import { useState } from 'react';
@@ -17,10 +17,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   XCircle,
-  ArrowRight,
   ShieldCheck,
-  TrendingDown,
-  Minus,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -30,35 +27,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { assessmentsApi } from '@/lib/api/assessments';
 import type { Assessment, OverallRisk, RiskDecision, RiskDecisionValue } from '@/lib/api/assessments';
 import type { WorkspaceWithMembership } from '@/types';
+import {
+  DOMAIN_WEIGHTS,
+  FUNCTION_WEIGHT,
+  TIER_BASE,
+  buildRiskMatrix,
+} from '@/lib/risk-scoring';
 
-// ── Domain weights (DORA Art. 28–30) ──────────────────────────────────────────
-
-const DOMAIN_WEIGHTS: Record<string, number> = {
-  'ICT Governance':      0.20,
-  'Security Controls':   0.25,
-  'Incident Management': 0.20,
-  'Business Continuity': 0.15,
-  'Audit Rights':        0.05,
-  'Subcontracting':      0.05,
-  'Data Governance':     0.05,
-  'Exit Planning':       0.03,
-  'Regulatory History':  0.02,
-};
-
-// ── Inherent risk matrix ───────────────────────────────────────────────────────
-
-function computeInherentRisk(
-  vendorTier: string | null | undefined,
-  serviceType: string | null | undefined
-): OverallRisk {
-  const tier    = vendorTier  ?? 'standard';
-  const service = serviceType ?? 'other';
-
-  if (tier === 'critical') return 'High';
-  if (tier === 'important' && (service === 'cloud' || service === 'data' || service === 'network')) return 'High';
-  if (tier === 'important') return 'Medium';
-  return 'Low';
-}
+// ── Shared colour maps ─────────────────────────────────────────────────────────
 
 const RISK_COLOR: Record<OverallRisk, string> = {
   High:   'text-destructive',
@@ -72,67 +48,193 @@ const RISK_BG: Record<OverallRisk, string> = {
   Low:    'bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800',
 };
 
-// ── 1. Inherent vs Residual panel ─────────────────────────────────────────────
+// ── 1. Residual Risk Matrix ────────────────────────────────────────────────────
 
-export function InherentResidualPanel({
+export function ResidualRiskMatrix({
   assessment,
   workspace,
+  qScore = null,
 }: {
   assessment: Assessment;
   workspace: WorkspaceWithMembership | null;
+  qScore?: number | null;
 }) {
-  const residualRisk   = assessment.results?.overallRisk;
-  const inherentRisk   = computeInherentRisk(workspace?.vendorTier, workspace?.serviceType);
-  if (!residualRisk) return null;
+  const gaps = assessment.results?.gaps ?? null;
+  const m = buildRiskMatrix(
+    workspace?.vendorTier,
+    workspace?.vendorFunctions,
+    gaps,
+    qScore,
+  );
 
-  const riskOrder: Record<OverallRisk, number> = { Low: 0, Medium: 1, High: 2 };
-  const reduced = riskOrder[residualRisk] < riskOrder[inherentRisk];
-  const same    = residualRisk === inherentRisk;
+  // Effective DORA risk label from assessment (overrides computed when present)
+  const doraRisk = assessment.results?.overallRisk ?? m.residualRisk;
 
-  const ArrowIcon = reduced ? TrendingDown : same ? Minus : ArrowRight;
-  const arrowColor = reduced ? 'text-green-500' : same ? 'text-muted-foreground' : 'text-destructive';
+  // ── Heat-map grid (3×3) ──────────────────────────────────────────────────────
+  // Rows: inherent risk level  Col: control effectiveness bracket
+  const HEAT: OverallRisk[][] = [
+    //  ctrlLow      ctrlMed      ctrlHigh
+    ['High',   'High',   'Medium'],  // inherentHigh
+    ['Medium', 'Medium', 'Low'],     // inherentMedium
+    ['Low',    'Low',    'Low'],     // inherentLow
+  ];
+
+  const inherentRow = m.inherentRisk === 'High' ? 0 : m.inherentRisk === 'Medium' ? 1 : 2;
+  const ctrlCol     = m.controlEffectiveness < 33 ? 0 : m.controlEffectiveness <= 66 ? 1 : 2;
+
+  const activeFns = (workspace?.vendorFunctions ?? []);
+  const fnSum     = activeFns.reduce((s, fn) => s + (FUNCTION_WEIGHT[fn] ?? 0), 0);
+
+  const ctrlLabel =
+    m.controlEffectiveness >= 67 ? 'High (>66%)' :
+    m.controlEffectiveness >= 33 ? 'Medium (33–66%)' :
+    'Low (<33%)';
 
   return (
     <Card>
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
           <ShieldCheck className="h-4 w-4" />
-          Risk Scoring
+          Residual Risk Matrix
+          <span className="ml-auto text-xs font-normal normal-case">DORA Art. 28(3)</span>
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-4">
+
+        {/* ── Top: three score tiles ── */}
         <div className="grid grid-cols-3 items-center gap-3">
-          {/* Inherent risk */}
-          <div className={`rounded-lg border p-3 text-center ${RISK_BG[inherentRisk]}`}>
-            <p className="text-xs text-muted-foreground mb-1">Inherent risk</p>
-            <p className={`text-lg font-bold ${RISK_COLOR[inherentRisk]}`}>{inherentRisk}</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              {workspace?.vendorTier ?? 'unclassified'} · {workspace?.serviceType ?? 'unknown'}
+          {/* Inherent */}
+          <div className={`rounded-lg border p-3 text-center ${RISK_BG[m.inherentRisk]}`}>
+            <p className="text-xs text-muted-foreground mb-1">Inherent</p>
+            <p className={`text-2xl font-bold tabular-nums ${RISK_COLOR[m.inherentRisk]}`}>
+              {m.inherentScore}
+              <span className="text-sm font-normal text-muted-foreground">/100</span>
             </p>
+            <p className={`text-xs font-semibold mt-0.5 ${RISK_COLOR[m.inherentRisk]}`}>{m.inherentRisk}</p>
           </div>
-          {/* Arrow */}
-          <div className="flex flex-col items-center gap-1">
-            <ArrowIcon className={`h-6 w-6 ${arrowColor}`} />
-            <span className="text-xs text-muted-foreground">
-              {reduced ? 'reduced by controls' : same ? 'unchanged' : 'elevated by gaps'}
+
+          {/* Operator */}
+          <div className="flex flex-col items-center gap-1 text-muted-foreground">
+            <span className="text-lg">×</span>
+            <span className="text-xs text-center leading-tight">
+              {Math.round(m.residualFactor * 100)}%<br />remaining
             </span>
           </div>
-          {/* Residual risk */}
-          <div className={`rounded-lg border p-3 text-center ${RISK_BG[residualRisk]}`}>
-            <p className="text-xs text-muted-foreground mb-1">Residual risk</p>
-            <p className={`text-lg font-bold ${RISK_COLOR[residualRisk]}`}>{residualRisk}</p>
-            <p className="text-xs text-muted-foreground mt-1">after vendor controls</p>
+
+          {/* Residual */}
+          <div className={`rounded-lg border p-3 text-center ${RISK_BG[doraRisk]}`}>
+            <p className="text-xs text-muted-foreground mb-1">Residual</p>
+            <p className={`text-2xl font-bold tabular-nums ${RISK_COLOR[doraRisk]}`}>
+              {m.residualScore}
+              <span className="text-sm font-normal text-muted-foreground">/100</span>
+            </p>
+            <p className={`text-xs font-semibold mt-0.5 ${RISK_COLOR[doraRisk]}`}>{doraRisk}</p>
           </div>
         </div>
-        <p className="text-xs text-muted-foreground mt-3">
-          Inherent risk is derived from vendor classification ({workspace?.vendorTier ?? '—'}) and
-          service type ({workspace?.serviceType ?? '—'}) before any controls are applied. Residual
-          risk is the AI-assessed remaining risk after evaluating vendor documentation.
+
+        {/* ── Input breakdown ── */}
+        <div className="rounded-md bg-muted/40 border px-3 py-2.5 text-xs space-y-1.5">
+          <p className="font-medium text-muted-foreground uppercase tracking-wide text-[10px]">Input Breakdown</p>
+
+          {/* Tier row */}
+          <div className="flex justify-between">
+            <span>Tier ({workspace?.vendorTier ?? 'standard'})</span>
+            <span className="font-mono text-muted-foreground">base {TIER_BASE[workspace?.vendorTier ?? 'standard']}/100</span>
+          </div>
+
+          {/* Functions */}
+          {activeFns.length > 0 && (
+            <div className="flex justify-between">
+              <span>{activeFns.length} ICT function{activeFns.length !== 1 ? 's' : ''}</span>
+              <span className="font-mono text-muted-foreground">+{fnSum}</span>
+            </div>
+          )}
+
+          <div className="border-t pt-1 flex justify-between font-medium">
+            <span>Inherent score</span>
+            <span className={`font-mono ${RISK_COLOR[m.inherentRisk]}`}>{m.inherentScore}/100</span>
+          </div>
+
+          {/* Domain coverage */}
+          {m.domainCoverage !== null && (
+            <div className="flex justify-between">
+              <span>DORA gap coverage</span>
+              <span className="font-mono text-muted-foreground">{m.domainCoverage}%</span>
+            </div>
+          )}
+
+          {/* Q score */}
+          {m.qScore !== null && (
+            <div className="flex justify-between">
+              <span>Questionnaire score</span>
+              <span className="font-mono text-muted-foreground">{m.qScore}/100</span>
+            </div>
+          )}
+
+          <div className="border-t pt-1 flex justify-between font-medium">
+            <span>Control effectiveness</span>
+            <span className={`font-mono ${m.controlEffectiveness >= 67 ? 'text-green-600' : m.controlEffectiveness >= 33 ? 'text-amber-600' : 'text-destructive'}`}>
+              {m.controlEffectiveness}% · {ctrlLabel}
+            </span>
+          </div>
+
+          {!m.hasData && (
+            <p className="text-muted-foreground italic">
+              No questionnaire or DORA data yet — control effectiveness defaults to 0%.
+            </p>
+          )}
+        </div>
+
+        {/* ── 3×3 Heat map ── */}
+        <div>
+          <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-1.5">Risk Matrix</p>
+          <div className="grid grid-cols-4 gap-1 text-[10px] text-center">
+            {/* Header row */}
+            <div />
+            {(['Low controls', 'Med controls', 'High controls'] as const).map((h) => (
+              <div key={h} className="text-muted-foreground font-medium py-0.5">{h}</div>
+            ))}
+            {/* Data rows */}
+            {(['High', 'Medium', 'Low'] as const).map((inhRisk, rIdx) => (
+              <>
+                <div key={`lbl-${inhRisk}`} className="text-muted-foreground font-medium flex items-center justify-end pr-1">{inhRisk}</div>
+                {[0, 1, 2].map((cIdx) => {
+                  const cell = HEAT[rIdx][cIdx];
+                  const isActive = rIdx === inherentRow && cIdx === ctrlCol;
+                  return (
+                    <div
+                      key={`${rIdx}-${cIdx}`}
+                      className={`rounded py-1.5 font-semibold transition-all
+                        ${cell === 'High'   ? 'bg-destructive/15 text-destructive' : ''}
+                        ${cell === 'Medium' ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400' : ''}
+                        ${cell === 'Low'    ? 'bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-400' : ''}
+                        ${isActive ? 'ring-2 ring-primary scale-105 shadow-sm' : 'opacity-60'}
+                      `}
+                    >
+                      {cell}
+                    </div>
+                  );
+                })}
+              </>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Methodology footnote ── */}
+        <p className="text-[10px] text-muted-foreground leading-relaxed">
+          Inherent score = tier base + ICT function weights (DORA Art. 28). Control effectiveness
+          = Q-score × 40% + gap coverage × 60%. Residual factor floor: 15% (risk is never fully
+          eliminated). Formula is deterministic and auditable per Art. 28(3).
         </p>
       </CardContent>
     </Card>
   );
 }
+
+// ── Legacy alias — kept so any other import of InherentResidualPanel still works ─
+
+/** @deprecated Use ResidualRiskMatrix */
+export const InherentResidualPanel = ResidualRiskMatrix;
 
 // ── 2. Weighted domain breakdown ──────────────────────────────────────────────
 

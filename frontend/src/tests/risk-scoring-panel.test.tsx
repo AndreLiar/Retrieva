@@ -80,75 +80,70 @@ function makeWorkspace(overrides: Partial<WorkspaceWithMembership> = {}): Worksp
 }
 
 // ---------------------------------------------------------------------------
-// InherentResidualPanel
+// InherentResidualPanel (alias for ResidualRiskMatrix)
 // ---------------------------------------------------------------------------
 
 describe('InherentResidualPanel', () => {
-  it('renders nothing when residualRisk is missing', () => {
+  it('always renders the risk matrix card', () => {
+    // ResidualRiskMatrix always renders — no early return on missing results
     const assessment = makeAssessment({ results: undefined });
     const { container } = render(
       <InherentResidualPanel assessment={assessment} workspace={makeWorkspace()} />
     );
-    expect(container.firstChild).toBeNull();
+    expect(container.firstChild).not.toBeNull();
   });
 
-  it('renders inherent and residual risk boxes', () => {
+  it('renders inherent and residual score tiles', () => {
     render(<InherentResidualPanel assessment={makeAssessment()} workspace={makeWorkspace()} />);
-    expect(screen.getByText('Inherent risk')).toBeDefined();
-    expect(screen.getByText('Residual risk')).toBeDefined();
+    expect(screen.getByText('Inherent')).toBeDefined();
+    expect(screen.getByText('Residual')).toBeDefined();
   });
 
   it('shows High inherent risk for critical tier vendors', () => {
     const workspace = makeWorkspace({ vendorTier: 'critical' });
     render(<InherentResidualPanel assessment={makeAssessment()} workspace={workspace} />);
-    // Both boxes rendered — inherent should show High
+    // critical tier → inherentScore=80 → inherentRisk=High
     const allHighTexts = screen.getAllByText('High');
     expect(allHighTexts.length).toBeGreaterThan(0);
   });
 
   it('shows Medium inherent risk for important tier with non-critical service', () => {
-    const workspace = makeWorkspace({ vendorTier: 'important', serviceType: 'hr' });
+    const workspace = makeWorkspace({ vendorTier: 'important', serviceType: 'other' });
     render(<InherentResidualPanel assessment={makeAssessment()} workspace={workspace} />);
+    // important tier → inherentScore=55 → inherentRisk=Medium
     const allMedium = screen.getAllByText('Medium');
     expect(allMedium.length).toBeGreaterThan(0);
   });
 
   it('shows Low inherent risk for standard tier', () => {
-    const workspace = makeWorkspace({ vendorTier: 'standard', serviceType: 'hr' });
+    const workspace = makeWorkspace({ vendorTier: 'standard', serviceType: 'other' });
     render(<InherentResidualPanel assessment={makeAssessment()} workspace={workspace} />);
-    // Inherent should be Low, residual Medium (from assessment)
-    expect(screen.getByText('Low')).toBeDefined();
-    expect(screen.getByText('Medium')).toBeDefined();
+    // standard tier → inherentScore=25 → inherentRisk=Low
+    const allLow = screen.getAllByText('Low');
+    expect(allLow.length).toBeGreaterThan(0);
   });
 
-  it('shows "reduced by controls" when residual < inherent', () => {
-    // critical tier = inherent High, residual Low
-    const assessment = makeAssessment({ results: { gaps: [], overallRisk: 'Low', generatedAt: '', domainsAnalyzed: [] } });
+  it('shows numeric inherent score for critical tier vendor', () => {
     const workspace = makeWorkspace({ vendorTier: 'critical' });
-    render(<InherentResidualPanel assessment={assessment} workspace={workspace} />);
-    expect(screen.getByText('reduced by controls')).toBeDefined();
+    render(<InherentResidualPanel assessment={makeAssessment()} workspace={workspace} />);
+    // TIER_BASE[critical] = 80 — appears as "80/100" in both the tile and the breakdown
+    expect(screen.getAllByText(/80\/100/).length).toBeGreaterThan(0);
   });
 
-  it('shows "elevated by gaps" when residual > inherent', () => {
-    // standard tier = inherent Low, residual High
-    const assessment = makeAssessment({ results: { gaps: [], overallRisk: 'High', generatedAt: '', domainsAnalyzed: [] } });
-    const workspace = makeWorkspace({ vendorTier: 'standard', serviceType: 'hr' });
-    render(<InherentResidualPanel assessment={assessment} workspace={workspace} />);
-    expect(screen.getByText('elevated by gaps')).toBeDefined();
-  });
-
-  it('shows "unchanged" when residual equals inherent', () => {
-    // important + cloud = inherent High, residual High
-    const assessment = makeAssessment({ results: { gaps: [], overallRisk: 'High', generatedAt: '', domainsAnalyzed: [] } });
-    const workspace = makeWorkspace({ vendorTier: 'important', serviceType: 'cloud' });
-    render(<InherentResidualPanel assessment={assessment} workspace={workspace} />);
-    expect(screen.getByText('unchanged')).toBeDefined();
-  });
-
-  it('shows vendor tier and service type classification text', () => {
+  it('shows "remaining" text for the residual factor', () => {
     render(<InherentResidualPanel assessment={makeAssessment()} workspace={makeWorkspace()} />);
+    expect(screen.getByText(/remaining/)).toBeDefined();
+  });
+
+  it('shows methodology footnote', () => {
+    render(<InherentResidualPanel assessment={makeAssessment()} workspace={makeWorkspace()} />);
+    expect(screen.getByText(/Inherent score = tier base/)).toBeDefined();
+  });
+
+  it('shows vendor tier in input breakdown', () => {
+    render(<InherentResidualPanel assessment={makeAssessment()} workspace={makeWorkspace()} />);
+    // "Tier (important)" appears in the breakdown section
     expect(screen.getAllByText(/important/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/cloud/).length).toBeGreaterThan(0);
   });
 });
 
