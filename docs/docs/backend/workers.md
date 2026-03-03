@@ -116,14 +116,25 @@ MONITORING_INTERVAL_HOURS=24   # How often the job runs (default: 24)
 
 ## Queue Configuration (`config/queue.js`)
 
+Six queues are defined. The first four have active workers; the last two use scheduled repeatable jobs:
+
 ```javascript
-export const assessmentQueue    = new Queue('assessmentJobs',    { ... });
-export const documentIndexQueue = new Queue('documentIndex',     { ... });
-export const questionnaireQueue = new Queue('questionnaireJobs', { ... });
-export const monitoringQueue    = new Queue('monitoringJobs',    { ... });
+export const assessmentQueue    = new Queue('assessmentJobs',    { ... }); // assessmentWorker
+export const documentIndexQueue = new Queue('documentIndex',     { ... }); // documentIndexWorker
+export const questionnaireQueue = new Queue('questionnaireJobs', { ... }); // questionnaireWorker
+export const monitoringQueue    = new Queue('monitoringJobs',    { ... }); // monitoringWorker (scheduled)
+export const dataSourceSyncQueue = new Queue('dataSourceSync',   { ... }); // enqueued by dataSourceController
+export const memoryDecayQueue   = new Queue('memoryDecay',       { ... }); // scheduled repeatable job
 ```
 
-All queues use exponential backoff and Redis for persistence. `scheduleMonitoringJob()` registers the 24-hour repeatable job on startup (mirrors `scheduleMemoryDecayJob()`).
+All queues use exponential backoff and Redis for persistence.
+
+- `scheduleMonitoringJob()` — registers the 24-hour compliance alert repeatable job on startup
+- `scheduleMemoryDecayJob()` — registers the 24-hour memory decay repeatable job on startup
+
+:::note
+`dataSourceSyncQueue` jobs are enqueued by `POST /api/v1/data-sources/:id/sync` but are processed inline by the same worker flow as document indexing. The queue provides retry and backoff resilience for multi-source ingestion (file, URL, Confluence).
+:::
 
 ## Dead Letter Queue
 
