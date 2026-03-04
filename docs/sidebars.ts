@@ -79,7 +79,6 @@ const sidebars: SidebarsConfig = {
         'api/organizations',
         'api/workspaces',
         'api/assessments',
-        'api/data-sources',
         'api/compliance',
       ],
     },

@@ -14,7 +14,6 @@ import workspaceRoutes from './routes/workspaceRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import healthRoutes from './routes/healthRoutes.js';
 import assessmentRoutes from './routes/assessmentRoutes.js';
-import dataSourceRoutes from './routes/dataSourceRoutes.js';
 import complianceRoutes from './routes/complianceRoutes.js';
 import questionnaireRoutes from './routes/questionnaireRoutes.js';
 import organizationRoutes from './routes/organizationRoutes.js';
@@ -248,7 +247,6 @@ app.use('/api/v1', optionalAuth, requireActivePlan, ragRoutes);
 app.use('/api/v1/conversations', optionalAuth, requireActivePlan, conversationRoutes);
 app.use('/api/v1/workspaces', optionalAuth, requireActivePlan, workspaceRoutes);
 app.use('/api/v1/assessments', optionalAuth, requireActivePlan, assessmentRoutes);
-app.use('/api/v1/data-sources', optionalAuth, requireActivePlan, dataSourceRoutes);
 app.use('/api/v1/compliance', optionalAuth, requireActivePlan, complianceRoutes);
 app.use('/api/v1/questionnaires', optionalAuth, requireActivePlan, questionnaireRoutes);
 

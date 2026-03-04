@@ -85,7 +85,6 @@ vi.mock('../../services/authAuditService.js', () => ({
 
 vi.mock('../../config/queue.js', () => ({
   assessmentQueue: { add: vi.fn().mockResolvedValue({ id: 'j1' }), on: vi.fn() },
-  documentIndexQueue: { add: vi.fn().mockResolvedValue({}), on: vi.fn() },
   memoryDecayQueue: { add: vi.fn().mockResolvedValue({}), on: vi.fn() },
   monitoringQueue: {
     add: vi.fn().mockResolvedValue({ id: 'review-r1' }),

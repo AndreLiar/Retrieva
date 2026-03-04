@@ -13,7 +13,7 @@
 
 import { DeadLetterJob } from '../models/DeadLetterJob.js';
 import logger from '../config/logger.js';
-import { documentIndexQueue, memoryDecayQueue } from '../config/queue.js';
+import { memoryDecayQueue } from '../config/queue.js';
 
 /**
  * Route a failed job to the Dead Letter Queue
@@ -290,7 +290,6 @@ export async function bulkDismissOld(olderThanDays = 7, dismissedBy = 'system') 
  */
 function getQueueByName(queueName) {
   const queues = {
-    documentIndex: documentIndexQueue,
     memoryDecay: memoryDecayQueue,
   };
   return queues[queueName] || null;

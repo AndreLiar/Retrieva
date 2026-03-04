@@ -221,16 +221,13 @@ export { qdrantClient };
 import { Queue } from 'bullmq';
 import { redisConnection } from './redis.js';
 
-export const documentIndexQueue = new Queue('documentIndex', {
+export const assessmentQueue = new Queue('assessmentJobs', {
   connection: redisConnection,
   defaultJobOptions: {
-    attempts: 5,
-    backoff: {
-      type: 'exponential',
-      delay: 2000,
-    },
-    removeOnComplete: 500,
-    removeOnFail: 100,
+    attempts: 3,
+    backoff: { type: 'exponential', delay: 30000 },
+    removeOnComplete: { count: 50, age: 7 * 24 * 60 * 60 },
+    removeOnFail: { count: 100 },
   },
 });
 ```
@@ -403,13 +400,6 @@ ALLOWED_ORIGINS=http://localhost:3000
 MAX_GROUP_TOKENS=400
 MIN_GROUP_TOKENS=200
 MAX_LIST_ITEMS=15
-
-# ===========================================
-# Sync Configuration
-# ===========================================
-STALE_JOB_TIMEOUT_HOURS=2
-MAX_SYNC_RECOVERY_ATTEMPTS=2
-SYNC_PROGRESS_TIMEOUT_MINUTES=30
 
 # ===========================================
 # Quality Guardrails

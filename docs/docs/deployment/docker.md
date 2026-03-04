@@ -290,7 +290,7 @@ The backend is a **single Node.js process** (port 3007). Email, notifications, a
 | Email | `services/emailService.js` calls Resend HTTP API directly |
 | Notifications | `services/notificationService.js` uses MongoDB + Socket.io |
 | Real-time / Presence | Socket.io server embedded in the backend Express process |
-| Background jobs | 4 BullMQ workers running in the same process (`assessmentWorker`, `documentIndexWorker`, `questionnaireWorker`, `monitoringWorker`) |
+| Background jobs | 3 BullMQ workers running in the same process (`assessmentWorker`, `questionnaireWorker`, `monitoringWorker`) |
 
 The codebase includes conditional env vars (`EMAIL_SERVICE_URL`, `NOTIFICATION_SERVICE_URL`, `REALTIME_SERVICE_URL`) that would delegate these concerns to separate services — these are **not deployed** but act as future extension points. Leave them unset in both development and production.
 

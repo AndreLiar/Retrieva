@@ -3,54 +3,8 @@ import { Queue } from 'bullmq';
 import { redisConnection } from './redis.js';
 import logger from './logger.js';
 
-const SYNC_MAX_RETRIES = parseInt(process.env.SYNC_MAX_RETRIES) || 3;
 const MEMORY_DECAY_INTERVAL_HOURS = parseInt(process.env.MEMORY_DECAY_INTERVAL_HOURS) || 24;
 const MONITORING_INTERVAL_HOURS = parseInt(process.env.MONITORING_INTERVAL_HOURS) || 24;
-
-/**
- * Queue for document indexing operations
- * Processes individual documents and indexes them in Qdrant
- * ISSUE #18 FIX: Changed to exponential backoff for better retry behavior
- */
-export const documentIndexQueue = new Queue('documentIndex', {
-  connection: redisConnection,
-  defaultJobOptions: {
-    attempts: 3, // Increased from 2 for better recovery
-    backoff: {
-      type: 'exponential',
-      delay: 30000, // Start with 30 seconds, then 60s, then 120s
-    },
-    removeOnComplete: {
-      count: 50,
-      age: 24 * 60 * 60, // Remove after 1 day
-    },
-    removeOnFail: {
-      count: 100,
-    },
-  },
-});
-
-/**
- * Queue for generic data source synchronization jobs (file, url, confluence).
- * Each job fetches/chunks content and enqueues to documentIndexQueue.
- */
-export const dataSourceSyncQueue = new Queue('dataSourceSync', {
-  connection: redisConnection,
-  defaultJobOptions: {
-    attempts: SYNC_MAX_RETRIES,
-    backoff: {
-      type: 'exponential',
-      delay: 60000, // Start with 1 minute
-    },
-    removeOnComplete: {
-      count: 20,
-      age: 3 * 24 * 60 * 60, // Remove after 3 days
-    },
-    removeOnFail: {
-      count: 50,
-    },
-  },
-});
 
 /**
  * Queue for assessment file indexing and gap analysis jobs
@@ -235,20 +189,13 @@ export async function scheduleMonitoringJob() {
 
 // ISSUE #34 FIX: Store event listener references for cleanup
 const queueEventListeners = {
-  documentIndex: null,
   memoryDecay: null,
   assessmentJobs: null,
-  dataSourceSync: null,
   questionnaireJobs: null,
   monitoringJobs: null,
 };
 
 // Log queue events with stored references
-queueEventListeners.documentIndex = (error) => {
-  logger.error('Document index queue error:', { error: error.message, stack: error.stack });
-};
-documentIndexQueue.on('error', queueEventListeners.documentIndex);
-
 queueEventListeners.memoryDecay = (error) => {
   logger.error('Memory decay queue error:', { error: error.message, stack: error.stack });
 };
@@ -258,11 +205,6 @@ queueEventListeners.assessmentJobs = (error) => {
   logger.error('Assessment jobs queue error:', { error: error.message, stack: error.stack });
 };
 assessmentQueue.on('error', queueEventListeners.assessmentJobs);
-
-queueEventListeners.dataSourceSync = (error) => {
-  logger.error('Data source sync queue error:', { error: error.message, stack: error.stack });
-};
-dataSourceSyncQueue.on('error', queueEventListeners.dataSourceSync);
 
 queueEventListeners.questionnaireJobs = (error) => {
   logger.error('Questionnaire jobs queue error:', { error: error.message, stack: error.stack });
@@ -283,18 +225,11 @@ logger.info('BullMQ queues initialized successfully');
 export const closeQueues = async () => {
   try {
     // Remove event listeners to prevent memory leaks
-    if (queueEventListeners.documentIndex) {
-      documentIndexQueue.off('error', queueEventListeners.documentIndex);
-    }
     if (queueEventListeners.memoryDecay) {
       memoryDecayQueue.off('error', queueEventListeners.memoryDecay);
     }
     if (queueEventListeners.assessmentJobs) {
       assessmentQueue.off('error', queueEventListeners.assessmentJobs);
-    }
-
-    if (queueEventListeners.dataSourceSync) {
-      dataSourceSyncQueue.off('error', queueEventListeners.dataSourceSync);
     }
 
     if (queueEventListeners.questionnaireJobs) {
@@ -306,10 +241,8 @@ export const closeQueues = async () => {
     }
 
     await Promise.all([
-      documentIndexQueue.close(),
       memoryDecayQueue.close(),
       assessmentQueue.close(),
-      dataSourceSyncQueue.close(),
       questionnaireQueue.close(),
       monitoringQueue.close(),
     ]);
@@ -320,10 +253,8 @@ export const closeQueues = async () => {
 };
 
 export default {
-  documentIndexQueue,
   memoryDecayQueue,
   assessmentQueue,
-  dataSourceSyncQueue,
   questionnaireQueue,
   monitoringQueue,
   scheduleMemoryDecayJob,
