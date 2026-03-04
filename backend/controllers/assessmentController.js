@@ -1,6 +1,7 @@
 import path from 'path';
 import { Assessment } from '../models/Assessment.js';
-import { assessmentQueue } from '../config/queue.js';
+import { Workspace } from '../models/Workspace.js';
+import { assessmentQueue, monitoringQueue } from '../config/queue.js';
 import { handleFileUpload } from '../middleware/fileUpload.js';
 import { generateReport } from '../services/reportGenerator.js';
 import { catchAsync, sendSuccess, sendError, AppError } from '../utils/index.js';
@@ -302,6 +303,42 @@ export const setRiskDecision = catchAsync(async (req, res) => {
     decision,
     userId: req.user.userId,
   });
+
+  // Auto-schedule reassessment review (proceed + conditional only)
+  if (decision === 'proceed' || decision === 'conditional') {
+    try {
+      const nextReviewDate = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
+      await Workspace.findByIdAndUpdate(assessment.workspaceId, { nextReviewDate });
+
+      // Delay = nextReviewDate − 30 days − now  (≈ 335 days)
+      const delayMs = Math.max(0, nextReviewDate.getTime() - 30 * 24 * 60 * 60 * 1000 - Date.now());
+      const jobId = `review-reminder-${assessment.workspaceId}`;
+
+      // Remove any existing reminder so re-recording resets the clock
+      const existing = await monitoringQueue.getJob(jobId);
+      if (existing) await existing.remove();
+
+      await monitoringQueue.add(
+        'review-reminder',
+        { workspaceId: assessment.workspaceId.toString() },
+        { jobId, delay: delayMs }
+      );
+
+      logger.info('Review reminder scheduled', {
+        service: 'assessment-controller',
+        workspaceId: assessment.workspaceId,
+        nextReviewDate,
+        delayDays: Math.round(delayMs / 86_400_000),
+      });
+    } catch (err) {
+      // Non-critical — a Redis issue must not block the decision response
+      logger.warn('Failed to schedule review reminder (non-critical)', {
+        service: 'assessment-controller',
+        workspaceId: assessment.workspaceId,
+        error: err.message,
+      });
+    }
+  }
 
   sendSuccess(res, 200, 'Risk decision recorded', { riskDecision: assessment.riskDecision });
 });

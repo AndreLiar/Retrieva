@@ -87,7 +87,11 @@ vi.mock('../../config/queue.js', () => ({
   assessmentQueue: { add: vi.fn().mockResolvedValue({ id: 'j1' }), on: vi.fn() },
   documentIndexQueue: { add: vi.fn().mockResolvedValue({}), on: vi.fn() },
   memoryDecayQueue: { add: vi.fn().mockResolvedValue({}), on: vi.fn() },
-  monitoringQueue: { add: vi.fn().mockResolvedValue({}), on: vi.fn() },
+  monitoringQueue: {
+    add: vi.fn().mockResolvedValue({ id: 'review-r1' }),
+    getJob: vi.fn().mockResolvedValue(null),
+    on: vi.fn(),
+  },
 }));
 
 vi.mock('../../services/fileIngestionService.js', () => ({
@@ -321,6 +325,54 @@ describe('Risk Decision & Clause Sign-off Integration Tests', () => {
 
       expect(getRes.status).toBe(200);
       expect(getRes.body.data.assessment.riskDecision.decision).toBe('conditional');
+    });
+
+    it('queues a review-reminder delayed job for proceed decision', async () => {
+      const { monitoringQueue } = await import('../../config/queue.js');
+      const assessmentId = await createCompleteAssessment(request, user1Token, workspaceId);
+      await request
+        .patch(`${ASSESSMENT_BASE}/${assessmentId}/risk-decision`)
+        .set('Authorization', `Bearer ${user1Token}`)
+        .send({ decision: 'proceed' });
+
+      expect(monitoringQueue.add).toHaveBeenCalledWith(
+        'review-reminder',
+        expect.objectContaining({ workspaceId: expect.any(String) }),
+        expect.objectContaining({
+          jobId: expect.stringContaining('review-reminder-'),
+          delay: expect.any(Number),
+        })
+      );
+    });
+
+    it('sets nextReviewDate ~1 year out on workspace for proceed decision', async () => {
+      const assessmentId = await createCompleteAssessment(request, user1Token, workspaceId);
+      const before = Date.now();
+      await request
+        .patch(`${ASSESSMENT_BASE}/${assessmentId}/risk-decision`)
+        .set('Authorization', `Bearer ${user1Token}`)
+        .send({ decision: 'proceed' });
+
+      const ws = await mongoose.model('Workspace').findById(workspaceId);
+      expect(ws.nextReviewDate).not.toBeNull();
+      const diffDays = (ws.nextReviewDate.getTime() - before) / 86_400_000;
+      expect(diffDays).toBeGreaterThan(364);
+      expect(diffDays).toBeLessThan(366);
+    });
+
+    it('does not queue a review-reminder for reject decision', async () => {
+      const { monitoringQueue } = await import('../../config/queue.js');
+      vi.clearAllMocks();
+      const assessmentId = await createCompleteAssessment(request, user1Token, workspaceId);
+      await request
+        .patch(`${ASSESSMENT_BASE}/${assessmentId}/risk-decision`)
+        .set('Authorization', `Bearer ${user1Token}`)
+        .send({ decision: 'reject' });
+
+      const reminderCalls = monitoringQueue.add.mock.calls.filter(
+        ([name]) => name === 'review-reminder'
+      );
+      expect(reminderCalls).toHaveLength(0);
     });
   });
 
