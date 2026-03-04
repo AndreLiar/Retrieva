@@ -6,7 +6,7 @@ import { sendSuccess } from '../utils/core/responseFormatter.js';
 import { promiseWithTimeout } from '../utils/core/asyncHelpers.js';
 import logger from '../config/logger.js';
 // ISSUE #29 FIX: Import queues for health check
-import { assessmentQueue, documentIndexQueue } from '../config/queue.js';
+import { assessmentQueue } from '../config/queue.js';
 
 // ISSUE #14 FIX: Health check timeouts to prevent hanging
 const HEALTH_CHECK_TIMEOUT_MS = 5000; // 5 seconds for each service check
@@ -138,10 +138,7 @@ export const detailedHealth = async (req, res) => {
 
   // ISSUE #29 FIX: Check BullMQ Queues
   try {
-    const [assessmentQueueCounts, indexQueueCounts] = await Promise.all([
-      assessmentQueue.getJobCounts(),
-      documentIndexQueue.getJobCounts(),
-    ]);
+    const assessmentQueueCounts = await assessmentQueue.getJobCounts();
 
     health.services.queues = {
       status: 'up',
@@ -150,12 +147,6 @@ export const detailedHealth = async (req, res) => {
         active: assessmentQueueCounts.active || 0,
         completed: assessmentQueueCounts.completed || 0,
         failed: assessmentQueueCounts.failed || 0,
-      },
-      documentIndex: {
-        waiting: indexQueueCounts.waiting || 0,
-        active: indexQueueCounts.active || 0,
-        completed: indexQueueCounts.completed || 0,
-        failed: indexQueueCounts.failed || 0,
       },
     };
   } catch (error) {

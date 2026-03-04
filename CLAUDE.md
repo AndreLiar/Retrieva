@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Retrieva is a RAG (Retrieval-Augmented Generation) knowledge retrieval platform. It ingests content from Notion workspaces, stores vector embeddings in Qdrant, and provides conversational question-answering via Azure OpenAI (gpt-4o-mini + text-embedding-3-small). The project is a monorepo with two application services: a Node.js/Express backend and a Next.js frontend.
+Retrieva is a DORA compliance assessment platform. It processes vendor documents (uploaded PDFs/files), stores vector embeddings in Qdrant, and provides AI-driven gap analysis, risk decisions, and compliance monitoring via Azure OpenAI (gpt-4o-mini + text-embedding-3-small). The project is a monorepo with two application services: a Node.js/Express backend and a Next.js frontend.
 
 ## Monorepo Structure
 
@@ -246,8 +246,8 @@ Production uses **Azure OpenAI** via a provider abstraction layer:
 
 ### High-Level Data Flow
 ```
-Notion API -> NotionSyncWorker -> NotionTransformer (semantic chunking)
-           -> DocumentIndexWorker -> Qdrant (vector embeddings)
+Vendor Document Upload -> AssessmentWorker -> Qdrant (vector embeddings)
+                       -> Gap Analysis Agent -> Risk decisions -> Monitoring alerts
 
 User Question -> RAG Service (history-aware retrieval)
               -> Multi-query expansion + HyDE
@@ -263,10 +263,8 @@ Routes -> Middleware (auth, validation, rate limiting) -> Controllers -> Service
 ### Key Backend Services
 - **`services/rag.js`** - Core RAG pipeline: pre-warmed at startup, history-aware retrieval, confidence scoring, caching
 - **`services/emailService.js`** - Email sending via Resend HTTP API (password reset, verification, invitations, notifications)
-- **`services/notionTransformer.js`** - Converts Notion blocks to markdown with semantic block-aware chunking (not character-based)
-- **`workers/notionSyncWorker.js`** - BullMQ worker that syncs Notion pages to Qdrant
-- **`workers/documentIndexWorker.js`** - BullMQ worker that indexes documents (concurrency: 20, batch: 10)
-- **`config/queue.js`** - BullMQ queue definitions (notionSync, documentIndex, memoryDecay)
+- **`workers/assessmentWorker.js`** - BullMQ worker that indexes vendor documents and runs DORA gap analysis
+- **`config/queue.js`** - BullMQ queue definitions (assessmentJobs, questionnaireJobs, monitoringJobs, memoryDecay)
 
 ### Frontend Architecture
 - **App Router** with route groups: `(auth)/` for login/register, `(dashboard)/` for main app
@@ -276,7 +274,7 @@ Routes -> Middleware (auth, validation, rate limiting) -> Controllers -> Service
 - **Real-time**: Socket.io for live updates (streaming responses, presence, notifications)
 
 ### Multi-Tenancy
-Workspace-based isolation: users belong to workspaces, each workspace connects to a Notion integration. Documents are filtered by workspace during retrieval.
+Workspace-based isolation: users belong to workspaces, each workspace manages its own assessments and vendor documents. Documents are filtered by workspace during retrieval.
 
 ## Code Conventions
 
@@ -434,7 +432,6 @@ All ports bind to 127.0.0.1 — only nginx can reach them externally.
 - **Qdrant**: Self-hosted Docker container (`qdrant/qdrant:v1.13.2`) on the droplet
 - **Azure OpenAI**: Endpoint `oai-rag-backend-wz5nh9.openai.azure.com`, deployments: `gpt-4o-mini`, `text-embedding-3-small`
 - **Resend**: Domain `retrieva.online` (eu-west-1), from `noreply@retrieva.online`
-- **Notion**: OAuth redirect `https://retrieva.online/api/v1/notion/callback`
 
 ### Common Server Commands
 ```bash

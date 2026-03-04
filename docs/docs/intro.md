@@ -25,7 +25,7 @@ The platform was built across four delivery phases:
 | Phase | Feature | Status |
 |-------|---------|--------|
 | Phase 1 | DORA Copilot foundation — knowledge ingestion, vector search, conversational Q&A | ✅ Production |
-| Phase 2 | Multi-source ingestion (files, URLs, Confluence); DORA gap assessment UI | ✅ Production |
+| Phase 2 | Vendor document upload (PDF, DOCX, XLSX); DORA gap assessment UI | ✅ Production |
 | Phase 3 | Vendor questionnaires with LLM scoring | ✅ Production |
 | Phase 4 | Monitoring alerts + Register of Information export | ✅ Production |
 
@@ -97,7 +97,7 @@ A BullMQ repeatable job runs every 24 hours and sends email alerts to workspace 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                      Frontend (Next.js 16)                      │
-│  Assessments · Questionnaires · Copilot · Sources · Analytics   │
+│  Assessments · Questionnaires · Copilot · Analytics             │
 ├─────────────────────────────────────────────────────────────────┤
 │                    API Gateway (Express 5)                      │
 ├──────────────┬──────────────┬──────────────┬───────────────────┤
@@ -105,8 +105,7 @@ A BullMQ repeatable job runs every 24 hours and sends email alerts to workspace 
 │   Service    │  Service     │  Service     │   Export Service  │
 ├──────────────┴──────────────┴──────────────┴───────────────────┤
 │              Background Workers (BullMQ)                        │
-│  documentIndex · assessment · questionnaire                     │
-│  monitoring (24h alerts)                                        │
+│  assessment · questionnaire · monitoring (24h alerts)           │
 ├──────────────┬──────────────┬──────────────────────────────────┤
 │   Qdrant     │   MongoDB    │           Redis                  │
 │   (Vectors)  │   (Data)     │       (Cache / Queue)            │

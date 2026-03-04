@@ -177,172 +177,6 @@ messageSchema.index({ conversationId: 1, timestamp: 1 });
 export const Message = model('Message', messageSchema);
 ```
 
-## DocumentSource Model
-
-Tracks indexed documents from all data sources. The actual vectors are in Qdrant; this model stores metadata and sync state.
-
-```javascript
-// models/DocumentSource.js
-
-const documentSourceSchema = new Schema({
-  workspaceId: { type: String, required: true, index: true },
-
-  // Source type — covers all supported connectors
-  sourceType: {
-    type: String,
-    enum: ['file', 'pdf', 'docx', 'xlsx', 'url', 'confluence',
-           'gdrive', 'github', 'jira', 'slack', 'text', 'custom'],
-    required: true,
-  },
-  sourceId: { type: String, required: true },
-  documentType: { type: String, enum: ['page', 'database', 'file', 'folder'], required: true },
-
-  // Document classification for access control
-  classification: {
-    type: String,
-    enum: ['public', 'internal', 'confidential', 'restricted'],
-    default: 'internal',
-  },
-
-  title: { type: String, required: true },  // field-level AES-256-GCM encrypted
-  url: String,
-  parentId: String,
-  path: String,
-  contentHash: String,
-  lastModifiedInSource: Date,
-  lastSyncedAt: Date,
-
-  syncStatus: {
-    type: String,
-    enum: ['pending', 'synced', 'error', 'deleted'],
-    default: 'pending',
-  },
-  vectorStoreIds: [String],
-  chunkCount: { type: Number, default: 0 },
-
-  // Embedding version tracking (for migration support)
-  embeddingMetadata: {
-    version: String,
-    provider: { type: String, enum: ['local', 'cloud'] },
-    model: String,
-    dimensions: Number,
-    timestamp: Date,
-  },
-
-  metadata: { author: String, tags: [String], properties: Mixed, customFields: Mixed },
-
-  // Error log (max 10 entries, messages capped at 2000 chars)
-  errorLog: [{ timestamp: Date, error: String, retryCount: Number }],
-}, { timestamps: true });
-
-// Compound unique index
-documentSourceSchema.index({ workspaceId: 1, sourceId: 1 }, { unique: true });
-```
-
-**Key methods:**
-
-| Method | Description |
-|--------|-------------|
-| `markAsSynced(vectorIds, chunkCount, embeddingMeta)` | Set `syncStatus = 'synced'` |
-| `markAsDeleted()` | Set `syncStatus = 'deleted'` |
-| `addError(error, retryCount)` | Append to error log (capped), set `syncStatus = 'error'` |
-
-## SyncJob Model
-
-```javascript
-// models/SyncJob.js
-
-const syncJobSchema = new Schema({
-  jobId: {
-    type: String,
-    required: true,
-    index: true,
-  },
-  workspaceId: {
-    type: String,
-    required: true,
-    index: true,
-  },
-  jobType: {
-    type: String,
-    enum: ['full_sync', 'incremental_sync'],
-    required: true,
-  },
-  status: {
-    type: String,
-    enum: ['queued', 'processing', 'completed', 'failed', 'cancelled'],
-    default: 'queued',
-  },
-  triggeredBy: {
-    type: String,
-    enum: ['manual', 'scheduled', 'auto', 'webhook'],
-    default: 'manual',
-  },
-  progress: {
-    totalDocuments: Number,
-    processedDocuments: Number,
-    successCount: Number,
-    errorCount: Number,
-    skippedCount: Number,
-    currentDocument: String,
-  },
-  results: {
-    documentsAdded: Number,
-    documentsUpdated: Number,
-    documentsDeleted: Number,
-    errors: [{
-      documentId: String,
-      error: String,
-      timestamp: Date,
-    }],
-  },
-  retryCount: {
-    type: Number,
-    default: 0,
-  },
-  error: {
-    message: String,
-    timestamp: Date,
-  },
-  startedAt: Date,
-  completedAt: Date,
-  duration: Number,
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
-});
-
-// Update progress
-syncJobSchema.methods.updateProgress = async function(progress) {
-  Object.assign(this.progress, progress);
-  return this.save();
-};
-
-// Complete job
-syncJobSchema.methods.complete = async function(results) {
-  this.status = 'completed';
-  this.results = results;
-  this.completedAt = new Date();
-  this.duration = this.completedAt - this.startedAt;
-  return this.save();
-};
-
-// Fail job
-syncJobSchema.methods.fail = async function(error) {
-  this.status = 'failed';
-  this.error = {
-    message: error.message,
-    timestamp: new Date(),
-  };
-  this.completedAt = new Date();
-  this.duration = this.completedAt - this.startedAt;
-  return this.save();
-};
-
-export const SyncJob = model('SyncJob', syncJobSchema);
-```
-
 ## Analytics Model
 
 ```javascript
@@ -449,7 +283,7 @@ Organization ◀─── OrganizationMember ───► User
   Workspace ◀──────────────────────────────┘
      │
      ├──► WorkspaceMember  (legacy / per-workspace access)
-     ├──► Assessment ─────► DocumentSource ─► [Qdrant]
+     ├──► Assessment ─────────────────────► [Qdrant]
      └──► Conversation ───► Message ─────────► Analytics
 ```
 
@@ -461,7 +295,6 @@ All models with `workspaceId` use the tenant isolation plugin:
 
 ```javascript
 // Apply to schema
-documentSourceSchema.plugin(tenantIsolationPlugin);
 conversationSchema.plugin(tenantIsolationPlugin);
 messageSchema.plugin(tenantIsolationPlugin);
 ```
