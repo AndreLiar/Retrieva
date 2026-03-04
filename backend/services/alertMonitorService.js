@@ -234,6 +234,35 @@ async function checkAssessmentOverdue() {
 }
 
 // ---------------------------------------------------------------------------
+// Exported function — called by monitoringWorker for delayed review-reminder jobs
+// ---------------------------------------------------------------------------
+
+/**
+ * Sends a 30-day review reminder to all workspace owners.
+ * Called by monitoringWorker when the delayed 'review-reminder' job fires.
+ */
+export async function sendReviewReminderAlert(workspaceId) {
+  const workspace = await Workspace.findById(workspaceId);
+  if (!workspace) {
+    logger.warn('Review reminder: workspace not found', { service: 'alertMonitor', workspaceId });
+    return;
+  }
+
+  const details = {
+    reviewDate: workspace.nextReviewDate
+      ? workspace.nextReviewDate.toLocaleDateString('en-GB', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        })
+      : 'soon',
+  };
+
+  await sendAlertToOwners(workspace, 'review-due-30', details);
+  logger.info('Review reminder sent', { service: 'alertMonitor', workspaceId });
+}
+
+// ---------------------------------------------------------------------------
 // Shared helpers
 // ---------------------------------------------------------------------------
 

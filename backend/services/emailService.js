@@ -122,6 +122,7 @@ function buildMonitoringAlertHtml({ toName, workspaceName, alertType, details })
     'contract-renewal-60': `The ICT service contract with vendor <strong>${workspaceName}</strong> is due for renewal on <strong>${details.contractEnd}</strong> (60 days from now). Schedule a review with your legal team.`,
     'annual-review-overdue': `The scheduled annual DORA vendor review for <strong>${workspaceName}</strong> was due on <strong>${details.reviewDate}</strong> and has not been completed. Please schedule this review to maintain compliance.`,
     'assessment-overdue-12mo': `No DORA gap assessment has been run for vendor <strong>${workspaceName}</strong> in over 12 months. The last assessment was ${details.lastAssessmentDate ? `on <strong>${details.lastAssessmentDate}</strong>` : '<strong>never</strong>'}. DORA Article 28 requires periodic reviews.`,
+    'review-due-30': `The annual DORA vendor review for <strong>${workspaceName}</strong> is scheduled on <strong>${details.reviewDate}</strong> — in 30 days. Initiate a new gap assessment to remain compliant with DORA Article 28.`,
   };
   const message =
     alertMessages[alertType] ||
@@ -422,6 +423,7 @@ const local = {
       'contract-renewal-60': `[Action Required] Contract renewal due in 60 days — ${workspaceName}`,
       'annual-review-overdue': `[Overdue] Annual vendor review required for ${workspaceName}`,
       'assessment-overdue-12mo': `[Reminder] No DORA assessment run in 12 months — ${workspaceName}`,
+      'review-due-30': `[30-Day Notice] Annual vendor review due — ${workspaceName}`,
     };
     const subject = subjects[alertType] || `Compliance Alert — ${workspaceName}`;
     const html = buildMonitoringAlertHtml({ toName, workspaceName, alertType, details });
