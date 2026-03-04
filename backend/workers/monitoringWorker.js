@@ -7,7 +7,7 @@
 
 import { Worker } from 'bullmq';
 import { redisConnection } from '../config/redis.js';
-import { runMonitoringAlerts } from '../services/alertMonitorService.js';
+import { runMonitoringAlerts, sendReviewReminderAlert } from '../services/alertMonitorService.js';
 import logger from '../config/logger.js';
 
 const worker = new Worker(
@@ -17,6 +17,14 @@ const worker = new Worker(
       logger.info('Running monitoring alerts', { service: 'monitoringWorker', jobId: job.id });
       await runMonitoringAlerts();
       return { ran: true, timestamp: new Date().toISOString() };
+    } else if (job.name === 'review-reminder') {
+      logger.info('Sending review reminder', {
+        service: 'monitoringWorker',
+        jobId: job.id,
+        workspaceId: job.data.workspaceId,
+      });
+      await sendReviewReminderAlert(job.data.workspaceId);
+      return { sent: true, workspaceId: job.data.workspaceId };
     }
     logger.warn('Unknown monitoring job type', { jobName: job.name, jobId: job.id });
   },
