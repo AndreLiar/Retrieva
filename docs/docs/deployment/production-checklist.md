@@ -103,7 +103,7 @@ Essential tasks before deploying to production.
 
 ### Sync & Workers
 
-- [ ] **Worker processes running** - All BullMQ workers active (documentIndex, assessment, questionnaire, monitoring)
+- [ ] **Worker processes running** - All BullMQ workers active (assessment, questionnaire, monitoring)
 - [ ] **Stale job recovery** - `STALE_JOB_TIMEOUT_HOURS` configured
 - [ ] **Monitoring worker scheduled** - `MONITORING_INTERVAL_HOURS=24` set; repeatable job registered at startup
 - [ ] **Institution name configured** - `INSTITUTION_NAME` set for RoI export RT.01.01 sheet
@@ -161,9 +161,6 @@ db.conversations.createIndex({ updatedAt: -1 });
 db.messages.createIndex({ conversationId: 1, createdAt: 1 });
 db.messages.createIndex({ createdAt: 1 }, { expireAfterSeconds: 7776000 }); // 90 days
 
-// DocumentSource
-db.documentsources.createIndex({ workspaceId: 1, sourceId: 1 });
-db.documentsources.createIndex({ workspaceId: 1, status: 1 });
 ```
 
 ## Deployment Checklist

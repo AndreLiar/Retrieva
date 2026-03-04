@@ -21,8 +21,8 @@ frontend/    - Next.js 16 App Router (React 19, TypeScript)
 User → Upload vendor PDF/DOCX/XLSX
      → assessmentController → assessmentQueue (BullMQ)
      → assessmentWorker:
-         1. documentIndexWorker: parse → embed chunks → Qdrant
-         2. runGapAnalysis: retrieve chunks → LLM generates DORA gap report
+         1. fileIndex: parse → embed chunks → Qdrant
+         2. gapAnalysis: retrieve chunks → LLM generates DORA gap report
      → Assessment.results stored in MongoDB
      → User downloads report or queries via chat
 ```
@@ -87,7 +87,6 @@ Routes → Middleware (authenticate, requireWorkspaceAccess, validateBody)
 | Worker | Queue | Purpose |
 |--------|-------|---------|
 | `assessmentWorker.js` | `assessmentJobs` | Orchestrates file indexing + DORA gap analysis |
-| `documentIndexWorker.js` | `documentIndex` | Embeds chunks and upserts to Qdrant |
 | `monitoringWorker.js` | `monitoringJobs` | 24-hour schedule: compliance threshold alerts |
 
 ### Key Services

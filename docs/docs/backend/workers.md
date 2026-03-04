@@ -11,7 +11,6 @@ The platform uses [BullMQ](https://docs.bullmq.io/) backed by Redis for backgrou
 | Worker | Queue | Concurrency | Purpose |
 |--------|-------|-------------|---------|
 | `assessmentWorker.js` | `assessmentJobs` | 2 | Orchestrate file indexing + DORA gap analysis |
-| `documentIndexWorker.js` | `documentIndex` | configured by `INDEX_WORKER_CONCURRENCY` | Embed document chunks and upsert to Qdrant |
 | `questionnaireWorker.js` | `questionnaireJobs` | configured by `QUESTIONNAIRE_WORKER_CONCURRENCY` | LLM scoring for vendor questionnaire responses |
 | `monitoringWorker.js` | `monitoringJobs` | 1 | Run compliance monitoring alert checks every 24 h |
 
@@ -52,37 +51,6 @@ npm run seed:compliance:reset   # Wipe and re-seed
 
 The seed script is idempotent.
 
-## Document Index Worker (`workers/documentIndexWorker.js`)
-
-Processes individual document chunks and stores them in Qdrant.
-
-### Job Data
-
-```javascript
-{
-  workspaceId: 'ws-123',
-  sourceId: 'doc-456',
-  chunks: [...],      // pre-chunked text segments
-  operation: 'add' | 'update' | 'delete',
-}
-```
-
-### Flow
-
-1. For `delete`: removes existing vectors from Qdrant filtered by `workspaceId` + `sourceId`
-2. For `add`/`update`:
-   - Embeds chunks concurrently (up to `EMBEDDING_MAX_CONCURRENCY` parallel calls)
-   - Upserts vectors to Qdrant with workspace + source metadata
-   - Updates `DocumentSource` in MongoDB
-
-### Configuration
-
-```bash
-INDEX_WORKER_CONCURRENCY=3     # Parallel document jobs (default: 3)
-EMBEDDING_MAX_CONCURRENCY=10   # Parallel embedding API calls
-BATCH_SIZE=10                  # Documents per batch
-```
-
 ## Monitoring Worker (`workers/monitoringWorker.js`)
 
 Runs compliance monitoring checks on a 24-hour schedule. Triggered by a BullMQ repeatable job set up at server startup via `scheduleMonitoringJob()`.
@@ -116,14 +84,12 @@ MONITORING_INTERVAL_HOURS=24   # How often the job runs (default: 24)
 
 ## Queue Configuration (`config/queue.js`)
 
-Six queues are defined. The first four have active workers; the last two use scheduled repeatable jobs:
+Four queues are defined, with two using scheduled repeatable jobs:
 
 ```javascript
 export const assessmentQueue    = new Queue('assessmentJobs',    { ... }); // assessmentWorker
-export const documentIndexQueue = new Queue('documentIndex',     { ... }); // documentIndexWorker
 export const questionnaireQueue = new Queue('questionnaireJobs', { ... }); // questionnaireWorker
 export const monitoringQueue    = new Queue('monitoringJobs',    { ... }); // monitoringWorker (scheduled)
-export const dataSourceSyncQueue = new Queue('dataSourceSync',   { ... }); // enqueued by dataSourceController
 export const memoryDecayQueue   = new Queue('memoryDecay',       { ... }); // scheduled repeatable job
 ```
 
@@ -131,19 +97,6 @@ All queues use exponential backoff and Redis for persistence.
 
 - `scheduleMonitoringJob()` — registers the 24-hour compliance alert repeatable job on startup
 - `scheduleMemoryDecayJob()` — registers the 24-hour memory decay repeatable job on startup
-
-:::note
-`dataSourceSyncQueue` jobs are enqueued by `POST /api/v1/data-sources/:id/sync` but are processed inline by the same worker flow as document indexing. The queue provides retry and backoff resilience for multi-source ingestion (file, URL, Confluence).
-:::
-
-## Dead Letter Queue
-
-Failed jobs that exhaust all retries are recorded in `DeadLetterJob` (MongoDB) via `services/deadLetterQueue.js`. The DLQ listener is set up in `documentIndexWorker.js`:
-
-```javascript
-import { setupDLQListener } from '../services/deadLetterQueue.js';
-setupDLQListener(documentIndexWorker, 'documentIndex');
-```
 
 ## Graceful Shutdown
 

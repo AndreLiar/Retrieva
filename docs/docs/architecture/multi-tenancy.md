@@ -295,33 +295,6 @@ export function buildQdrantFilter(filters, workspaceId) {
 }
 ```
 
-### Chunk Indexing with Workspace
-
-```javascript
-// workers/documentIndexWorker.js
-
-async function indexDocument(job) {
-  const { workspaceId, sourceId, documentContent } = job.data;
-
-  // Chunk the document
-  const chunks = await prepareDocumentForIndexing(
-    documentContent,
-    workspaceId  // Every chunk tagged with workspaceId
-  );
-
-  // Each chunk has workspaceId in metadata
-  for (const chunk of chunks) {
-    console.assert(
-      chunk.metadata.workspaceId === workspaceId,
-      'Chunk must have workspaceId'
-    );
-  }
-
-  // Index in Qdrant with workspace isolation
-  await vectorStore.addDocuments(chunks);
-}
-```
-
 ## Permission Model
 
 ### Workspace Roles

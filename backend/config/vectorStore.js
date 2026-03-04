@@ -9,7 +9,6 @@ import {
   createEmbeddingContext,
 } from './embeddings.js';
 import { selectProvider } from './embeddingProvider.js';
-import { recordEmbeddingUsage } from '../services/metrics/syncMetrics.js';
 import { wrapWithTenantIsolation } from '../services/security/tenantIsolation.js';
 import { promiseWithTimeout } from '../utils/core/asyncHelpers.js';
 import logger from './logger.js';
@@ -201,16 +200,6 @@ export async function indexDocumentsBatched(docs, options = {}) {
     chunksPerSec: ((vectors.length / embedTime) * 1000).toFixed(1),
     provider: usedProvider,
   });
-
-  // Record embedding usage for metrics dashboard
-  const workspaceId = workspace?.workspaceId || workspace?._id?.toString();
-  if (workspaceId) {
-    recordEmbeddingUsage(workspaceId, {
-      provider: usedProvider,
-      chunkCount: vectors.length,
-      tokensUsed: docs.reduce((sum, d) => sum + Math.ceil(d.pageContent.length / 4), 0),
-    });
-  }
 
   // Phase 2: Batch upsert to Qdrant
   const upsertStartTime = Date.now();

@@ -56,8 +56,6 @@ backend/
 │   ├── User.js
 │   ├── Conversation.js
 │   ├── Message.js
-│   ├── DocumentSource.js
-│   ├── SyncJob.js
 │   ├── Analytics.js
 │   ├── Workspace.js              # Vendor registry (DORA Article 28)
 │   ├── WorkspaceMember.js
@@ -90,7 +88,6 @@ backend/
 │   └── security/       # Security utilities
 ├── workers/            # Background workers
 │   ├── index.js                  # Worker entry + graceful shutdown
-│   ├── documentIndexWorker.js    # Embed + upsert to Qdrant
 │   ├── assessmentWorker.js       # DORA gap analysis
 │   ├── questionnaireWorker.js    # LLM questionnaire scoring
 │   └── monitoringWorker.js       # 24h compliance alert scheduler

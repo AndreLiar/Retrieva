@@ -249,26 +249,6 @@ export async function buildConceptHierarchy(documents) {
 }
 ```
 
-## Metrics Services
-
-### Sync Metrics (`services/metrics/syncMetrics.js`)
-
-Tracks sync operation metrics.
-
-```javascript
-export function initSyncMetrics(workspaceId, jobId) {
-  // Initialize metrics tracking
-}
-
-export function recordDocumentProcessed(workspaceId, result) {
-  // Record document processing result
-}
-
-export function completeSyncMetrics(workspaceId) {
-  // Finalize and return metrics
-}
-```
-
 ## Security Services
 
 ### Tenant Isolation (`services/tenantIsolation.js`)

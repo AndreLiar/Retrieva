@@ -63,7 +63,7 @@ ENCRYPTION_KEY=your-32-byte-hex-key
 
 ```javascript
 // Every document is tagged with workspaceId
-const documentSourceSchema = new Schema({
+const conversationSchema = new Schema({
   workspaceId: {
     type: String,
     required: true,
@@ -129,16 +129,6 @@ analyticsSchema.index(
 );
 ```
 
-### Sync Job History
-
-```javascript
-// Sync jobs TTL: 30 days
-syncJobSchema.index(
-  { completedAt: 1 },
-  { expireAfterSeconds: 30 * 24 * 60 * 60 }
-);
-```
-
 ## Data Deletion
 
 ### User Deletion
@@ -172,10 +162,8 @@ async function deleteWorkspace(workspaceId) {
 
   // 2. Delete MongoDB documents
   await Promise.all([
-    DocumentSource.deleteMany({ workspaceId }),
     Conversation.deleteMany({ workspaceId }),
     Message.deleteMany({ conversationId: { $in: conversationIds } }),
-    SyncJob.deleteMany({ workspaceId }),
     Analytics.deleteMany({ workspaceId }),
   ]);
 
