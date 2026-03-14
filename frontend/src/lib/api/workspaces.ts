@@ -21,6 +21,7 @@ export interface CreateWorkspaceData {
   country?: string;
   contractStart?: string | null;
   contractEnd?: string | null;
+  vendorFunctions?: VendorFunction[];
 }
 
 export interface UpdateWorkspaceData {
