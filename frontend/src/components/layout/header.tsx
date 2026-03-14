@@ -12,17 +12,17 @@ export function Header() {
   const isMobile = useUIStore((state) => state.isMobile);
 
   return (
-    <header className="sticky top-0 z-40 flex h-14 items-center gap-4 border-b bg-background px-4 sm:px-6">
+    <header className="sticky top-0 z-40 flex h-13 items-center gap-4 border-b border-border bg-background/95 backdrop-blur-sm px-5 sm:px-6">
       {isMobile && (
-        <Button variant="ghost" size="icon" onClick={toggleSidebar}>
-          <Menu className="h-5 w-5" />
+        <Button variant="ghost" size="icon" className="h-8 w-8 -ml-1" onClick={toggleSidebar}>
+          <Menu className="h-4 w-4" />
           <span className="sr-only">Toggle sidebar</span>
         </Button>
       )}
 
       <div className="flex-1" />
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5">
         <ThemeToggle />
         <UserNav />
       </div>

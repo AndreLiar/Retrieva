@@ -1,21 +1,32 @@
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
+import { Cormorant_Garamond, DM_Sans, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 import { Providers } from '@/components/providers';
 
-const geistSans = Geist({
-  variable: '--font-geist-sans',
+const cormorant = Cormorant_Garamond({
+  variable: '--font-display',
   subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700'],
+  display: 'swap',
 });
 
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
+const dmSans = DM_Sans({
+  variable: '--font-sans',
   subsets: ['latin'],
+  weight: ['300', '400', '500', '600'],
+  display: 'swap',
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  variable: '--font-mono',
+  subsets: ['latin'],
+  weight: ['400', '500'],
+  display: 'swap',
 });
 
 export const metadata: Metadata = {
   title: 'Retrieva',
-  description: 'Knowledge retrieval powered by AI',
+  description: 'DORA compliance assessment powered by AI',
 };
 
 export default function RootLayout({
@@ -26,7 +37,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}
+        className={`${cormorant.variable} ${dmSans.variable} ${jetbrainsMono.variable} font-sans antialiased`}
       >
         <Providers>{children}</Providers>
       </body>
