@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/node';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -253,6 +254,10 @@ app.use('/api/v1/questionnaires', optionalAuth, requireActivePlan, questionnaire
 app.get('/', (req, res) => {
   res.send('Hello from a secure app.js!');
 });
+
+// Sentry error handler — must come AFTER all routes and BEFORE globalErrorHandler.
+// Captures unhandled exceptions with full request context.
+Sentry.setupExpressErrorHandler(app);
 
 // Global error handler
 app.use(globalErrorHandler);
