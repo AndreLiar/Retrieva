@@ -15,7 +15,6 @@ import { startupInitService } from './services/startupInit.js';
 import { ragService } from './services/rag.js';
 import { answerFormatter } from './services/answerFormatter.js';
 // Import workers to start them with the server
-import './workers/documentIndexWorker.js';
 import './workers/assessmentWorker.js';
 import './workers/questionnaireWorker.js';
 import './workers/monitoringWorker.js';

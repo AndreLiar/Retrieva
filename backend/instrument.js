@@ -27,8 +27,8 @@ try {
     // Use 1.0 in development for full visibility.
     tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
 
-    // Auto-instrument mongoose queries and ioredis commands
-    integrations: [Sentry.mongooseIntegration(), Sentry.ioRedisIntegration()],
+    // Auto-instrument mongoose queries and redis/ioredis commands
+    integrations: [Sentry.mongooseIntegration(), Sentry.redisIntegration()],
 
     // Filter out expected operational errors (4xx) — they are handled by the
     // app and don't represent bugs. Only real crashes reach Sentry.
