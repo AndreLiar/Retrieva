@@ -1,16 +1,19 @@
 # =============================================================================
 # Backend Dockerfile - Multi-stage build for production
 # =============================================================================
+# Uses node:20-slim (Debian/glibc) instead of node:20-alpine (musl libc).
+# Alpine's musl libc is incompatible with @sentry-internal/node-profiling
+# native bindings, causing the process to hang on startup.
 
 # -----------------------------------------------------------------------------
 # Stage 1: Dependencies
 # -----------------------------------------------------------------------------
-FROM node:20-alpine AS deps
+FROM node:20-slim AS deps
 
 WORKDIR /app
 
 # Install build dependencies for native modules
-RUN apk add --no-cache python3 make g++
+RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ && rm -rf /var/lib/apt/lists/*
 
 # Copy package files
 COPY package*.json ./
@@ -21,7 +24,7 @@ RUN npm ci --legacy-peer-deps
 # -----------------------------------------------------------------------------
 # Stage 2: Production Dependencies Only
 # -----------------------------------------------------------------------------
-FROM node:20-alpine AS prod-deps
+FROM node:20-slim AS prod-deps
 
 WORKDIR /app
 
@@ -33,7 +36,7 @@ RUN npm ci --legacy-peer-deps --only=production
 # -----------------------------------------------------------------------------
 # Stage 3: Production Runner
 # -----------------------------------------------------------------------------
-FROM node:20-alpine AS runner
+FROM node:20-slim AS runner
 
 WORKDIR /app
 
@@ -42,7 +45,7 @@ ENV NODE_ENV=production
 
 # Create non-root user for security
 RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 expressjs
+    adduser --system --uid 1001 --ingroup nodejs expressjs
 
 # Copy production dependencies
 COPY --from=prod-deps /app/node_modules ./node_modules
@@ -59,9 +62,9 @@ USER expressjs
 # Expose port
 EXPOSE 3007
 
-# Health check
+# Health check (curl is available in slim, wget is not)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:3007/health || exit 1
+    CMD curl -f http://localhost:3007/health || exit 1
 
 # Start the application
 CMD ["node", "--import", "./instrument.js", "index.js"]
