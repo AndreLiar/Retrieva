@@ -161,6 +161,8 @@ jobs:
             # ── Rollback on failure (backend only) ───────────────────────
             if [ "$healthy" != "true" ]; then
               echo "CRITICAL: Backend health checks failed after 12 attempts. Rolling back..."
+              echo "=== Backend container logs (last 100 lines) ==="
+              docker logs retrieva-backend --tail 100 2>&1 || true
               for svc in backend frontend; do
                 rb="ghcr.io/andreliar/retrieva/${svc}:rollback"
                 if docker image inspect "$rb" > /dev/null 2>&1; then
