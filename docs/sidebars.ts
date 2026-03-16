@@ -62,6 +62,7 @@ const sidebars: SidebarsConfig = {
         'deployment/production-checklist',
         'deployment/ci-cd',
         'deployment/email-service',
+        'deployment/observability',
       ],
     },
     'contributing',
