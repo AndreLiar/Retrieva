@@ -1,0 +1,29 @@
+{
+  "name": "retrieva-videos",
+  "private": true,
+  "scripts": {
+    "studio": "remotion studio src/index.ts",
+    "render:explainer": "remotion render src/index.ts ProductExplainer out/product-explainer.mp4 --codec=h264 --crf=18",
+    "render:explainer:720p": "remotion render src/index.ts ProductExplainer out/product-explainer-720p.mp4 --codec=h264 --crf=23 --scale=0.75",
+    "render:social": "remotion render src/index.ts SocialCut out/social-cut-916.mp4 --codec=h264 --crf=18",
+    "render:overlay": "remotion render src/index.ts DemoOverlay out/demo-overlay.webm --codec=vp8",
+    "render:spotlight:gap": "remotion render src/index.ts FeatureSpotlight-GapAnalysis out/gap-analysis.mp4 --codec=h264 --crf=18",
+    "render:spotlight:questionnaires": "remotion render src/index.ts FeatureSpotlight-VendorQuestionnaires out/vendor-questionnaires.mp4 --codec=h264 --crf=18",
+    "render:spotlight:copilot": "remotion render src/index.ts FeatureSpotlight-DoraCopilot out/dora-copilot.mp4 --codec=h264 --crf=18",
+    "render:spotlight:alerts": "remotion render src/index.ts FeatureSpotlight-MonitoringAlerts out/monitoring-alerts.mp4 --codec=h264 --crf=18",
+    "render:spotlight:register": "remotion render src/index.ts FeatureSpotlight-RegisterOfInfo out/register-of-info.mp4 --codec=h264 --crf=18",
+    "render:spotlight:security": "remotion render src/index.ts FeatureSpotlight-EnterpriseSecurity out/enterprise-security.mp4 --codec=h264 --crf=18",
+    "render:all": "npm run render:explainer && npm run render:explainer:720p && npm run render:social && npm run render:spotlight:gap && npm run render:spotlight:questionnaires && npm run render:spotlight:copilot && npm run render:spotlight:alerts && npm run render:spotlight:register && npm run render:spotlight:security"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.290",
+    "@remotion/renderer": "4.0.290",
+    "remotion": "4.0.290"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "typescript": "^5.7.0"
+  }
+}
