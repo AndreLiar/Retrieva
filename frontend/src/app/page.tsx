@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/lib/stores/auth-store';
 import { ThemeToggle } from '@/components/theme/theme-toggle';
 import { PricingSection } from '@/components/marketing/pricing-section';
+import { VideoHero } from '@/components/marketing/VideoHero';
 
 export default function LandingPage() {
   const router = useRouter();
@@ -104,6 +105,9 @@ export default function LandingPage() {
           </div>
         </motion.div>
       </section>
+
+      {/* Product demo video */}
+      <VideoHero />
 
       {/* Features */}
       <section className="container mx-auto px-4 py-24">
