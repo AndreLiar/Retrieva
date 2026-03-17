@@ -237,7 +237,7 @@ export default function MembersPage({ params }: MembersPageProps) {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-semibold">Team Members</h1>
+          <h1 className="font-display text-3xl font-semibold tracking-tight">Team Members</h1>
           <p className="text-muted-foreground">
             Manage who has access to {workspace.name}
           </p>

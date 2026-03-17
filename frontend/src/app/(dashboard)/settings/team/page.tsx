@@ -209,7 +209,7 @@ export default function TeamSettingsPage() {
     <div className="p-6 max-w-3xl mx-auto space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-semibold">Team Management</h1>
+        <h1 className="font-display text-3xl font-semibold tracking-tight">Team Management</h1>
         <p className="text-sm text-muted-foreground mt-1">
           {org.name} · {activeMembers.length} active member{activeMembers.length !== 1 ? 's' : ''}
           {pendingMembers.length > 0 && ` · ${pendingMembers.length} pending`}

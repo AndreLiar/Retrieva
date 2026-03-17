@@ -101,7 +101,7 @@ export default function NewQuestionnairePage() {
 
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-semibold">Send DORA Questionnaire</h1>
+        <h1 className="font-display text-3xl font-semibold tracking-tight">Send DORA Questionnaire</h1>
         <p className="text-muted-foreground mt-1">
           Generate and email a tokenised DORA Art.28/30 due diligence questionnaire to a vendor.
           No login required for the vendor.

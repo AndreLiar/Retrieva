@@ -588,7 +588,7 @@ export default function WorkspacePage({ params }: WorkspacePageProps) {
             <Building2 className="h-7 w-7 text-primary" />
           </div>
           <div>
-            <h1 className="text-2xl font-semibold">{workspace.name}</h1>
+            <h1 className="font-display text-3xl font-semibold tracking-tight">{workspace.name}</h1>
             <div className="flex items-center gap-2 mt-1.5 flex-wrap">
               {workspace.vendorTier   && <TierBadge tier={workspace.vendorTier} />}
               {workspace.vendorStatus && <VendorStatusBadge status={workspace.vendorStatus} />}

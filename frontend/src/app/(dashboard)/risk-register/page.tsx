@@ -221,8 +221,8 @@ export default function RiskRegisterPage() {
       {/* Page header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">Vendor Risk Register</h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <h1 className="font-display text-3xl font-semibold tracking-tight">Vendor Risk Register</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
             DORA Art. 28(3) — portfolio-level ICT third-party risk overview
           </p>
         </div>
