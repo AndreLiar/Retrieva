@@ -18,8 +18,8 @@ try {
   Sentry.init({
     dsn: process.env.SENTRY_DSN,
 
-    // Silently disabled when DSN is not configured
-    enabled: !!process.env.SENTRY_DSN,
+    // Only active in production — never sends events during local development
+    enabled: process.env.NODE_ENV === 'production' && !!process.env.SENTRY_DSN,
 
     environment: process.env.NODE_ENV || 'development',
 
