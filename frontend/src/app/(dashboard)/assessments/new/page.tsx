@@ -116,7 +116,7 @@ export default function NewAssessmentPage() {
 
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-semibold">
+        <h1 className="font-display text-3xl font-semibold tracking-tight">
           {framework === 'CONTRACT_A30' ? 'New Contract Review (Art. 30)' : 'New DORA Assessment'}
         </h1>
         <p className="text-muted-foreground mt-1">

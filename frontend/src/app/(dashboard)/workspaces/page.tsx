@@ -98,8 +98,8 @@ export default function WorkspacesPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-semibold">Vendors</h1>
-          <p className="text-muted-foreground">
+          <h1 className="font-display text-3xl font-semibold tracking-tight">Vendors</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
             Manage your third-party ICT vendors and DORA compliance
           </p>
         </div>

@@ -11,7 +11,7 @@ import { WorkspaceSwitcher } from './workspace-switcher';
 import { useUIStore } from '@/lib/stores/ui-store';
 import { useAuthStore } from '@/lib/stores/auth-store';
 import { usePermissions } from '@/lib/hooks/use-permissions';
-import { desktopMainNavItems, bottomNavItems, type NavItem } from '@/lib/constants/nav-items';
+import { desktopNavSections, bottomNavItems, type NavItem } from '@/lib/constants/nav-items';
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -34,7 +34,6 @@ export function Sidebar() {
     });
   };
 
-  const visibleMainNav = filterNavItems(desktopMainNavItems);
   const visibleBottomNav = filterNavItems(bottomNavItems);
 
   return (
@@ -91,18 +90,43 @@ export function Sidebar() {
 
       {/* ── Main Navigation ── */}
       <ScrollArea className="flex-1 py-3">
-        <nav className={cn('flex flex-col gap-0.5', sidebarCollapsed ? 'px-2' : 'px-3')}>
-          {visibleMainNav.map((item) => {
-            const isActive =
-              pathname === item.href ||
-              (item.href === '/conversations' && pathname.startsWith('/conversations/'));
+        <nav className={cn('flex flex-col', sidebarCollapsed ? 'px-2' : 'px-3')}>
+          {desktopNavSections.map((section, idx) => {
+            const visibleItems = filterNavItems(section.items);
+            if (visibleItems.length === 0) return null;
+
             return (
-              <NavLink
-                key={item.href}
-                item={item}
-                isActive={isActive}
-                collapsed={sidebarCollapsed}
-              />
+              <div key={section.label} className={cn(idx > 0 && 'mt-4')}>
+                {/* Section label — hidden when collapsed */}
+                {!sidebarCollapsed && (
+                  <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-sidebar-foreground/25 select-none">
+                    {section.label}
+                  </p>
+                )}
+
+                {/* Section separator when collapsed */}
+                {sidebarCollapsed && idx > 0 && (
+                  <div className="mb-2 border-t border-sidebar-border/40" />
+                )}
+
+                <div className="flex flex-col gap-0.5">
+                  {visibleItems.map((item) => {
+                    const isActive =
+                      pathname === item.href ||
+                      (item.href === '/conversations' && pathname.startsWith('/conversations/')) ||
+                      (item.href === '/assessments' && pathname.startsWith('/assessments/')) ||
+                      (item.href === '/workspaces' && pathname.startsWith('/workspaces/'));
+                    return (
+                      <NavLink
+                        key={item.href}
+                        item={item}
+                        isActive={isActive}
+                        collapsed={sidebarCollapsed}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
             );
           })}
         </nav>

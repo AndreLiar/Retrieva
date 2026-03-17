@@ -76,7 +76,7 @@ export default function BillingSettingsPage() {
 
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold flex items-center gap-2">
+        <h1 className="font-display text-3xl font-semibold tracking-tight flex items-center gap-2">
           <CreditCard className="h-6 w-6" />
           Billing
         </h1>

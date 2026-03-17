@@ -246,7 +246,7 @@ export default function WorkspaceSettingsPage({ params }: WorkspaceSettingsPageP
         </Button>
       </Link>
 
-      <h1 className="text-2xl font-semibold mb-6">Workspace Settings</h1>
+      <h1 className="font-display text-3xl font-semibold tracking-tight mb-6">Workspace Settings</h1>
 
       <Form {...form}>
         <form

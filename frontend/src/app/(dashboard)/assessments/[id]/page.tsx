@@ -316,7 +316,7 @@ export default function AssessmentDetailPage() {
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 flex-wrap">
-            <h1 className="text-2xl font-semibold">{assessment.vendorName}</h1>
+            <h1 className="font-display text-3xl font-semibold tracking-tight">{assessment.vendorName}</h1>
             <Badge variant="outline" className="text-xs">
               {isA30 ? 'Art. 30 Contract Review' : 'DORA Gap Analysis'}
             </Badge>

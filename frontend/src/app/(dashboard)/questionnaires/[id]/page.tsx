@@ -390,7 +390,7 @@ export default function QuestionnaireDetailPage({
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold">{q.vendorName}</h1>
+          <h1 className="font-display text-3xl font-semibold tracking-tight">{q.vendorName}</h1>
           <p className="text-muted-foreground text-sm mt-0.5">{q.vendorEmail}</p>
           {q.sentAt && (
             <p className="text-muted-foreground text-xs mt-1">

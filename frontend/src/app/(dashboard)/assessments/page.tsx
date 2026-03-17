@@ -110,10 +110,10 @@ export default function AssessmentsPage() {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">DORA Assessments</h1>
-          <p className="text-muted-foreground">
+          <h1 className="font-display text-3xl font-semibold tracking-tight">DORA Assessments</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
             Third-party ICT risk assessments under Regulation (EU) 2022/2554
           </p>
         </div>

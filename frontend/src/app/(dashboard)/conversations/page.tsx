@@ -157,8 +157,8 @@ export default function ConversationsPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-semibold">Conversations</h1>
-          <p className="text-muted-foreground">
+          <h1 className="font-display text-3xl font-semibold tracking-tight">Conversations</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
             View and manage your chat history
           </p>
         </div>
