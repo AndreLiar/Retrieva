@@ -53,7 +53,6 @@ jobs:
               NEXT_PUBLIC_API_URL=https://retrieva.online/api/v1
               NEXT_PUBLIC_WS_URL=https://retrieva.online
               NEXT_PUBLIC_APP_NAME=Retrieva
-              NEXT_PUBLIC_SENTRY_DSN=https://1f639b7affa903b330156e9f4a7d07b6@o4510091948392448.ingest.de.sentry.io/4511047428735056
 
     steps:
       - name: Checkout code
@@ -85,7 +84,9 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          build-args: ${{ matrix.build-args || '' }}
+          build-args: |
+            ${{ matrix.build-args || '' }}
+            ${{ matrix.service == 'frontend' && format('NEXT_PUBLIC_SENTRY_DSN={0}', secrets.NEXT_PUBLIC_SENTRY_DSN) || '' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
