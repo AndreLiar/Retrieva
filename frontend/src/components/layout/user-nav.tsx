@@ -2,8 +2,6 @@
 
 import { useRouter } from 'next/navigation';
 import {
-  User,
-  Settings,
   LogOut,
   Shield,
 } from 'lucide-react';
@@ -13,7 +11,6 @@ import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -64,23 +61,6 @@ export function UserNav() {
             </p>
           </div>
         </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuGroup>
-          <DropdownMenuItem
-            onClick={() => router.push('/settings')}
-            className="cursor-pointer"
-          >
-            <User className="mr-2 h-4 w-4" />
-            <span>Profile</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={() => router.push('/settings/security')}
-            className="cursor-pointer"
-          >
-            <Settings className="mr-2 h-4 w-4" />
-            <span>Settings</span>
-          </DropdownMenuItem>
-        </DropdownMenuGroup>
         {isAdmin && (
           <>
             <DropdownMenuSeparator />
