@@ -325,6 +325,9 @@ export const refreshToken = async (req, res) => {
     const deviceInfo = getDeviceInfo(req);
     await user.addRefreshToken(newTokenHash, deviceInfo);
 
+    // Update lastLogin to reflect active session
+    await User.updateOne({ _id: user._id }, { $set: { lastLogin: new Date() } });
+
     // Set new cookies
     setAuthCookies(res, {
       accessToken: newAccessToken,
