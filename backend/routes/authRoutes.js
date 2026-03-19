@@ -11,6 +11,7 @@ import {
   verifyEmail,
   resendVerification,
   changePassword,
+  updateOnboarding,
 } from '../controllers/authController.js';
 import { validateBody } from '../middleware/validate.js';
 import { authenticate } from '../middleware/auth.js';
@@ -104,5 +105,12 @@ router.post('/resend-verification', authenticate, resendVerification);
  * @access  Private
  */
 router.post('/change-password', authenticate, validateBody(changePasswordSchema), changePassword);
+
+/**
+ * @route   PATCH /api/v1/auth/onboarding
+ * @desc    Update onboarding state (welcome screen dismissed, checklist flags)
+ * @access  Private
+ */
+router.patch('/onboarding', authenticate, updateOnboarding);
 
 export default router;

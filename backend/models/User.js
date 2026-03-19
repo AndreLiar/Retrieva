@@ -159,6 +159,18 @@ const userSchema = new mongoose.Schema(
       ref: 'Organization',
       default: null,
     },
+    // Onboarding state
+    onboardingCompleted: {
+      type: Boolean,
+      default: false,
+    },
+    onboardingChecklist: {
+      vendorCreated: { type: Boolean, default: false },
+      assessmentCreated: { type: Boolean, default: false },
+      memberInvited: { type: Boolean, default: false },
+      monitoringSetup: { type: Boolean, default: false },
+      dismissed: { type: Boolean, default: false },
+    },
   },
   {
     timestamps: true,

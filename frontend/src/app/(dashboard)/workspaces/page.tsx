@@ -15,8 +15,10 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { GettingStartedChecklist } from '@/components/onboarding/GettingStartedChecklist';
 import { useWorkspaceStore } from '@/lib/stores/workspace-store';
 import { useUIStore, MODAL_IDS } from '@/lib/stores/ui-store';
+import { useAuthStore } from '@/lib/stores/auth-store';
 import { getRoleDisplayName, getRoleBadgeColor } from '@/lib/utils/permissions';
 import type { VendorTier, VendorStatus } from '@/types';
 
@@ -65,6 +67,8 @@ export default function WorkspacesPage() {
   const workspaces = useWorkspaceStore((state) => state.workspaces);
   const fetchWorkspaces = useWorkspaceStore((state) => state.fetchWorkspaces);
   const openModal = useUIStore((state) => state.openModal);
+  const onboardingChecklist = useAuthStore((state) => state.user?.onboardingChecklist);
+  const onboardingCompleted = useAuthStore((state) => state.user?.onboardingCompleted);
 
   // Handle OAuth callback query params
   useEffect(() => {
@@ -95,6 +99,11 @@ export default function WorkspacesPage() {
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
+      {/* Getting started checklist — shown until dismissed or completed */}
+      {onboardingChecklist && !onboardingCompleted && !onboardingChecklist.dismissed && (
+        <GettingStartedChecklist checklist={onboardingChecklist} />
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>

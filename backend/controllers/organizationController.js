@@ -227,6 +227,12 @@ export const inviteMember = catchAsync(async (req, res) => {
       });
     });
 
+  // Mark checklist item — fire and forget, non-critical
+  User.updateOne(
+    { _id: inviterId, 'onboardingChecklist.memberInvited': false },
+    { $set: { 'onboardingChecklist.memberInvited': true } }
+  ).catch(() => {});
+
   logger.info('Org invite sent', {
     service: 'organization',
     orgId,

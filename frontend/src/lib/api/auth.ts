@@ -127,4 +127,21 @@ export const authApi = {
     );
     return response.data;
   },
+
+  /**
+   * Update onboarding state (welcome screen + checklist flags)
+   */
+  updateOnboarding: async (data: {
+    completed?: boolean;
+    checklist?: Partial<{
+      vendorCreated: boolean;
+      assessmentCreated: boolean;
+      memberInvited: boolean;
+      monitoringSetup: boolean;
+      dismissed: boolean;
+    }>;
+  }) => {
+    const response = await apiClient.patch<ApiResponse>('/auth/onboarding', data);
+    return response.data;
+  },
 };
