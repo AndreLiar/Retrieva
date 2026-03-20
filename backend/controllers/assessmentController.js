@@ -66,6 +66,13 @@ export const createAssessment = catchAsync(async (req, res) => {
     fileCount: req.files.length,
   });
 
+  // Mark checklist item — fire and forget, non-critical
+  const { User: UserModel } = await import('../models/User.js');
+  UserModel.updateOne(
+    { _id: userId, 'onboardingChecklist.assessmentCreated': false },
+    { $set: { 'onboardingChecklist.assessmentCreated': true } }
+  ).catch(() => {});
+
   // Upload files to Spaces for persistent storage (non-critical — failures don't block processing)
   if (isStorageConfigured() && req.user.organizationId) {
     await Promise.all(

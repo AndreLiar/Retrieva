@@ -107,6 +107,7 @@ vi.mock('../../models/User.js', () => ({
   User: {
     findById: vi.fn(),
     findByIdAndUpdate: vi.fn(),
+    updateOne: vi.fn().mockResolvedValue({ modifiedCount: 1 }),
   },
 }));
 
@@ -137,6 +138,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   safeDecrypt.mockImplementation((v) => v);
   emailService.sendOrganizationInvitation.mockResolvedValue({ success: true });
+  User.updateOne.mockResolvedValue({ modifiedCount: 1 });
 });
 
 // ---------------------------------------------------------------------------

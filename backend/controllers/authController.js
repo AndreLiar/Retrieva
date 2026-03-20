@@ -230,6 +230,8 @@ export const login = async (req, res) => {
         isEmailVerified: user.isEmailVerified,
         organizationId: user.organizationId ? user.organizationId.toString() : null,
         organization,
+        onboardingCompleted: user.onboardingCompleted,
+        onboardingChecklist: user.onboardingChecklist,
       },
       // Tokens also returned in body for API clients (mobile apps, etc.)
       ...tokens,
@@ -429,6 +431,8 @@ export const getMe = async (req, res) => {
         lastLogin: user.lastLogin,
         organizationId: user.organizationId ? user.organizationId.toString() : null,
         organization,
+        onboardingCompleted: user.onboardingCompleted,
+        onboardingChecklist: user.onboardingChecklist,
       },
     });
   } catch (error) {
@@ -779,5 +783,49 @@ export const changePassword = async (req, res) => {
       userId: req.user?.userId,
     });
     sendError(res, 500, 'Failed to change password');
+  }
+};
+
+/**
+ * Update onboarding state
+ * PATCH /api/v1/auth/onboarding
+ */
+export const updateOnboarding = async (req, res) => {
+  try {
+    const { completed, checklist } = req.body;
+    const update = {};
+
+    if (completed !== undefined) {
+      update.onboardingCompleted = completed;
+    }
+
+    if (checklist && typeof checklist === 'object') {
+      const allowed = [
+        'vendorCreated',
+        'assessmentCreated',
+        'memberInvited',
+        'monitoringSetup',
+        'dismissed',
+      ];
+      for (const key of allowed) {
+        if (checklist[key] !== undefined) {
+          update[`onboardingChecklist.${key}`] = checklist[key];
+        }
+      }
+    }
+
+    if (Object.keys(update).length === 0) {
+      return sendError(res, 400, 'No valid fields to update');
+    }
+
+    await User.updateOne({ _id: req.user.userId }, { $set: update });
+
+    sendSuccess(res, 200, 'Onboarding state updated');
+  } catch (error) {
+    logger.error('Failed to update onboarding state', {
+      error: error.message,
+      userId: req.user?.userId,
+    });
+    sendError(res, 500, 'Failed to update onboarding state');
   }
 };
