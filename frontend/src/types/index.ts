@@ -33,6 +33,14 @@ export interface UserOrganization {
   trialEndsAt?: string | null;
 }
 
+export interface OnboardingChecklist {
+  vendorCreated: boolean;
+  assessmentCreated: boolean;
+  memberInvited: boolean;
+  monitoringSetup: boolean;
+  dismissed: boolean;
+}
+
 export interface User {
   id: string;
   email: string;
@@ -43,6 +51,8 @@ export interface User {
   lastLogin?: string;
   organizationId?: string | null;
   organization?: UserOrganization | null;
+  onboardingCompleted?: boolean;
+  onboardingChecklist?: OnboardingChecklist;
 }
 
 export interface AuthTokens {

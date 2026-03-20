@@ -6,6 +6,7 @@ import { Sidebar } from '@/components/layout/sidebar';
 import { Header } from '@/components/layout/header';
 import { MobileSidebar } from '@/components/layout/mobile-sidebar';
 import { ModalOutlet } from '@/components/layout/modal-outlet';
+import { WelcomeScreen } from '@/components/onboarding/WelcomeScreen';
 import { useUIStore } from '@/lib/stores/ui-store';
 import { useAuthStore } from '@/lib/stores/auth-store';
 import { useWorkspaceStore } from '@/lib/stores/workspace-store';
@@ -23,6 +24,7 @@ export default function DashboardLayout({
   const isLoading = useAuthStore((state) => state.isLoading);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const organizationId = useAuthStore((state) => state.user?.organizationId);
+  const onboardingCompleted = useAuthStore((state) => state.user?.onboardingCompleted);
   const fetchWorkspaces = useWorkspaceStore((state) => state.fetchWorkspaces);
 
   // Handle responsive behavior
@@ -108,6 +110,11 @@ export default function DashboardLayout({
 
       {/* Global Modals */}
       <ModalOutlet />
+
+      {/* Onboarding welcome screen — shown once after org creation */}
+      {isAuthenticated && organizationId && onboardingCompleted === false && (
+        <WelcomeScreen />
+      )}
     </div>
   );
 }

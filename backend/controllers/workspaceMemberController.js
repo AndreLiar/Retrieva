@@ -56,6 +56,12 @@ export const createWorkspace = catchAsync(async (req, res) => {
 
   await WorkspaceMember.addOwner(workspace._id, userId);
 
+  // Mark checklist item — fire and forget, non-critical
+  User.updateOne(
+    { _id: userId, 'onboardingChecklist.vendorCreated': false },
+    { $set: { 'onboardingChecklist.vendorCreated': true } }
+  ).catch(() => {});
+
   logger.info('Workspace created', { service: 'workspace', workspaceId: workspace._id, userId });
 
   sendSuccess(res, 201, 'Workspace created', {
