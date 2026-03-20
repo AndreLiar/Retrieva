@@ -19,6 +19,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { EmptyState } from '@/components/onboarding/EmptyState';
 import {
   Table,
   TableBody,
@@ -191,17 +192,14 @@ export default function QuestionnairesPage() {
           <span>Failed to load questionnaires. Please refresh.</span>
         </div>
       ) : !data || data.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <ClipboardList className="h-12 w-12 text-muted-foreground/40 mb-4" />
-          <h3 className="font-medium text-lg">No questionnaires yet</h3>
-          <p className="text-muted-foreground mt-1 mb-4">
-            Send a DORA due diligence questionnaire to a vendor to get started.
-          </p>
-          <Button onClick={() => router.push('/questionnaires/new')}>
-            <Plus className="h-4 w-4 mr-2" />
-            Send First Questionnaire
-          </Button>
-        </div>
+        <EmptyState
+          icon={ClipboardList}
+          heading="No questionnaires sent"
+          description="Send a structured Art. 28/30 due diligence questionnaire to a vendor. They complete it via a secure link — no Retrieva account required."
+          cta="Send a questionnaire"
+          onAction={() => router.push('/questionnaires/new')}
+          hint="Completed responses are automatically scored and feed into the Risk Register."
+        />
       ) : (
         <Table>
           <TableHeader>

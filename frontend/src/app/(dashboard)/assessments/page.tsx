@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { EmptyState } from '@/components/onboarding/EmptyState';
 import {
   Table,
   TableBody,
@@ -136,17 +137,14 @@ export default function AssessmentsPage() {
           <p className="text-sm">Failed to load assessments.</p>
         </div>
       ) : data?.length === 0 ? (
-        <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
-          <ShieldCheck className="h-12 w-12 text-muted-foreground/40" />
-          <p className="font-medium">No assessments yet</p>
-          <p className="text-sm text-muted-foreground max-w-xs">
-            Upload vendor ICT documentation to run your first DORA compliance gap analysis.
-          </p>
-          <Button onClick={() => router.push('/assessments/new')} className="mt-2">
-            <Plus className="h-4 w-4 mr-2" />
-            New Assessment
-          </Button>
-        </div>
+        <EmptyState
+          icon={ShieldCheck}
+          heading="No gap analyses yet"
+          description="Upload vendor ICT documentation to identify DORA Article 28/29 compliance gaps using AI-powered analysis."
+          cta="Run your first gap analysis"
+          onAction={() => router.push('/assessments/new')}
+          hint="Supported formats: PDF, Word. Results include gap findings, risk level, and remediation recommendations."
+        />
       ) : (
         <div className="rounded-md border overflow-hidden">
           <Table>
