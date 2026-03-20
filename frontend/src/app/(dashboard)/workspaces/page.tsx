@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { GettingStartedChecklist } from '@/components/onboarding/GettingStartedChecklist';
+import { EmptyState } from '@/components/onboarding/EmptyState';
 import { useWorkspaceStore } from '@/lib/stores/workspace-store';
 import { useUIStore, MODAL_IDS } from '@/lib/stores/ui-store';
 import { useAuthStore } from '@/lib/stores/auth-store';
@@ -120,17 +121,14 @@ export default function WorkspacesPage() {
 
       {/* Workspace list */}
       {workspaces.length === 0 ? (
-        <div className="text-center py-12">
-          <Building2 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-          <h2 className="text-lg font-medium mb-2">No vendors yet</h2>
-          <p className="text-muted-foreground mb-4">
-            Add your first ICT vendor to start tracking DORA compliance
-          </p>
-          <Button onClick={() => openModal(MODAL_IDS.CREATE_WORKSPACE)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Vendor
-          </Button>
-        </div>
+        <EmptyState
+          icon={Building2}
+          heading="No vendors yet"
+          description="Add your first ICT vendor to begin the DORA Article 28 compliance workflow — classification, due diligence, gap analysis, and monitoring."
+          cta="Add your first vendor"
+          onAction={() => openModal(MODAL_IDS.CREATE_WORKSPACE)}
+          hint="Each vendor gets its own workspace with a 5-step compliance checklist."
+        />
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
           {workspaces.map((workspace) => (
