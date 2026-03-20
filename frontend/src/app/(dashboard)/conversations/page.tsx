@@ -19,6 +19,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { EmptyState } from '@/components/onboarding/EmptyState';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -239,17 +240,14 @@ export default function ConversationsPage() {
           <p className="text-destructive">Failed to load conversations</p>
         </div>
       ) : conversations.length === 0 ? (
-        <div className="text-center py-12">
-          <MessageSquare className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-          <h2 className="text-lg font-medium mb-2">No conversations yet</h2>
-          <p className="text-muted-foreground mb-4">
-            Start a new chat to begin exploring your knowledge base
-          </p>
-          <Button onClick={handleNewConversation}>
-            <Plus className="h-4 w-4 mr-2" />
-            Start a Conversation
-          </Button>
-        </div>
+        <EmptyState
+          icon={MessageSquare}
+          heading="No conversations yet"
+          description="Ask AI questions about your vendor documents — every answer is grounded in the documents you have uploaded, with citations showing exactly where each finding came from."
+          cta="Start a conversation"
+          onAction={handleNewConversation}
+          hint={'Try: "What are the gaps in [vendor]\'s ISO 27001 policy?" or "Does the contract include Art. 30 audit rights?"'}
+        />
       ) : (
         <div className="space-y-6">
           {/* Pinned conversations */}
