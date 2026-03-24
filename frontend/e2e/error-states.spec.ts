@@ -186,13 +186,8 @@ test.describe('Conversation not found', () => {
 
     await page.goto('/conversations/nonexistent-id');
 
-    // Should not crash — either shows error UI or redirects to chat
-    const isOnChat = await page.url().includes('/chat');
-    const hasErrorText = await page
-      .getByText(/not found|error|conversation|failed to load/i)
-      .isVisible()
-      .catch(() => false);
-    expect(isOnChat || hasErrorText).toBe(true);
+    // Wait for error state — page renders "Failed to load conversation" on 404
+    await expect(page.getByText('Failed to load conversation')).toBeVisible({ timeout: 8000 });
   });
 });
 
