@@ -96,7 +96,7 @@ describe('Circuit Breaker', () => {
 
       const fn = vi.fn();
 
-      await expect(cb.execute(fn, 'Notion API')).rejects.toThrow('Notion API');
+      await expect(cb.execute(fn, 'External API')).rejects.toThrow('External API');
     });
 
     it('should record success on successful execution', async () => {

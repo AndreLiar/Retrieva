@@ -382,14 +382,14 @@ describe('Workspace Auth Middleware', () => {
         populate: vi
           .fn()
           .mockResolvedValue([
-            { workspaceId: { _id: { toString: () => 'notion-ws-1' } } },
-            { workspaceId: { _id: { toString: () => 'notion-ws-2' } } },
+            { workspaceId: { _id: { toString: () => 'ws-id-1' } } },
+            { workspaceId: { _id: { toString: () => 'ws-id-2' } } },
           ]),
       });
 
       const result = await getUserWorkspaceIds('user-123');
 
-      expect(result).toEqual(['notion-ws-1', 'notion-ws-2']);
+      expect(result).toEqual(['ws-id-1', 'ws-id-2']);
     });
 
     it('should filter out null workspace references', async () => {
@@ -398,13 +398,13 @@ describe('Workspace Auth Middleware', () => {
           .fn()
           .mockResolvedValue([
             { workspaceId: null },
-            { workspaceId: { _id: { toString: () => 'notion-ws-2' } } },
+            { workspaceId: { _id: { toString: () => 'ws-id-2' } } },
           ]),
       });
 
       const result = await getUserWorkspaceIds('user-123');
 
-      expect(result).toEqual(['notion-ws-2']);
+      expect(result).toEqual(['ws-id-2']);
     });
 
     it('should return empty array when no memberships', async () => {
