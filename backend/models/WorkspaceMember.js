@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 /**
  * WorkspaceMember Model
  *
- * Tracks which users have access to which Notion workspaces.
+ * Tracks which users have access to which workspaces.
  * Only workspace owners (admins) can invite members.
  */
 const workspaceMemberSchema = new mongoose.Schema(

@@ -97,7 +97,7 @@ async function fixWorkspaceMemberIndex() {
     }
 
     console.log('\nMigration completed successfully!');
-    console.log('You can now retry connecting your Notion workspace.');
+    console.log('You can now retry workspace member operations.');
   } catch (error) {
     console.error('Migration failed:', error.message);
     process.exit(1);
