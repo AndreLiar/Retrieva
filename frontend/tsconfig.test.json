@@ -7,8 +7,8 @@
     "outDir": ".tsbuildinfo-test"
   },
   "include": [
-    "src/tests/**/*.ts",
-    "src/tests/**/*.tsx"
+    "src/**/*.ts",
+    "src/**/*.tsx"
   ],
   "exclude": [
     "node_modules"
