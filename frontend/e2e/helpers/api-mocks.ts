@@ -9,25 +9,30 @@ import type { Page } from '@playwright/test';
 
 const API = '**/api/v1';
 
+// Mock access token — any non-empty string satisfies the middleware cookie check.
+// The middleware (src/proxy.ts) only checks cookie existence for route protection.
+const MOCK_ACCESS_TOKEN = 'mock-e2e-access-token';
+
 // ---------------------------------------------------------------------------
 // Fixture data
 // ---------------------------------------------------------------------------
 
 export const MOCK_USER = {
-  _id: 'user-e2e-001',
+  id: 'user-e2e-001',
   name: 'E2E Tester',
   email: 'e2e@retrieva.online',
-  role: 'admin',
-  emailVerified: true,
-  onboarding: { completed: true, checklist: {} },
+  role: 'admin' as const,
+  isEmailVerified: true,
+  organizationId: 'org-e2e-001',
+  onboardingCompleted: true,
 };
 
 export const MOCK_WORKSPACE = {
-  _id: 'ws-e2e-001',
+  id: 'ws-e2e-001',
   name: 'Acme Corp',
   description: 'E2E test workspace',
-  role: 'owner',
-  permissions: { canEdit: true, canDelete: true, canInvite: true },
+  role: 'owner' as const,
+  permissions: { canQuery: true, canViewSources: true, canInvite: true },
 };
 
 export const MOCK_CONVERSATION = {
@@ -41,11 +46,37 @@ export const MOCK_CONVERSATION = {
 };
 
 // ---------------------------------------------------------------------------
+// Cookie helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Set the accessToken cookie in the browser context.
+ * Required so the Next.js middleware (src/proxy.ts) allows access to
+ * protected routes without redirecting to /login.
+ */
+export async function setAuthCookie(page: Page) {
+  await page.context().addCookies([
+    {
+      name: 'accessToken',
+      value: MOCK_ACCESS_TOKEN,
+      domain: 'localhost',
+      path: '/',
+      httpOnly: false,
+      secure: false,
+      sameSite: 'Lax',
+    },
+  ]);
+}
+
+// ---------------------------------------------------------------------------
 // Auth mocks
 // ---------------------------------------------------------------------------
 
-/** Mock a successful GET /auth/me (user is logged in) */
+/** Mock a successful GET /auth/me (user is logged in) and pre-set the auth cookie */
 export async function mockAuthenticatedUser(page: Page, user = MOCK_USER) {
+  // Set the cookie so the middleware allows protected routes
+  await setAuthCookie(page);
+
   await page.route(`${API}/auth/me`, (route) =>
     route.fulfill({
       status: 200,
@@ -66,18 +97,20 @@ export async function mockUnauthenticated(page: Page) {
   );
 }
 
-/** Mock a successful POST /auth/login */
+/** Mock a successful POST /auth/login — also sets the auth cookie when the route fires */
 export async function mockLoginSuccess(page: Page, user = MOCK_USER) {
-  await page.route(`${API}/auth/login`, (route) =>
-    route.fulfill({
+  await page.route(`${API}/auth/login`, async (route) => {
+    // Set cookie so subsequent navigation to protected pages passes middleware
+    await setAuthCookie(page);
+    await route.fulfill({
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify({
         status: 'success',
-        data: { user, accessToken: 'mock-access-token', refreshToken: 'mock-refresh-token' },
+        data: { user, accessToken: MOCK_ACCESS_TOKEN, refreshToken: 'mock-refresh-token' },
       }),
-    })
-  );
+    });
+  });
 }
 
 /** Mock a failed POST /auth/login (invalid credentials) */
@@ -91,27 +124,28 @@ export async function mockLoginFailure(page: Page, message = 'Invalid email or p
   );
 }
 
-/** Mock a successful POST /auth/register */
+/** Mock a successful POST /auth/register — also sets the auth cookie when the route fires */
 export async function mockRegisterSuccess(page: Page, user = MOCK_USER) {
-  await page.route(`${API}/auth/register`, (route) =>
-    route.fulfill({
+  await page.route(`${API}/auth/register`, async (route) => {
+    await setAuthCookie(page);
+    await route.fulfill({
       status: 201,
       contentType: 'application/json',
       body: JSON.stringify({
         status: 'success',
-        data: { user, accessToken: 'mock-token', needsOrganization: false },
+        data: { user, accessToken: MOCK_ACCESS_TOKEN, needsOrganization: false },
       }),
-    })
-  );
+    });
+  });
 }
 
 // ---------------------------------------------------------------------------
 // Workspace mocks
 // ---------------------------------------------------------------------------
 
-/** Mock GET /workspaces/my-workspaces */
+/** Mock GET /workspaces/my-workspaces (with or without query params) */
 export async function mockWorkspaceList(page: Page, workspaces = [MOCK_WORKSPACE]) {
-  await page.route(`${API}/workspaces/my-workspaces`, (route) =>
+  await page.route(/\/api\/v1\/workspaces\/my-workspaces(\?.*)?$/, (route) =>
     route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -129,9 +163,10 @@ export async function mockNoWorkspaces(page: Page) {
 // Conversation mocks
 // ---------------------------------------------------------------------------
 
-/** Mock GET /conversations */
+/** Mock GET /conversations (with or without query params) and POST /conversations */
 export async function mockConversationList(page: Page, conversations = [MOCK_CONVERSATION]) {
-  await page.route(`${API}/conversations`, async (route) => {
+  // Regex matches /api/v1/conversations with optional query params, not /conversations/:id
+  await page.route(/\/api\/v1\/conversations(\?.*)?$/, async (route) => {
     if (route.request().method() === 'GET') {
       await route.fulfill({
         status: 200,
