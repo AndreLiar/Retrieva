@@ -131,6 +131,6 @@ test.describe('Register page', () => {
     await page.getByLabel('Confirm Password').fill('ValidPass1!');
     await page.getByRole('button', { name: 'Create account' }).click();
 
-    await expect(page.getByText('Account created!')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Account created!' })).toBeVisible();
   });
 });
