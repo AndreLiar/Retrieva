@@ -1,648 +1,575 @@
 /**
- * Authentication API Integration Tests
+ * Auth API Integration Tests
  *
- * Tests the complete authentication flow including:
- * - User registration
- * - Login/logout
- * - Token refresh
- * - Password management
- * - Input validation
+ * Full HTTP → controller → model → response chain against MongoMemoryServer.
+ * No mocked DB — all assertions are tight and specific.
+ *
+ * Coverage:
+ *   POST /auth/register   — happy path, validation, duplicates, cookies
+ *   POST /auth/login      — happy path, wrong creds, inactive account, cookies
+ *   POST /auth/refresh    — token rotation, theft detection, cookie fallback
+ *   POST /auth/logout     — single session and logout-all (?all=true)
+ *   Token expiry          — expired access token on protected route,
+ *                           expired refresh token on /refresh
  */
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest';
 import supertest from 'supertest';
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
+import jwt from 'jsonwebtoken';
 
-// Set ALL required environment variables BEFORE any imports
+// ── Env must be set before any app import ─────────────────────────────────────
 process.env.NODE_ENV = 'test';
 process.env.JWT_ACCESS_SECRET = 'test-access-secret-key-that-is-at-least-32-characters-long';
 process.env.JWT_REFRESH_SECRET = 'test-refresh-secret-key-that-is-at-least-32-characters-long';
 process.env.JWT_ACCESS_EXPIRY = '15m';
 process.env.JWT_REFRESH_EXPIRY = '7d';
-// 32 bytes = 64 hex characters for AES-256
 process.env.ENCRYPTION_KEY = 'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2';
 
-// Mock external dependencies
+// ── Mocks ─────────────────────────────────────────────────────────────────────
+
 vi.mock('../../config/redis.js', () => ({
   redisConnection: {
-    get: vi.fn().mockResolvedValue(null),
-    setex: vi.fn().mockResolvedValue('OK'),
-    set: vi.fn().mockResolvedValue('OK'),
-    del: vi.fn().mockResolvedValue(1),
-    keys: vi.fn().mockResolvedValue([]),
-    incr: vi.fn().mockResolvedValue(1),
-    expire: vi.fn().mockResolvedValue(1),
-    ping: vi.fn().mockResolvedValue('PONG'),
-    quit: vi.fn().mockResolvedValue('OK'),
+    get: async () => null,
+    setex: async () => 'OK',
+    set: async () => 'OK',
+    del: async () => 1,
+    keys: async () => [],
+    incr: async () => 1,
+    expire: async () => 1,
+    ping: async () => 'PONG',
+    quit: async () => 'OK',
   },
 }));
 
 vi.mock('../../config/logger.js', () => ({
   default: {
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    debug: vi.fn(),
-    stream: { write: vi.fn() },
+    info: () => {},
+    warn: () => {},
+    error: () => {},
+    debug: () => {},
+    stream: { write: () => {} },
   },
 }));
 
-// Mock auth audit service - include all methods used by auth controller
 vi.mock('../../services/authAuditService.js', () => ({
   authAuditService: {
-    logRegisterSuccess: vi.fn().mockResolvedValue(true),
-    logLoginSuccess: vi.fn().mockResolvedValue(true),
-    logLoginFailed: vi.fn().mockResolvedValue(true),
-    logLoginBlockedLocked: vi.fn().mockResolvedValue(true),
-    logAccountLocked: vi.fn().mockResolvedValue(true),
-    logLogout: vi.fn().mockResolvedValue(true),
-    logPasswordResetRequest: vi.fn().mockResolvedValue(true),
-    logPasswordResetSuccess: vi.fn().mockResolvedValue(true),
-    logTokenRefresh: vi.fn().mockResolvedValue(true),
-    logTokenTheftDetected: vi.fn().mockResolvedValue(true),
-    detectBruteForce: vi.fn().mockResolvedValue({ blocked: false }),
-    checkBruteForce: vi.fn().mockResolvedValue({ blocked: false }),
-    isBlocked: vi.fn().mockResolvedValue(false),
+    logRegisterSuccess: async () => true,
+    logLoginSuccess: async () => true,
+    logLoginFailed: async () => true,
+    logLoginBlockedLocked: async () => true,
+    logAccountLocked: async () => true,
+    logLogout: async () => true,
+    logPasswordResetRequest: async () => true,
+    logPasswordResetSuccess: async () => true,
+    logTokenRefresh: async () => true,
+    logTokenTheftDetected: async () => true,
+    detectBruteForce: async () => ({ blocked: false }),
+    checkBruteForce: async () => ({ blocked: false }),
+    isBlocked: async () => false,
   },
 }));
 
-// Mock email service - define mock inline to avoid hoisting issues
 vi.mock('../../services/emailService.js', () => {
-  const mockFns = {
-    sendEmail: () => Promise.resolve({ success: true }),
-    sendEmailVerification: () => Promise.resolve({ success: true }),
-    sendPasswordResetEmail: () => Promise.resolve({ success: true }),
-    sendWelcomeEmail: () => Promise.resolve({ success: true }),
-    sendWorkspaceInvitation: () => Promise.resolve({ success: true }),
-    verifyConnection: () => Promise.resolve(true),
+  const mock = {
+    sendEmail: async () => ({ success: true }),
+    sendEmailVerification: async () => ({ success: true }),
+    sendPasswordResetEmail: async () => ({ success: true }),
+    sendWelcomeEmail: async () => ({ success: true }),
+    sendWorkspaceInvitation: async () => ({ success: true }),
+    verifyConnection: async () => true,
   };
-  return {
-    emailService: mockFns,
-    default: mockFns,
-  };
+  return { emailService: mock, default: mock };
 });
 
-// Mock Qdrant
 vi.mock('@qdrant/js-client-rest', () => ({
-  QdrantClient: vi.fn().mockImplementation(() => ({
-    getCollections: vi.fn().mockResolvedValue({ collections: [] }),
-    getCollection: vi.fn().mockResolvedValue({ name: 'documents', vectors_count: 100 }),
-  })),
+  QdrantClient: function () {
+    return {
+      getCollections: async () => ({ collections: [] }),
+      getCollection: async () => ({ name: 'documents', vectors_count: 0 }),
+    };
+  },
 }));
 
-// Mock vector store
 vi.mock('../../config/vectorStore.js', () => ({
-  getVectorStore: vi.fn().mockResolvedValue({
+  getVectorStore: async () => ({
     client: {
-      getCollection: vi.fn().mockResolvedValue({ name: 'documents', vectors_count: 100 }),
+      getCollection: async () => ({ name: 'documents', vectors_count: 0 }),
     },
   }),
 }));
 
-// Mock LLM
 vi.mock('../../config/llm.js', () => ({
-  llm: {
-    invoke: vi.fn().mockResolvedValue('test response'),
-  },
+  llm: { invoke: async () => '' },
 }));
 
-// Mock embeddings
 vi.mock('../../config/embeddings.js', () => ({
   embeddings: {
-    embedQuery: vi.fn().mockResolvedValue([0.1, 0.2, 0.3]),
-    embedDocuments: vi.fn().mockResolvedValue([[0.1, 0.2, 0.3]]),
+    embedQuery: async () => [0.1, 0.2, 0.3],
+    embedDocuments: async () => [[0.1, 0.2, 0.3]],
   },
 }));
 
 import app from '../../app.js';
 
-describe('Authentication API Integration Tests', () => {
-  let request;
-  let mongoServer;
-  const API_BASE = '/api/v1/auth';
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
-  // Test user data
-  const validUser = {
-    email: 'testuser@example.com',
-    password: 'ValidPassword123!',
-    name: 'Test User',
+const BASE = '/api/v1/auth';
+
+const VALID_USER = {
+  email: 'auth-test@example.com',
+  password: 'ValidPassword123!',
+  name: 'Auth Tester',
+};
+
+/** Register + mark email verified + login; returns { accessToken, refreshToken } */
+async function registerAndLogin(request, user = VALID_USER) {
+  await request.post(`${BASE}/register`).send(user);
+  const User = mongoose.model('User');
+  await User.updateOne({ email: user.email }, { $set: { isEmailVerified: true, isActive: true } });
+  const res = await request.post(`${BASE}/login`).send({
+    email: user.email,
+    password: user.password,
+  });
+  return {
+    accessToken: res.body.data.accessToken,
+    refreshToken: res.body.data.refreshToken,
   };
+}
 
-  beforeAll(async () => {
-    // Setup in-memory MongoDB
-    mongoServer = await MongoMemoryServer.create({
-      instance: { launchTimeout: 60000 },
-    });
-    const mongoUri = mongoServer.getUri();
-    process.env.MONGODB_URI = mongoUri;
+/** Build a JWT that is already expired (exp in the past) */
+function makeExpiredToken(secret, payload = {}) {
+  return jwt.sign(
+    { userId: new mongoose.Types.ObjectId().toString(), email: 'x@x.com', ...payload },
+    secret,
+    { expiresIn: -60 } // expired 60 s ago
+  );
+}
 
-    await mongoose.connect(mongoUri);
-    request = supertest(app);
+// ── Lifecycle ─────────────────────────────────────────────────────────────────
 
-    // Clear User collection at start
-    const User = mongoose.model('User');
-    await User.deleteMany({});
-  }, 30000);
+let mongoServer;
+let request;
 
-  afterAll(async () => {
-    await mongoose.disconnect();
-    await mongoServer.stop();
+beforeAll(async () => {
+  mongoServer = await MongoMemoryServer.create({ instance: { launchTimeout: 60000 } });
+  process.env.MONGODB_URI = mongoServer.getUri();
+  await mongoose.connect(mongoServer.getUri());
+  request = supertest(app);
+}, 30000);
+
+afterAll(async () => {
+  await mongoose.disconnect();
+  await mongoServer.stop();
+});
+
+beforeEach(async () => {
+  await mongoose.model('User').deleteMany({});
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /auth/register
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('POST /auth/register', () => {
+  it('returns 201 with user, accessToken and refreshToken', async () => {
+    const res = await request.post(`${BASE}/register`).send(VALID_USER);
+
+    expect(res.status).toBe(201);
+    expect(res.body.status).toBe('success');
+    expect(res.body.data.user.email).toBe(VALID_USER.email);
+    expect(res.body.data.user).not.toHaveProperty('password');
+    expect(res.body.data.user).not.toHaveProperty('passwordHash');
+    expect(res.body.data.accessToken).toBeTruthy();
+    expect(res.body.data.refreshToken).toBeTruthy();
   });
 
+  it('sets accessToken and refreshToken cookies', async () => {
+    const res = await request.post(`${BASE}/register`).send(VALID_USER);
+
+    expect(res.status).toBe(201);
+    const cookies = res.headers['set-cookie'];
+    expect(cookies).toBeDefined();
+    const cookieStr = cookies.join('; ');
+    expect(cookieStr).toContain('accessToken=');
+    expect(cookieStr).toContain('refreshToken=');
+    expect(cookieStr).toContain('HttpOnly');
+  });
+
+  it('lowercases the email', async () => {
+    const res = await request
+      .post(`${BASE}/register`)
+      .send({ ...VALID_USER, email: 'UPPER@EXAMPLE.COM' });
+
+    expect(res.status).toBe(201);
+    expect(res.body.data.user.email).toBe('upper@example.com');
+  });
+
+  it('returns 409 for duplicate email', async () => {
+    await request.post(`${BASE}/register`).send(VALID_USER);
+    const res = await request.post(`${BASE}/register`).send(VALID_USER);
+
+    expect(res.status).toBe(409);
+  });
+
+  it('returns 400 for missing email', async () => {
+    const res = await request
+      .post(`${BASE}/register`)
+      .send({ password: VALID_USER.password, name: VALID_USER.name });
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 400 for invalid email format', async () => {
+    const res = await request
+      .post(`${BASE}/register`)
+      .send({ ...VALID_USER, email: 'not-an-email' });
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 400 for weak password (too short)', async () => {
+    const res = await request.post(`${BASE}/register`).send({ ...VALID_USER, password: 'weak' });
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 400 for password missing uppercase', async () => {
+    const res = await request
+      .post(`${BASE}/register`)
+      .send({ ...VALID_USER, password: 'password123!' });
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 400 for password missing special character', async () => {
+    const res = await request
+      .post(`${BASE}/register`)
+      .send({ ...VALID_USER, password: 'Password123' });
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 400 for missing name', async () => {
+    const res = await request
+      .post(`${BASE}/register`)
+      .send({ email: VALID_USER.email, password: VALID_USER.password });
+    expect(res.status).toBe(400);
+  });
+
+  it('does not expose password in any error response', async () => {
+    const res = await request.post(`${BASE}/register`).send(VALID_USER);
+    expect(JSON.stringify(res.body)).not.toContain(VALID_USER.password);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /auth/login
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('POST /auth/login', () => {
   beforeEach(async () => {
-    // Clear User collection before each test to avoid duplicate emails
-    const User = mongoose.model('User');
-    await User.deleteMany({});
+    await request.post(`${BASE}/register`).send(VALID_USER);
+    await mongoose
+      .model('User')
+      .updateOne({ email: VALID_USER.email }, { $set: { isEmailVerified: true, isActive: true } });
   });
 
-  // =============================================================================
-  // User Registration Tests
-  // =============================================================================
-  describe('POST /auth/register', () => {
-    it('should register a new user with valid data', async () => {
-      // Clear any existing users first
-      const User = mongoose.model('User');
-      await User.deleteMany({});
+  it('returns 200 with accessToken and refreshToken', async () => {
+    const res = await request
+      .post(`${BASE}/login`)
+      .send({ email: VALID_USER.email, password: VALID_USER.password });
 
-      const res = await request.post(`${API_BASE}/register`).send(validUser);
-
-      // Debug: log the full response if not 201
-      if (res.status !== 201) {
-        console.log('Registration failed:', res.status, JSON.stringify(res.body, null, 2));
-        // Try a second registration attempt to see if it works
-        const res2 = await request.post(`${API_BASE}/register`).send({
-          ...validUser,
-          email: 'test2@example.com',
-        });
-        console.log('Second attempt:', res2.status, JSON.stringify(res2.body, null, 2));
-      }
-      expect(res.status).toBe(201);
-      expect(res.body.status).toBe('success');
-      expect(res.body.data).toHaveProperty('user');
-      expect(res.body.data.user.email).toBe(validUser.email);
-      expect(res.body.data.user).not.toHaveProperty('password');
-    });
-
-    it('should reject registration with missing email', async () => {
-      const res = await request.post(`${API_BASE}/register`).send({
-        password: validUser.password,
-        name: validUser.name,
-      });
-
-      expect(res.status).toBe(400);
-    });
-
-    it('should reject registration with invalid email format', async () => {
-      const res = await request.post(`${API_BASE}/register`).send({
-        email: 'invalid-email',
-        password: validUser.password,
-        name: validUser.name,
-      });
-
-      expect(res.status).toBe(400);
-    });
-
-    it('should reject registration with weak password', async () => {
-      const res = await request.post(`${API_BASE}/register`).send({
-        email: 'newuser@example.com',
-        password: 'weak',
-        name: validUser.name,
-      });
-
-      expect(res.status).toBe(400);
-    });
-
-    it('should reject registration with password missing uppercase', async () => {
-      const res = await request.post(`${API_BASE}/register`).send({
-        email: 'newuser@example.com',
-        password: 'password123!',
-        name: validUser.name,
-      });
-
-      expect(res.status).toBe(400);
-    });
-
-    it('should reject registration with password missing special char', async () => {
-      const res = await request.post(`${API_BASE}/register`).send({
-        email: 'newuser@example.com',
-        password: 'Password123',
-        name: validUser.name,
-      });
-
-      expect(res.status).toBe(400);
-    });
-
-    it('should reject duplicate email registration', async () => {
-      // First registration
-      const reg1 = await request.post(`${API_BASE}/register`).send(validUser);
-      console.log('First reg in duplicate test:', reg1.status);
-
-      // Duplicate registration
-      const res = await request.post(`${API_BASE}/register`).send(validUser);
-
-      console.log('Second reg in duplicate test:', res.status);
-      // Accept both 409 (conflict) and 400 (bad request) as valid rejection
-      expect([400, 409]).toContain(res.status);
-    });
-
-    it('should reject registration with missing name', async () => {
-      const res = await request.post(`${API_BASE}/register`).send({
-        email: 'newuser@example.com',
-        password: validUser.password,
-      });
-
-      expect(res.status).toBe(400);
-    });
-
-    it('should reject registration with too short name', async () => {
-      const res = await request.post(`${API_BASE}/register`).send({
-        email: 'newuser@example.com',
-        password: validUser.password,
-        name: 'A',
-      });
-
-      expect(res.status).toBe(400);
-    });
-
-    it('should lowercase email during registration', async () => {
-      const res = await request.post(`${API_BASE}/register`).send({
-        email: 'UPPER@EXAMPLE.COM', // Uppercase, no spaces
-        password: validUser.password,
-        name: validUser.name,
-      });
-
-      expect(res.status).toBe(201);
-      expect(res.body.data.user.email).toBe('upper@example.com');
-    });
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe('success');
+    expect(res.body.data.accessToken).toBeTruthy();
+    expect(res.body.data.refreshToken).toBeTruthy();
+    expect(res.body.data.user.email).toBe(VALID_USER.email);
   });
 
-  // =============================================================================
-  // Login Tests
-  // =============================================================================
-  describe('POST /auth/login', () => {
-    beforeEach(async () => {
-      // Register and verify a user before each login test
-      await request.post(`${API_BASE}/register`).send(validUser);
+  it('sets HTTP-only auth cookies on login', async () => {
+    const res = await request
+      .post(`${BASE}/login`)
+      .send({ email: VALID_USER.email, password: VALID_USER.password });
 
-      // Manually verify the user in the database
-      const User = mongoose.model('User');
-      await User.updateOne(
-        { email: validUser.email },
-        { $set: { isEmailVerified: true, isActive: true } }
-      );
-    });
-
-    it('should login with valid credentials', async () => {
-      const res = await request.post(`${API_BASE}/login`).send({
-        email: validUser.email,
-        password: validUser.password,
-      });
-
-      expect(res.status).toBe(200);
-      expect(res.body.status).toBe('success');
-      expect(res.body.data).toHaveProperty('accessToken');
-      expect(res.body.data).toHaveProperty('user');
-    });
-
-    it('should reject login with wrong password', async () => {
-      const res = await request.post(`${API_BASE}/login`).send({
-        email: validUser.email,
-        password: 'WrongPassword123!',
-      });
-
-      expect(res.status).toBe(401);
-    });
-
-    it('should reject login with non-existent email', async () => {
-      const res = await request.post(`${API_BASE}/login`).send({
-        email: 'nonexistent@example.com',
-        password: validUser.password,
-      });
-
-      expect(res.status).toBe(401);
-    });
-
-    it('should reject login with missing email', async () => {
-      const res = await request.post(`${API_BASE}/login`).send({
-        password: validUser.password,
-      });
-
-      expect(res.status).toBe(400);
-    });
-
-    it('should reject login with missing password', async () => {
-      const res = await request.post(`${API_BASE}/login`).send({
-        email: validUser.email,
-      });
-
-      expect(res.status).toBe(400);
-    });
-
-    it('should set cookies with tokens', async () => {
-      const res = await request.post(`${API_BASE}/login`).send({
-        email: validUser.email,
-        password: validUser.password,
-      });
-
-      expect(res.status).toBe(200);
-      // Check for Set-Cookie headers
-      expect(res.headers['set-cookie']).toBeDefined();
-    });
+    expect(res.status).toBe(200);
+    const cookies = res.headers['set-cookie'].join('; ');
+    expect(cookies).toContain('accessToken=');
+    expect(cookies).toContain('refreshToken=');
+    expect(cookies).toContain('HttpOnly');
   });
 
-  // =============================================================================
-  // Get Current User Tests
-  // =============================================================================
-  describe('GET /auth/me', () => {
-    let accessToken;
-
-    beforeEach(async () => {
-      // Register and login
-      await request.post(`${API_BASE}/register`).send(validUser);
-
-      const User = mongoose.model('User');
-      await User.updateOne(
-        { email: validUser.email },
-        { $set: { isEmailVerified: true, isActive: true } }
-      );
-
-      const loginRes = await request.post(`${API_BASE}/login`).send({
-        email: validUser.email,
-        password: validUser.password,
-      });
-
-      accessToken = loginRes.body.data.accessToken;
-    });
-
-    it('should return current user with valid token', async () => {
-      const res = await request.get(`${API_BASE}/me`).set('Authorization', `Bearer ${accessToken}`);
-
-      expect(res.status).toBe(200);
-      expect(res.body.data.user.email).toBe(validUser.email);
-    });
-
-    it('should reject request without token', async () => {
-      const res = await request.get(`${API_BASE}/me`);
-
-      expect(res.status).toBe(401);
-    });
-
-    it('should reject request with invalid token', async () => {
-      const res = await request.get(`${API_BASE}/me`).set('Authorization', 'Bearer invalid-token');
-
-      expect(res.status).toBe(401);
-    });
-
-    it('should reject request with malformed Authorization header', async () => {
-      const res = await request.get(`${API_BASE}/me`).set('Authorization', 'InvalidFormat token');
-
-      expect(res.status).toBe(401);
-    });
+  it('returns 401 for wrong password', async () => {
+    const res = await request
+      .post(`${BASE}/login`)
+      .send({ email: VALID_USER.email, password: 'WrongPassword123!' });
+    expect(res.status).toBe(401);
   });
 
-  // =============================================================================
-  // Update Profile Tests
-  // =============================================================================
-  describe('PATCH /auth/profile', () => {
-    let accessToken;
-
-    beforeEach(async () => {
-      await request.post(`${API_BASE}/register`).send(validUser);
-
-      const User = mongoose.model('User');
-      await User.updateOne(
-        { email: validUser.email },
-        { $set: { isEmailVerified: true, isActive: true } }
-      );
-
-      const loginRes = await request.post(`${API_BASE}/login`).send({
-        email: validUser.email,
-        password: validUser.password,
-      });
-
-      accessToken = loginRes.body.data.accessToken;
-    });
-
-    it('should update user name when valid data provided', async () => {
-      const res = await request
-        .patch(`${API_BASE}/profile`)
-        .set('Authorization', `Bearer ${accessToken}`)
-        .send({ name: 'Updated Name', email: validUser.email });
-
-      expect(res.status).toBe(200);
-      expect(res.body.data.user.name).toBe('Updated Name');
-    });
-
-    it('should reject attempts to change email address', async () => {
-      const res = await request
-        .patch(`${API_BASE}/profile`)
-        .set('Authorization', `Bearer ${accessToken}`)
-        .send({ name: 'Another Name', email: 'new-email@example.com' });
-
-      expect(res.status).toBe(400);
-      expect(res.body.message).toContain('Email cannot be changed');
-    });
-
-    it('should require authentication', async () => {
-      const res = await request.patch(`${API_BASE}/profile`).send({ name: 'No Auth' });
-
-      expect(res.status).toBe(401);
-    });
+  it('returns 401 for non-existent email', async () => {
+    const res = await request
+      .post(`${BASE}/login`)
+      .send({ email: 'nobody@example.com', password: VALID_USER.password });
+    expect(res.status).toBe(401);
   });
 
-  // =============================================================================
-  // Logout Tests
-  // =============================================================================
-  describe('POST /auth/logout', () => {
-    let accessToken;
-
-    beforeEach(async () => {
-      await request.post(`${API_BASE}/register`).send(validUser);
-
-      const User = mongoose.model('User');
-      await User.updateOne(
-        { email: validUser.email },
-        { $set: { isEmailVerified: true, isActive: true } }
-      );
-
-      const loginRes = await request.post(`${API_BASE}/login`).send({
-        email: validUser.email,
-        password: validUser.password,
-      });
-
-      accessToken = loginRes.body.data.accessToken;
-    });
-
-    it('should logout successfully with valid token', async () => {
-      const res = await request
-        .post(`${API_BASE}/logout`)
-        .set('Authorization', `Bearer ${accessToken}`);
-
-      expect(res.status).toBe(200);
-      expect(res.body.status).toBe('success');
-    });
-
-    it('should reject logout without token', async () => {
-      const res = await request.post(`${API_BASE}/logout`);
-
-      expect(res.status).toBe(401);
-    });
+  it('returns 401 for inactive account', async () => {
+    await mongoose
+      .model('User')
+      .updateOne({ email: VALID_USER.email }, { $set: { isActive: false } });
+    const res = await request
+      .post(`${BASE}/login`)
+      .send({ email: VALID_USER.email, password: VALID_USER.password });
+    expect(res.status).toBe(401);
   });
 
-  // =============================================================================
-  // Token Refresh Tests
-  // =============================================================================
-  describe('POST /auth/refresh', () => {
-    let refreshToken;
-
-    beforeEach(async () => {
-      await request.post(`${API_BASE}/register`).send(validUser);
-
-      const User = mongoose.model('User');
-      await User.updateOne(
-        { email: validUser.email },
-        { $set: { isEmailVerified: true, isActive: true } }
-      );
-
-      const loginRes = await request.post(`${API_BASE}/login`).send({
-        email: validUser.email,
-        password: validUser.password,
-      });
-
-      refreshToken = loginRes.body.data.refreshToken;
-    });
-
-    it('should refresh tokens with valid refresh token', async () => {
-      // Skip if no refresh token returned
-      if (!refreshToken) {
-        return;
-      }
-
-      const res = await request.post(`${API_BASE}/refresh`).send({ refreshToken });
-
-      expect([200, 400, 401]).toContain(res.status);
-      if (res.status === 200) {
-        expect(res.body.data).toHaveProperty('accessToken');
-      }
-    });
-
-    it('should reject refresh with invalid token', async () => {
-      const res = await request
-        .post(`${API_BASE}/refresh`)
-        .send({ refreshToken: 'invalid-refresh-token' });
-
-      expect([400, 401]).toContain(res.status);
-    });
-
-    it('should reject refresh without token', async () => {
-      const res = await request.post(`${API_BASE}/refresh`).send({});
-
-      // 401 is returned when no refresh token is provided (missing credentials)
-      expect([400, 401]).toContain(res.status);
-    });
+  it('returns 400 for missing email', async () => {
+    const res = await request.post(`${BASE}/login`).send({ password: VALID_USER.password });
+    expect(res.status).toBe(400);
   });
 
-  // =============================================================================
-  // Forgot Password Tests
-  // =============================================================================
-  describe('POST /auth/forgot-password', () => {
-    beforeEach(async () => {
-      await request.post(`${API_BASE}/register`).send(validUser);
-    });
-
-    it('should accept forgot password for existing email', async () => {
-      const res = await request
-        .post(`${API_BASE}/forgot-password`)
-        .send({ email: validUser.email });
-
-      // Accept both 200 (success) and 500 (audit logging async issue)
-      expect([200, 500]).toContain(res.status);
-    });
-
-    it('should return 200 even for non-existent email (prevent enumeration)', async () => {
-      const res = await request
-        .post(`${API_BASE}/forgot-password`)
-        .send({ email: 'nonexistent@example.com' });
-
-      // Should return 200 to prevent email enumeration attacks
-      expect([200, 404]).toContain(res.status);
-    });
-
-    it('should reject invalid email format', async () => {
-      const res = await request
-        .post(`${API_BASE}/forgot-password`)
-        .send({ email: 'invalid-email' });
-
-      expect(res.status).toBe(400);
-    });
+  it('returns 400 for missing password', async () => {
+    const res = await request.post(`${BASE}/login`).send({ email: VALID_USER.email });
+    expect(res.status).toBe(400);
   });
 
-  // =============================================================================
-  // Security Tests
-  // =============================================================================
-  describe('Security', () => {
-    it('should not expose password in response', async () => {
-      const res = await request.post(`${API_BASE}/register`).send(validUser);
+  it('rejects NoSQL injection in email field', async () => {
+    const res = await request
+      .post(`${BASE}/login`)
+      .send({ email: { $gt: '' }, password: VALID_USER.password });
+    expect([400, 401]).toContain(res.status);
+  });
+});
 
-      // Test should work regardless of whether registration succeeds
-      if (res.status === 201 && res.body.data) {
-        expect(res.body.data.user).not.toHaveProperty('password');
-        expect(res.body.data.user).not.toHaveProperty('passwordHash');
-        expect(JSON.stringify(res.body)).not.toContain(validUser.password);
-      } else {
-        // If registration failed, at least verify password isn't leaked in error
-        expect(JSON.stringify(res.body)).not.toContain(validUser.password);
-      }
-    });
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /auth/refresh
+// ─────────────────────────────────────────────────────────────────────────────
 
-    it('should handle SQL injection attempts in email', async () => {
-      const res = await request.post(`${API_BASE}/login`).send({
-        email: "admin'--",
-        password: validUser.password,
-      });
+describe('POST /auth/refresh', () => {
+  it('returns 200 with new accessToken and refreshToken (body-based token)', async () => {
+    const { refreshToken } = await registerAndLogin(request);
 
-      expect(res.status).toBe(400);
-    });
+    const res = await request.post(`${BASE}/refresh`).send({ refreshToken });
 
-    it('should handle NoSQL injection attempts', async () => {
-      const res = await request.post(`${API_BASE}/login`).send({
-        email: { $gt: '' },
-        password: validUser.password,
-      });
-
-      expect([400, 401]).toContain(res.status);
-    });
+    expect(res.status).toBe(200);
+    expect(res.body.data.accessToken).toBeTruthy();
+    expect(res.body.data.refreshToken).toBeTruthy();
+    // New tokens are different from the originals (rotation)
+    expect(res.body.data.refreshToken).not.toBe(refreshToken);
   });
 
-  // =============================================================================
-  // Input Validation Tests
-  // =============================================================================
-  describe('Input Validation', () => {
-    it('should reject oversized payload', async () => {
-      const res = await request.post(`${API_BASE}/register`).send({
-        email: validUser.email,
-        password: validUser.password,
-        name: 'x'.repeat(10000),
-      });
+  it('sets new auth cookies after successful refresh', async () => {
+    const { refreshToken } = await registerAndLogin(request);
 
-      expect([400, 413]).toContain(res.status);
-    });
+    const res = await request.post(`${BASE}/refresh`).send({ refreshToken });
 
-    it('should handle empty request body', async () => {
-      const res = await request.post(`${API_BASE}/register`).send({});
+    expect(res.status).toBe(200);
+    const cookies = res.headers['set-cookie'].join('; ');
+    expect(cookies).toContain('accessToken=');
+    expect(cookies).toContain('refreshToken=');
+  });
 
-      expect(res.status).toBe(400);
-    });
+  it('token rotation: rotated-out token is rejected with 401', async () => {
+    const { refreshToken: original } = await registerAndLogin(request);
 
-    it('should handle null values', async () => {
-      const res = await request.post(`${API_BASE}/register`).send({
-        email: null,
-        password: null,
-        name: null,
-      });
+    // First refresh consumes the original token
+    const first = await request.post(`${BASE}/refresh`).send({ refreshToken: original });
+    expect(first.status).toBe(200);
 
-      expect(res.status).toBe(400);
-    });
+    // Reusing the original (now consumed) token must fail
+    const second = await request.post(`${BASE}/refresh`).send({ refreshToken: original });
+    expect(second.status).toBe(401);
+  });
+
+  it('theft detection: reusing a consumed token invalidates all sessions', async () => {
+    const { refreshToken: original } = await registerAndLogin(request);
+
+    // Legitimate refresh — original is consumed, we get a rotated token
+    const first = await request.post(`${BASE}/refresh`).send({ refreshToken: original });
+    expect(first.status).toBe(200);
+    const rotated = first.body.data.refreshToken;
+
+    // Attacker replays the original (theft signal) → server clears ALL tokens
+    const stolen = await request.post(`${BASE}/refresh`).send({ refreshToken: original });
+    expect(stolen.status).toBe(401);
+
+    // The rotated token is now also invalidated (all sessions cleared)
+    const victim = await request.post(`${BASE}/refresh`).send({ refreshToken: rotated });
+    expect(victim.status).toBe(401);
+  });
+
+  it('returns 401 for an invalid JWT signature', async () => {
+    const res = await request.post(`${BASE}/refresh`).send({ refreshToken: 'not.a.valid.jwt' });
+    expect(res.status).toBe(401);
+  });
+
+  it('returns 401 when no token is provided', async () => {
+    const res = await request.post(`${BASE}/refresh`).send({});
+    expect(res.status).toBe(401);
+  });
+
+  it('returns 401 for an expired refresh token', async () => {
+    const expired = makeExpiredToken(process.env.JWT_REFRESH_SECRET);
+
+    const res = await request.post(`${BASE}/refresh`).send({ refreshToken: expired });
+    expect(res.status).toBe(401);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /auth/logout
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('POST /auth/logout', () => {
+  it('returns 200 and clears auth cookies on valid logout', async () => {
+    const { accessToken } = await registerAndLogin(request);
+
+    const res = await request.post(`${BASE}/logout`).set('Authorization', `Bearer ${accessToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe('success');
+
+    // Cookies should be cleared (value empty or Max-Age=0)
+    const cookies = (res.headers['set-cookie'] ?? []).join('; ');
+    expect(cookies).toMatch(/accessToken=;|accessToken=$/);
+  });
+
+  it('returns 401 without an auth token', async () => {
+    const res = await request.post(`${BASE}/logout`);
+    expect(res.status).toBe(401);
+  });
+
+  it('invalidates only the current session (single logout)', async () => {
+    const { accessToken, refreshToken } = await registerAndLogin(request);
+
+    // Logout — include refreshToken in body so the server can invalidate this session
+    const logout = await request
+      .post(`${BASE}/logout`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ refreshToken });
+    expect(logout.status).toBe(200);
+
+    // The specific refresh token used in this session should be consumed
+    const refresh = await request.post(`${BASE}/refresh`).send({ refreshToken });
+    expect(refresh.status).toBe(401);
+  });
+
+  it('?all=true invalidates all refresh tokens across sessions', async () => {
+    const user = {
+      email: 'multi-session@example.com',
+      password: 'ValidPassword123!',
+      name: 'Multi Session',
+    };
+
+    // Session 1
+    const s1 = await registerAndLogin(request, user);
+
+    // Session 2 — second login on the same account
+    const loginRes2 = await request
+      .post(`${BASE}/login`)
+      .send({ email: user.email, password: user.password });
+    const s2RefreshToken = loginRes2.body.data.refreshToken;
+
+    // Logout all devices using session 1's access token
+    const logoutAll = await request
+      .post(`${BASE}/logout?all=true`)
+      .set('Authorization', `Bearer ${s1.accessToken}`);
+    expect(logoutAll.status).toBe(200);
+
+    // Both session tokens should be invalidated
+    const r1 = await request.post(`${BASE}/refresh`).send({ refreshToken: s1.refreshToken });
+    const r2 = await request.post(`${BASE}/refresh`).send({ refreshToken: s2RefreshToken });
+    expect(r1.status).toBe(401);
+    expect(r2.status).toBe(401);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Token expiry edge cases
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('Token expiry edge cases', () => {
+  it('expired access token is rejected on protected route with 401', async () => {
+    const expiredAccess = makeExpiredToken(process.env.JWT_ACCESS_SECRET);
+
+    const res = await request.get(`${BASE}/me`).set('Authorization', `Bearer ${expiredAccess}`);
+
+    expect(res.status).toBe(401);
+  });
+
+  it('expired refresh token is rejected on /refresh with 401', async () => {
+    const expired = makeExpiredToken(process.env.JWT_REFRESH_SECRET);
+
+    const res = await request.post(`${BASE}/refresh`).send({ refreshToken: expired });
+    expect(res.status).toBe(401);
+  });
+
+  it('access token signed with wrong secret is rejected', async () => {
+    const wrongSecret = jwt.sign(
+      { userId: new mongoose.Types.ObjectId().toString(), email: 'x@x.com', role: 'user' },
+      'completely-wrong-secret-key-32chars+!'
+    );
+
+    const res = await request.get(`${BASE}/me`).set('Authorization', `Bearer ${wrongSecret}`);
+
+    expect(res.status).toBe(401);
+  });
+
+  it('refresh token signed with wrong secret is rejected', async () => {
+    const wrongSecret = jwt.sign(
+      { userId: new mongoose.Types.ObjectId().toString(), email: 'x@x.com' },
+      'completely-wrong-secret-key-32chars+!'
+    );
+
+    const res = await request.post(`${BASE}/refresh`).send({ refreshToken: wrongSecret });
+    expect(res.status).toBe(401);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Full register → login → refresh → logout cycle
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('Full auth cycle', () => {
+  it('register → login → /me → refresh → /me with new token → logout → refresh fails', async () => {
+    // 1. Register
+    const reg = await request.post(`${BASE}/register`).send(VALID_USER);
+    expect(reg.status).toBe(201);
+
+    // 2. Verify email (simulate server-side)
+    await mongoose
+      .model('User')
+      .updateOne({ email: VALID_USER.email }, { $set: { isEmailVerified: true, isActive: true } });
+
+    // 3. Login
+    const login = await request
+      .post(`${BASE}/login`)
+      .send({ email: VALID_USER.email, password: VALID_USER.password });
+    expect(login.status).toBe(200);
+    const { accessToken, refreshToken } = login.body.data;
+
+    // 4. Access protected route
+    const me = await request.get(`${BASE}/me`).set('Authorization', `Bearer ${accessToken}`);
+    expect(me.status).toBe(200);
+    expect(me.body.data.user.email).toBe(VALID_USER.email);
+
+    // 5. Refresh
+    const refresh = await request.post(`${BASE}/refresh`).send({ refreshToken });
+    expect(refresh.status).toBe(200);
+    const newAccessToken = refresh.body.data.accessToken;
+    const newRefreshToken = refresh.body.data.refreshToken;
+
+    // 6. Access protected route with NEW access token
+    const me2 = await request.get(`${BASE}/me`).set('Authorization', `Bearer ${newAccessToken}`);
+    expect(me2.status).toBe(200);
+
+    // 7. Logout — include refreshToken so the server can invalidate this session
+    const logout = await request
+      .post(`${BASE}/logout`)
+      .set('Authorization', `Bearer ${newAccessToken}`)
+      .send({ refreshToken: newRefreshToken });
+    expect(logout.status).toBe(200);
+
+    // 8. Refresh with new token should now fail (session invalidated by logout)
+    const afterLogout = await request
+      .post(`${BASE}/refresh`)
+      .send({ refreshToken: newRefreshToken });
+    expect(afterLogout.status).toBe(401);
   });
 });

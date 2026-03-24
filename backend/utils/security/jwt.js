@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken';
+import { randomUUID } from 'crypto';
 import logger from '../../config/logger.js';
 import { sha256, timingSafeEqual } from './crypto.js';
 
@@ -84,6 +85,7 @@ export const generateRefreshToken = (payload) => {
       {
         userId: payload.userId,
         email: payload.email,
+        jti: randomUUID(),
       },
       REFRESH_TOKEN_SECRET,
       {

@@ -89,7 +89,7 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           directory: ./backend/coverage
           flags: backend
-          fail_ci_if_error: false
+          fail_ci_if_error: true
 
   # ===========================================================================
   # Frontend (Next.js/React) Tests
@@ -128,7 +128,52 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           directory: ./frontend/coverage
           flags: frontend
-          fail_ci_if_error: false
+          fail_ci_if_error: true
+
+  # ===========================================================================
+  # Frontend E2E Tests (Playwright)
+  # ===========================================================================
+  frontend-e2e:
+    name: Frontend E2E Tests
+    runs-on: ubuntu-latest
+    # Run after unit tests pass, and only on PRs to main/dev (not on every push)
+    needs: [frontend-test]
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: './package-lock.json'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps --ignore-scripts
+        working-directory: .
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+        working-directory: ./frontend
+
+      - name: Run E2E tests
+        run: npm run test:e2e
+        working-directory: ./frontend
+        env:
+          CI: true
+          NEXT_PUBLIC_API_URL: http://localhost:3007/api/v1
+          NEXT_PUBLIC_APP_NAME: Retrieva
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: frontend/playwright-report/
+          retention-days: 7
 
   # ===========================================================================
   # Backend Security Audit
@@ -215,3 +260,4 @@ jobs:
             exit 1
           fi
           echo "All CI checks passed!"
+          echo "Note: E2E tests (frontend-e2e) run separately on PRs and do not block this gate."

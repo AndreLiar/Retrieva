@@ -19,8 +19,14 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
-      include: ['utils/**/*.js', 'controllers/**/*.js', 'middleware/**/*.js'],
-      exclude: ['node_modules', 'tests'],
+      include: ['utils/**/*.js', 'controllers/**/*.js', 'middleware/**/*.js', 'services/**/*.js'],
+      exclude: ['node_modules', 'tests', 'utils/rag/qdrantExplorer.js'],
+      thresholds: {
+        statements: 55,
+        branches: 78,
+        functions: 62,
+        lines: 55,
+      },
     },
 
     // Mock configuration
@@ -49,6 +55,11 @@ export default defineConfig({
       JWT_REFRESH_SECRET: 'test-refresh-secret-key-at-least-32-chars',
       // 32 bytes = 64 hex chars for AES-256 encryption
       ENCRYPTION_KEY: 'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2',
+      // Email service test key (mocked — no real Resend calls)
+      RESEND_API_KEY: 'test-resend-key-for-unit-tests',
+      RESEND_FROM_EMAIL: 'noreply@retrieva.online',
+      SMTP_FROM_NAME: 'Retrieva',
+      FRONTEND_URL: 'http://localhost:3000',
     },
   },
 });
