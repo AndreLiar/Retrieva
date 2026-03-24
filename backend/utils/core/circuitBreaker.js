@@ -26,7 +26,7 @@ class CircuitBreaker {
   /**
    * Execute a function with circuit breaker protection
    * @param {Function} fn - Async function to execute
-   * @param {string} context - Context for logging (e.g., "Notion API")
+   * @param {string} context - Context for logging (e.g., "External API")
    * @returns {Promise<*>}
    */
   async execute(fn, context = 'API') {

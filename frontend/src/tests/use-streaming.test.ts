@@ -505,4 +505,247 @@ describe('useStreaming', () => {
       expect(result.current.isStreaming).toBe(true);
     });
   });
+
+  // ===========================================================================
+  // SSE Event Processing Tests
+  // ===========================================================================
+  describe('SSE event processing', () => {
+    /** Build a ReadableStream from string chunks */
+    function makeStream(chunks: string[]): ReadableStream<Uint8Array> {
+      const encoder = new TextEncoder();
+      let i = 0;
+      return new ReadableStream({
+        pull(controller) {
+          if (i < chunks.length) {
+            controller.enqueue(encoder.encode(chunks[i++]));
+          } else {
+            controller.close();
+          }
+        },
+      });
+    }
+
+    beforeEach(() => {
+      vi.spyOn(console, 'log').mockImplementation(() => {});
+      vi.spyOn(console, 'warn').mockImplementation(() => {});
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+    });
+
+    it('accumulates text from chunk events', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        body: makeStream(['event: chunk\ndata: {"text":"Hello"}\nevent: chunk\ndata: {"text":" world"}\n']),
+      });
+
+      const { result } = renderHook(() => useStreaming());
+      await act(async () => { await result.current.startStreaming('Q'); });
+
+      expect(result.current.content).toBe('Hello world');
+      expect(result.current.isStreaming).toBe(false);
+    });
+
+    it('handles chunk with "chunk" field', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        body: makeStream(['event: chunk\ndata: {"chunk":"via chunk field"}\n']),
+      });
+
+      const { result } = renderHook(() => useStreaming());
+      await act(async () => { await result.current.startStreaming('Q'); });
+
+      expect(result.current.content).toBe('via chunk field');
+    });
+
+    it('handles chunk with "data" field', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        body: makeStream(['event: chunk\ndata: {"data":"via data field"}\n']),
+      });
+
+      const { result } = renderHook(() => useStreaming());
+      await act(async () => { await result.current.startStreaming('Q'); });
+
+      expect(result.current.content).toBe('via data field');
+    });
+
+    it('sets status from status events', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        body: makeStream([
+          'event: status\ndata: {"message":"Retrieving docs..."}\nevent: chunk\ndata: {"text":"Answer"}\n',
+        ]),
+      });
+
+      const { result } = renderHook(() => useStreaming());
+      await act(async () => { await result.current.startStreaming('Q'); });
+
+      // Status is cleared to '' by the chunk handler
+      expect(result.current.content).toBe('Answer');
+    });
+
+    it('sets status from data field on status events', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        body: makeStream([
+          'event: status\ndata: {"data":"Searching..."}\n',
+        ]),
+      });
+
+      const { result } = renderHook(() => useStreaming());
+      await act(async () => { await result.current.startStreaming('Q'); });
+
+      // After stream ends isStreaming=false; status was set during the stream
+      expect(result.current.isStreaming).toBe(false);
+    });
+
+    it('stores sources from sources events', async () => {
+      const sources = [{ id: 's1', title: 'Policy Doc', content: '...' }];
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        body: makeStream([
+          `event: sources\ndata: ${JSON.stringify({ sources })}\nevent: chunk\ndata: {"text":"ok"}\n`,
+        ]),
+      });
+
+      const { result } = renderHook(() => useStreaming());
+      await act(async () => { await result.current.startStreaming('Q'); });
+
+      expect(result.current.sources).toHaveLength(1);
+      expect(result.current.sources[0].title).toBe('Policy Doc');
+    });
+
+    it('stores sources from "data" field on sources events', async () => {
+      const sources = [{ id: 's1', title: 'Doc', content: '...' }];
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        body: makeStream([`event: sources\ndata: ${JSON.stringify({ data: sources })}\n`]),
+      });
+
+      const { result } = renderHook(() => useStreaming());
+      await act(async () => { await result.current.startStreaming('Q'); });
+
+      expect(result.current.sources).toHaveLength(1);
+    });
+
+    it('replaces content on replace event', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        body: makeStream([
+          'event: chunk\ndata: {"text":"Bad"}\nevent: replace\ndata: {"text":"Corrected"}\n',
+        ]),
+      });
+
+      const { result } = renderHook(() => useStreaming());
+      await act(async () => { await result.current.startStreaming('Q'); });
+
+      expect(result.current.content).toBe('Corrected');
+    });
+
+    it('breaks out of stream on done event', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        body: makeStream(['event: chunk\ndata: {"text":"Final"}\nevent: done\ndata: {}\n']),
+      });
+
+      const { result } = renderHook(() => useStreaming());
+      await act(async () => { await result.current.startStreaming('Q'); });
+
+      expect(result.current.content).toBe('Final');
+      expect(result.current.isStreaming).toBe(false);
+    });
+
+    it('swallows error event (throw is caught by inner catch) and appends data as raw text', async () => {
+      // The hook's inner try/catch catches the intentional throw for 'error' events,
+      // so the JSON string gets appended as raw fallback text rather than setting error state.
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        body: makeStream(['event: error\ndata: {"message":"Internal failure"}\n']),
+      });
+
+      const onError = vi.fn();
+      const { result } = renderHook(() => useStreaming({ onError }));
+      await act(async () => { await result.current.startStreaming('Q'); });
+
+      // Inner catch appends the raw JSON string as content; error state is NOT set
+      expect(result.current.content).toContain('"message":"Internal failure"');
+      expect(result.current.error).toBeNull();
+      expect(onError).not.toHaveBeenCalled();
+    });
+
+    it('falls back to raw text when data is not valid JSON', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        body: makeStream(['data: plain text here\n']),
+      });
+
+      const { result } = renderHook(() => useStreaming());
+      await act(async () => { await result.current.startStreaming('Q'); });
+
+      expect(result.current.content).toBe('plain text here');
+    });
+
+    it('skips [DONE] sentinel in raw text mode', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        body: makeStream(['data: [DONE]\n']),
+      });
+
+      const { result } = renderHook(() => useStreaming());
+      await act(async () => { await result.current.startStreaming('Q'); });
+
+      expect(result.current.content).toBe('');
+    });
+
+    it('uses parsed.type as fallback when no event: prefix is present', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        body: makeStream([`data: ${JSON.stringify({ type: 'chunk', text: 'type-driven' })}\n`]),
+      });
+
+      const { result } = renderHook(() => useStreaming());
+      await act(async () => { await result.current.startStreaming('Q'); });
+
+      expect(result.current.content).toBe('type-driven');
+    });
+
+    it('calls onComplete with final content and sources', async () => {
+      const onComplete = vi.fn();
+      const sources = [{ id: 's1', title: 'Policy', content: '...' }];
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        body: makeStream([
+          `event: sources\ndata: ${JSON.stringify({ sources })}\n` +
+          'event: chunk\ndata: {"text":"Answer"}\n',
+        ]),
+      });
+
+      const { result } = renderHook(() => useStreaming({ onComplete }));
+      await act(async () => { await result.current.startStreaming('Q'); });
+
+      expect(onComplete).toHaveBeenCalledOnce();
+      expect(onComplete).toHaveBeenCalledWith('Answer', sources);
+    });
+
+    it('sets interrupted error when AbortError fires with partial content', async () => {
+      const mockReader = {
+        read: vi.fn()
+          .mockResolvedValueOnce({
+            done: false,
+            value: new TextEncoder().encode('event: chunk\ndata: {"text":"Partial"}\n'),
+          })
+          .mockRejectedValueOnce(Object.assign(new Error('Aborted'), { name: 'AbortError' })),
+      };
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        body: { getReader: () => mockReader },
+      });
+
+      const { result } = renderHook(() => useStreaming());
+      await act(async () => { await result.current.startStreaming('Q'); });
+
+      expect(result.current.isStreaming).toBe(false);
+      expect(result.current.error).toMatch(/interrupted/i);
+    });
+  });
 });

@@ -5,14 +5,6 @@ const nextConfig: NextConfig = {
   output: 'standalone',
   reactStrictMode: true,
 
-  images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: '*.notion.so',
-      },
-    ],
-  },
 
   async rewrites() {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3007/api/v1';

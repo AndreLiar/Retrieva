@@ -4,7 +4,7 @@ import logger from './logger.js';
 
 const {
   LANGSMITH_API_KEY,
-  LANGSMITH_PROJECT = 'rag-notion',
+  LANGSMITH_PROJECT = 'retrieva',
   LANGSMITH_ENABLED = 'false',
   LANGSMITH_TRACE_LEVEL = 'metadata', // 'full' | 'metadata'
   LANGSMITH_API_URL,
