@@ -62,7 +62,7 @@ describe('ragApi', () => {
         data: { status: 'success', data: { answer: 'The answer', sources: [] } },
       });
       const result = await ragApi.ask({ question: 'What is DORA?' });
-      expect(result.data.answer).toBe('The answer');
+      expect(result.data!.answer).toBe('The answer');
     });
   });
 
@@ -116,8 +116,8 @@ describe('ragApi', () => {
         data: { status: 'success', data: { sources: [mockSource] } },
       });
       const result = await ragApi.searchSources('policy');
-      expect(result.data.sources).toHaveLength(1);
-      expect(result.data.sources[0].title).toBe('Policy Doc');
+      expect(result.data!.sources).toHaveLength(1);
+      expect(result.data!.sources[0].title).toBe('Policy Doc');
     });
   });
 });
