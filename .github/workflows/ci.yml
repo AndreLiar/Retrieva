@@ -245,19 +245,26 @@ jobs:
   # ===========================================================================
   ci-success:
     name: CI Success
-    needs: [backend-test, frontend-test, backend-security, docker-build]
+    needs: [backend-test, frontend-test, backend-security, docker-build, frontend-e2e]
     runs-on: ubuntu-latest
     if: always()
     steps:
       - name: Check all jobs passed
+        env:
+          BACKEND_RESULT: ${{ needs.backend-test.result }}
+          FRONTEND_RESULT: ${{ needs.frontend-test.result }}
+          E2E_RESULT: ${{ needs.frontend-e2e.result }}
         run: |
-          if [[ "${{ needs.backend-test.result }}" != "success" ]]; then
+          if [[ "$BACKEND_RESULT" != "success" ]]; then
             echo "Backend tests failed"
             exit 1
           fi
-          if [[ "${{ needs.frontend-test.result }}" != "success" ]]; then
+          if [[ "$FRONTEND_RESULT" != "success" ]]; then
             echo "Frontend tests failed"
             exit 1
           fi
+          if [[ "$E2E_RESULT" != "success" && "$E2E_RESULT" != "skipped" ]]; then
+            echo "Frontend E2E tests failed"
+            exit 1
+          fi
           echo "All CI checks passed!"
-          echo "Note: E2E tests (frontend-e2e) run separately on PRs and do not block this gate."
