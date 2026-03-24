@@ -9,6 +9,7 @@ const publicPaths = [
   '/forgot-password',
   '/reset-password',
   '/verify-email',
+  '/q', // public vendor questionnaire form (no auth required)
 ];
 
 // Admin-only paths
