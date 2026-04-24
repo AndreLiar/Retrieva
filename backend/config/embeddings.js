@@ -1,4 +1,4 @@
-import { AzureOpenAIEmbeddings } from '@langchain/openai';
+import { OllamaEmbeddings } from '@langchain/ollama';
 import logger from './logger.js';
 import {
   embedTexts as hybridEmbedTexts,
@@ -7,25 +7,16 @@ import {
 } from './embeddingProvider.js';
 
 // =============================================================================
-// EMBEDDING CONFIGURATION (Azure OpenAI)
+// EMBEDDING CONFIGURATION (Ollama)
 // =============================================================================
 
-const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL || 'text-embedding-3-small';
-const EMBEDDING_PROVIDER = process.env.EMBEDDING_PROVIDER || 'azure';
+const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL || 'bge-m3:latest';
+const EMBEDDING_PROVIDER = process.env.EMBEDDING_PROVIDER || 'ollama';
 
-// Azure OpenAI Configuration
-const AZURE_OPENAI_API_KEY = process.env.AZURE_OPENAI_API_KEY;
-const AZURE_OPENAI_ENDPOINT = process.env.AZURE_OPENAI_ENDPOINT;
-const AZURE_OPENAI_EMBEDDING_DEPLOYMENT =
-  process.env.AZURE_OPENAI_EMBEDDING_DEPLOYMENT || 'text-embedding-3-small';
-const AZURE_OPENAI_API_VERSION = process.env.AZURE_OPENAI_API_VERSION || '2024-02-15-preview';
+// Ollama configuration
+const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
 
-// Extract instance name from endpoint URL (e.g., https://oai-rag-backend-wz5nh9.openai.azure.com/)
-const AZURE_OPENAI_INSTANCE_NAME =
-  process.env.AZURE_OPENAI_INSTANCE_NAME ||
-  (AZURE_OPENAI_ENDPOINT ? AZURE_OPENAI_ENDPOINT.match(/https:\/\/([^.]+)\./)?.[1] : undefined);
-
-// Hybrid embeddings disabled - Azure-only mode
+// Hybrid embeddings disabled - Ollama-only mode
 const ENABLE_HYBRID_EMBEDDINGS = false;
 
 /**
@@ -100,28 +91,20 @@ export function resetEmbeddingMetrics() {
 }
 
 // =============================================================================
-// BASE EMBEDDINGS (Azure OpenAI)
+// BASE EMBEDDINGS (Ollama cloud)
 // =============================================================================
 
-// Azure OpenAI concurrent request limit
-// Increase for higher throughput (check your Azure tier limits)
-// S0 (Basic): 5-10 safe, Standard: 10-20 safe
-const EMBEDDING_MAX_CONCURRENCY = parseInt(process.env.EMBEDDING_MAX_CONCURRENCY) || 10;
-
-const baseEmbeddings = new AzureOpenAIEmbeddings({
-  azureOpenAIApiKey: AZURE_OPENAI_API_KEY,
-  azureOpenAIApiInstanceName: AZURE_OPENAI_INSTANCE_NAME,
-  azureOpenAIApiDeploymentName: AZURE_OPENAI_EMBEDDING_DEPLOYMENT,
-  azureOpenAIApiVersion: AZURE_OPENAI_API_VERSION,
-  maxConcurrency: EMBEDDING_MAX_CONCURRENCY,
+const baseEmbeddings = new OllamaEmbeddings({
+  model: EMBEDDING_MODEL,
+  baseUrl: OLLAMA_BASE_URL,
 });
 
 // Log embedding provider on startup
 logger.info('Embeddings configured', {
   service: 'embeddings',
-  provider: 'azure',
-  instanceName: AZURE_OPENAI_INSTANCE_NAME,
-  deployment: AZURE_OPENAI_EMBEDDING_DEPLOYMENT,
+  provider: 'ollama',
+  baseUrl: OLLAMA_BASE_URL,
+  model: EMBEDDING_MODEL,
 });
 
 // =============================================================================

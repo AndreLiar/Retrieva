@@ -30,7 +30,9 @@ const REQUIRED_ENV_VARS = {
   ],
 
   // LLM - Required in production but provider-dependent
-  llm: [{ name: 'LLM_PROVIDER', description: 'LLM provider (azure_openai, ollama)' }],
+  llm: [
+    { name: 'LLM_PROVIDER', description: 'LLM provider (openrouter, ollama, openai, anthropic)' },
+  ],
 
   // Optional but recommended for full functionality
   recommended: [

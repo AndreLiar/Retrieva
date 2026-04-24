@@ -123,7 +123,7 @@ export const detailedHealth = async (req, res) => {
     health.services.llm = {
       status: 'up',
       provider: getCurrentProvider(),
-      model: process.env.LLM_MODEL || process.env.AZURE_OPENAI_LLM_DEPLOYMENT || 'default',
+      model: process.env.LLM_MODEL || process.env.OPENROUTER_MODEL || 'default',
       responsive: !!testResponse,
     };
   } catch (error) {

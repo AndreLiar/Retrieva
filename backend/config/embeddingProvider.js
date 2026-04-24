@@ -1,4 +1,4 @@
-import { OpenAIEmbeddings, AzureOpenAIEmbeddings } from '@langchain/openai';
+import { OpenAIEmbeddings } from '@langchain/openai';
 import { OllamaEmbeddings } from '@langchain/ollama';
 import logger from './logger.js';
 
@@ -8,20 +8,13 @@ import logger from './logger.js';
 // =============================================================================
 
 // Configuration
-const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
+const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'https://ollama.com';
 const OLLAMA_MODEL = process.env.EMBEDDING_MODEL || 'bge-m3:latest';
 const OPENAI_MODEL = process.env.OPENAI_EMBEDDING_MODEL || 'text-embedding-3-small';
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
-// Azure OpenAI Configuration
-const AZURE_OPENAI_API_KEY = process.env.AZURE_OPENAI_API_KEY;
-const AZURE_OPENAI_ENDPOINT = process.env.AZURE_OPENAI_ENDPOINT;
-const AZURE_OPENAI_EMBEDDING_DEPLOYMENT =
-  process.env.AZURE_OPENAI_EMBEDDING_DEPLOYMENT || 'text-embedding-3-small';
-const AZURE_OPENAI_API_VERSION = process.env.AZURE_OPENAI_API_VERSION || '2024-02-15-preview';
-
-// Embedding provider type (azure, openai, local)
-const EMBEDDING_PROVIDER = process.env.EMBEDDING_PROVIDER || 'local';
+// Embedding provider type (openai, ollama)
+const EMBEDDING_PROVIDER = process.env.EMBEDDING_PROVIDER || 'ollama';
 
 // =============================================================================
 // EMBEDDING PREFIX REGISTRY
@@ -164,34 +157,11 @@ function getLocalProvider() {
   return localProvider;
 }
 
-// Cloud provider (singleton) - supports Azure OpenAI or OpenAI
+// Cloud provider (singleton) - OpenAI only
 let cloudProvider = null;
 function getCloudProvider() {
   if (cloudProvider) return cloudProvider;
 
-  // Prefer Azure OpenAI if configured
-  if (EMBEDDING_PROVIDER === 'azure' || (AZURE_OPENAI_API_KEY && AZURE_OPENAI_ENDPOINT)) {
-    if (!AZURE_OPENAI_API_KEY || !AZURE_OPENAI_ENDPOINT) {
-      logger.warn('Azure OpenAI embeddings requested but missing credentials');
-      return null;
-    }
-
-    cloudProvider = new AzureOpenAIEmbeddings({
-      azureOpenAIApiKey: AZURE_OPENAI_API_KEY,
-      azureOpenAIEndpoint: AZURE_OPENAI_ENDPOINT,
-      azureOpenAIApiDeploymentName: AZURE_OPENAI_EMBEDDING_DEPLOYMENT,
-      azureOpenAIApiVersion: AZURE_OPENAI_API_VERSION,
-      maxConcurrency: 5,
-    });
-
-    logger.info('Azure OpenAI embeddings initialized', {
-      service: 'embedding-provider',
-      deployment: AZURE_OPENAI_EMBEDDING_DEPLOYMENT,
-    });
-    return cloudProvider;
-  }
-
-  // Fallback to OpenAI if configured
   if (OPENAI_API_KEY) {
     cloudProvider = new OpenAIEmbeddings({
       openAIApiKey: OPENAI_API_KEY,
@@ -209,16 +179,13 @@ function getCloudProvider() {
   return null;
 }
 
-// Check if cloud is available (Azure or OpenAI)
+// Check if cloud fallback (OpenAI) is available
 export function isCloudAvailable() {
-  return !!(AZURE_OPENAI_API_KEY && AZURE_OPENAI_ENDPOINT) || !!OPENAI_API_KEY;
+  return !!OPENAI_API_KEY;
 }
 
 // Get the current cloud provider type
 export function getCloudProviderType() {
-  if (EMBEDDING_PROVIDER === 'azure' || (AZURE_OPENAI_API_KEY && AZURE_OPENAI_ENDPOINT)) {
-    return 'azure';
-  }
   if (OPENAI_API_KEY) {
     return 'openai';
   }
@@ -328,8 +295,7 @@ export async function embedTexts(texts, context) {
 
   // Determine model name based on provider
   const cloudProviderType = getCloudProviderType();
-  const cloudModelName =
-    cloudProviderType === 'azure' ? AZURE_OPENAI_EMBEDDING_DEPLOYMENT : OPENAI_MODEL;
+  const cloudModelName = OPENAI_MODEL;
 
   // Create embedding metadata
   const metadata = {
@@ -456,15 +422,13 @@ export async function embedQuery(text, context) {
   metrics.totalTimeMs += timeMs;
 
   const cloudProviderType = getCloudProviderType();
-  const cloudModelName =
-    cloudProviderType === 'azure' ? AZURE_OPENAI_EMBEDDING_DEPLOYMENT : OPENAI_MODEL;
 
   return {
     embedding,
     metadata: {
       provider: selectedProvider,
       cloudProviderType: selectedProvider === EmbeddingProvider.CLOUD ? cloudProviderType : null,
-      model: selectedProvider === EmbeddingProvider.CLOUD ? cloudModelName : OLLAMA_MODEL,
+      model: selectedProvider === EmbeddingProvider.CLOUD ? OPENAI_MODEL : OLLAMA_MODEL,
       timestamp: new Date().toISOString(),
       totalTimeMs: timeMs,
     },
@@ -479,33 +443,26 @@ export async function embedQuery(text, context) {
  * Get disclosure text for cloud embedding consent
  */
 export function getCloudConsentDisclosure() {
-  const cloudType = getCloudProviderType();
-  const isAzure = cloudType === 'azure';
-
   return {
     title: 'Cloud Embedding Processing',
-    description: isAzure
-      ? 'Your document content is processed using Azure OpenAI for embedding generation. ' +
-        'This means your text data will be processed on Microsoft Azure servers with enterprise-grade security.'
-      : 'To improve processing speed, your document content can be sent to OpenAI for embedding generation. ' +
-        'This means your text data will be processed on external servers.',
+    description:
+      'To improve processing speed, your document content can be sent to OpenAI for embedding generation. ' +
+      'This means your text data will be processed on external servers.',
     dataProcessed: [
       'Document text content (anonymized chunks)',
       'No personal identifiers are sent',
-      isAzure
-        ? 'Data is processed in Azure with enterprise security and compliance'
-        : 'Data is not stored by OpenAI after processing',
+      'Data is not stored by OpenAI after processing',
     ],
     benefits: [
       'Fast document processing with cloud infrastructure',
       'Higher throughput for large workspaces',
-      isAzure ? 'Enterprise-grade security and compliance' : 'Reliable cloud processing',
+      'Reliable cloud processing',
     ],
     optOut:
       'You can manage data classification settings in your workspace. ' +
       'Regulated data will be flagged for additional review.',
-    provider: isAzure ? 'Azure OpenAI' : 'OpenAI',
-    model: isAzure ? AZURE_OPENAI_EMBEDDING_DEPLOYMENT : OPENAI_MODEL,
+    provider: 'OpenAI',
+    model: OPENAI_MODEL,
   };
 }
 

@@ -24,3 +24,7 @@ nginx/
 
 # Docs
 docs/
+
+# Local env files — gitignored, never committed, contain real dev credentials
+backend/.env
+backend/.env.*.enc
