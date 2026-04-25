@@ -1,33 +1,19 @@
 /**
- * Unit Tests — Assessment Controller Handlers
+ * Unit Tests — Assessment Controller HTTP Layer
  *
- * All dependencies are mocked so tests run without real DB/Redis/Qdrant.
- * Error cases: catchAsync catches AppError and passes to next() — we check
- * that next() was called with an Error (not that the handler rejects).
+ * The controller is thin: it delegates to assessmentService and formats HTTP responses.
+ * These tests verify the HTTP contract; service-level logic is tested in assessmentService.unit.test.js.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import mongoose from 'mongoose';
 
-// ---------------------------------------------------------------------------
-// Set env vars before any imports
-// ---------------------------------------------------------------------------
 process.env.NODE_ENV = 'test';
 
 // ---------------------------------------------------------------------------
-// All mocks must be declared before importing the subject
+// Mocks — declared before subject import
 // ---------------------------------------------------------------------------
 
-vi.mock('../../config/logger.js', () => ({
-  default: {
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    debug: vi.fn(),
-  },
-}));
-
-// Make catchAsync return a real awaitable promise so tests can properly await handlers
 vi.mock('../../utils/index.js', async (importOriginal) => {
   const actual = await importOriginal();
   return {
@@ -42,48 +28,19 @@ vi.mock('../../utils/index.js', async (importOriginal) => {
   };
 });
 
-vi.mock('../../config/queue.js', () => ({
-  assessmentQueue: {
-    add: vi.fn().mockResolvedValue({ id: 'job-1' }),
-  },
+const mockService = vi.hoisted(() => ({
+  createAssessment: vi.fn(),
+  listAssessments: vi.fn(),
+  getAssessment: vi.fn(),
+  getReportBuffer: vi.fn(),
+  setRiskDecision: vi.fn(),
+  setClauseSignoff: vi.fn(),
+  getAssessmentFileDownload: vi.fn(),
+  deleteAssessment: vi.fn(),
 }));
 
-// Assessment model mock — vi.mock is hoisted, so this runs before any import
-const mockAssessmentDoc = {
-  _id: new mongoose.Types.ObjectId('aaaaaaaaaaaaaaaaaaaaaaaa'),
-  workspaceId: new mongoose.Types.ObjectId('bbbbbbbbbbbbbbbbbbbbbbbb'),
-  name: 'Test Assessment',
-  vendorName: 'Acme',
-  framework: 'DORA',
-  status: 'pending',
-  statusMessage: 'Queued…',
-  documents: [],
-  createdBy: 'user-abc',
-  createdAt: new Date(),
-  updatedAt: new Date(),
-};
-
-vi.mock('../../models/Assessment.js', () => ({
-  Assessment: {
-    create: vi.fn(),
-    find: vi.fn(),
-    findById: vi.fn(),
-    findByIdAndDelete: vi.fn(),
-    countDocuments: vi.fn(),
-  },
-}));
-
-vi.mock('../../services/reportGenerator.js', () => ({
-  generateReport: vi.fn().mockResolvedValue(Buffer.from('docx-bytes')),
-}));
-
-vi.mock('../../services/fileIngestionService.js', () => ({
-  assessmentCollectionName: vi.fn((id) => `assessment_${id}`),
-  deleteAssessmentCollection: vi.fn().mockResolvedValue(undefined),
-  ingestFile: vi.fn().mockResolvedValue({ chunkCount: 10, collectionName: 'assessment_test' }),
-  searchAssessmentChunks: vi.fn().mockResolvedValue([]),
-  chunkText: vi.fn().mockReturnValue([]),
-  parseFile: vi.fn().mockResolvedValue('parsed text'),
+vi.mock('../../services/AssessmentService.js', () => ({
+  assessmentService: mockService,
 }));
 
 // ---------------------------------------------------------------------------
@@ -96,8 +53,6 @@ import {
   getAssessment,
   deleteAssessment,
 } from '../../controllers/assessmentController.js';
-import { Assessment } from '../../models/Assessment.js';
-import { assessmentQueue } from '../../config/queue.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -106,231 +61,141 @@ import { assessmentQueue } from '../../config/queue.js';
 const WORKSPACE_OID = new mongoose.Types.ObjectId('bbbbbbbbbbbbbbbbbbbbbbbb');
 const ASSESSMENT_ID = 'aaaaaaaaaaaaaaaaaaaaaaaa';
 
-/** Build a thenable Query-like mock (supports .lean() chaining + direct await) */
-function makeLeanQuery(resolvedValue) {
-  const query = {
-    lean: vi.fn().mockResolvedValue(resolvedValue),
-    select: vi.fn().mockReturnThis(),
-    sort: vi.fn().mockReturnThis(),
-    skip: vi.fn().mockReturnThis(),
-    limit: vi.fn().mockReturnThis(),
+const mockAssessmentDoc = {
+  _id: ASSESSMENT_ID,
+  name: 'Q1 DORA',
+  vendorName: 'Acme',
+  framework: 'DORA',
+  status: 'pending',
+  statusMessage: 'Queued…',
+  documents: [],
+  createdAt: new Date(),
+};
+
+function makeReq(overrides = {}) {
+  return {
+    user: { userId: 'user-abc' },
+    authorizedWorkspaces: [{ _id: WORKSPACE_OID }],
+    body: {},
+    params: {},
+    query: {},
+    files: [],
+    ...overrides,
   };
-  return query;
+}
+
+function makeRes() {
+  return {
+    status: vi.fn().mockReturnThis(),
+    json: vi.fn().mockReturnThis(),
+    setHeader: vi.fn(),
+    end: vi.fn(),
+  };
 }
 
 // ---------------------------------------------------------------------------
-// Tests
+// createAssessment
 // ---------------------------------------------------------------------------
 
-describe('assessmentController', () => {
-  let mockReq;
-  let mockRes;
-  let mockNext;
+describe('assessmentController.createAssessment', () => {
+  beforeEach(() => vi.clearAllMocks());
 
-  beforeEach(() => {
-    vi.clearAllMocks();
-
-    mockReq = {
-      user: { userId: 'user-abc' },
-      authorizedWorkspaces: [{ _id: WORKSPACE_OID, workspaceName: 'Workspace A' }],
-      body: {},
-      params: {},
-      query: {},
-      files: [],
-      ip: '127.0.0.1',
-    };
-
-    mockRes = {
-      status: vi.fn().mockReturnThis(),
-      json: vi.fn().mockReturnThis(),
-      setHeader: vi.fn(),
-      end: vi.fn(),
-    };
-
-    mockNext = vi.fn();
+  it('returns 400 when no files are uploaded', async () => {
+    const req = makeReq({ files: [] });
+    const res = makeRes();
+    await createAssessment(req, res, vi.fn());
+    expect(res.status).toHaveBeenCalledWith(400);
   });
 
-  // -------------------------------------------------------------------------
-  // createAssessment
-  // -------------------------------------------------------------------------
-  describe('createAssessment', () => {
-    beforeEach(() => {
-      mockReq.body = {
-        name: 'Q1 DORA Assessment',
-        vendorName: 'Acme Corp',
-        workspaceId: WORKSPACE_OID.toString(),
-      };
-      mockReq.files = [
-        {
-          originalname: 'policy.pdf',
-          buffer: Buffer.from('pdf content'),
-          size: 100,
-          mimetype: 'application/pdf',
-        },
-      ];
-      Assessment.create.mockResolvedValue(mockAssessmentDoc);
+  it('returns 201 with assessment from service', async () => {
+    mockService.createAssessment.mockResolvedValue(mockAssessmentDoc);
+    const req = makeReq({
+      files: [
+        { originalname: 'a.pdf', buffer: Buffer.from('x'), size: 10, mimetype: 'application/pdf' },
+      ],
+      body: { name: 'Q1', vendorName: 'Acme', workspaceId: 'ws1' },
     });
-
-    it('returns 400 when no files are uploaded', async () => {
-      mockReq.files = [];
-      await createAssessment(mockReq, mockRes, mockNext);
-      expect(mockRes.status).toHaveBeenCalledWith(400);
-    });
-
-    it('creates assessment, enqueues fileIndex + gapAnalysis jobs, returns 201', async () => {
-      await createAssessment(mockReq, mockRes, mockNext);
-
-      expect(Assessment.create).toHaveBeenCalledOnce();
-      // fileIndex job for each file
-      expect(assessmentQueue.add).toHaveBeenCalledWith(
-        'fileIndex',
-        expect.objectContaining({ fileName: 'policy.pdf' }),
-        expect.any(Object)
-      );
-      // gapAnalysis job
-      expect(assessmentQueue.add).toHaveBeenCalledWith(
-        'gapAnalysis',
-        expect.objectContaining({ assessmentId: ASSESSMENT_ID }),
-        expect.any(Object)
-      );
-      expect(mockRes.status).toHaveBeenCalledWith(201);
-      expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({ status: 'success' }));
-    });
-
-    it('includes file buffer as array in fileIndex job payload', async () => {
-      await createAssessment(mockReq, mockRes, mockNext);
-      const fileIndexCall = assessmentQueue.add.mock.calls.find((c) => c[0] === 'fileIndex');
-      expect(fileIndexCall).toBeDefined();
-      expect(fileIndexCall[1]).toHaveProperty('buffer.data');
-      expect(Array.isArray(fileIndexCall[1].buffer.data)).toBe(true);
-    });
+    const res = makeRes();
+    await createAssessment(req, res, vi.fn());
+    expect(res.status).toHaveBeenCalledWith(201);
+    expect(mockService.createAssessment).toHaveBeenCalledWith(
+      'user-abc',
+      undefined,
+      req.body,
+      req.files
+    );
   });
 
-  // -------------------------------------------------------------------------
-  // listAssessments
-  // -------------------------------------------------------------------------
-  describe('listAssessments', () => {
-    beforeEach(() => {
-      const chainMock = makeLeanQuery([mockAssessmentDoc]);
-      Assessment.find.mockReturnValue(chainMock);
-      Assessment.countDocuments.mockResolvedValue(1);
-    });
+  it('calls next when service throws', async () => {
+    mockService.createAssessment.mockRejectedValue(new Error('fail'));
+    const req = makeReq({ files: [{}], body: {} });
+    const next = vi.fn();
+    await createAssessment(req, makeRes(), next);
+    expect(next).toHaveBeenCalledWith(expect.any(Error));
+  });
+});
 
-    it('returns 200 with assessments and pagination', async () => {
-      await listAssessments(mockReq, mockRes, mockNext);
-      expect(Assessment.find).toHaveBeenCalled();
-      expect(mockRes.status).toHaveBeenCalledWith(200);
-      expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({ status: 'success' }));
-    });
+// ---------------------------------------------------------------------------
+// listAssessments
+// ---------------------------------------------------------------------------
 
-    it('filters by workspaceId when provided in query', async () => {
-      mockReq.query.workspaceId = WORKSPACE_OID.toString();
-      await listAssessments(mockReq, mockRes, mockNext);
-      expect(Assessment.find).toHaveBeenCalledWith(
-        expect.objectContaining({ workspaceId: WORKSPACE_OID.toString() })
-      );
-    });
+describe('assessmentController.listAssessments', () => {
+  beforeEach(() => vi.clearAllMocks());
 
-    it('filters by status when provided in query', async () => {
-      mockReq.query.status = 'complete';
-      await listAssessments(mockReq, mockRes, mockNext);
-      expect(Assessment.find).toHaveBeenCalledWith(expect.objectContaining({ status: 'complete' }));
-    });
+  it('delegates to service and returns 200', async () => {
+    mockService.listAssessments.mockResolvedValue({ assessments: [], pagination: { total: 0 } });
+    const req = makeReq({ query: { page: '1' } });
+    const res = makeRes();
+    await listAssessments(req, res, vi.fn());
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(mockService.listAssessments).toHaveBeenCalledWith([WORKSPACE_OID.toString()], req.query);
+  });
+});
 
-    it('scopes query to authorized workspaces', async () => {
-      await listAssessments(mockReq, mockRes, mockNext);
-      const findCall = Assessment.find.mock.calls[0][0];
-      // authorizedWorkspaces contains WORKSPACE_OID
-      expect(findCall).toHaveProperty('workspaceId.$in');
-      expect(findCall.workspaceId.$in).toContainEqual(WORKSPACE_OID);
-    });
+// ---------------------------------------------------------------------------
+// getAssessment
+// ---------------------------------------------------------------------------
+
+describe('assessmentController.getAssessment', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('returns 200 with assessment on success', async () => {
+    mockService.getAssessment.mockResolvedValue(mockAssessmentDoc);
+    const req = makeReq({ params: { id: ASSESSMENT_ID } });
+    const res = makeRes();
+    await getAssessment(req, res, vi.fn());
+    expect(res.status).toHaveBeenCalledWith(200);
   });
 
-  // -------------------------------------------------------------------------
-  // getAssessment
-  // -------------------------------------------------------------------------
-  describe('getAssessment', () => {
-    beforeEach(() => {
-      mockReq.params.id = ASSESSMENT_ID;
-    });
+  it('passes service errors to next()', async () => {
+    const err = Object.assign(new Error('not found'), { statusCode: 404 });
+    mockService.getAssessment.mockRejectedValue(err);
+    const next = vi.fn();
+    await getAssessment(makeReq({ params: { id: ASSESSMENT_ID } }), makeRes(), next);
+    expect(next).toHaveBeenCalledWith(err);
+  });
+});
 
-    it('returns 200 with the assessment when found and authorized', async () => {
-      Assessment.findById.mockReturnValue(
-        makeLeanQuery({ ...mockAssessmentDoc, workspaceId: WORKSPACE_OID })
-      );
-      await getAssessment(mockReq, mockRes, mockNext);
-      expect(mockRes.status).toHaveBeenCalledWith(200);
-      expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({ status: 'success' }));
-    });
+// ---------------------------------------------------------------------------
+// deleteAssessment
+// ---------------------------------------------------------------------------
 
-    it('calls next with 404 error when assessment not found', async () => {
-      Assessment.findById.mockReturnValue(makeLeanQuery(null));
-      await getAssessment(mockReq, mockRes, mockNext);
-      expect(mockNext).toHaveBeenCalledWith(
-        expect.objectContaining({ message: 'Assessment not found' })
-      );
-    });
+describe('assessmentController.deleteAssessment', () => {
+  beforeEach(() => vi.clearAllMocks());
 
-    it('calls next with 403 error when workspace not authorized', async () => {
-      Assessment.findById.mockReturnValue(
-        makeLeanQuery({
-          ...mockAssessmentDoc,
-          workspaceId: new mongoose.Types.ObjectId(), // different workspace
-        })
-      );
-      await getAssessment(mockReq, mockRes, mockNext);
-      expect(mockNext).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 403 }));
-    });
+  it('returns 200 on success', async () => {
+    mockService.deleteAssessment.mockResolvedValue(undefined);
+    const req = makeReq({ params: { id: ASSESSMENT_ID } });
+    const res = makeRes();
+    await deleteAssessment(req, res, vi.fn());
+    expect(res.status).toHaveBeenCalledWith(200);
   });
 
-  // -------------------------------------------------------------------------
-  // deleteAssessment
-  // -------------------------------------------------------------------------
-  describe('deleteAssessment', () => {
-    beforeEach(() => {
-      mockReq.params.id = ASSESSMENT_ID;
-    });
-
-    it('deletes the assessment and returns 200', async () => {
-      Assessment.findById.mockResolvedValue({
-        ...mockAssessmentDoc,
-        workspaceId: WORKSPACE_OID,
-        createdBy: 'user-abc',
-      });
-      Assessment.findByIdAndDelete.mockResolvedValue(mockAssessmentDoc);
-
-      await deleteAssessment(mockReq, mockRes, mockNext);
-
-      expect(Assessment.findByIdAndDelete).toHaveBeenCalledWith(ASSESSMENT_ID);
-      expect(mockRes.status).toHaveBeenCalledWith(200);
-    });
-
-    it('calls next with 404 error when assessment not found', async () => {
-      Assessment.findById.mockResolvedValue(null);
-      await deleteAssessment(mockReq, mockRes, mockNext);
-      expect(mockNext).toHaveBeenCalledWith(
-        expect.objectContaining({ message: 'Assessment not found' })
-      );
-    });
-
-    it('calls next with 403 error when caller is not the creator', async () => {
-      Assessment.findById.mockResolvedValue({
-        ...mockAssessmentDoc,
-        workspaceId: WORKSPACE_OID,
-        createdBy: 'another-user', // not mockReq.user.userId
-      });
-      await deleteAssessment(mockReq, mockRes, mockNext);
-      expect(mockNext).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 403 }));
-    });
-
-    it('calls next with 403 when workspace not authorized', async () => {
-      Assessment.findById.mockResolvedValue({
-        ...mockAssessmentDoc,
-        workspaceId: new mongoose.Types.ObjectId(), // different workspace
-        createdBy: 'user-abc',
-      });
-      await deleteAssessment(mockReq, mockRes, mockNext);
-      expect(mockNext).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 403 }));
-    });
+  it('passes service errors to next()', async () => {
+    const err = Object.assign(new Error('forbidden'), { statusCode: 403 });
+    mockService.deleteAssessment.mockRejectedValue(err);
+    const next = vi.fn();
+    await deleteAssessment(makeReq({ params: { id: ASSESSMENT_ID } }), makeRes(), next);
+    expect(next).toHaveBeenCalledWith(err);
   });
 });

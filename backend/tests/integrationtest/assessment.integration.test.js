@@ -93,6 +93,11 @@ vi.mock('../../config/queue.js', () => ({
     add: vi.fn().mockResolvedValue({ id: 'test-job-1' }),
     on: vi.fn(),
   },
+  monitoringQueue: {
+    add: vi.fn().mockResolvedValue({ id: 'test-monitor-1' }),
+    getJob: vi.fn().mockResolvedValue(null),
+    on: vi.fn(),
+  },
   memoryDecayQueue: { add: vi.fn().mockResolvedValue({}), on: vi.fn() },
 }));
 
