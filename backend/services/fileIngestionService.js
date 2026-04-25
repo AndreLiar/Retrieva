@@ -7,7 +7,7 @@
 
 import * as XLSX from 'xlsx';
 import { QdrantClient } from '@qdrant/js-client-rest';
-import { randomUUID } from 'crypto';
+import { contentHash } from '../utils/index.js';
 import { embeddings } from '../config/embeddings.js';
 import logger from '../config/logger.js';
 
@@ -262,21 +262,25 @@ export async function ingestFile({
     const batchChunks = chunks.slice(i, i + BATCH_SIZE);
     const batchVectors = vectors.slice(i, i + BATCH_SIZE);
 
-    const points = batchChunks.map((chunk, j) => ({
-      id: randomUUID(),
-      vector: batchVectors[j],
-      payload: {
-        pageContent: sanitize(chunk),
-        metadata: {
-          assessmentId,
-          vendorName,
-          fileName,
-          fileType,
-          chunkIndex: i + j,
-          totalChunks: chunks.length,
+    const points = batchChunks.map((chunk, j) => {
+      const h = contentHash(`${assessmentId}:${fileName}:${String(i + j)}`);
+      const pointId = `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20, 32)}`;
+      return {
+        id: pointId,
+        vector: batchVectors[j],
+        payload: {
+          pageContent: sanitize(chunk),
+          metadata: {
+            assessmentId,
+            vendorName,
+            fileName,
+            fileType,
+            chunkIndex: i + j,
+            totalChunks: chunks.length,
+          },
         },
-      },
-    }));
+      };
+    });
 
     await client.upsert(collectionName, { wait: true, points });
     upserted += batchChunks.length;
@@ -321,3 +325,13 @@ export async function searchAssessmentChunks(assessmentId, queryText, topK = 15)
     score: hit.score,
   }));
 }
+
+// ---------------------------------------------------------------------------
+// DI factory — enables unit testing without mocking config modules
+// ---------------------------------------------------------------------------
+
+export function createFileIngestionService(_deps = {}) {
+  return { ingestFile, searchAssessmentChunks, deleteAssessmentCollection, chunkText };
+}
+
+export const fileIngestionService = createFileIngestionService();

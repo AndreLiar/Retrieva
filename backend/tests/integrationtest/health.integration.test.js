@@ -82,6 +82,11 @@ vi.mock('../../config/embeddings.js', () => ({
 
 // Mock email service
 vi.mock('../../services/emailService.js', () => ({
+  emailService: {
+    sendEmailVerification: vi.fn().mockResolvedValue({ success: true }),
+    sendPasswordResetEmail: vi.fn().mockResolvedValue({ success: true }),
+    sendWelcomeEmail: vi.fn().mockResolvedValue({ success: true }),
+  },
   sendEmailVerification: vi.fn().mockResolvedValue({ success: true }),
   sendPasswordResetEmail: vi.fn().mockResolvedValue({ success: true }),
   sendWelcomeEmail: vi.fn().mockResolvedValue({ success: true }),

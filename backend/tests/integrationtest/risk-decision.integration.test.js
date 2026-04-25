@@ -11,7 +11,7 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest';
 import supertest from 'supertest';
 import mongoose from 'mongoose';
-import { MongoMemoryServer } from 'mongodb-memory-server';
+import { MongoMemoryReplSet } from 'mongodb-memory-server';
 
 process.env.NODE_ENV = 'test';
 process.env.JWT_ACCESS_SECRET = 'test-access-secret-key-that-is-at-least-32-characters-long';
@@ -198,7 +198,10 @@ describe('Risk Decision & Clause Sign-off Integration Tests', () => {
   const user2 = { email: 'rd-user2@example.com', password: 'ValidPassword123!', name: 'RD User2' };
 
   beforeAll(async () => {
-    mongoServer = await MongoMemoryServer.create({ instance: { launchTimeout: 60000 } });
+    mongoServer = await MongoMemoryReplSet.create({
+      replSet: { count: 1 },
+      instanceOpts: [{ launchTimeout: 60000 }],
+    });
     const mongoUri = mongoServer.getUri();
     process.env.MONGODB_URI = mongoUri;
     await mongoose.connect(mongoUri);

@@ -36,25 +36,23 @@ export const uploadAssessmentFiles = multer({
 }).array('files', MAX_FILES_PER_UPLOAD);
 
 /**
- * Wraps multer's callback-style middleware into a Promise so it can be
- * used cleanly inside catchAsync route handlers.
+ * Express middleware that runs multer and converts MulterError to AppError.
+ * Place this in the route chain before validateBody and the controller.
  */
-export function handleFileUpload(req, res) {
-  return new Promise((resolve, reject) => {
-    uploadAssessmentFiles(req, res, (err) => {
-      if (err instanceof multer.MulterError) {
-        if (err.code === 'LIMIT_FILE_SIZE') {
-          return reject(new AppError(`File too large. Max size is ${MAX_FILE_SIZE_MB}MB`, 400));
-        }
-        if (err.code === 'LIMIT_FILE_COUNT') {
-          return reject(
-            new AppError(`Too many files. Max ${MAX_FILES_PER_UPLOAD} files per upload`, 400)
-          );
-        }
-        return reject(new AppError(`Upload error: ${err.message}`, 400));
+export function assessmentUploadMiddleware(req, res, next) {
+  uploadAssessmentFiles(req, res, (err) => {
+    if (err instanceof multer.MulterError) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return next(new AppError(`File too large. Max size is ${MAX_FILE_SIZE_MB}MB`, 400));
       }
-      if (err) return reject(err);
-      resolve();
-    });
+      if (err.code === 'LIMIT_FILE_COUNT') {
+        return next(
+          new AppError(`Too many files. Max ${MAX_FILES_PER_UPLOAD} files per upload`, 400)
+        );
+      }
+      return next(new AppError(`Upload error: ${err.message}`, 400));
+    }
+    if (err) return next(err);
+    next();
   });
 }

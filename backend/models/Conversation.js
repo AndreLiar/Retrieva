@@ -34,9 +34,10 @@ const conversationSchema = new mongoose.Schema(
       index: true,
     },
     workspaceId: {
-      type: mongoose.Schema.Types.Mixed, // Allow both String and ObjectId for flexibility
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Workspace',
       index: true,
-      default: 'default', // Default workspace for entity memory
+      default: null,
     },
     lastMessageAt: {
       type: Date,

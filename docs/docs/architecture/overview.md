@@ -65,8 +65,10 @@ Legacy users without an `organizationId` fall back to the previous per-workspace
 
 ```
 Routes → Middleware (authenticate, requireWorkspaceAccess, validateBody)
-       → Controllers → Services / Workers
-       → MongoDB (metadata) + Qdrant (vector store)
+       → Controllers (thin — parse HTTP, call service, send response)
+       → Services (business logic) → Repositories → MongoDB
+                                   → BullMQ queues
+                                   → Qdrant (vector store)
 ```
 
 ## Key Components
@@ -76,7 +78,7 @@ Routes → Middleware (authenticate, requireWorkspaceAccess, validateBody)
 |-----------|----------------|
 | `assessmentController.js` | Upload files, start gap analysis, retrieve results |
 | `ragController.js` | Conversational Q&A over indexed documents |
-| `workspaceController.js` | Workspace CRUD + member management |
+| `workspaceMemberController.js` | Workspace CRUD + member management |
 | `organizationController.js` | Organization creation, team invitations, member management |
 | `authController.js` | Register, login, logout, token refresh |
 | `conversationController.js` | Conversation history management |
@@ -86,19 +88,30 @@ Routes → Middleware (authenticate, requireWorkspaceAccess, validateBody)
 ### Workers (BullMQ)
 | Worker | Queue | Purpose |
 |--------|-------|---------|
-| `assessmentWorker.js` | `assessmentJobs` | Orchestrates file indexing + DORA gap analysis |
+| `assessmentWorker.js` | `assessmentJobs` | Orchestrates file indexing + DORA gap analysis; idempotency guard skips already-indexed documents on retry |
 | `monitoringWorker.js` | `monitoringJobs` | 24-hour schedule: compliance threshold alerts |
 
 ### Key Services
 | Service | Purpose |
 |---------|---------|
 | `services/rag.js` | Core RAG pipeline: retrieval, re-ranking, answer generation |
-| `services/assessmentService.js` | DORA gap analysis logic |
-| `services/alertMonitorService.js` | Compliance threshold checks and alert delivery |
+| `services/AssessmentService.js` | Assessment business logic: create, list, get, delete, risk decisions, clause sign-offs |
+| `services/WorkspaceService.js` | Workspace CRUD, member invitation and revocation |
+| `services/alertMonitorService.js` | Compliance threshold checks and alert delivery via repositories |
 | `services/roiExportService.js` | EBA-compliant DORA Art. 28(3) XLSX workbook |
-| `services/fileIngestionService.js` | Parses PDF, DOCX, XLSX to plain text |
+| `services/fileIngestionService.js` | Parses PDF, DOCX, XLSX; deterministic Qdrant point IDs (SHA-256) |
 | `services/emailService.js` | Transactional email via Resend HTTP API |
 | `services/storageService.js` | File backup via DigitalOcean Spaces (S3-compatible) |
+
+### Repository Layer
+| Repository | Purpose |
+|-----------|---------|
+| `repositories/AssessmentRepository.js` | Assessment queries: `findByWorkspaces`, `markDocumentIndexed`, `completeAnalysis`, `findLatestByWorkspace` |
+| `repositories/WorkspaceRepository.js` | Workspace queries: `findByOrganization`, `findWithCertifications`, `findDueForReview`, `findByContractEndingSoon` |
+| `repositories/MessageRepository.js` | Message persistence |
+| `repositories/ConversationRepository.js` | Conversation management |
+
+All repositories extend `BaseRepository` (`repositories/BaseRepository.js`) which provides common CRUD, pagination, and aggregation operations.
 
 ### Configuration
 | Module | Purpose |

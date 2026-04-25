@@ -11,20 +11,29 @@ import {
 } from '../controllers/assessmentController.js';
 import { authenticate } from '../middleware/auth.js';
 import { requireWorkspaceAccess } from '../middleware/workspaceAuth.js';
+import { assessmentUploadMiddleware } from '../middleware/fileUpload.js';
+import { validateBody } from '../middleware/validate.js';
+import {
+  createAssessmentSchema,
+  setRiskDecisionSchema,
+  setClauseSignoffSchema,
+} from '../validators/schemas.js';
 
 const router = Router();
-
-/**
- * All assessment routes require authentication and workspace membership.
- * File upload (multipart) is handled inside the controller via handleFileUpload().
- */
 
 /**
  * @route  POST /api/v1/assessments
  * @desc   Create a new DORA compliance assessment (multipart/form-data)
  * @access Private
  */
-router.post('/', authenticate, requireWorkspaceAccess, createAssessment);
+router.post(
+  '/',
+  authenticate,
+  requireWorkspaceAccess,
+  assessmentUploadMiddleware,
+  validateBody(createAssessmentSchema),
+  createAssessment
+);
 
 /**
  * @route  GET /api/v1/assessments
@@ -52,14 +61,26 @@ router.get('/:id/report', authenticate, requireWorkspaceAccess, downloadReport);
  * @desc   Record a formal risk decision (proceed / conditional / reject)
  * @access Private
  */
-router.patch('/:id/risk-decision', authenticate, requireWorkspaceAccess, setRiskDecision);
+router.patch(
+  '/:id/risk-decision',
+  authenticate,
+  requireWorkspaceAccess,
+  validateBody(setRiskDecisionSchema),
+  setRiskDecision
+);
 
 /**
  * @route  PATCH /api/v1/assessments/:id/clause-signoff
  * @desc   Sign off a single Art. 30 contract clause (accepted / rejected / waived)
  * @access Private — CONTRACT_A30 assessments only
  */
-router.patch('/:id/clause-signoff', authenticate, requireWorkspaceAccess, setClauseSignoff);
+router.patch(
+  '/:id/clause-signoff',
+  authenticate,
+  requireWorkspaceAccess,
+  validateBody(setClauseSignoffSchema),
+  setClauseSignoff
+);
 
 /**
  * @route  GET /api/v1/assessments/:id/files/:docIndex

@@ -12,9 +12,8 @@
  *  - Assessment overdue (no complete assessment in 12 months)
  */
 
-import { Workspace } from '../models/Workspace.js';
 import { WorkspaceMember } from '../models/WorkspaceMember.js';
-import { Assessment } from '../models/Assessment.js';
+import { workspaceRepository, assessmentRepository } from '../repositories/index.js';
 import emailService from './emailService.js';
 import logger from '../config/logger.js';
 
@@ -64,14 +63,14 @@ export async function runMonitoringAlerts() {
 // ---------------------------------------------------------------------------
 
 async function checkCertificationExpiry() {
-  const workspaces = await Workspace.find({ 'certifications.0': { $exists: true } });
+  const workspaces = await workspaceRepository.findWithCertifications();
   const now = new Date();
 
   for (const workspace of workspaces) {
     for (const cert of workspace.certifications) {
       if (!cert.validUntil) continue;
 
-      const msUntilExpiry = cert.validUntil - now;
+      const msUntilExpiry = new Date(cert.validUntil) - now;
       const daysUntilExpiry = msUntilExpiry / (24 * 60 * 60 * 1000);
 
       // Determine which threshold applies (most urgent wins)
@@ -88,7 +87,7 @@ async function checkCertificationExpiry() {
       const alertType = `cert-expiry-${threshold}`;
       const details = {
         certType: cert.type,
-        expiryDate: cert.validUntil.toLocaleDateString('en-GB', {
+        expiryDate: new Date(cert.validUntil).toLocaleDateString('en-GB', {
           day: 'numeric',
           month: 'long',
           year: 'numeric',
@@ -96,10 +95,9 @@ async function checkCertificationExpiry() {
       };
 
       await sendAlertToOwners(workspace, alertType, details);
-      workspace.alertsSentAt.set(alertKey, new Date());
-      await Workspace.updateOne(
+      await workspaceRepository.updateMany(
         { _id: workspace._id },
-        { $set: { alertsSentAt: workspace.alertsSentAt } }
+        { $set: { [`alertsSentAt.${alertKey}`]: new Date() } }
       );
 
       logger.info('Cert expiry alert sent', {
@@ -120,16 +118,14 @@ async function checkContractRenewal() {
   const now = new Date();
   const in60Days = new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000);
 
-  const workspaces = await Workspace.find({
-    contractEnd: { $ne: null, $gte: now, $lte: in60Days },
-  });
+  const workspaces = await workspaceRepository.findByContractEndingSoon(now, in60Days);
 
   for (const workspace of workspaces) {
     const alertKey = 'contract-renewal-60';
     if (isWithinDedupWindow(workspace, alertKey)) continue;
 
     const details = {
-      contractEnd: workspace.contractEnd.toLocaleDateString('en-GB', {
+      contractEnd: new Date(workspace.contractEnd).toLocaleDateString('en-GB', {
         day: 'numeric',
         month: 'long',
         year: 'numeric',
@@ -137,10 +133,9 @@ async function checkContractRenewal() {
     };
 
     await sendAlertToOwners(workspace, 'contract-renewal-60', details);
-    workspace.alertsSentAt.set(alertKey, new Date());
-    await Workspace.updateOne(
+    await workspaceRepository.updateMany(
       { _id: workspace._id },
-      { $set: { alertsSentAt: workspace.alertsSentAt } }
+      { $set: { [`alertsSentAt.${alertKey}`]: new Date() } }
     );
 
     logger.info('Contract renewal alert sent', {
@@ -157,16 +152,14 @@ async function checkContractRenewal() {
 async function checkAnnualReviewOverdue() {
   const now = new Date();
 
-  const workspaces = await Workspace.find({
-    nextReviewDate: { $ne: null, $lt: now },
-  });
+  const workspaces = await workspaceRepository.findDueForReview(now);
 
   for (const workspace of workspaces) {
     const alertKey = 'annual-review-overdue';
     if (isWithinDedupWindow(workspace, alertKey)) continue;
 
     const details = {
-      reviewDate: workspace.nextReviewDate.toLocaleDateString('en-GB', {
+      reviewDate: new Date(workspace.nextReviewDate).toLocaleDateString('en-GB', {
         day: 'numeric',
         month: 'long',
         year: 'numeric',
@@ -174,10 +167,9 @@ async function checkAnnualReviewOverdue() {
     };
 
     await sendAlertToOwners(workspace, 'annual-review-overdue', details);
-    workspace.alertsSentAt.set(alertKey, new Date());
-    await Workspace.updateOne(
+    await workspaceRepository.updateMany(
       { _id: workspace._id },
-      { $set: { alertsSentAt: workspace.alertsSentAt } }
+      { $set: { [`alertsSentAt.${alertKey}`]: new Date() } }
     );
 
     logger.info('Annual review overdue alert sent', {
@@ -192,16 +184,13 @@ async function checkAnnualReviewOverdue() {
 // ---------------------------------------------------------------------------
 
 async function checkAssessmentOverdue() {
-  const workspaces = await Workspace.find({});
+  const workspaces = await workspaceRepository.find({});
   const twelveMonthsAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);
 
   const perWorkspace = workspaces.map(async (workspace) => {
-    const latest = await Assessment.findOne({
-      workspaceId: workspace._id,
-      status: 'complete',
-    }).sort({ createdAt: -1 });
+    const latest = await assessmentRepository.findLatestByWorkspace(workspace._id);
 
-    const isOverdue = !latest || latest.createdAt < twelveMonthsAgo;
+    const isOverdue = !latest || new Date(latest.createdAt) < twelveMonthsAgo;
     if (!isOverdue) return;
 
     const alertKey = 'assessment-overdue-12mo';
@@ -209,7 +198,7 @@ async function checkAssessmentOverdue() {
 
     const details = {
       lastAssessmentDate: latest
-        ? latest.createdAt.toLocaleDateString('en-GB', {
+        ? new Date(latest.createdAt).toLocaleDateString('en-GB', {
             day: 'numeric',
             month: 'long',
             year: 'numeric',
@@ -218,10 +207,9 @@ async function checkAssessmentOverdue() {
     };
 
     await sendAlertToOwners(workspace, 'assessment-overdue-12mo', details);
-    workspace.alertsSentAt.set(alertKey, new Date());
-    await Workspace.updateOne(
+    await workspaceRepository.updateMany(
       { _id: workspace._id },
-      { $set: { alertsSentAt: workspace.alertsSentAt } }
+      { $set: { [`alertsSentAt.${alertKey}`]: new Date() } }
     );
 
     logger.info('Assessment overdue alert sent', {
@@ -242,7 +230,7 @@ async function checkAssessmentOverdue() {
  * Called by monitoringWorker when the delayed 'review-reminder' job fires.
  */
 export async function sendReviewReminderAlert(workspaceId) {
-  const workspace = await Workspace.findById(workspaceId);
+  const workspace = await workspaceRepository.findById(workspaceId);
   if (!workspace) {
     logger.warn('Review reminder: workspace not found', { service: 'alertMonitor', workspaceId });
     return;
@@ -250,7 +238,7 @@ export async function sendReviewReminderAlert(workspaceId) {
 
   const details = {
     reviewDate: workspace.nextReviewDate
-      ? workspace.nextReviewDate.toLocaleDateString('en-GB', {
+      ? new Date(workspace.nextReviewDate).toLocaleDateString('en-GB', {
           day: 'numeric',
           month: 'long',
           year: 'numeric',
@@ -267,9 +255,12 @@ export async function sendReviewReminderAlert(workspaceId) {
 // ---------------------------------------------------------------------------
 
 function isWithinDedupWindow(workspace, alertKey) {
-  const lastSent = workspace.alertsSentAt?.get(alertKey);
+  const alertsSentAt = workspace.alertsSentAt;
+  // alertsSentAt may be a Mongoose Map (has .get()) or a plain object (lean result)
+  const lastSent =
+    alertsSentAt instanceof Map ? alertsSentAt.get(alertKey) : alertsSentAt?.[alertKey];
   if (!lastSent) return false;
-  return Date.now() - lastSent.getTime() < DEDUP_WINDOW_MS;
+  return Date.now() - new Date(lastSent).getTime() < DEDUP_WINDOW_MS;
 }
 
 async function sendAlertToOwners(workspace, alertType, details) {

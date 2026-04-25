@@ -480,7 +480,7 @@ class RAGService {
     const conversation = await this.Conversation.findById(conversationId);
     if (!conversation) throw new Error(`Conversation ${conversationId} not found`);
 
-    const workspaceId = conversation.workspaceId || 'default';
+    const workspaceId = conversation.workspaceId || null;
 
     this.logger.info('Processing RAG question', {
       service: 'rag',

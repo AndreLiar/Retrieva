@@ -24,3 +24,5 @@ export { BaseRepository } from './BaseRepository.js';
 // Repository classes and singleton instances
 export { MessageRepository, messageRepository } from './MessageRepository.js';
 export { ConversationRepository, conversationRepository } from './ConversationRepository.js';
+export { AssessmentRepository, assessmentRepository } from './AssessmentRepository.js';
+export { WorkspaceRepository, workspaceRepository } from './WorkspaceRepository.js';
