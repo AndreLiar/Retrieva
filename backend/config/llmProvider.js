@@ -1,13 +1,12 @@
 /**
  * LLM Provider Abstraction Factory
  *
- * Allows switching between LLM providers (Ollama, OpenAI, Anthropic, Azure)
+ * Allows switching between LLM providers (Ollama cloud, OpenAI, Anthropic)
  * via environment configuration without code changes.
  *
- * SECURITY: Provider abstraction enables:
- * - Easy provider switching for compliance requirements
- * - Fallback providers for high availability
- * - Cost optimization by provider selection
+ * Default: Ollama cloud (https://ollama.com) with 3-key rotation — if the
+ * active key hits a rate limit the next key is tried automatically via
+ * LangChain's withFallbacks().
  */
 
 import { ChatOllama } from '@langchain/ollama';
@@ -15,7 +14,6 @@ import { z } from 'zod';
 import dotenv from 'dotenv';
 import logger from './logger.js';
 
-// Inline generation defaults (guardrails.js removed in MVP)
 const guardrailsConfig = {
   generation: {
     temperature: 0.1,
@@ -33,14 +31,21 @@ export const LLM_PROVIDERS = {
   OLLAMA: 'ollama',
   OPENAI: 'openai',
   ANTHROPIC: 'anthropic',
-  AZURE_OPENAI: 'azure_openai',
 };
+
+// Ollama cloud configuration
+const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'https://ollama.com';
+const OLLAMA_CLOUD_KEYS = [
+  process.env.OLLAMA_API_KEY_1,
+  process.env.OLLAMA_API_KEY_2,
+  process.env.OLLAMA_API_KEY_3,
+].filter(Boolean);
 
 /**
  * Provider configuration schema
  */
 const providerConfigSchema = z.object({
-  provider: z.enum(['ollama', 'openai', 'anthropic', 'azure_openai']),
+  provider: z.enum(['ollama', 'openai', 'anthropic']),
   model: z.string().min(1),
   temperature: z.number().min(0).max(2).optional(),
   maxTokens: z.number().positive().optional(),
@@ -71,18 +76,50 @@ export function getCurrentProvider() {
 }
 
 /**
- * Create Ollama LLM instance
+ * Create Ollama cloud LLM with automatic key rotation.
+ *
+ * Builds one ChatOllama instance per OLLAMA_API_KEY_* and chains them with
+ * withFallbacks() — when key 1 gets a rate limit (or any error), LangChain
+ * transparently retries with key 2, then key 3. Falls back to unauthenticated
+ * if no keys are configured (local Ollama).
  */
 function createOllamaLLM(config) {
-  return new ChatOllama({
-    model: config.model || process.env.LLM_MODEL || 'llama3.2:latest',
-    baseUrl: config.baseUrl || process.env.OLLAMA_BASE_URL || 'http://localhost:11434',
+  const baseUrl = config.baseUrl || OLLAMA_BASE_URL;
+  const model = config.model || process.env.LLM_MODEL || 'llama3.2:latest';
+
+  const instanceConfig = {
+    model,
+    baseUrl,
     temperature: config.temperature ?? guardrailsConfig.generation.temperature,
     numPredict: config.maxTokens ?? guardrailsConfig.generation.maxTokens,
     top_p: process.env.LLM_TOP_P ? parseFloat(process.env.LLM_TOP_P) : 1,
     top_k: process.env.LLM_TOP_K ? parseInt(process.env.LLM_TOP_K) : 50,
     stop: guardrailsConfig.generation.stopSequences,
+  };
+
+  if (OLLAMA_CLOUD_KEYS.length === 0) {
+    logger.info('Creating Ollama LLM (unauthenticated / self-hosted)', {
+      service: 'llm-provider',
+      baseUrl,
+      model,
+    });
+    return new ChatOllama(instanceConfig);
+  }
+
+  logger.info('Creating Ollama cloud LLM with key rotation', {
+    service: 'llm-provider',
+    baseUrl,
+    model,
+    keyCount: OLLAMA_CLOUD_KEYS.length,
   });
+
+  // Each key gets its own instance; the API key travels as a Bearer token
+  const instances = OLLAMA_CLOUD_KEYS.map(
+    (key) => new ChatOllama({ ...instanceConfig, headers: { Authorization: `Bearer ${key}` } })
+  );
+
+  const [primary, ...fallbacks] = instances;
+  return fallbacks.length > 0 ? primary.withFallbacks({ fallbacks }) : primary;
 }
 
 /**
@@ -148,63 +185,16 @@ async function createAnthropicLLM(config) {
 }
 
 /**
- * Create Azure OpenAI LLM instance (lazy load to avoid dependency if not used)
- */
-async function createAzureOpenAILLM(config) {
-  try {
-    const { AzureChatOpenAI } = await import('@langchain/openai');
-
-    const apiKey = config.apiKey || process.env.AZURE_OPENAI_API_KEY;
-    const endpoint = config.baseUrl || process.env.AZURE_OPENAI_ENDPOINT;
-    const deploymentName = config.model || process.env.AZURE_OPENAI_LLM_DEPLOYMENT;
-
-    if (!apiKey || !endpoint || !deploymentName) {
-      throw new Error(
-        'Azure OpenAI requires AZURE_OPENAI_API_KEY, AZURE_OPENAI_ENDPOINT, and AZURE_OPENAI_LLM_DEPLOYMENT environment variables.'
-      );
-    }
-
-    // Seed for reproducibility (Azure OpenAI supports seed parameter)
-    const seed = config.seed ?? guardrailsConfig.generation.seed;
-
-    logger.info('Creating Azure OpenAI LLM', {
-      service: 'llm-provider',
-      deployment: deploymentName,
-      endpoint: endpoint.replace(/https?:\/\//, '').split('.')[0], // Log instance name only
-      hasSeed: seed !== null,
-    });
-
-    return new AzureChatOpenAI({
-      azureOpenAIApiKey: apiKey,
-      azureOpenAIEndpoint: endpoint,
-      azureOpenAIApiDeploymentName: deploymentName,
-      azureOpenAIApiVersion: process.env.AZURE_OPENAI_API_VERSION || '2024-02-15-preview',
-      temperature: config.temperature ?? guardrailsConfig.generation.temperature,
-      maxTokens: config.maxTokens ?? guardrailsConfig.generation.maxTokens,
-      stop: guardrailsConfig.generation.stopSequences,
-      ...(seed !== null && { seed }), // Only include seed if set
-    });
-  } catch (error) {
-    if (error.code === 'ERR_MODULE_NOT_FOUND') {
-      throw new Error(
-        'Azure OpenAI provider requires @langchain/openai package. Install with: npm install @langchain/openai'
-      );
-    }
-    throw error;
-  }
-}
-
-/**
  * LLM Provider Factory
  * Creates LLM instances based on provider configuration
  *
  * @param {Object} config - Configuration options
- * @param {string} config.provider - Provider name (ollama, openai, anthropic, azure_openai)
+ * @param {string} config.provider - Provider name (ollama, openai, anthropic)
  * @param {string} config.model - Model name
  * @param {number} config.temperature - Temperature for generation
  * @param {number} config.maxTokens - Maximum tokens
- * @param {string} config.baseUrl - Base URL (for Ollama or Azure)
- * @param {string} config.apiKey - API key (for OpenAI, Anthropic, Azure)
+ * @param {string} config.baseUrl - Base URL (for Ollama)
+ * @param {string} config.apiKey - API key (for OpenAI, Anthropic)
  * @returns {Promise<Object>} LLM instance
  */
 export async function createLLM(config = {}) {
@@ -229,9 +219,6 @@ export async function createLLM(config = {}) {
 
     case LLM_PROVIDERS.ANTHROPIC:
       return createAnthropicLLM(config);
-
-    case LLM_PROVIDERS.AZURE_OPENAI:
-      return createAzureOpenAILLM(config);
 
     case LLM_PROVIDERS.OLLAMA:
     default:
@@ -262,15 +249,11 @@ export async function getJudgeLLM() {
     const provider = getCurrentProvider();
     const judgeModel =
       process.env.JUDGE_LLM_MODEL ||
-      (provider === LLM_PROVIDERS.OLLAMA
-        ? 'mistral:latest'
-        : provider === LLM_PROVIDERS.OPENAI
-          ? 'gpt-4-turbo-preview'
-          : provider === LLM_PROVIDERS.ANTHROPIC
-            ? 'claude-3-haiku-20240307'
-            : provider === LLM_PROVIDERS.AZURE_OPENAI
-              ? process.env.AZURE_OPENAI_LLM_DEPLOYMENT
-              : 'mistral:latest');
+      (provider === LLM_PROVIDERS.OPENAI
+        ? 'gpt-4-turbo-preview'
+        : provider === LLM_PROVIDERS.ANTHROPIC
+          ? 'claude-3-haiku-20240307'
+          : process.env.LLM_MODEL || 'mistral:latest');
 
     judgeLLM = await createLLM({
       provider,

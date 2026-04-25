@@ -5,17 +5,17 @@
  * New code should use the provider factory directly from './llmProvider.js'
  *
  * The provider abstraction allows switching between:
- * - Ollama (default, local)
+ * - OpenRouter (default — 3-key rotation for rate limit resilience)
+ * - Ollama (cloud at https://ollama.com or self-hosted)
  * - OpenAI
  * - Anthropic
- * - Azure OpenAI
  *
  * Configure via environment variables:
- * - LLM_PROVIDER: 'ollama' | 'openai' | 'anthropic' | 'azure_openai'
+ * - LLM_PROVIDER: 'openrouter' | 'ollama' | 'openai' | 'anthropic'
  * - LLM_MODEL: Model name (provider-specific)
+ * - OPENROUTER_API_KEY_1/2/3: For OpenRouter provider
  * - OPENAI_API_KEY: For OpenAI provider
  * - ANTHROPIC_API_KEY: For Anthropic provider
- * - AZURE_OPENAI_*: For Azure OpenAI provider
  */
 
 // Re-export from the provider abstraction

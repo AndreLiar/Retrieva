@@ -13,6 +13,7 @@ const sidebars: SidebarsConfig = {
         'architecture/rag-pipeline',
         'architecture/semantic-chunking',
         'architecture/multi-tenancy',
+        'architecture/llm-model-selection',
       ],
     },
     {

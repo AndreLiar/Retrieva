@@ -24,7 +24,7 @@ import { fileURLToPath } from 'url';
 import path from 'path';
 import { randomUUID } from 'crypto';
 import { QdrantClient } from '@qdrant/js-client-rest';
-import { AzureOpenAIEmbeddings } from '@langchain/openai';
+import { OllamaEmbeddings } from '@langchain/ollama';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -35,16 +35,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const QDRANT_URL = process.env.QDRANT_URL || 'http://localhost:6333';
 const QDRANT_API_KEY = process.env.QDRANT_API_KEY;
 export const COMPLIANCE_KB_COLLECTION = 'compliance_kb';
-const VECTOR_SIZE = 1536; // text-embedding-3-small
-
-const AZURE_OPENAI_API_KEY = process.env.AZURE_OPENAI_API_KEY;
-const AZURE_OPENAI_ENDPOINT = process.env.AZURE_OPENAI_ENDPOINT;
-const AZURE_OPENAI_EMBEDDING_DEPLOYMENT =
-  process.env.AZURE_OPENAI_EMBEDDING_DEPLOYMENT || 'text-embedding-3-small';
-const AZURE_OPENAI_API_VERSION = process.env.AZURE_OPENAI_API_VERSION || '2024-02-15-preview';
-const AZURE_OPENAI_INSTANCE_NAME =
-  process.env.AZURE_OPENAI_INSTANCE_NAME ||
-  (AZURE_OPENAI_ENDPOINT ? AZURE_OPENAI_ENDPOINT.match(/https:\/\/([^.]+)\./)?.[1] : undefined);
+const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'https://ollama.com';
+const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL || 'bge-m3:latest';
+const VECTOR_SIZE = 1024; // bge-m3 output dimension
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -57,12 +50,9 @@ function getQdrantClient() {
 }
 
 function getEmbeddings() {
-  return new AzureOpenAIEmbeddings({
-    azureOpenAIApiKey: AZURE_OPENAI_API_KEY,
-    azureOpenAIApiInstanceName: AZURE_OPENAI_INSTANCE_NAME,
-    azureOpenAIApiDeploymentName: AZURE_OPENAI_EMBEDDING_DEPLOYMENT,
-    azureOpenAIApiVersion: AZURE_OPENAI_API_VERSION,
-    maxConcurrency: 5,
+  return new OllamaEmbeddings({
+    model: EMBEDDING_MODEL,
+    baseUrl: OLLAMA_BASE_URL,
   });
 }
 
