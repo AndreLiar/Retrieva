@@ -360,25 +360,25 @@ The `POST /api/v1/billing/webhook` route uses raw body parsing (before JSON midd
 
 ## Service Dependencies
 
-Services use dependency injection for testability:
+All business-logic services use constructor dependency injection so tests can pass mocks without module-level vi.mock():
 
 ```javascript
-// Production
-const ragService = new RAGService({
-  llm: await getDefaultLLM(),
-  vectorStoreFactory: getVectorStore,
-  cache: ragCache,
-  logger: winston,
+// Production (singleton exported from each file)
+export const assessmentService = new AssessmentService({
+  Assessment, Workspace, User,
+  assessmentQueue, monitoringQueue,
+  storage, generateReport, deleteAssessmentCollection, logger,
 });
 
-// Testing
-const testService = new RAGService({
-  llm: mockLLM,
-  vectorStoreFactory: () => mockVectorStore,
-  cache: mockCache,
-  logger: mockLogger,
+// Testing — pass only the deps the test exercises
+const svc = new AssessmentService({
+  Assessment: { create: vi.fn(), findById: vi.fn() },
+  assessmentQueue: { add: vi.fn() },
+  logger: { info: vi.fn(), error: vi.fn() },
 });
 ```
+
+The same pattern applies to `WorkspaceService`, `GapAnalysisAgent`, and `FileIngestionService`. Each exports a pre-built singleton instance alongside its class, so existing call-sites need no changes.
 
 ## Error Handling
 
@@ -416,6 +416,47 @@ logger.error('Query failed', {
 
 ---
 
+## Workspace & Assessment Services
+
+### Workspace Service (`services/WorkspaceService.js`)
+
+Encapsulates all workspace business logic. Controllers pass HTTP-parsed values; this service owns model operations and authorization.
+
+**Constructor (dependency injection):**
+```javascript
+new WorkspaceService({ Workspace, WorkspaceMember, OrganizationMember, User, logger, emailService })
+```
+
+| Method | Description |
+|--------|-------------|
+| `createWorkspace(userId, data)` | Create workspace, seed owner member record |
+| `getWorkspace(workspaceId, userId)` | Fetch with authorization check |
+| `updateWorkspace(workspaceId, userId, data)` | PATCH with owner guard |
+| `deleteWorkspace(workspaceId, userId)` | Delete workspace + members |
+| `getMyWorkspaces(userId)` | Workspaces the user belongs to |
+| `inviteMember(workspaceId, inviterId, { email, role })` | Send invitation email, create pending member |
+| `revokeMember(workspaceId, requesterId, memberId)` | Remove member with permission check |
+
+### Assessment Service (`services/AssessmentService.js`)
+
+Encapsulates DORA assessment business logic including file ingestion queuing, risk decisions, and clause sign-offs.
+
+**Constructor (dependency injection):**
+```javascript
+new AssessmentService({ Assessment, Workspace, User, assessmentQueue, monitoringQueue, storage, generateReport, deleteAssessmentCollection, logger })
+```
+
+| Method | Description |
+|--------|-------------|
+| `createAssessment(userId, organizationId, data, files)` | Create record, enqueue `fileIndex` jobs + `gapAnalysis` job |
+| `listAssessments(authorizedWorkspaceIds, filters)` | Paginated list scoped to user's workspaces |
+| `getAssessment(id, authorizedWorkspaceIds)` | Fetch with 403/404 guards |
+| `deleteAssessment(id, userId, authorizedWorkspaceIds)` | Creator-only delete + Qdrant cleanup |
+| `setRiskDecision(id, userId, authorizedIds, { decision, rationale })` | Atomic dual-write (assessment + workspace `nextReviewDate`) wrapped in a MongoDB transaction; schedules 30-day review reminder via `monitoringQueue` |
+| `setClauseSignoff(id, userId, authorizedIds, { clauseRef, status, note })` | CONTRACT_A30 only; upserts signoff by clauseRef |
+
+---
+
 ## Assessment Services
 
 ### File Ingestion Service (`services/fileIngestionService.js`)
@@ -426,11 +467,14 @@ Parses vendor documents and indexes them into per-assessment Qdrant collections.
 
 | Function | Description |
 |----------|-------------|
-| `parseFile(buffer, mimetype)` | Dispatches to pdf-parse / xlsx / mammoth depending on file type |
-| `chunkText(text)` | Splits into 600-char overlapping chunks at paragraph/sentence boundaries |
-| `ingestFile(assessmentId, file)` | Parse → chunk → embed → upsert to `assessment_{id}` Qdrant collection |
+| `parseFile(buffer, fileType)` | Dispatches to pdf-parse / xlsx / mammoth depending on file type |
+| `chunkText(text, chunkSize?, overlap?)` | Splits into ~600-char overlapping chunks at paragraph/sentence boundaries |
+| `ingestFile({ buffer, fileType, fileName, assessmentId, vendorName })` | Parse → chunk → embed → upsert to `assessment_{id}` Qdrant collection |
 | `searchAssessmentChunks(assessmentId, query, k)` | Semantic search within an assessment's collection |
 | `deleteAssessmentCollection(assessmentId)` | Removes the `assessment_{id}` collection from Qdrant on deletion |
+| `createFileIngestionService(deps?)` | Factory for dependency injection in tests |
+
+**Idempotent point IDs:** Qdrant point IDs are derived from a SHA-256 hash of `assessmentId:fileName:chunkIndex` formatted as a UUID. This means re-indexing the same file produces the same IDs — Qdrant upsert overwrites rather than duplicating points, making job retries safe.
 
 ### Gap Analysis Agent (`services/gapAnalysisAgent.js`)
 
@@ -469,7 +513,9 @@ export async function runMonitoringAlerts() {
 }
 ```
 
-**Deduplication:** Before sending, each check reads `workspace.alertsSentAt.get(alertKey)`. If the timestamp is within the last 20 hours the alert is skipped. After sending, `workspace.alertsSentAt` is updated via `Workspace.updateOne` (no full document save).
+**Data access:** All workspace and assessment queries go through `workspaceRepository` and `assessmentRepository` — no direct model calls in this service.
+
+**Deduplication:** Before sending, each check reads `workspace.alertsSentAt[alertKey]`. If the timestamp is within the last 20 hours the alert is skipped. After sending, the timestamp is persisted atomically via `workspaceRepository.updateMany({ _id }, { $set: { 'alertsSentAt.<key>': new Date() } })` — no full document mutation needed.
 
 **Alert keys** stored in `Workspace.alertsSentAt`:
 
