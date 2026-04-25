@@ -14,16 +14,20 @@ class WorkspaceRepository extends BaseRepository {
     return query.lean();
   }
 
+  async findWithCertifications() {
+    return this.model.find({ 'certifications.0': { $exists: true } }).lean();
+  }
+
   async findWithExpiringCertifications(thresholdDate) {
-    return this.model
-      .find({
-        'certifications.expiryDate': { $lte: thresholdDate },
-      })
-      .lean();
+    return this.model.find({ 'certifications.validUntil': { $lte: thresholdDate } }).lean();
+  }
+
+  async findByContractEndingSoon(from, to) {
+    return this.model.find({ contractEnd: { $ne: null, $gte: from, $lte: to } }).lean();
   }
 
   async findDueForReview(asOf = new Date()) {
-    return this.model.find({ nextReviewDate: { $lte: asOf } }).lean();
+    return this.model.find({ nextReviewDate: { $ne: null, $lt: asOf } }).lean();
   }
 
   async setNextReviewDate(id, nextReviewDate, session) {

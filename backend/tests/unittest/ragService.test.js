@@ -118,11 +118,9 @@ function makeService(overrides = {}) {
   const mockLogger = { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() };
   const mockMessage = {
     find: vi.fn().mockReturnValue({
-      sort: vi
-        .fn()
-        .mockReturnValue({
-          limit: vi.fn().mockReturnValue({ sort: vi.fn().mockResolvedValue([]) }),
-        }),
+      sort: vi.fn().mockReturnValue({
+        limit: vi.fn().mockReturnValue({ sort: vi.fn().mockResolvedValue([]) }),
+      }),
     }),
     create: vi.fn().mockResolvedValue({}),
   };
@@ -401,7 +399,7 @@ describe('askWithConversation', () => {
     expect(mockCache.get).toHaveBeenCalledWith('question', 'ws-1', 'conv-1');
   });
 
-  it('uses "default" workspaceId when conversation has no workspaceId', async () => {
+  it('uses null workspaceId when conversation has no workspaceId', async () => {
     const { svc, mockCache, mockConversation } = makeService();
     svc._initialized = true;
     svc.vectorStore = { similaritySearch: vi.fn().mockResolvedValue([]) };
@@ -412,7 +410,7 @@ describe('askWithConversation', () => {
 
     await svc.askWithConversation('question', { conversationId: 'conv-1' });
 
-    expect(mockCache.get).toHaveBeenCalledWith('question', 'default', 'conv-1');
+    expect(mockCache.get).toHaveBeenCalledWith('question', null, 'conv-1');
   });
 });
 

@@ -1,7 +1,7 @@
 /**
  * Unit Tests — alertMonitorService
  *
- * All DB models and emailService are mocked.
+ * Repositories and emailService are mocked.
  * Tests cover the 4 monitoring checks + dedup + sendReviewReminderAlert.
  */
 
@@ -18,23 +18,28 @@ vi.mock('../../config/logger.js', () => ({
   },
 }));
 
-vi.mock('../../models/Workspace.js', () => ({
-  Workspace: {
+const { mockWorkspaceRepo, mockAssessmentRepo } = vi.hoisted(() => ({
+  mockWorkspaceRepo: {
+    findWithCertifications: vi.fn(),
+    findByContractEndingSoon: vi.fn(),
+    findDueForReview: vi.fn(),
     find: vi.fn(),
     findById: vi.fn(),
-    updateOne: vi.fn(),
+    updateMany: vi.fn(),
   },
+  mockAssessmentRepo: {
+    findLatestByWorkspace: vi.fn(),
+  },
+}));
+
+vi.mock('../../repositories/index.js', () => ({
+  workspaceRepository: mockWorkspaceRepo,
+  assessmentRepository: mockAssessmentRepo,
 }));
 
 vi.mock('../../models/WorkspaceMember.js', () => ({
   WorkspaceMember: {
     find: vi.fn(),
-  },
-}));
-
-vi.mock('../../models/Assessment.js', () => ({
-  Assessment: {
-    findOne: vi.fn(),
   },
 }));
 
@@ -48,9 +53,7 @@ import {
   runMonitoringAlerts,
   sendReviewReminderAlert,
 } from '../../services/alertMonitorService.js';
-import { Workspace } from '../../models/Workspace.js';
 import { WorkspaceMember } from '../../models/WorkspaceMember.js';
-import { Assessment } from '../../models/Assessment.js';
 import emailService from '../../services/emailService.js';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -65,7 +68,7 @@ function makeWorkspace(overrides = {}) {
     certifications: [],
     contractEnd: null,
     nextReviewDate: null,
-    alertsSentAt: new Map(),
+    alertsSentAt: {},
     ...overrides,
   };
 }
@@ -82,15 +85,22 @@ function makeOwner(overrides = {}) {
   };
 }
 
+function setupEmptyChecks() {
+  mockWorkspaceRepo.findWithCertifications.mockResolvedValue([]);
+  mockWorkspaceRepo.findByContractEndingSoon.mockResolvedValue([]);
+  mockWorkspaceRepo.findDueForReview.mockResolvedValue([]);
+  mockWorkspaceRepo.find.mockResolvedValue([]);
+  mockAssessmentRepo.findLatestByWorkspace.mockResolvedValue(null);
+  mockWorkspaceRepo.updateMany.mockResolvedValue({});
+}
+
 // ─── runMonitoringAlerts ──────────────────────────────────────────────────────
 
 describe('runMonitoringAlerts', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    Workspace.find.mockResolvedValue([]);
-    Workspace.updateOne.mockResolvedValue({});
+    setupEmptyChecks();
     WorkspaceMember.find.mockReturnValue({ populate: vi.fn().mockResolvedValue([]) });
-    Assessment.findOne.mockReturnValue({ sort: vi.fn().mockResolvedValue(null) });
   });
 
   it('completes without throwing even when all checks succeed with no data', async () => {
@@ -98,13 +108,7 @@ describe('runMonitoringAlerts', () => {
   });
 
   it('does not throw when one check fails internally', async () => {
-    // First call succeeds (certifications), subsequent fail
-    Workspace.find
-      .mockResolvedValueOnce([]) // checkCertificationExpiry
-      .mockRejectedValueOnce(new Error('DB down')) // checkContractRenewal
-      .mockResolvedValueOnce([]) // checkAnnualReviewOverdue
-      .mockResolvedValueOnce([]); // checkAssessmentOverdue
-
+    mockWorkspaceRepo.findByContractEndingSoon.mockRejectedValue(new Error('DB down'));
     await expect(runMonitoringAlerts()).resolves.not.toThrow();
   });
 });
@@ -114,25 +118,19 @@ describe('runMonitoringAlerts', () => {
 describe('Certification expiry alerts', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    Workspace.updateOne.mockResolvedValue({});
+    setupEmptyChecks();
     WorkspaceMember.find.mockReturnValue({
       populate: vi.fn().mockResolvedValue([makeOwner()]),
     });
     emailService.sendMonitoringAlert.mockResolvedValue({});
-    Assessment.findOne.mockReturnValue({ sort: vi.fn().mockResolvedValue(null) });
   });
 
   it('sends 7-day cert alert when cert expires within 7 days', async () => {
-    const expiry = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000); // 3 days
+    const expiry = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
     const workspace = makeWorkspace({
       certifications: [{ type: 'ISO27001', validUntil: expiry }],
     });
-
-    Workspace.find
-      .mockResolvedValueOnce([workspace]) // checkCertificationExpiry
-      .mockResolvedValueOnce([]) // checkContractRenewal
-      .mockResolvedValueOnce([]) // checkAnnualReviewOverdue
-      .mockResolvedValueOnce([]); // checkAssessmentOverdue
+    mockWorkspaceRepo.findWithCertifications.mockResolvedValue([workspace]);
 
     await runMonitoringAlerts();
 
@@ -146,12 +144,7 @@ describe('Certification expiry alerts', () => {
     const workspace = makeWorkspace({
       certifications: [{ type: 'SOC2', validUntil: expiry }],
     });
-
-    Workspace.find
-      .mockResolvedValueOnce([workspace])
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([]);
+    mockWorkspaceRepo.findWithCertifications.mockResolvedValue([workspace]);
 
     await runMonitoringAlerts();
 
@@ -165,12 +158,7 @@ describe('Certification expiry alerts', () => {
     const workspace = makeWorkspace({
       certifications: [{ type: 'PCI-DSS', validUntil: expiry }],
     });
-
-    Workspace.find
-      .mockResolvedValueOnce([workspace])
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([]);
+    mockWorkspaceRepo.findWithCertifications.mockResolvedValue([workspace]);
 
     await runMonitoringAlerts();
 
@@ -184,12 +172,7 @@ describe('Certification expiry alerts', () => {
     const workspace = makeWorkspace({
       certifications: [{ type: 'ISO27001', validUntil: expiry }],
     });
-
-    Workspace.find
-      .mockResolvedValueOnce([workspace])
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([]);
+    mockWorkspaceRepo.findWithCertifications.mockResolvedValue([workspace]);
 
     await runMonitoringAlerts();
 
@@ -200,12 +183,7 @@ describe('Certification expiry alerts', () => {
     const workspace = makeWorkspace({
       certifications: [{ type: 'ISO27001', validUntil: null }],
     });
-
-    Workspace.find
-      .mockResolvedValueOnce([workspace])
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([]);
+    mockWorkspaceRepo.findWithCertifications.mockResolvedValue([workspace]);
 
     await runMonitoringAlerts();
 
@@ -217,14 +195,9 @@ describe('Certification expiry alerts', () => {
     const alertKey = 'cert-expiry-7-ISO27001';
     const workspace = makeWorkspace({
       certifications: [{ type: 'ISO27001', validUntil: expiry }],
-      alertsSentAt: new Map([[alertKey, new Date(Date.now() - NINETEEN_HOURS_MS)]]), // sent 19h ago
+      alertsSentAt: { [alertKey]: new Date(Date.now() - NINETEEN_HOURS_MS) },
     });
-
-    Workspace.find
-      .mockResolvedValueOnce([workspace])
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([]);
+    mockWorkspaceRepo.findWithCertifications.mockResolvedValue([workspace]);
 
     await runMonitoringAlerts();
 
@@ -236,14 +209,9 @@ describe('Certification expiry alerts', () => {
     const alertKey = 'cert-expiry-7-ISO27001';
     const workspace = makeWorkspace({
       certifications: [{ type: 'ISO27001', validUntil: expiry }],
-      alertsSentAt: new Map([[alertKey, new Date(Date.now() - TWENTY_ONE_HOURS_MS)]]), // sent 21h ago
+      alertsSentAt: { [alertKey]: new Date(Date.now() - TWENTY_ONE_HOURS_MS) },
     });
-
-    Workspace.find
-      .mockResolvedValueOnce([workspace])
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([]);
+    mockWorkspaceRepo.findWithCertifications.mockResolvedValue([workspace]);
 
     await runMonitoringAlerts();
 
@@ -256,23 +224,17 @@ describe('Certification expiry alerts', () => {
 describe('Contract renewal alerts', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    Workspace.updateOne.mockResolvedValue({});
+    setupEmptyChecks();
     WorkspaceMember.find.mockReturnValue({
       populate: vi.fn().mockResolvedValue([makeOwner()]),
     });
     emailService.sendMonitoringAlert.mockResolvedValue({});
-    Assessment.findOne.mockReturnValue({ sort: vi.fn().mockResolvedValue(null) });
   });
 
   it('sends contract renewal alert when contract ends within 60 days', async () => {
     const contractEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
     const workspace = makeWorkspace({ contractEnd });
-
-    Workspace.find
-      .mockResolvedValueOnce([]) // checkCertificationExpiry
-      .mockResolvedValueOnce([workspace]) // checkContractRenewal
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([]);
+    mockWorkspaceRepo.findByContractEndingSoon.mockResolvedValue([workspace]);
 
     await runMonitoringAlerts();
 
@@ -285,14 +247,9 @@ describe('Contract renewal alerts', () => {
     const contractEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
     const workspace = makeWorkspace({
       contractEnd,
-      alertsSentAt: new Map([['contract-renewal-60', new Date(Date.now() - NINETEEN_HOURS_MS)]]),
+      alertsSentAt: { 'contract-renewal-60': new Date(Date.now() - NINETEEN_HOURS_MS) },
     });
-
-    Workspace.find
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([workspace])
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([]);
+    mockWorkspaceRepo.findByContractEndingSoon.mockResolvedValue([workspace]);
 
     await runMonitoringAlerts();
 
@@ -305,23 +262,17 @@ describe('Contract renewal alerts', () => {
 describe('Annual review overdue alerts', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    Workspace.updateOne.mockResolvedValue({});
+    setupEmptyChecks();
     WorkspaceMember.find.mockReturnValue({
       populate: vi.fn().mockResolvedValue([makeOwner()]),
     });
     emailService.sendMonitoringAlert.mockResolvedValue({});
-    Assessment.findOne.mockReturnValue({ sort: vi.fn().mockResolvedValue(null) });
   });
 
   it('sends annual review overdue alert', async () => {
     const pastDate = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000);
     const workspace = makeWorkspace({ nextReviewDate: pastDate });
-
-    Workspace.find
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([workspace]) // checkAnnualReviewOverdue
-      .mockResolvedValueOnce([]);
+    mockWorkspaceRepo.findDueForReview.mockResolvedValue([workspace]);
 
     await runMonitoringAlerts();
 
@@ -334,14 +285,9 @@ describe('Annual review overdue alerts', () => {
     const pastDate = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000);
     const workspace = makeWorkspace({
       nextReviewDate: pastDate,
-      alertsSentAt: new Map([['annual-review-overdue', new Date(Date.now() - NINETEEN_HOURS_MS)]]),
+      alertsSentAt: { 'annual-review-overdue': new Date(Date.now() - NINETEEN_HOURS_MS) },
     });
-
-    Workspace.find
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([workspace])
-      .mockResolvedValueOnce([]);
+    mockWorkspaceRepo.findDueForReview.mockResolvedValue([workspace]);
 
     await runMonitoringAlerts();
 
@@ -354,7 +300,7 @@ describe('Annual review overdue alerts', () => {
 describe('Assessment overdue alerts', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    Workspace.updateOne.mockResolvedValue({});
+    setupEmptyChecks();
     WorkspaceMember.find.mockReturnValue({
       populate: vi.fn().mockResolvedValue([makeOwner()]),
     });
@@ -363,14 +309,8 @@ describe('Assessment overdue alerts', () => {
 
   it('sends assessment overdue alert when no assessment exists', async () => {
     const workspace = makeWorkspace();
-
-    Workspace.find
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([workspace]); // checkAssessmentOverdue
-
-    Assessment.findOne.mockReturnValue({ sort: vi.fn().mockResolvedValue(null) });
+    mockWorkspaceRepo.find.mockResolvedValue([workspace]);
+    mockAssessmentRepo.findLatestByWorkspace.mockResolvedValue(null);
 
     await runMonitoringAlerts();
 
@@ -382,14 +322,8 @@ describe('Assessment overdue alerts', () => {
   it('sends assessment overdue alert when last assessment is older than 12 months', async () => {
     const workspace = makeWorkspace();
     const oldAssessment = { createdAt: new Date(Date.now() - 400 * 24 * 60 * 60 * 1000) };
-
-    Workspace.find
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([workspace]);
-
-    Assessment.findOne.mockReturnValue({ sort: vi.fn().mockResolvedValue(oldAssessment) });
+    mockWorkspaceRepo.find.mockResolvedValue([workspace]);
+    mockAssessmentRepo.findLatestByWorkspace.mockResolvedValue(oldAssessment);
 
     await runMonitoringAlerts();
 
@@ -401,14 +335,8 @@ describe('Assessment overdue alerts', () => {
   it('does NOT send alert when last assessment is recent (< 12 months)', async () => {
     const workspace = makeWorkspace();
     const recentAssessment = { createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) };
-
-    Workspace.find
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([workspace]);
-
-    Assessment.findOne.mockReturnValue({ sort: vi.fn().mockResolvedValue(recentAssessment) });
+    mockWorkspaceRepo.find.mockResolvedValue([workspace]);
+    mockAssessmentRepo.findLatestByWorkspace.mockResolvedValue(recentAssessment);
 
     await runMonitoringAlerts();
 
@@ -421,20 +349,14 @@ describe('Assessment overdue alerts', () => {
 describe('sendAlertToOwners email logic', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    Workspace.updateOne.mockResolvedValue({});
-    Assessment.findOne.mockReturnValue({ sort: vi.fn().mockResolvedValue(null) });
+    setupEmptyChecks();
     emailService.sendMonitoringAlert.mockResolvedValue({});
   });
 
   it('skips member with no email', async () => {
     const workspace = makeWorkspace();
-
-    Workspace.find
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([workspace]);
-
+    mockWorkspaceRepo.find.mockResolvedValue([workspace]);
+    mockAssessmentRepo.findLatestByWorkspace.mockResolvedValue(null);
     WorkspaceMember.find.mockReturnValue({
       populate: vi
         .fn()
@@ -448,13 +370,8 @@ describe('sendAlertToOwners email logic', () => {
 
   it('skips member who opted out of system alerts', async () => {
     const workspace = makeWorkspace();
-
-    Workspace.find
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([workspace]);
-
+    mockWorkspaceRepo.find.mockResolvedValue([workspace]);
+    mockAssessmentRepo.findLatestByWorkspace.mockResolvedValue(null);
     WorkspaceMember.find.mockReturnValue({
       populate: vi
         .fn()
@@ -473,13 +390,7 @@ describe('sendAlertToOwners email logic', () => {
     const workspace = makeWorkspace({
       certifications: [{ type: 'ISO27001', validUntil: expiry }],
     });
-
-    Workspace.find
-      .mockResolvedValueOnce([workspace])
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([]);
-
+    mockWorkspaceRepo.findWithCertifications.mockResolvedValue([workspace]);
     WorkspaceMember.find.mockReturnValue({
       populate: vi
         .fn()
@@ -505,11 +416,10 @@ describe('sendReviewReminderAlert', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     emailService.sendMonitoringAlert.mockResolvedValue({});
-    Workspace.updateOne.mockResolvedValue({});
   });
 
   it('does nothing when workspace not found', async () => {
-    Workspace.findById.mockResolvedValue(null);
+    mockWorkspaceRepo.findById.mockResolvedValue(null);
 
     await sendReviewReminderAlert('ws-missing');
 
@@ -520,7 +430,7 @@ describe('sendReviewReminderAlert', () => {
     const workspace = makeWorkspace({
       nextReviewDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
     });
-    Workspace.findById.mockResolvedValue(workspace);
+    mockWorkspaceRepo.findById.mockResolvedValue(workspace);
     WorkspaceMember.find.mockReturnValue({
       populate: vi.fn().mockResolvedValue([makeOwner()]),
     });
@@ -538,7 +448,7 @@ describe('sendReviewReminderAlert', () => {
 
   it('uses "soon" as reviewDate when nextReviewDate is not set', async () => {
     const workspace = makeWorkspace({ nextReviewDate: null });
-    Workspace.findById.mockResolvedValue(workspace);
+    mockWorkspaceRepo.findById.mockResolvedValue(workspace);
     WorkspaceMember.find.mockReturnValue({
       populate: vi.fn().mockResolvedValue([makeOwner()]),
     });
