@@ -36,10 +36,6 @@ vi.mock('../../config/queue.js', () => ({
   assessmentQueue: { add: vi.fn().mockResolvedValue({ id: 'j1' }) },
 }));
 
-vi.mock('../../middleware/fileUpload.js', () => ({
-  handleFileUpload: vi.fn().mockResolvedValue(undefined),
-}));
-
 vi.mock('../../services/reportGenerator.js', () => ({
   generateReport: vi.fn().mockResolvedValue(Buffer.from('docx')),
 }));
@@ -118,12 +114,6 @@ function makeReqRes(bodyOverrides = {}, paramOverrides = {}) {
 
 describe('setRiskDecision', () => {
   beforeEach(() => vi.clearAllMocks());
-
-  it('returns 400 for an invalid decision value', async () => {
-    const { req, res, next } = makeReqRes({ decision: 'approve' });
-    await setRiskDecision(req, res, next);
-    expect(res.status).toHaveBeenCalledWith(400);
-  });
 
   it('calls next(AppError 404) when assessment not found', async () => {
     Assessment.findById.mockResolvedValue(null);
@@ -211,18 +201,6 @@ describe('setRiskDecision', () => {
 
 describe('setClauseSignoff', () => {
   beforeEach(() => vi.clearAllMocks());
-
-  it('returns 400 when clauseRef is missing', async () => {
-    const { req, res, next } = makeReqRes({ status: 'accepted' });
-    await setClauseSignoff(req, res, next);
-    expect(res.status).toHaveBeenCalledWith(400);
-  });
-
-  it('returns 400 for an invalid status value', async () => {
-    const { req, res, next } = makeReqRes({ clauseRef: 'Art.30(1)', status: 'approved' });
-    await setClauseSignoff(req, res, next);
-    expect(res.status).toHaveBeenCalledWith(400);
-  });
 
   it('calls next(AppError 404) when assessment not found', async () => {
     Assessment.findById.mockResolvedValue(null);

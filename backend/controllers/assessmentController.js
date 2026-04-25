@@ -2,7 +2,6 @@ import path from 'path';
 import { Assessment } from '../models/Assessment.js';
 import { Workspace } from '../models/Workspace.js';
 import { assessmentQueue, monitoringQueue } from '../config/queue.js';
-import { handleFileUpload } from '../middleware/fileUpload.js';
 import { generateReport } from '../services/reportGenerator.js';
 import { catchAsync, sendSuccess, sendError, AppError } from '../utils/index.js';
 import logger from '../config/logger.js';
@@ -20,18 +19,7 @@ import {
  * Enqueues fileIndex jobs for each file, then a gapAnalysis job.
  */
 export const createAssessment = catchAsync(async (req, res) => {
-  // Handle multipart file upload
-  await handleFileUpload(req, res);
-
   const { name, vendorName, framework = 'DORA', workspaceId } = req.body;
-
-  if (!name || !vendorName) {
-    return sendError(res, 400, 'Assessment name and vendor name are required');
-  }
-
-  if (!workspaceId) {
-    return sendError(res, 400, 'workspaceId is required');
-  }
 
   if (!req.files || req.files.length === 0) {
     return sendError(res, 400, 'At least one vendor document must be uploaded');
@@ -285,10 +273,6 @@ export const setRiskDecision = catchAsync(async (req, res) => {
   const { decision, rationale } = req.body;
   const authorizedWorkspaceIds = req.authorizedWorkspaces?.map((w) => w._id.toString()) || [];
 
-  if (!['proceed', 'conditional', 'reject'].includes(decision)) {
-    return sendError(res, 400, "decision must be 'proceed', 'conditional', or 'reject'");
-  }
-
   const assessment = await Assessment.findById(id);
   if (!assessment) throw new AppError('Assessment not found', 404);
   if (!authorizedWorkspaceIds.includes(assessment.workspaceId.toString())) {
@@ -360,11 +344,6 @@ export const setClauseSignoff = catchAsync(async (req, res) => {
   const { id } = req.params;
   const { clauseRef, status, note } = req.body;
   const authorizedWorkspaceIds = req.authorizedWorkspaces?.map((w) => w._id.toString()) || [];
-
-  if (!clauseRef) return sendError(res, 400, 'clauseRef is required');
-  if (!['accepted', 'rejected', 'waived'].includes(status)) {
-    return sendError(res, 400, "status must be 'accepted', 'rejected', or 'waived'");
-  }
 
   const assessment = await Assessment.findById(id);
   if (!assessment) throw new AppError('Assessment not found', 404);

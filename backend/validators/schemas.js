@@ -245,6 +245,61 @@ export const changePasswordSchema = z
 // MongoDB ID validation
 export const mongoIdSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid ID format');
 
+// Workspace Schemas
+export const createWorkspaceSchema = z.object({
+  name: z.string().min(1, 'Workspace name is required').max(200, 'Name too long').trim(),
+  description: z.string().optional(),
+  vendorTier: z.enum(['critical', 'important', 'standard']).nullable().optional(),
+  serviceType: z.enum(['cloud', 'software', 'data', 'network', 'other']).nullable().optional(),
+  country: z.string().optional(),
+  contractStart: z.string().optional().nullable(),
+  contractEnd: z.string().optional().nullable(),
+  vendorFunctions: z.array(z.string()).optional(),
+});
+
+export const updateWorkspaceSchema = z.object({
+  name: z.string().min(1).max(200).trim().optional(),
+  description: z.string().optional(),
+  vendorTier: z.enum(['critical', 'important', 'standard']).nullable().optional(),
+  serviceType: z.enum(['cloud', 'software', 'data', 'network', 'other']).nullable().optional(),
+  country: z.string().optional(),
+  contractStart: z.string().optional().nullable(),
+  contractEnd: z.string().optional().nullable(),
+  nextReviewDate: z.string().optional().nullable(),
+  vendorStatus: z.enum(['active', 'under-review', 'exited']).optional(),
+  certifications: z.array(z.string()).optional(),
+  exitStrategyDoc: z.string().optional().nullable(),
+  vendorFunctions: z.array(z.string()).optional(),
+});
+
+export const inviteMemberSchema = z.object({
+  email: z.string().email('Invalid email address').toLowerCase(),
+  role: z.enum(['member', 'viewer']).default('member'),
+});
+
+// Assessment Schemas
+export const createAssessmentSchema = z.object({
+  name: z.string().min(1, 'Assessment name is required').max(200, 'Name too long').trim(),
+  vendorName: z.string().min(1, 'Vendor name is required').max(200, 'Vendor name too long').trim(),
+  framework: z.enum(['DORA', 'CONTRACT_A30']).default('DORA'),
+  workspaceId: mongoIdSchema,
+});
+
+export const setRiskDecisionSchema = z.object({
+  decision: z.enum(['proceed', 'conditional', 'reject'], {
+    errorMap: () => ({ message: "decision must be 'proceed', 'conditional', or 'reject'" }),
+  }),
+  rationale: z.string().optional(),
+});
+
+export const setClauseSignoffSchema = z.object({
+  clauseRef: z.string().min(1, 'clauseRef is required'),
+  status: z.enum(['accepted', 'rejected', 'waived'], {
+    errorMap: () => ({ message: "status must be 'accepted', 'rejected', or 'waived'" }),
+  }),
+  note: z.string().optional(),
+});
+
 // Pagination schema
 export const paginationSchema = z.object({
   page: z

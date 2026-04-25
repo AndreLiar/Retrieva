@@ -34,10 +34,6 @@ export const createWorkspace = catchAsync(async (req, res) => {
   } = req.body;
   const userId = req.user.userId;
 
-  if (!name?.trim()) {
-    return sendError(res, 400, 'Workspace name is required');
-  }
-
   // Attach org if creator belongs to one
   const orgMembership = await OrganizationMember.findOne({ userId, status: 'active' });
 
@@ -346,14 +342,6 @@ export const inviteMember = catchAsync(async (req, res) => {
   const { workspaceId } = req.params;
   const { email, role = 'member' } = req.body;
   const inviterId = req.user.userId;
-
-  if (!email) {
-    return sendError(res, 400, 'Email is required');
-  }
-
-  if (!['member', 'viewer'].includes(role)) {
-    return sendError(res, 400, 'Invalid role. Must be "member" or "viewer"');
-  }
 
   const userToInvite = await User.findOne({ email: email.toLowerCase() });
   if (!userToInvite) {

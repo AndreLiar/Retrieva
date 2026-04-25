@@ -73,10 +73,6 @@ vi.mock('../../models/Assessment.js', () => ({
   },
 }));
 
-vi.mock('../../middleware/fileUpload.js', () => ({
-  handleFileUpload: vi.fn().mockResolvedValue(undefined),
-}));
-
 vi.mock('../../services/reportGenerator.js', () => ({
   generateReport: vi.fn().mockResolvedValue(Buffer.from('docx-bytes')),
 }));
@@ -173,24 +169,6 @@ describe('assessmentController', () => {
         },
       ];
       Assessment.create.mockResolvedValue(mockAssessmentDoc);
-    });
-
-    it('returns 400 when name is missing', async () => {
-      mockReq.body.name = '';
-      await createAssessment(mockReq, mockRes, mockNext);
-      expect(mockRes.status).toHaveBeenCalledWith(400);
-    });
-
-    it('returns 400 when vendorName is missing', async () => {
-      mockReq.body.vendorName = '';
-      await createAssessment(mockReq, mockRes, mockNext);
-      expect(mockRes.status).toHaveBeenCalledWith(400);
-    });
-
-    it('returns 400 when workspaceId is missing', async () => {
-      delete mockReq.body.workspaceId;
-      await createAssessment(mockReq, mockRes, mockNext);
-      expect(mockRes.status).toHaveBeenCalledWith(400);
     });
 
     it('returns 400 when no files are uploaded', async () => {
