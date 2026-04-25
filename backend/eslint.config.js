@@ -53,7 +53,7 @@ export default [
         'warn',
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' },
       ],
-      'no-console': 'off', // Allow console for server logging
+      'no-console': 'error',
       'no-debugger': 'error',
 
       // Best practices
@@ -82,5 +82,10 @@ export default [
   {
     // Ignore patterns
     ignores: ['node_modules/**', 'coverage/**', 'dist/**', 'build/**', '*.min.js'],
+  },
+  {
+    // console.* is the intended output mechanism in these files
+    files: ['instrument.js', 'scripts/**', 'seeds/**', 'utils/rag/qdrantExplorer.js', 'tests/**'],
+    rules: { 'no-console': 'off' },
   },
 ];
