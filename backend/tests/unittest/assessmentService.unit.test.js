@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import mongoose from 'mongoose';
 import { AssessmentService } from '../../services/AssessmentService.js';
 
@@ -249,10 +249,20 @@ describe('AssessmentService.listAssessments', () => {
 describe('AssessmentService.setRiskDecision', () => {
   let deps;
   let svc;
+  let sessionSpy;
 
   beforeEach(() => {
     deps = makeDeps();
     svc = new AssessmentService(deps);
+    const mockSession = {
+      withTransaction: vi.fn().mockImplementation((fn) => fn()),
+      endSession: vi.fn().mockResolvedValue(undefined),
+    };
+    sessionSpy = vi.spyOn(mongoose, 'startSession').mockResolvedValue(mockSession);
+  });
+
+  afterEach(() => {
+    sessionSpy.mockRestore();
   });
 
   it('throws 404 when assessment not found', async () => {
@@ -283,6 +293,14 @@ describe('AssessmentService.setRiskDecision', () => {
     expect(doc.riskDecision.rationale).toBe('All good');
     expect(doc.save).toHaveBeenCalled();
     expect(result.decision).toBe('proceed');
+  });
+
+  it('wraps assessment save and workspace update in a transaction', async () => {
+    deps.Assessment.findById.mockResolvedValue(makeAssessmentDoc());
+    await svc.setRiskDecision(ASSESSMENT_OID.toString(), USER_ID, AUTH_IDS, {
+      decision: 'proceed',
+    });
+    expect(sessionSpy).toHaveBeenCalled();
   });
 
   it('schedules a review reminder for proceed decisions', async () => {

@@ -9,7 +9,7 @@
 import { Worker } from 'bullmq';
 import { redisConnection } from '../config/redis.js';
 import { Assessment } from '../models/Assessment.js';
-import { ingestFile } from '../services/fileIngestionService.js';
+import { ingestFile, assessmentCollectionName } from '../services/fileIngestionService.js';
 import logger from '../config/logger.js';
 import { connectDB } from '../config/database.js';
 
@@ -44,6 +44,18 @@ async function processFileIndex(job) {
     fileName,
     jobId: job.id,
   });
+
+  // Idempotency guard — skip if already indexed (safe on retries)
+  const existing = await Assessment.findById(assessmentId).lean();
+  if (existing?.documents[documentIndex]?.status === 'indexed') {
+    logger.info('Document already indexed, skipping (idempotency guard)', {
+      service: 'assessment-worker',
+      assessmentId,
+      documentIndex,
+      fileName,
+    });
+    return { chunkCount: 0, collectionName: assessmentCollectionName(assessmentId), skipped: true };
+  }
 
   // Mark document as indexing
   await Assessment.findByIdAndUpdate(assessmentId, {

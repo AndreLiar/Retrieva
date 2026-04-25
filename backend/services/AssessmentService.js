@@ -1,4 +1,5 @@
 import path from 'path';
+import mongoose from 'mongoose';
 import { AppError } from '../utils/index.js';
 import { Assessment } from '../models/Assessment.js';
 import { Workspace } from '../models/Workspace.js';
@@ -199,14 +200,33 @@ class AssessmentService {
       throw new AppError('Access denied to this assessment', 403);
     }
 
-    assessment.riskDecision = {
-      decision,
-      setBy: userId,
-      setByName: '',
-      rationale: rationale?.trim() || '',
-      setAt: new Date(),
-    };
-    await assessment.save();
+    // Atomically persist the risk decision and the workspace review date together.
+    // Mirrors the _saveMessages transaction pattern from rag.js.
+    let nextReviewDate;
+    const session = await mongoose.startSession();
+    try {
+      await session.withTransaction(async () => {
+        assessment.riskDecision = {
+          decision,
+          setBy: userId,
+          setByName: '',
+          rationale: rationale?.trim() || '',
+          setAt: new Date(),
+        };
+        await assessment.save({ session });
+
+        if (decision === 'proceed' || decision === 'conditional') {
+          nextReviewDate = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
+          await this.Workspace.findByIdAndUpdate(
+            assessment.workspaceId,
+            { nextReviewDate },
+            { session }
+          );
+        }
+      });
+    } finally {
+      await session.endSession();
+    }
 
     this.logger.info('Risk decision recorded', {
       service: 'assessment',
@@ -215,11 +235,9 @@ class AssessmentService {
       userId,
     });
 
-    if (decision === 'proceed' || decision === 'conditional') {
+    // Schedule monitoring reminder outside transaction — non-critical
+    if (nextReviewDate) {
       try {
-        const nextReviewDate = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
-        await this.Workspace.findByIdAndUpdate(assessment.workspaceId, { nextReviewDate });
-
         const delayMs = Math.max(
           0,
           nextReviewDate.getTime() - 30 * 24 * 60 * 60 * 1000 - Date.now()
