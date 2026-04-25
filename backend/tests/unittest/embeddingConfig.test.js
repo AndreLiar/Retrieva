@@ -2,7 +2,7 @@
  * Unit Tests for Embedding Configuration
  *
  * Validates that the embedding system is correctly configured.
- * Supports both Azure OpenAI (default) and local bge-m3 configurations.
+ * Uses Ollama cloud with bge-m3:latest as the default embedding model.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
@@ -35,10 +35,9 @@ describe('Embedding Configuration', () => {
   // embeddings.js — default model constant
   // ===========================================================================
   describe('config/embeddings.js', () => {
-    it('should default EMBEDDING_MODEL to text-embedding-3-small for Azure', async () => {
+    it('should default EMBEDDING_MODEL to bge-m3:latest for Ollama cloud', async () => {
       const mod = await freshImport('../../config/embeddings.js');
-      // Default is Azure OpenAI's text-embedding-3-small
-      expect(mod.EMBEDDING_MODEL).toBe('text-embedding-3-small');
+      expect(mod.EMBEDDING_MODEL).toBe('bge-m3:latest');
     });
 
     it('should compute maxCharsPerChunk = 29491 with default 8192 context tokens', async () => {
@@ -59,10 +58,9 @@ describe('Embedding Configuration', () => {
       expect(prefixes).toHaveProperty('query');
     });
 
-    it('should return empty prefixes for Azure OpenAI embeddings', async () => {
+    it('should return empty prefixes for Ollama bge-m3 embeddings', async () => {
       const mod = await freshImport('../../config/embeddingProvider.js');
       const prefixes = mod.getEmbeddingPrefixes();
-      // Azure OpenAI text-embedding-3-small doesn't need prefixes
       expect(prefixes.document).toBe('');
       expect(prefixes.query).toBe('');
     });
