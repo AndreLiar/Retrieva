@@ -22,10 +22,10 @@ export default defineConfig({
       include: ['utils/**/*.js', 'controllers/**/*.js', 'middleware/**/*.js', 'services/**/*.js'],
       exclude: ['node_modules', 'tests', 'utils/rag/qdrantExplorer.js'],
       thresholds: {
-        statements: 55,
-        branches: 78,
-        functions: 62,
-        lines: 55,
+        statements: 59,
+        branches: 80,
+        functions: 63,
+        lines: 59,
       },
     },
 
