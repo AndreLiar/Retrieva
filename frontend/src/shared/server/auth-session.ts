@@ -15,16 +15,20 @@ function buildCookieHeader(store: Awaited<ReturnType<typeof cookies>>) {
 }
 
 async function fetchJson<T>(url: string, init: RequestInit = {}): Promise<T | null> {
-  const response = await fetch(url, {
-    ...init,
-    cache: 'no-store',
-  });
+  try {
+    const response = await fetch(url, {
+      ...init,
+      cache: 'no-store',
+    });
 
-  if (!response.ok) {
+    if (!response.ok) {
+      return null;
+    }
+
+    return response.json() as Promise<T>;
+  } catch {
     return null;
   }
-
-  return response.json() as Promise<T>;
 }
 
 export async function getServerSessionUser(): Promise<User | null> {
