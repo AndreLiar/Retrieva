@@ -509,6 +509,51 @@ describe('buildMonitoringAlertHtml content', () => {
   });
 });
 
+// ─── sendWeeklyDigest (local path) ───────────────────────────────────────────
+
+describe('sendWeeklyDigest', () => {
+  beforeEach(() => {
+    mockResendSend.mockResolvedValue({ data: { id: 'msg-digest' }, error: null });
+  });
+
+  it('sends email with score table in subject and body', async () => {
+    const items = [
+      {
+        workspaceId: 'ws-1',
+        workspaceName: 'Acme',
+        score: 85,
+        trend: 3,
+        status: 'green',
+        reviewDue: null,
+      },
+      {
+        workspaceId: 'ws-2',
+        workspaceName: 'Beta Corp',
+        score: 55,
+        trend: -5,
+        status: 'red',
+        reviewDue: '1 Jun 2026',
+      },
+    ];
+    await emailService.sendWeeklyDigest({ toEmail: 'owner@example.com', toName: 'Alice', items });
+    const call = mockResendSend.mock.calls[0][0];
+    expect(call.to).toBe('owner@example.com');
+    expect(call.subject).toContain('weekly');
+    expect(call.html).toContain('Acme');
+    expect(call.html).toContain('Beta Corp');
+  });
+
+  it('handles empty items array without throwing', async () => {
+    await emailService.sendWeeklyDigest({
+      toEmail: 'owner@example.com',
+      toName: 'Alice',
+      items: [],
+    });
+    const call = mockResendSend.mock.calls[0][0];
+    expect(call.html).toBeDefined();
+  });
+});
+
 // ─── Remote path (EMAIL_SERVICE_URL configured) ───────────────────────────────
 
 describe('remote path (EMAIL_SERVICE_URL set)', () => {
@@ -590,6 +635,16 @@ describe('remote path (EMAIL_SERVICE_URL set)', () => {
     expect(mockInternalPost).toHaveBeenCalledWith(
       'http://email-service:3001',
       '/internal/email/workspace-invitation',
+      payload
+    );
+  });
+
+  it('sendWeeklyDigest delegates to /internal/email/weekly-digest', async () => {
+    const payload = { toEmail: 'alice@example.com', toName: 'Alice', items: [] };
+    await remoteService.sendWeeklyDigest(payload);
+    expect(mockInternalPost).toHaveBeenCalledWith(
+      'http://email-service:3001',
+      '/internal/email/weekly-digest',
       payload
     );
   });
