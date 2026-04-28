@@ -15,10 +15,10 @@ import type { User } from '@/types';
 
 interface DashboardShellProps {
   children: React.ReactNode;
-  user: User;
+  initialUser?: User;
 }
 
-export function DashboardShell({ children, user }: DashboardShellProps) {
+export function DashboardShell({ children, initialUser: user }: DashboardShellProps) {
   const setIsMobile = useUIStore((state) => state.setIsMobile);
   const isMobile = useUIStore((state) => state.isMobile);
 
@@ -44,7 +44,7 @@ export function DashboardShell({ children, user }: DashboardShellProps) {
 
       <ModalOutlet />
 
-      {user.organizationId && user.onboardingCompleted === false && (
+      {user?.organizationId && user.onboardingCompleted === false && (
         <Suspense fallback={null}>
           <WelcomeScreen />
         </Suspense>

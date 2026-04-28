@@ -54,7 +54,7 @@ async function RootLayoutContent({
       <body
         className={`${cormorant.variable} ${dmSans.variable} ${jetbrainsMono.variable} font-sans antialiased`}
       >
-        <Providers initialUser={initialUser} authResolved>
+        <Providers initialUser={initialUser ?? undefined} authResolved={!!initialUser}>
           {children}
         </Providers>
       </body>

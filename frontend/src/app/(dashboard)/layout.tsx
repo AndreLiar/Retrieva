@@ -1,5 +1,3 @@
-import { redirect } from 'next/navigation';
-
 import { DashboardShell } from '@/components/layout/dashboard-shell';
 import { getServerSessionUser } from '@/shared/server/auth-session';
 
@@ -10,13 +8,7 @@ export default async function DashboardLayout({
 }) {
   const user = await getServerSessionUser();
 
-  if (!user) {
-    redirect('/login');
-  }
-
-  if (!user.organizationId) {
-    redirect('/onboarding');
-  }
-
-  return <DashboardShell user={user}>{children}</DashboardShell>;
+  return (
+    <DashboardShell initialUser={user ?? undefined}>{children}</DashboardShell>
+  );
 }
