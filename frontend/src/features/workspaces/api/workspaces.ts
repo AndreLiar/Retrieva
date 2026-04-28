@@ -52,7 +52,7 @@ export interface UpdateMemberData {
 }
 
 function normalizeWorkspace(workspace: WorkspaceApiResponse): WorkspaceWithMembership {
-  const workspaceId = workspace.id || workspace._id;
+  const workspaceId = workspace.id || workspace._id || '';
   const workspaceName = workspace.workspaceName || workspace.name || '';
   const role = workspace.myRole || workspace.role || 'viewer';
   const permissions = workspace.permissions || {
