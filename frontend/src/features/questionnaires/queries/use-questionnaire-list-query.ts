@@ -2,12 +2,12 @@
 
 import { useQuery } from '@tanstack/react-query';
 
-import { questionnairesApi } from '@/features/questionnaires/api/questionnaires';
+import { questionnairesApi, type QuestionnaireStatus } from '@/features/questionnaires/api/questionnaires';
 
 interface UseQuestionnaireListQueryOptions {
   workspaceId?: string | null;
   limit?: number;
-  status?: string;
+  status?: QuestionnaireStatus;
   page?: number;
   refetchWhileActive?: boolean;
 }
