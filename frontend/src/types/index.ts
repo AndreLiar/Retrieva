@@ -109,6 +109,7 @@ export interface Workspace {
 // ISSUE #52 FIX: Proper typing for backend workspace response
 export interface WorkspaceApiResponse {
   id: string;
+  _id?: string;
   workspaceName?: string;
   name?: string;
   workspaceIcon?: string;
@@ -270,4 +271,3 @@ export interface RAGResponse {
   confidence?: number;
   cached?: boolean;
 }
-

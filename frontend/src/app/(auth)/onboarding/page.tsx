@@ -28,6 +28,7 @@ import {
 import { useAuthStore } from '@/lib/stores/auth-store';
 import { organizationsApi } from '@/lib/api/organizations';
 import { getErrorMessage } from '@/lib/api';
+import { useAuthSession } from '@/lib/hooks';
 
 const onboardingSchema = z.object({
   name: z.string().min(2, 'Organization name must be at least 2 characters').max(100),
@@ -39,7 +40,8 @@ type OnboardingFormData = z.infer<typeof onboardingSchema>;
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const { user, isAuthenticated, isInitialized, fetchUser } = useAuthStore();
+  const { user, isAuthenticated, isInitialized } = useAuthStore();
+  const { syncCurrentUser } = useAuthSession();
   const [error, setError] = useState<string | null>(null);
 
   // Redirect if not authenticated
@@ -72,8 +74,7 @@ export default function OnboardingPage() {
         industry: data.industry,
         country: data.country || '',
       });
-      // Re-fetch user so auth store gets org data
-      await fetchUser();
+      await syncCurrentUser();
       toast.success(`${data.name} created! Welcome to Retrieva.`);
       router.push('/assessments');
     } catch (err) {

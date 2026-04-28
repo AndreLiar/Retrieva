@@ -1,6 +1,6 @@
 'use client';
 
-import { useActiveWorkspace } from '@/lib/stores/workspace-store';
+import { useActiveWorkspace } from '@/lib/hooks';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 

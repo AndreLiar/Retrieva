@@ -225,7 +225,9 @@ describe('streamRAGResponse()', () => {
     );
 
     // Drain generator
-    for await (const _ of streamRAGResponse({ question: 'Q' })) { /* empty */ }
+    for await (const chunk of streamRAGResponse({ question: 'Q' })) {
+      void chunk;
+    }
 
     const fetchCall = (fetch as ReturnType<typeof vi.fn>).mock.calls[0];
     const options = fetchCall[1] as RequestInit;
@@ -241,7 +243,9 @@ describe('streamRAGResponse()', () => {
       })
     );
 
-    for await (const _ of streamRAGResponse({ question: 'Q' })) { /* empty */ }
+    for await (const chunk of streamRAGResponse({ question: 'Q' })) {
+      void chunk;
+    }
 
     const fetchCall = (fetch as ReturnType<typeof vi.fn>).mock.calls[0];
     const options = fetchCall[1] as RequestInit;

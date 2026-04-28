@@ -22,7 +22,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { FileUploadZone } from '@/components/assessment/FileUploadZone';
 import { assessmentsApi } from '@/lib/api/assessments';
-import { useActiveWorkspace } from '@/lib/stores/workspace-store';
+import { useActiveWorkspace } from '@/lib/hooks';
 import { getErrorMessage } from '@/lib/api';
 
 const schema = z.object({

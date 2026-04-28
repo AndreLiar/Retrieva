@@ -1,36 +1,112 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Frontend
 
-## Getting Started
+## Purpose
 
-First, run the development server:
+This frontend is a Next.js App Router application for the RAG platform. It provides:
+
+- public marketing and contact pages
+- authentication and onboarding flows
+- dashboard experiences for workspaces, assessments, questionnaires, chat, billing, and settings
+
+The app integrates with the backend API through cookie-based authentication and workspace-scoped requests.
+
+## Local Setup
+
+Requirements:
+
+- Node.js 20+
+- npm 10+
+
+Install dependencies from the monorepo root when possible:
+
+```bash
+npm install
+```
+
+Run the frontend locally from this directory:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Default local URL:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+http://localhost:3000
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Environment Variables
 
-## Learn More
+The frontend expects the following environment variables:
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+NEXT_PUBLIC_API_URL=http://localhost:3007/api/v1
+SENTRY_ORG=your-sentry-org
+SENTRY_PROJECT=your-sentry-project
+SENTRY_AUTH_TOKEN=your-sentry-auth-token
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Notes:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `NEXT_PUBLIC_API_URL` is the backend base URL used by Axios and streaming requests.
+- `SENTRY_*` variables are only needed when uploading source maps or enabling Sentry in CI/build environments.
+- `.env*` files are gitignored.
 
-## Deploy on Vercel
+## Frontend Architecture
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Current high-level structure:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```text
+src/app          Route entry points and layouts
+src/components   Shared UI and domain-facing components
+src/lib/api      API clients and request helpers
+src/lib/hooks    Client hooks
+src/lib/stores   Zustand stores
+src/tests        Vitest unit/component tests
+e2e              Playwright end-to-end tests
+```
+
+Runtime conventions:
+
+- React Query handles async request orchestration in the UI.
+- Zustand stores hold client state such as auth, workspace selection, and UI chrome.
+- The app uses cookie-based auth and forwards the active workspace through request headers.
+- Sentry is configured for client, server, and edge runtimes.
+
+## Testing Workflow
+
+Run lint:
+
+```bash
+npm run lint
+```
+
+Run unit and component tests:
+
+```bash
+npm run test:run
+```
+
+Run tests in watch mode:
+
+```bash
+npm run test
+```
+
+Run coverage:
+
+```bash
+npm run test:coverage
+```
+
+Run end-to-end tests:
+
+```bash
+npm run test:e2e
+```
+
+Open the Playwright report:
+
+```bash
+npm run test:e2e:report
+```

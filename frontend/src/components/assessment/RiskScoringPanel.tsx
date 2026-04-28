@@ -9,7 +9,7 @@
  *  3. FormalRiskDecision   — Compliance decision (proceed / conditional / reject)
  */
 
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { format } from 'date-fns';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -196,8 +196,8 @@ export function ResidualRiskMatrix({
             ))}
             {/* Data rows */}
             {(['High', 'Medium', 'Low'] as const).map((inhRisk, rIdx) => (
-              <>
-                <div key={`lbl-${inhRisk}`} className="text-muted-foreground font-medium flex items-center justify-end pr-1">{inhRisk}</div>
+              <Fragment key={inhRisk}>
+                <div className="text-muted-foreground font-medium flex items-center justify-end pr-1">{inhRisk}</div>
                 {[0, 1, 2].map((cIdx) => {
                   const cell = HEAT[rIdx][cIdx];
                   const isActive = rIdx === inherentRow && cIdx === ctrlCol;
@@ -215,7 +215,7 @@ export function ResidualRiskMatrix({
                     </div>
                   );
                 })}
-              </>
+              </Fragment>
             ))}
           </div>
         </div>

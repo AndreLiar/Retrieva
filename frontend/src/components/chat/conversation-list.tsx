@@ -38,7 +38,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { conversationsApi } from '@/lib/api';
-import { useActiveWorkspace } from '@/lib/stores/workspace-store';
+import { useActiveWorkspace } from '@/lib/hooks';
 import { destructiveActionClasses } from '@/lib/styles/status-colors';
 import type { Conversation } from '@/types';
 

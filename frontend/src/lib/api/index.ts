@@ -1,15 +1,23 @@
-export { default as apiClient, getErrorMessage } from './client';
-export { authApi } from './auth';
-export { conversationsApi } from './conversations';
-export { workspacesApi } from './workspaces';
-export { ragApi } from './rag';
-export { assessmentsApi } from './assessments';
-export type { Assessment, Gap, GapLevel, OverallRisk, AssessmentStatus } from './assessments';
-export { questionnairesApi } from './questionnaires';
+export { default as apiClient, getErrorMessage } from '@/shared/api/client';
+export { authApi } from '@/shared/api/auth';
+export { billingApi } from '@/shared/api/billing';
+export { organizationsApi } from '@/shared/api/organizations';
+export { conversationsApi } from '@/features/chat/api/conversations';
+export { workspacesApi } from '@/features/workspaces/api/workspaces';
+export { ragApi } from '@/features/chat/api/rag';
+export { assessmentsApi } from '@/features/assessments/api/assessments';
+export type {
+  Assessment,
+  Gap,
+  GapLevel,
+  OverallRisk,
+  AssessmentStatus,
+} from '@/features/assessments/api/assessments';
+export { questionnairesApi } from '@/features/questionnaires/api/questionnaires';
 export type {
   VendorQuestionnaire,
   QuestionnaireQuestion,
   QuestionnaireStatus,
   GapLevel as QuestionnaireGapLevel,
   CreateQuestionnaireDto,
-} from './questionnaires';
+} from '@/features/questionnaires/api/questionnaires';

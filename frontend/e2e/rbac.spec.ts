@@ -173,6 +173,7 @@ test.describe('Members page — access control', () => {
   test('owner can access the members page', async ({ page }) => {
     await mockAuthenticatedUser(page);
     await mockWorkspaceWithRole(page, 'owner');
+    await mockWorkspaceDetail(page, 'owner');
     await mockConversationList(page, []);
 
     await page.route(`${API}/workspaces/${MOCK_WORKSPACE.id}/members`, (route) =>

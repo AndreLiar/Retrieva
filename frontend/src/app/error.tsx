@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { navigateWindowTo, MARKETING_HOME_ROUTE } from '@/lib/navigation';
 
 export default function Error({
   error,
@@ -27,7 +28,7 @@ export default function Error({
           An unexpected error occurred. Please try again.
         </p>
         <div className="flex gap-2 justify-center">
-          <Button variant="outline" onClick={() => window.location.href = '/'}>
+          <Button variant="outline" onClick={() => navigateWindowTo(MARKETING_HOME_ROUTE)}>
             Go Home
           </Button>
           <Button onClick={reset}>Try Again</Button>

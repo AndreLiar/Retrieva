@@ -4,6 +4,7 @@ import { Component, ReactNode } from 'react';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { APP_HOME_ROUTE, navigateWindowTo } from '@/lib/navigation';
 
 /**
  * ISSUE #43 FIX: Error Boundary Component
@@ -62,7 +63,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   };
 
   handleGoHome = () => {
-    window.location.href = '/chat';
+    navigateWindowTo(APP_HOME_ROUTE);
   };
 
   render() {
@@ -156,7 +157,7 @@ export function ErrorPage({ error, reset }: ErrorPageProps) {
             <RefreshCw className="h-4 w-4 mr-2" />
             Try Again
           </Button>
-          <Button variant="outline" onClick={() => window.location.href = '/chat'}>
+          <Button variant="outline" onClick={() => navigateWindowTo(APP_HOME_ROUTE)}>
             <Home className="h-4 w-4 mr-2" />
             Go to Chat
           </Button>

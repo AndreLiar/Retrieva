@@ -46,16 +46,8 @@ export function ChatInput({
 
   const handleSubmit = () => {
     const trimmedMessage = message.trim();
-    console.log('[ChatInput] Submit attempt:', {
-      message: trimmedMessage,
-      isLoading,
-      isStreaming,
-      disabled,
-      willSubmit: !!(trimmedMessage && !isLoading && !isStreaming && !disabled),
-    });
     if (!trimmedMessage || isLoading || isStreaming || disabled) return;
 
-    console.log('[ChatInput] Sending message:', trimmedMessage);
     onSend(trimmedMessage);
     setMessage('');
 
