@@ -7,7 +7,11 @@
 
 import { Worker } from 'bullmq';
 import { redisConnection } from '../config/redis.js';
-import { runMonitoringAlerts, sendReviewReminderAlert } from '../services/alertMonitorService.js';
+import {
+  runMonitoringAlerts,
+  runWeeklyDigest,
+  sendReviewReminderAlert,
+} from '../services/alertMonitorService.js';
 import logger from '../config/logger.js';
 
 const worker = new Worker(
@@ -16,6 +20,10 @@ const worker = new Worker(
     if (job.name === 'run-monitoring-alerts') {
       logger.info('Running monitoring alerts', { service: 'monitoringWorker', jobId: job.id });
       await runMonitoringAlerts();
+      return { ran: true, timestamp: new Date().toISOString() };
+    } else if (job.name === 'send-weekly-digest') {
+      logger.info('Running weekly digest', { service: 'monitoringWorker', jobId: job.id });
+      await runWeeklyDigest();
       return { ran: true, timestamp: new Date().toISOString() };
     } else if (job.name === 'review-reminder') {
       logger.info('Sending review reminder', {

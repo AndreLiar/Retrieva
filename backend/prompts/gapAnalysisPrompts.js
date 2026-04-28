@@ -98,4 +98,5 @@ Scoring guidance:
 - Mark as "partial" when the vendor mentions the topic but incompletely or vaguely.
 - Mark as "missing" when no relevant evidence was found.
 - Focus especially on Articles 28–30 (third-party contractual requirements) and Articles 31–44 (ICT third-party oversight) — these are mandatory for all financial entity contracts with ICT providers.
-- Produce at least 15 specific gap entries spanning all relevant domains.`;
+- Produce at least 15 specific gap entries spanning all relevant domains.
+- For each gap, include the specific RTS/ITS reference where one exists (e.g. "JC 2023 86" for Art.30 subcontracting, "Commission Delegated Regulation 2024/1774" for ICT risk management, "Commission Delegated Regulation 2024/1779" for incident classification). Leave rtsReference empty when no dedicated RTS/ITS applies to that article.`;

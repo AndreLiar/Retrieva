@@ -13,6 +13,7 @@
  */
 
 import { WorkspaceMember } from '../models/WorkspaceMember.js';
+import { User } from '../models/User.js';
 import { workspaceRepository, assessmentRepository } from '../repositories/index.js';
 import emailService from './emailService.js';
 import logger from '../config/logger.js';
@@ -293,4 +294,68 @@ async function sendAlertToOwners(workspace, alertType, details) {
       });
     }
   }
+}
+
+// ---------------------------------------------------------------------------
+// Weekly Digest — summary email sent once per week to workspace owners
+// ---------------------------------------------------------------------------
+
+export async function runWeeklyDigest() {
+  logger.info('Starting weekly digest run', { service: 'alertMonitor' });
+
+  const ownerGroups = await WorkspaceMember.aggregate([
+    { $match: { role: 'owner', status: 'active' } },
+    { $group: { _id: '$userId', workspaceIds: { $push: '$workspaceId' } } },
+  ]);
+
+  let sent = 0;
+  for (const { _id: userId, workspaceIds } of ownerGroups) {
+    try {
+      const user = await User.findById(userId).select('email name notificationPreferences').lean();
+
+      if (!user) continue;
+      if (user.notificationPreferences?.email?.weekly_digest === false) continue;
+
+      const workspaces = await workspaceRepository.find(
+        { _id: { $in: workspaceIds } },
+        { select: 'workspaceName name nextReviewDate _id' }
+      );
+      if (!workspaces.length) continue;
+
+      const cutoff30 = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+      const items = await Promise.all(
+        workspaces.map(async (ws) => {
+          const score = await assessmentRepository.getComplianceScore(ws._id);
+          const reviewDue =
+            ws.nextReviewDate && new Date(ws.nextReviewDate) < cutoff30
+              ? new Date(ws.nextReviewDate).toLocaleDateString('en-GB', {
+                  day: 'numeric',
+                  month: 'short',
+                  year: 'numeric',
+                })
+              : null;
+          return {
+            workspaceId: ws._id.toString(),
+            workspaceName: ws.workspaceName || ws.name,
+            score: score?.score ?? null,
+            trend: score?.trend ?? 0,
+            status: score?.status ?? null,
+            reviewDue,
+          };
+        })
+      );
+
+      await emailService.sendWeeklyDigest({ toEmail: user.email, toName: user.name, items });
+      sent++;
+    } catch (err) {
+      logger.error('Failed to send weekly digest', {
+        service: 'alertMonitor',
+        userId,
+        error: err.message,
+      });
+    }
+  }
+
+  logger.info('Weekly digest run complete', { service: 'alertMonitor', sent });
 }

@@ -59,6 +59,38 @@ class AssessmentRepository extends BaseRepository {
     if (withinMs) filter.createdAt = { $gte: new Date(Date.now() - withinMs) };
     return this.model.findOne(filter).sort({ createdAt: -1 }).lean();
   }
+
+  async getComplianceScore(workspaceId) {
+    const riskMap = { Low: 100, Medium: 50, High: 0 };
+    const assessments = await this.model
+      .find({ workspaceId, status: 'complete', framework: 'DORA' })
+      .select('results.overallRisk createdAt')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    if (!assessments.length) return null;
+
+    const scores = assessments.map((a) => riskMap[a.results?.overallRisk] ?? 50);
+    const score = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+
+    const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const olderScores = assessments
+      .filter((a) => new Date(a.createdAt) < cutoff)
+      .map((a) => riskMap[a.results?.overallRisk] ?? 50);
+
+    let trend = 0;
+    if (olderScores.length) {
+      const oldScore = Math.round(olderScores.reduce((a, b) => a + b, 0) / olderScores.length);
+      trend = score - oldScore;
+    }
+
+    return {
+      score,
+      trend,
+      status: score >= 80 ? 'green' : score >= 60 ? 'amber' : 'red',
+      assessmentCount: assessments.length,
+    };
+  }
 }
 
 export const assessmentRepository = new AssessmentRepository();

@@ -1,10 +1,12 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 
 import { useAssessmentListQuery } from '@/features/assessments/queries/use-assessment-list-query';
 import { useQuestionnaireListQuery } from '@/features/questionnaires/queries/use-questionnaire-list-query';
 import { useWorkspaceQuery } from '@/features/workspaces/queries/use-workspace-queries';
+import { workspacesApi } from '@/features/workspaces/api/workspaces';
 import { useWorkspaceStore } from '@/state/workspace-store';
 
 export function useWorkspaceOverview(workspaceId: string) {
@@ -24,6 +26,12 @@ export function useWorkspaceOverview(workspaceId: string) {
     refetchWhileProcessing: true,
   });
   const questionnairesQuery = useQuestionnaireListQuery({ workspaceId });
+  const complianceScoreQuery = useQuery({
+    queryKey: ['compliance-score', workspaceId],
+    queryFn: () => workspacesApi.getComplianceScore(workspaceId),
+    enabled: !!workspaceId,
+    staleTime: 5 * 60 * 1000,
+  });
 
   return {
     workspace: workspaceQuery.data,
@@ -32,5 +40,6 @@ export function useWorkspaceOverview(workspaceId: string) {
     isAssessmentsLoading: assessmentsQuery.isLoading,
     isAssessmentsError: assessmentsQuery.isError,
     questionnaires: questionnairesQuery.data ?? [],
+    complianceScore: complianceScoreQuery.data ?? null,
   };
 }

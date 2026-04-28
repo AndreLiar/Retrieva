@@ -9,6 +9,7 @@ import { Button } from '@/shared/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
 import { Skeleton } from '@/shared/ui/skeleton';
 import { ComplianceChecklistCard } from '@/features/workspaces/components/compliance-checklist-card';
+import { ComplianceScoreCard } from '@/features/workspaces/components/compliance-score-card';
 import { MonitoringCard } from '@/features/workspaces/components/monitoring-card';
 import { WorkspaceAssessmentsCard } from '@/features/workspaces/components/workspace-assessments-card';
 import { WorkspaceHeader } from '@/features/workspaces/components/workspace-header';
@@ -37,6 +38,7 @@ export function WorkspaceOverviewPage({ params }: WorkspaceOverviewPageProps) {
     isAssessmentsLoading,
     isAssessmentsError,
     questionnaires,
+    complianceScore,
   } = useWorkspaceOverview(id);
 
   if (!workspace && isWorkspaceLoading) {
@@ -78,6 +80,8 @@ export function WorkspaceOverviewPage({ params }: WorkspaceOverviewPageProps) {
       </Link>
 
       <WorkspaceHeader workspace={workspace} workspaceId={id} isOwner={isOwner} />
+
+      <ComplianceScoreCard score={complianceScore} />
 
       <ComplianceChecklistCard
         workspace={workspace}

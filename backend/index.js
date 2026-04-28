@@ -19,7 +19,7 @@ import './workers/assessmentWorker.js';
 import './workers/questionnaireWorker.js';
 import './workers/monitoringWorker.js';
 import { seedDefaultTemplate } from './seeds/questionnaireTemplate.seed.js';
-import { scheduleMonitoringJob } from './config/queue.js';
+import { scheduleMonitoringJob, scheduleWeeklyDigestJob } from './config/queue.js';
 
 const port = process.env.PORT || 3000;
 
@@ -38,6 +38,13 @@ const startServer = async () => {
     // Schedule monitoring alerts job (non-critical — runs every 24h)
     await scheduleMonitoringJob().catch((err) =>
       logger.error('Failed to schedule monitoring job (non-critical)', {
+        service: 'rag-backend',
+        error: err.message,
+      })
+    );
+
+    await scheduleWeeklyDigestJob().catch((err) =>
+      logger.error('Failed to schedule weekly digest job (non-critical)', {
         service: 'rag-backend',
         error: err.message,
       })
