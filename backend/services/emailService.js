@@ -110,6 +110,7 @@ const remote = {
     callEmailService('/internal/email/questionnaire-invitation', p),
   sendMonitoringAlert: (p) => callEmailService('/internal/email/monitoring-alert', p),
   sendOrganizationInvitation: (p) => callEmailService('/internal/email/org-invitation', p),
+  sendWeeklyDigest: (p) => callEmailService('/internal/email/weekly-digest', p),
   verifyConnection: () => callEmailService('/internal/email/health', {}),
 };
 
@@ -159,6 +160,80 @@ function buildMonitoringAlertHtml({ toName, workspaceName, alertType, details })
   <div style="border-top: 1px solid #e2e8f0; margin-top: 32px; padding-top: 16px;">
     <p style="font-size: 12px; color: #94a3b8; margin: 0;">
       This automated alert was sent by Retrieva compliance monitoring. To manage your notification preferences, visit your account settings.
+    </p>
+  </div>
+</body>
+</html>`;
+}
+
+function buildWeeklyDigestHtml({ toName, items }) {
+  const dashboardUrl = `${FRONTEND_URL}/workspaces`;
+  const statusBadge = {
+    green: 'background:#dcfce7;color:#166534;',
+    amber: 'background:#fef9c3;color:#854d0e;',
+    red: 'background:#fee2e2;color:#991b1b;',
+  };
+
+  const rows = items
+    .map((item) => {
+      const badge = item.status
+        ? `<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:12px;font-weight:600;${statusBadge[item.status]}">${item.score ?? '—'}</span>`
+        : '<span style="color:#94a3b8;font-size:13px;">No assessments</span>';
+
+      const trendStr =
+        item.trend > 0
+          ? `<span style="color:#16a34a;font-size:12px;">▲ +${item.trend}</span>`
+          : item.trend < 0
+            ? `<span style="color:#dc2626;font-size:12px;">▼ ${item.trend}</span>`
+            : '';
+
+      const reviewAlert = item.reviewDue
+        ? `<br><span style="color:#d97706;font-size:12px;">⚠ Review due ${item.reviewDue}</span>`
+        : '';
+
+      const link = `${FRONTEND_URL}/workspaces/${item.workspaceId}`;
+
+      return `<tr>
+      <td style="padding:12px 8px;border-bottom:1px solid #f1f5f9;">
+        <a href="${link}" style="color:#0f172a;font-weight:600;text-decoration:none;">${item.workspaceName}</a>${reviewAlert}
+      </td>
+      <td style="padding:12px 8px;border-bottom:1px solid #f1f5f9;text-align:center;">${badge} ${trendStr}</td>
+    </tr>`;
+    })
+    .join('');
+
+  return `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;line-height:1.6;color:#1a1a1a;max-width:600px;margin:0 auto;padding:20px;">
+  <div style="border-bottom:3px solid #0f172a;padding-bottom:16px;margin-bottom:24px;">
+    <span style="font-weight:700;font-size:18px;color:#0f172a;">Retrieva</span>
+    <span style="font-size:12px;color:#64748b;margin-left:8px;">Weekly Compliance Digest</span>
+  </div>
+
+  <p style="margin:0 0 16px;">Hi ${toName || 'there'},</p>
+  <p style="margin:0 0 20px;">Here's your weekly summary of vendor compliance scores across your workspaces.</p>
+
+  <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
+    <thead>
+      <tr style="background:#f8fafc;">
+        <th style="padding:10px 8px;text-align:left;font-size:12px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Vendor</th>
+        <th style="padding:10px 8px;text-align:center;font-size:12px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Score</th>
+      </tr>
+    </thead>
+    <tbody>${rows}</tbody>
+  </table>
+
+  <div style="text-align:center;margin:32px 0;">
+    <a href="${dashboardUrl}" style="display:inline-block;background:#0f172a;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:6px;font-weight:600;font-size:15px;">
+      Open Retrieva
+    </a>
+  </div>
+
+  <div style="border-top:1px solid #e2e8f0;margin-top:32px;padding-top:16px;">
+    <p style="font-size:12px;color:#94a3b8;margin:0;">
+      You receive this digest because you own one or more vendor workspaces on Retrieva.
+      To opt out, update your notification preferences in account settings.
     </p>
   </div>
 </body>
@@ -427,6 +502,12 @@ const local = {
     };
     const subject = subjects[alertType] || `Compliance Alert — ${workspaceName}`;
     const html = buildMonitoringAlertHtml({ toName, workspaceName, alertType, details });
+    return _sendEmailInProcess({ to: toEmail, subject, html });
+  },
+
+  async sendWeeklyDigest({ toEmail, toName, items }) {
+    const subject = `Your weekly DORA compliance digest — ${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })}`;
+    const html = buildWeeklyDigestHtml({ toName, items });
     return _sendEmailInProcess({ to: toEmail, subject, html });
   },
 

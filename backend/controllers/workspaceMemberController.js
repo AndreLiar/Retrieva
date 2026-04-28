@@ -1,5 +1,6 @@
 import { catchAsync, sendSuccess } from '../utils/index.js';
 import { workspaceService } from '../services/WorkspaceService.js';
+import { assessmentRepository } from '../repositories/index.js';
 
 export const createWorkspace = catchAsync(async (req, res) => {
   const workspace = await workspaceService.createWorkspace(req.user.userId, req.body);
@@ -62,4 +63,9 @@ export const updateMember = catchAsync(async (req, res) => {
     req.body
   );
   sendSuccess(res, 200, 'Member updated successfully', { member });
+});
+
+export const getComplianceScore = catchAsync(async (req, res) => {
+  const score = await assessmentRepository.getComplianceScore(req.params.workspaceId);
+  sendSuccess(res, 200, 'Compliance score retrieved', { score });
 });

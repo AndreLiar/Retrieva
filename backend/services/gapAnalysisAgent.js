@@ -65,6 +65,11 @@ function getQdrantClient() {
 
 const gapItemSchema = z.object({
   article: z.string().describe('DORA article reference, e.g. "Article 30(3)(e)"'),
+  rtsReference: z
+    .string()
+    .describe(
+      'Specific RTS/ITS reference where applicable, e.g. "JC 2023 86 (Subcontracting RTS)" or "Commission Delegated Regulation 2024/1774 (ICT Risk Management RTS)". Use empty string when no RTS/ITS applies.'
+    ),
   domain: z
     .enum([
       'General Provisions',

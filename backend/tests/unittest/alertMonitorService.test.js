@@ -43,17 +43,26 @@ vi.mock('../../models/WorkspaceMember.js', () => ({
   },
 }));
 
+vi.mock('../../models/User.js', () => ({
+  User: {
+    findById: vi.fn(),
+  },
+}));
+
 vi.mock('../../services/emailService.js', () => ({
   default: {
     sendMonitoringAlert: vi.fn(),
+    sendWeeklyDigest: vi.fn(),
   },
 }));
 
 import {
   runMonitoringAlerts,
   sendReviewReminderAlert,
+  runWeeklyDigest,
 } from '../../services/alertMonitorService.js';
 import { WorkspaceMember } from '../../models/WorkspaceMember.js';
+import { User } from '../../models/User.js';
 import emailService from '../../services/emailService.js';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -460,5 +469,93 @@ describe('sendReviewReminderAlert', () => {
         details: expect.objectContaining({ reviewDate: 'soon' }),
       })
     );
+  });
+});
+
+// ─── runWeeklyDigest ──────────────────────────────────────────────────────────
+
+describe('runWeeklyDigest', () => {
+  const userId = 'user-1';
+  const wsId = 'ws-1';
+
+  beforeEach(() => {
+    WorkspaceMember.aggregate = vi.fn();
+    mockAssessmentRepo.getComplianceScore = vi.fn();
+  });
+
+  it('sends weekly digest to each owner with workspace scores', async () => {
+    WorkspaceMember.aggregate.mockResolvedValue([{ _id: userId, workspaceIds: [wsId] }]);
+    User.findById.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        lean: vi.fn().mockResolvedValue({
+          email: 'owner@example.com',
+          name: 'Owner',
+          notificationPreferences: {},
+        }),
+      }),
+    });
+    mockWorkspaceRepo.find.mockResolvedValue([
+      { _id: wsId, workspaceName: 'Test Vendor', nextReviewDate: null },
+    ]);
+    mockAssessmentRepo.getComplianceScore.mockResolvedValue({
+      score: 80,
+      trend: 5,
+      status: 'green',
+    });
+
+    await runWeeklyDigest();
+
+    expect(emailService.sendWeeklyDigest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        toEmail: 'owner@example.com',
+        items: expect.arrayContaining([
+          expect.objectContaining({ workspaceName: 'Test Vendor', score: 80 }),
+        ]),
+      })
+    );
+  });
+
+  it('skips owner who opted out of weekly digest', async () => {
+    WorkspaceMember.aggregate.mockResolvedValue([{ _id: userId, workspaceIds: [wsId] }]);
+    User.findById.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        lean: vi.fn().mockResolvedValue({
+          email: 'owner@example.com',
+          name: 'Owner',
+          notificationPreferences: { email: { weekly_digest: false } },
+        }),
+      }),
+    });
+
+    await runWeeklyDigest();
+
+    expect(emailService.sendWeeklyDigest).not.toHaveBeenCalled();
+  });
+
+  it('skips owner when user not found', async () => {
+    WorkspaceMember.aggregate.mockResolvedValue([{ _id: userId, workspaceIds: [wsId] }]);
+    User.findById.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        lean: vi.fn().mockResolvedValue(null),
+      }),
+    });
+
+    await runWeeklyDigest();
+
+    expect(emailService.sendWeeklyDigest).not.toHaveBeenCalled();
+  });
+
+  it('skips owner when no workspaces found', async () => {
+    WorkspaceMember.aggregate.mockResolvedValue([{ _id: userId, workspaceIds: [wsId] }]);
+    User.findById.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        lean: vi.fn().mockResolvedValue({ email: 'owner@example.com', name: 'Owner' }),
+      }),
+    });
+    mockWorkspaceRepo.find.mockResolvedValue([]);
+
+    await runWeeklyDigest();
+
+    expect(emailService.sendWeeklyDigest).not.toHaveBeenCalled();
   });
 });

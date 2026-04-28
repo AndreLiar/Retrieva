@@ -152,6 +152,7 @@ const userSchema = new mongoose.Schema(
         sync_failed: { type: Boolean, default: true },
         system_alert: { type: Boolean, default: true },
         token_limit_reached: { type: Boolean, default: true },
+        weekly_digest: { type: Boolean, default: true },
       },
     },
     organizationId: {

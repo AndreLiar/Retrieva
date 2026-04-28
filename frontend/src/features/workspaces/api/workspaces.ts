@@ -51,6 +51,13 @@ export interface UpdateMemberData {
   permissions?: Partial<WorkspacePermissions>;
 }
 
+export interface ComplianceScore {
+  score: number;
+  trend: number;
+  status: 'green' | 'amber' | 'red';
+  assessmentCount: number;
+}
+
 function normalizeWorkspace(workspace: WorkspaceApiResponse): WorkspaceWithMembership {
   const workspaceId = workspace.id || workspace._id || '';
   const workspaceName = workspace.workspaceName || workspace.name || '';
@@ -219,5 +226,12 @@ export const workspacesApi = {
     link.click();
     link.remove();
     window.URL.revokeObjectURL(url);
+  },
+
+  getComplianceScore: async (workspaceId: string) => {
+    const response = await apiClient.get<
+      ApiResponse<{ score: ComplianceScore | null }>
+    >(`/workspaces/${workspaceId}/compliance-score`);
+    return response.data.data?.score ?? null;
   },
 };

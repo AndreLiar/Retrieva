@@ -13,6 +13,7 @@ import {
   inviteMember,
   revokeMember,
   updateMember,
+  getComplianceScore,
 } from '../controllers/workspaceMemberController.js';
 import { authenticate } from '../middleware/auth.js';
 import { canInviteMembers } from '../middleware/workspaceAuth.js';
@@ -30,6 +31,7 @@ const router = express.Router();
 router.post('/', authenticate, validateBody(createWorkspaceSchema), createWorkspace);
 router.get('/my-workspaces', authenticate, getMyWorkspaces);
 router.get('/roi-export', authenticate, exportRoi);
+router.get('/:workspaceId/compliance-score', authenticate, getComplianceScore);
 router.get('/:workspaceId', authenticate, getWorkspace);
 router.patch('/:workspaceId', authenticate, validateBody(updateWorkspaceSchema), updateWorkspace);
 router.delete('/:workspaceId', authenticate, deleteWorkspace);

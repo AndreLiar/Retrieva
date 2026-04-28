@@ -154,6 +154,35 @@ export async function scheduleMemoryDecayJob() {
 }
 
 /**
+ * Schedule weekly digest email job
+ * Runs every 7 days
+ */
+export async function scheduleWeeklyDigestJob() {
+  const jobName = 'send-weekly-digest';
+
+  const existingJobs = await withTimeout(monitoringQueue.getRepeatableJobs(), QUEUE_OP_TIMEOUT);
+  for (const job of existingJobs) {
+    if (job.name === jobName) {
+      await withTimeout(monitoringQueue.removeRepeatableByKey(job.key), QUEUE_OP_TIMEOUT);
+    }
+  }
+
+  await withTimeout(
+    monitoringQueue.add(
+      jobName,
+      { scheduled: true },
+      {
+        repeat: { every: 7 * 24 * 60 * 60 * 1000 },
+        jobId: 'weekly-digest-scheduled',
+      }
+    ),
+    QUEUE_OP_TIMEOUT
+  );
+
+  logger.info('Weekly digest job scheduled', { service: 'queue' });
+}
+
+/**
  * Schedule recurring monitoring alerts job
  * Runs every 24 hours by default
  */
@@ -259,5 +288,6 @@ export default {
   monitoringQueue,
   scheduleMemoryDecayJob,
   scheduleMonitoringJob,
+  scheduleWeeklyDigestJob,
   closeQueues,
 };

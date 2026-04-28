@@ -28,6 +28,7 @@ const clauseSignoffSchema = new mongoose.Schema(
 const gapSchema = new mongoose.Schema(
   {
     article: { type: String, required: true }, // e.g. "DORA Article 28(4)(a)"
+    rtsReference: { type: String, default: '' }, // e.g. "JC 2023 86 (Subcontracting RTS)"
     domain: { type: String }, // e.g. "Third-Party Risk"
     requirement: { type: String, required: true }, // exact regulatory text
     vendorCoverage: { type: String, default: '' }, // what the vendor doc says
