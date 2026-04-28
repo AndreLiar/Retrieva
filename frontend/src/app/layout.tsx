@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import { Cormorant_Garamond, DM_Sans, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
-import { Providers } from '@/components/providers';
+import { Providers } from '@/shared/providers';
+import { getServerSessionUser } from '@/shared/server/auth-session';
 
 const cormorant = Cormorant_Garamond({
   variable: '--font-display',
@@ -34,12 +35,28 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const initialUserPromise = getServerSessionUser();
+
+  return <RootLayoutContent initialUserPromise={initialUserPromise}>{children}</RootLayoutContent>;
+}
+
+async function RootLayoutContent({
+  children,
+  initialUserPromise,
+}: Readonly<{
+  children: React.ReactNode;
+  initialUserPromise: Promise<Awaited<ReturnType<typeof getServerSessionUser>>>;
+}>) {
+  const initialUser = await initialUserPromise;
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body
         className={`${cormorant.variable} ${dmSans.variable} ${jetbrainsMono.variable} font-sans antialiased`}
       >
-        <Providers>{children}</Providers>
+        <Providers initialUser={initialUser} authResolved>
+          {children}
+        </Providers>
       </body>
     </html>
   );

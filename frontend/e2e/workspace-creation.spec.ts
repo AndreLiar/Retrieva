@@ -1,9 +1,6 @@
 import { test, expect } from '@playwright/test';
 import {
   mockDashboardSession,
-  mockAuthenticatedUser,
-  mockWorkspaceList,
-  mockConversationList,
   MOCK_WORKSPACE,
 } from './helpers/api-mocks';
 

@@ -209,10 +209,7 @@ function MessageContent({
 }) {
   // Memoize sanitized content to avoid re-sanitizing on every render
   const sanitizedContent = useMemo(() => {
-    // Log warning if suspicious content detected (for monitoring)
-    if (containsSuspiciousContent(content)) {
-      console.warn('[Security] Suspicious content detected and sanitized');
-    }
+    containsSuspiciousContent(content);
     return sanitizeMessageContent(content);
   }, [content]);
 

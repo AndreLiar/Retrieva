@@ -4,7 +4,7 @@ import { useSyncExternalStore, useCallback } from 'react';
 import { Info, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useActiveWorkspace } from '@/lib/stores/workspace-store';
+import { useActiveWorkspace } from '@/lib/hooks';
 
 const BANNER_KEY = 'viewer-banner-dismissed';
 const subscribe = (cb: () => void) => {

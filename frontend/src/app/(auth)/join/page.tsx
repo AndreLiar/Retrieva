@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuthStore } from '@/lib/stores/auth-store';
 import { organizationsApi } from '@/lib/api/organizations';
 import { getErrorMessage } from '@/lib/api';
+import { useAuthSession } from '@/lib/hooks';
 
 const ROLE_LABEL: Record<string, string> = {
   org_admin: 'Admin',
@@ -20,7 +21,8 @@ const ROLE_LABEL: Record<string, string> = {
 function JoinPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user, isAuthenticated, isInitialized, fetchUser } = useAuthStore();
+  const { user, isAuthenticated, isInitialized } = useAuthStore();
+  const { syncCurrentUser } = useAuthSession();
 
   const token = searchParams.get('token');
 
@@ -57,7 +59,7 @@ function JoinPageContent() {
     setIsAccepting(true);
     try {
       await organizationsApi.acceptInvite(token);
-      await fetchUser();
+      await syncCurrentUser();
       toast.success(`Welcome to ${inviteInfo?.organizationName}!`);
       router.push('/assessments');
     } catch (err) {

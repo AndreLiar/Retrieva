@@ -22,7 +22,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { questionnairesApi } from '@/lib/api/questionnaires';
-import { useActiveWorkspace } from '@/lib/stores/workspace-store';
+import { useActiveWorkspace } from '@/lib/hooks';
 import { getErrorMessage } from '@/lib/api';
 
 const schema = z.object({

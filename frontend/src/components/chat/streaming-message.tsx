@@ -25,10 +25,7 @@ export function StreamingMessage({
   // ISSUE #39 FIX: Sanitize streaming content for XSS protection
   const sanitizedContent = useMemo(() => {
     if (!content) return '';
-    // Log warning if suspicious content detected (for monitoring)
-    if (containsSuspiciousContent(content)) {
-      console.warn('[Security] Suspicious content detected in stream and sanitized');
-    }
+    containsSuspiciousContent(content);
     return sanitizeMessageContent(content);
   }, [content]);
 

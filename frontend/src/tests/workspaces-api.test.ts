@@ -86,7 +86,8 @@ describe('workspacesApi', () => {
       });
       const result = await workspacesApi.list();
       expect(result.data.workspaces).toHaveLength(1);
-      expect(result.data.workspaces[0]._id).toBe('ws-001');
+      expect(result.data.workspaces[0].id).toBe('ws-001');
+      expect(result.data.workspaces[0].membership.role).toBe('owner');
     });
   });
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useActiveWorkspace } from '@/lib/stores/workspace-store';
+import { useActiveWorkspace } from '@/lib/hooks';
 import type { WorkspaceRole } from '@/types';
 
 interface RequireWorkspaceRoleProps {

@@ -1,7 +1,9 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import type { ApiResponse } from '@/types';
 // ISSUE #40 FIX: Import secure logout dispatcher
-import { dispatchSecureLogout } from '@/lib/auth-events';
+import { dispatchSecureLogout } from '@/shared/lib/auth-events';
+import { redirectToLogin, isPublicAuthPath } from '@/shared/lib/navigation';
+import { clearActiveWorkspaceContextId, getActiveWorkspaceContextId } from '@/shared/lib/workspace-context';
 
 /**
  * ISSUE #41 FIX: API timeout configuration
@@ -65,7 +67,6 @@ async function attemptTokenRefresh(): Promise<void> {
     try {
       if (attempt > 0) {
         const delay = getBackoffDelay(attempt - 1);
-        console.log(`[API Client] Token refresh retry ${attempt}/${TOKEN_REFRESH_CONFIG.maxRetries - 1}, waiting ${Math.round(delay)}ms`);
         await sleep(delay);
       }
 
@@ -73,7 +74,6 @@ async function attemptTokenRefresh(): Promise<void> {
       return; // Success
     } catch (error) {
       lastError = error as Error;
-      console.warn(`[API Client] Token refresh attempt ${attempt + 1} failed:`, (error as Error).message);
     }
   }
 
@@ -92,46 +92,47 @@ const processQueue = (error: Error | null) => {
   failedQueue = [];
 };
 
+function getWorkspaceIdFromConfig(config: InternalAxiosRequestConfig): string | null {
+  const headerWorkspaceId = config.headers?.['X-Workspace-Id'];
+  if (typeof headerWorkspaceId === 'string' && headerWorkspaceId.length > 0) {
+    return headerWorkspaceId;
+  }
+
+  const paramsWorkspaceId =
+    config.params && typeof config.params === 'object' && 'workspaceId' in config.params
+      ? config.params.workspaceId
+      : null;
+  if (typeof paramsWorkspaceId === 'string' && paramsWorkspaceId.length > 0) {
+    return paramsWorkspaceId;
+  }
+
+  const dataWorkspaceId =
+    config.data && typeof config.data === 'object' && 'workspaceId' in (config.data as Record<string, unknown>)
+      ? (config.data as Record<string, unknown>).workspaceId
+      : null;
+  if (typeof dataWorkspaceId === 'string' && dataWorkspaceId.length > 0) {
+    return dataWorkspaceId;
+  }
+
+  return getActiveWorkspaceContextId();
+}
+
 // Request interceptor - add workspace header
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    // Get workspace ID from localStorage (will be set by workspace store)
-    if (typeof window !== 'undefined') {
-      const workspaceId = localStorage.getItem('activeWorkspaceId');
-      if (workspaceId && config.headers) {
-        config.headers['X-Workspace-Id'] = workspaceId;
-      }
+    const workspaceId = getWorkspaceIdFromConfig(config);
+    if (workspaceId && config.headers) {
+      config.headers['X-Workspace-Id'] = workspaceId;
     }
-    console.log('[API Client] Request:', config.method?.toUpperCase(), config.url, {
-      workspaceId: config.headers?.['X-Workspace-Id'],
-      data: config.data,
-    });
     return config;
   },
-  (error) => {
-    console.error('[API Client] Request error:', error);
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
 // Response interceptor - handle 401 and token refresh
 apiClient.interceptors.response.use(
-  (response) => {
-    console.log('[API Client] Response:', response.status, response.config.url, response.data);
-    return response;
-  },
+  (response) => response,
   async (error: AxiosError<ApiResponse>) => {
-    console.error('[API Client] Response error:', {
-      status: error.response?.status,
-      url: error.config?.url,
-      message: error.response?.data?.message || error.message,
-      data: error.response?.data,
-      code: error.code,
-      name: error.name,
-      hasResponse: !!error.response,
-      baseURL: error.config?.baseURL,
-    });
-
     const originalRequest = error.config as InternalAxiosRequestConfig & {
       _retry?: boolean;
     };
@@ -171,19 +172,17 @@ apiClient.interceptors.response.use(
         return apiClient(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError as Error);
-        console.error('[API Client] Token refresh failed after all retries');
         // Clear auth state and redirect to login
         if (typeof window !== 'undefined') {
-          localStorage.removeItem('activeWorkspaceId');
+          clearActiveWorkspaceContextId();
           // ISSUE #40 FIX: Dispatch secure logout event with token
           // This prevents malicious scripts from triggering forced logouts
           dispatchSecureLogout();
 
           // Only redirect if not already on a public page
-          const publicPaths = ['/login', '/register', '/forgot-password', '/reset-password', '/verify-email'];
           const currentPath = window.location.pathname;
-          if (!publicPaths.some(path => currentPath.startsWith(path))) {
-            window.location.href = '/login';
+          if (!isPublicAuthPath(currentPath)) {
+            redirectToLogin();
           }
         }
         return Promise.reject(refreshError);

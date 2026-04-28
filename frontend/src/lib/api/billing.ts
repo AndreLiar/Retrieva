@@ -1,9 +1,1 @@
-import apiClient from './client';
-import type { ApiResponse } from '@/types';
-
-export const billingApi = {
-  createPortalSession: async () => {
-    const response = await apiClient.post<ApiResponse<{ url: string }>>('/billing/portal');
-    return response.data;
-  },
-};
+export * from '@/shared/api/billing';

@@ -18,15 +18,22 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAuthStore } from '@/lib/stores/auth-store';
 import { usePermissions } from '@/lib/hooks/use-permissions';
+import { authApi } from '@/lib/api';
 
 export function UserNav() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
-  const logout = useAuthStore((state) => state.logout);
+  const clearSession = useAuthStore((state) => state.clearSession);
   const { isAdmin } = usePermissions();
 
   const handleLogout = async () => {
-    await logout();
+    try {
+      await authApi.logout();
+    } catch {
+      // Continue with local logout even if the server request fails.
+    } finally {
+      clearSession();
+    }
     router.push('/login');
   };
 

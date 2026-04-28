@@ -19,6 +19,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { useAuthStore } from '@/lib/stores/auth-store';
+import { authApi } from '@/lib/api';
 import { registerSchema, type RegisterFormData } from '@/lib/utils/validation';
 import { getErrorMessage } from '@/lib/api';
 
@@ -71,7 +72,7 @@ function PasswordRequirements({ password }: { password: string }) {
 function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const register = useAuthStore((state) => state.register);
+  const setUser = useAuthStore((state) => state.setUser);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -104,11 +105,19 @@ function RegisterForm() {
   const onSubmit = async (data: RegisterFormData) => {
     setError(null);
     try {
-      const result = await register(data.email, data.password, data.name, inviteToken || undefined);
+      const response = await authApi.register({
+        email: data.email,
+        password: data.password,
+        name: data.name,
+        inviteToken: inviteToken || undefined,
+      });
+      if (response.status === 'success' && response.data) {
+        setUser(response.data.user);
+      }
       setIsSuccess(true);
       toast.success('Account created! Check your email to verify your account.');
       setTimeout(() => {
-        if (result.needsOrganization) {
+        if (response.data?.needsOrganization ?? true) {
           router.push('/onboarding');
         } else {
           router.push('/assessments');

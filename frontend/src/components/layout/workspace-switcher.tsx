@@ -13,13 +13,14 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
-  useWorkspaceStore,
   useActiveWorkspace,
-} from '@/lib/stores/workspace-store';
+  useWorkspaceListQuery,
+} from '@/lib/hooks';
+import { useWorkspaceStore } from '@/lib/stores/workspace-store';
 import { useUIStore, MODAL_IDS } from '@/lib/stores/ui-store';
 
 export function WorkspaceSwitcher() {
-  const workspaces = useWorkspaceStore((state) => state.workspaces);
+  const { data: workspaces = [] } = useWorkspaceListQuery();
   const setActiveWorkspace = useWorkspaceStore((state) => state.setActiveWorkspace);
   const activeWorkspace = useActiveWorkspace();
   const openModal = useUIStore((state) => state.openModal);
