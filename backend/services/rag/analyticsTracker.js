@@ -69,6 +69,13 @@ export async function trackQueryAnalytics({
   citedSources = [],
   conversationId = null,
 }) {
+  // Analytics persistence is currently disabled — callers pass Analytics: null.
+  // Skip cleanly so the noop doesn't crash with "Cannot read properties of null
+  // (reading 'create')". When the Analytics collection is reintroduced, callers
+  // can pass the model and tracking resumes automatically.
+  if (!Analytics || typeof Analytics.create !== 'function') {
+    return;
+  }
   try {
     const analyticsData = {
       requestId,
