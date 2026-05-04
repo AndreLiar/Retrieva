@@ -15,7 +15,6 @@ const PAGE_TITLES: Record<string, string> = {
   '/assessments':         'Gap Analysis',
   '/questionnaires':      'Questionnaires',
   '/chat':                'Ask AI',
-  '/sources':             'Documents',
   '/conversations':       'Conversation History',
   '/settings':            'Settings',
   '/settings/security':   'Security',

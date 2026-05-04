@@ -89,3 +89,4 @@ CLAUDE.md
 
 # Local test process materials (PDFs, templates, test runs)
 testprocess/
+.playwright-mcp/

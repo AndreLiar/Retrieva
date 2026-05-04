@@ -67,10 +67,17 @@ conversationSchema.index({ userId: 1, updatedAt: -1 });
 conversationSchema.index({ workspaceId: 1, userId: 1, updatedAt: -1 });
 
 // ISSUE #25 FIX: Compound unique index for idempotency key lookups
-// Ensures only one conversation per user+workspace+idempotencyKey combination
+// Ensures only one conversation per user+workspace+idempotencyKey combination.
+// Use partialFilterExpression instead of sparse: { sparse: true } only skips
+// documents missing the field entirely, but Mongoose stores `null` for absent
+// nested keys, which then collide as duplicates. Restrict the unique index to
+// rows where the key is actually a string.
 conversationSchema.index(
   { userId: 1, workspaceId: 1, 'metadata.idempotencyKey': 1 },
-  { unique: true, sparse: true }
+  {
+    unique: true,
+    partialFilterExpression: { 'metadata.idempotencyKey': { $type: 'string' } },
+  }
 );
 
 // Update lastMessageAt when conversation is modified
