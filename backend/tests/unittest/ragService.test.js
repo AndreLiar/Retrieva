@@ -54,7 +54,6 @@ vi.mock('../../services/rag/queryRetrieval.js', () => ({
   retrieveAdditionalDocuments: vi.fn(() => []),
 }));
 vi.mock('../../services/rag/analyticsTracker.js', () => ({
-  trackQueryAnalytics: vi.fn(),
   buildRAGResult: vi.fn((params) => ({ ...params, _built: true })),
 }));
 vi.mock('../../utils/rag/contextFormatter.js', () => ({

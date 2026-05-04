@@ -26,7 +26,7 @@ import { applyConfidenceHandling } from '../utils/security/confidenceHandler.js'
 import { processCitations, analyzeCitationCoverage } from '../utils/rag/citationValidator.js';
 import { processOutput } from '../utils/rag/outputValidator.js';
 import { buildQdrantFilter, retrieveAdditionalDocuments } from './rag/queryRetrieval.js';
-import { trackQueryAnalytics, buildRAGResult } from './rag/analyticsTracker.js';
+import { buildRAGResult } from './rag/analyticsTracker.js';
 
 // Inline guardrails config (guardrails.js removed in MVP)
 const guardrailsConfig = {
@@ -418,17 +418,6 @@ class RAGService {
       ...extraData,
     });
 
-    await trackQueryAnalytics({
-      Analytics: null,
-      cache: this.cache,
-      logger: this.logger,
-      requestId,
-      question,
-      cacheHit: false,
-      citedSources,
-      conversationId,
-    });
-
     // SECURITY FIX (LLM09): Apply confidence handling to prevent overreliance
     const finalResult = applyConfidenceHandling(result);
 
@@ -441,18 +430,8 @@ class RAGService {
     return finalResult;
   }
 
-  async _handleCacheHit(cached, question, requestId, conversationId = null, workspaceId = null) {
+  async _handleCacheHit(cached, requestId, workspaceId = null) {
     this.logger.info('Returning cached answer', { service: 'rag', requestId, workspaceId });
-    await trackQueryAnalytics({
-      Analytics: null,
-      cache: this.cache,
-      logger: this.logger,
-      requestId,
-      question,
-      cacheHit: true,
-      citedSources: cached.sources || [],
-      conversationId,
-    });
     return cached;
   }
 
@@ -502,7 +481,7 @@ class RAGService {
         if (cached.sources) emit('sources', { sources: cached.sources });
         emit('done', { message: 'Streaming complete' });
       }
-      return this._handleCacheHit(cached, question, requestId, conversationId, workspaceId);
+      return this._handleCacheHit(cached, requestId, workspaceId);
     }
 
     const messages = await this.Message.find({ conversationId })
