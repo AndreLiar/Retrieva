@@ -7,7 +7,7 @@ import logger from '../config/logger.js';
 // the array, since not every model honours "ONLY a JSON array" (gemma3 often
 // prefixes "Here's a breakdown:" or "I'm sorry,"). Returns null if no array can
 // be recovered — the caller falls back to a heuristic.
-function parseJsonArrayLoose(raw) {
+export function parseJsonArrayLoose(raw) {
   if (typeof raw !== 'string') return null;
   const stripped = raw.replace(/```json\s*/gi, '').replace(/```/g, '').trim();
   const start = stripped.indexOf('[');
