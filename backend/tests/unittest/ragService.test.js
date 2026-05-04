@@ -330,6 +330,44 @@ describe('_createValidatedEmit', () => {
       expect.any(Object)
     );
   });
+
+  it('forwards valid "replace" event (hallucination fallback)', () => {
+    const rawEmit = vi.fn();
+    const emit = svc._createValidatedEmit(rawEmit);
+    emit('replace', { text: 'safer answer' });
+    expect(rawEmit).toHaveBeenCalledWith(
+      'replace',
+      expect.objectContaining({ text: 'safer answer' })
+    );
+  });
+
+  it('blocks "replace" event with missing text field', () => {
+    const rawEmit = vi.fn();
+    const emit = svc._createValidatedEmit(rawEmit);
+    emit('replace', { wrong: true });
+    expect(rawEmit).not.toHaveBeenCalled();
+    expect(mockLogger.warn).toHaveBeenCalledWith(
+      'Invalid streaming event payload',
+      expect.any(Object)
+    );
+  });
+
+  it('forwards valid "saved" event (persistence ack)', () => {
+    const rawEmit = vi.fn();
+    const emit = svc._createValidatedEmit(rawEmit);
+    emit('saved', { conversationId: 'abc123' });
+    expect(rawEmit).toHaveBeenCalledWith(
+      'saved',
+      expect.objectContaining({ conversationId: 'abc123' })
+    );
+  });
+
+  it('blocks "saved" event without conversationId', () => {
+    const rawEmit = vi.fn();
+    const emit = svc._createValidatedEmit(rawEmit);
+    emit('saved', {});
+    expect(rawEmit).not.toHaveBeenCalled();
+  });
 });
 
 // ─── _rephraseQuery ───────────────────────────────────────────────────────────

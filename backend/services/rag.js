@@ -864,7 +864,19 @@ class RAGService {
    * @returns {Function} Validated emit function
    */
   _createValidatedEmit(rawEmit) {
-    const validEventTypes = new Set(['status', 'chunk', 'sources', 'done', 'error', 'metadata']);
+    // Keep this in sync with the events the frontend useStreaming hook handles.
+    // `replace` lets the hallucination guard swap the streamed answer for a
+    // safe fallback; `saved` notifies the UI that messages have been persisted.
+    const validEventTypes = new Set([
+      'status',
+      'chunk',
+      'sources',
+      'done',
+      'error',
+      'metadata',
+      'replace',
+      'saved',
+    ]);
 
     const validatePayload = (type, data) => {
       if (typeof data !== 'object' || data === null) {
@@ -897,6 +909,16 @@ class RAGService {
           break;
         case 'metadata':
           // metadata can have arbitrary structure
+          break;
+        case 'replace':
+          if (typeof data.text !== 'string') {
+            return { valid: false, error: 'replace event requires text string' };
+          }
+          break;
+        case 'saved':
+          if (typeof data.conversationId !== 'string') {
+            return { valid: false, error: 'saved event requires conversationId string' };
+          }
           break;
       }
       return { valid: true };
