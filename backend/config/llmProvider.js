@@ -119,7 +119,18 @@ function createOllamaLLM(config) {
   );
 
   const [primary, ...fallbacks] = instances;
-  return fallbacks.length > 0 ? primary.withFallbacks({ fallbacks }) : primary;
+  if (fallbacks.length === 0) return primary;
+
+  const chain = primary.withFallbacks({ fallbacks });
+  // RunnableWithFallbacks doesn't inherit bindTools — proxy it so createReactAgent works
+  chain.bindTools = (tools, kwargs) => {
+    const boundPrimary = primary.bindTools(tools, kwargs);
+    const boundFallbacks = fallbacks.map((f) => f.bindTools(tools, kwargs));
+    const boundChain = boundPrimary.withFallbacks({ fallbacks: boundFallbacks });
+    boundChain.bindTools = chain.bindTools;
+    return boundChain;
+  };
+  return chain;
 }
 
 /**
