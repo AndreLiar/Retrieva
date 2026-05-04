@@ -14,7 +14,12 @@ const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL || 'bge-m3:latest';
 const EMBEDDING_PROVIDER = process.env.EMBEDDING_PROVIDER || 'ollama';
 
 // Ollama configuration
-const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
+// Embeddings prefer a dedicated env var so they can target a self-hosted Ollama
+// while the chat LLM uses Ollama Cloud.
+const OLLAMA_BASE_URL =
+  process.env.EMBEDDING_OLLAMA_BASE_URL ||
+  process.env.OLLAMA_BASE_URL ||
+  'http://localhost:11434';
 const OLLAMA_API_KEY =
   process.env.OLLAMA_API_KEY_1 || process.env.OLLAMA_API_KEY_2 || process.env.OLLAMA_API_KEY_3;
 const OLLAMA_AUTH_HEADERS = OLLAMA_API_KEY
