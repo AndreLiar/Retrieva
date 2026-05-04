@@ -1,6 +1,10 @@
 /**
- * Analytics Tracker Module
- * Centralized analytics tracking for RAG queries
+ * RAG Result Builder
+ *
+ * Used to be paired with a `trackQueryAnalytics` writer, but the Analytics
+ * Mongoose model was removed and every call site passed `Analytics: null`,
+ * making the writer a permanent noop. The writer (and its rich JSDoc typedefs)
+ * have been deleted; this module now exists only to expose buildRAGResult.
  * @module services/rag/analyticsTracker
  */
 
@@ -24,87 +28,6 @@
  * @property {number} totalRetrieved - Total documents retrieved
  * @property {number} afterDeduplication - Documents after deduplication
  */
-
-/**
- * @typedef {Object} AnalyticsModel
- * @property {function(Object): Promise<Object>} create - Create analytics record
- */
-
-/**
- * @typedef {Object} CacheService
- * @property {function(string): string} getQuestionHash - Hash a question string
- */
-
-/**
- * @typedef {Object} Logger
- * @property {function(string, Object?): void} error - Log error message
- */
-
-/**
- * @typedef {Object} TrackingParams
- * @property {AnalyticsModel} Analytics - Analytics Mongoose model
- * @property {CacheService} cache - Cache service with hash function
- * @property {Logger} logger - Logger instance
- * @property {string} requestId - Unique request ID
- * @property {string} question - User question
- * @property {boolean} cacheHit - Whether cache was hit
- * @property {CitedSource[]} [citedSources=[]] - Sources cited in answer
- * @property {string} [conversationId=null] - Optional conversation ID
- */
-
-/**
- * Track RAG query analytics (business metrics)
- * LangSmith handles LLM performance metrics separately
- *
- * @param {TrackingParams} params - Tracking parameters
- * @returns {Promise<void>}
- */
-export async function trackQueryAnalytics({
-  Analytics,
-  cache,
-  logger,
-  requestId,
-  question,
-  cacheHit,
-  citedSources = [],
-  conversationId = null,
-}) {
-  // Analytics persistence is currently disabled — callers pass Analytics: null.
-  // Skip cleanly so the noop doesn't crash with "Cannot read properties of null
-  // (reading 'create')". When the Analytics collection is reintroduced, callers
-  // can pass the model and tracking resumes automatically.
-  if (!Analytics || typeof Analytics.create !== 'function') {
-    return;
-  }
-  try {
-    const analyticsData = {
-      requestId,
-      question,
-      questionHash: cache.getQuestionHash(question),
-      metrics: {
-        cacheHit,
-        sourcesUsed: citedSources.length,
-      },
-      timestamp: new Date(),
-    };
-
-    if (conversationId) {
-      analyticsData.conversationId = conversationId;
-    }
-
-    if (citedSources.length > 0) {
-      analyticsData.sources = citedSources.map((s) => ({
-        sourceId: s.url || s.title,
-        title: s.title,
-        documentType: s.type || 'page',
-      }));
-    }
-
-    await Analytics.create(analyticsData);
-  } catch (err) {
-    logger.error('Analytics tracking failed', { error: err.message });
-  }
-}
 
 /**
  * @typedef {Object} FormattedAnswer
