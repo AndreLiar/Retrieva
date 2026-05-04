@@ -13,7 +13,15 @@ import logger from '../config/logger.js';
 
 const QDRANT_URL = process.env.QDRANT_URL || 'http://localhost:6333';
 const QDRANT_API_KEY = process.env.QDRANT_API_KEY;
-const VECTOR_SIZE = 1536; // text-embedding-3-small dimension
+
+export function getVectorSize(model = process.env.EMBEDDING_MODEL || 'bge-m3:latest') {
+  if (model.includes('bge-m3')) return 1024;
+  if (model.includes('text-embedding-3')) return 1536;
+  if (model.includes('nomic')) return 768;
+  return 1024;
+}
+
+const VECTOR_SIZE = getVectorSize();
 
 // Chunk config: ~600 chars with 100-char overlap
 const CHUNK_SIZE = 600;

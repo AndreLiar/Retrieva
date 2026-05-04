@@ -12,6 +12,11 @@ const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'https://ollama.com';
 const OLLAMA_MODEL = process.env.EMBEDDING_MODEL || 'bge-m3:latest';
 const OPENAI_MODEL = process.env.OPENAI_EMBEDDING_MODEL || 'text-embedding-3-small';
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const OLLAMA_API_KEY =
+  process.env.OLLAMA_API_KEY_1 || process.env.OLLAMA_API_KEY_2 || process.env.OLLAMA_API_KEY_3;
+const OLLAMA_AUTH_HEADERS = OLLAMA_API_KEY
+  ? { Authorization: `Bearer ${OLLAMA_API_KEY}` }
+  : undefined;
 
 // Embedding provider type (openai, ollama)
 const EMBEDDING_PROVIDER = process.env.EMBEDDING_PROVIDER || 'ollama';
@@ -152,6 +157,7 @@ function getLocalProvider() {
     localProvider = new OllamaEmbeddings({
       model: OLLAMA_MODEL,
       baseUrl: OLLAMA_BASE_URL,
+      headers: OLLAMA_AUTH_HEADERS,
     });
   }
   return localProvider;

@@ -15,6 +15,11 @@ const EMBEDDING_PROVIDER = process.env.EMBEDDING_PROVIDER || 'ollama';
 
 // Ollama configuration
 const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
+const OLLAMA_API_KEY =
+  process.env.OLLAMA_API_KEY_1 || process.env.OLLAMA_API_KEY_2 || process.env.OLLAMA_API_KEY_3;
+const OLLAMA_AUTH_HEADERS = OLLAMA_API_KEY
+  ? { Authorization: `Bearer ${OLLAMA_API_KEY}` }
+  : undefined;
 
 // Hybrid embeddings disabled - Ollama-only mode
 const ENABLE_HYBRID_EMBEDDINGS = false;
@@ -97,6 +102,7 @@ export function resetEmbeddingMetrics() {
 const baseEmbeddings = new OllamaEmbeddings({
   model: EMBEDDING_MODEL,
   baseUrl: OLLAMA_BASE_URL,
+  headers: OLLAMA_AUTH_HEADERS,
 });
 
 // Log embedding provider on startup
