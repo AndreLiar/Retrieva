@@ -4,7 +4,28 @@ import {
   assessmentCollectionName,
   createFileIngestionService,
   fileIngestionService,
+  getVectorSize,
 } from '../../services/fileIngestionService.js';
+
+describe('getVectorSize', () => {
+  it('returns 1024 for bge-m3 models', () => {
+    expect(getVectorSize('bge-m3:latest')).toBe(1024);
+    expect(getVectorSize('bge-m3')).toBe(1024);
+  });
+
+  it('returns 1536 for text-embedding-3 models', () => {
+    expect(getVectorSize('text-embedding-3-small')).toBe(1536);
+    expect(getVectorSize('text-embedding-3-large')).toBe(1536);
+  });
+
+  it('returns 768 for nomic models', () => {
+    expect(getVectorSize('nomic-embed-text')).toBe(768);
+  });
+
+  it('returns 1024 default for unknown models', () => {
+    expect(getVectorSize('unknown-model')).toBe(1024);
+  });
+});
 
 // ─── assessmentCollectionName ─────────────────────────────────────────────────
 

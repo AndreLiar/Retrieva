@@ -14,14 +14,11 @@ import logger from '../config/logger.js';
 const QDRANT_URL = process.env.QDRANT_URL || 'http://localhost:6333';
 const QDRANT_API_KEY = process.env.QDRANT_API_KEY;
 
-// Determine vector size based on embedding model
-// bge-m3 = 1024, text-embedding-3-small = 1536
-function getVectorSize() {
-  const model = process.env.EMBEDDING_MODEL || 'bge-m3:latest';
+export function getVectorSize(model = process.env.EMBEDDING_MODEL || 'bge-m3:latest') {
   if (model.includes('bge-m3')) return 1024;
   if (model.includes('text-embedding-3')) return 1536;
   if (model.includes('nomic')) return 768;
-  return 1024; // default to bge-m3 dimension
+  return 1024;
 }
 
 const VECTOR_SIZE = getVectorSize();
