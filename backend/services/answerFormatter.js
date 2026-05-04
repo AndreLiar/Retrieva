@@ -3,6 +3,24 @@ import { StringOutputParser } from '@langchain/core/output_parsers';
 import { getDefaultLLM } from '../config/llm.js';
 import logger from '../config/logger.js';
 
+// Tolerant JSON-array parser. Strips markdown fences and any prose surrounding
+// the array, since not every model honours "ONLY a JSON array" (gemma3 often
+// prefixes "Here's a breakdown:" or "I'm sorry,"). Returns null if no array can
+// be recovered — the caller falls back to a heuristic.
+export function parseJsonArrayLoose(raw) {
+  if (typeof raw !== 'string') return null;
+  const stripped = raw.replace(/```json\s*/gi, '').replace(/```/g, '').trim();
+  const start = stripped.indexOf('[');
+  const end = stripped.lastIndexOf(']');
+  if (start === -1 || end === -1 || end <= start) return null;
+  try {
+    const parsed = JSON.parse(stripped.slice(start, end + 1));
+    return Array.isArray(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Enhanced Answer Formatting Service
  * Structures RAG answers into sections, extracts key points, code examples, and suggests related topics
@@ -40,9 +58,13 @@ Answer to analyze:
       [
         'system',
         `Extract 3-5 key points from the following answer.
-Return ONLY a JSON array of strings, each being a concise key point (max 80 chars each).
+Output rules — these are absolute:
+- Output MUST start with [ and end with ]
+- Output MUST be valid JSON (a flat array of strings)
+- Each string max 80 chars
+- No prose, no preface, no markdown fences, no trailing commentary
 
-Example: ["JWT provides stateless authentication", "Uses digital signatures for security", "Popular in modern web apps"]
+Example output: ["JWT provides stateless authentication","Uses digital signatures for security","Popular in modern web apps"]
 
 Answer:
 {answer}`,
@@ -56,9 +78,12 @@ Answer:
       [
         'system',
         `Based on the question and answer, suggest 3-4 related topics the user might want to explore.
-Return ONLY a JSON array of strings.
+Output rules — these are absolute:
+- Output MUST start with [ and end with ]
+- Output MUST be valid JSON (a flat array of strings)
+- No prose, no preface, no markdown fences, no trailing commentary
 
-Example: ["OAuth 2.0 authentication", "Session-based authentication", "JWT security best practices"]
+Example output: ["OAuth 2.0 authentication","Session-based authentication","JWT security best practices"]
 
 Question: {question}
 Answer: {answer}`,
@@ -135,13 +160,7 @@ Answer: {answer}`,
 
     try {
       const result = await this.keyPointsChain.invoke({ answer });
-
-      // Try to parse JSON
-      const cleaned = result
-        .replace(/```json\n?/g, '')
-        .replace(/```\n?/g, '')
-        .trim();
-      const keyPoints = JSON.parse(cleaned);
+      const keyPoints = parseJsonArrayLoose(result);
 
       if (Array.isArray(keyPoints) && keyPoints.length > 0) {
         logger.debug('Extracted key points', {
@@ -178,13 +197,7 @@ Answer: {answer}`,
 
     try {
       const result = await this.relatedTopicsChain.invoke({ question, answer });
-
-      // Try to parse JSON
-      const cleaned = result
-        .replace(/```json\n?/g, '')
-        .replace(/```\n?/g, '')
-        .trim();
-      const topics = JSON.parse(cleaned);
+      const topics = parseJsonArrayLoose(result);
 
       if (Array.isArray(topics) && topics.length > 0) {
         logger.debug('Suggested related topics', {
