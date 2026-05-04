@@ -116,6 +116,36 @@ services:
       - rag-network
 
   # ---------------------------------------------------------------------------
+  # Ollama (Local LLM + Embeddings — bge-m3 for 1024-dim embeddings)
+  # ---------------------------------------------------------------------------
+  ollama:
+    image: ollama/ollama:latest
+    container_name: retrieva-ollama
+    ports:
+      - "127.0.0.1:11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2560M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - rag-network
+
+  # ---------------------------------------------------------------------------
   # Backend (Node.js/Express)
   # ---------------------------------------------------------------------------
   # MongoDB connection string comes from backend/.env
@@ -133,9 +163,13 @@ services:
         condition: service_healthy
       qdrant:
         condition: service_healthy
+      ollama:
+        condition: service_started
     environment:
       - NODE_ENV=production
       - DOCKER_ENV=true
+      - EMBEDDING_OLLAMA_BASE_URL=http://ollama:11434
+      - EMBEDDING_MODEL=bge-m3:latest
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:3007/health',(r)=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
       interval: 10s
@@ -162,6 +196,7 @@ services:
 volumes:
   redis_data:
   qdrant_data:
+  ollama_data:
 
 networks:
   rag-network:
