@@ -8,7 +8,12 @@ import logger from './logger.js';
 // =============================================================================
 
 // Configuration
-const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'https://ollama.com';
+// Embeddings use a dedicated env var so they can run against a separate (typically
+// self-hosted) Ollama instance even when the chat LLM points at Ollama Cloud.
+const OLLAMA_BASE_URL =
+  process.env.EMBEDDING_OLLAMA_BASE_URL ||
+  process.env.OLLAMA_BASE_URL ||
+  'http://localhost:11434';
 const OLLAMA_MODEL = process.env.EMBEDDING_MODEL || 'bge-m3:latest';
 const OPENAI_MODEL = process.env.OPENAI_EMBEDDING_MODEL || 'text-embedding-3-small';
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;

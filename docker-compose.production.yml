@@ -136,7 +136,7 @@ services:
       resources:
         limits:
           cpus: '2'
-          memory: 2560M
+          memory: 4G
     logging:
       driver: "json-file"
       options:
