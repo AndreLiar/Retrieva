@@ -106,6 +106,7 @@ jobs:
           host: ${{ secrets.DEPLOY_HOST }}
           username: deploy
           key: ${{ secrets.DEPLOY_SSH_KEY }}
+          command_timeout: 30m
           script: |
             set -e
             cd /opt/rag
@@ -193,14 +194,18 @@ jobs:
             done
             curl -sf http://localhost:3000 > /dev/null && echo "Frontend: OK" || echo "WARN: Frontend slow to start — check container logs if needed"
 
-            # ── Sync compliance knowledge base (smart sync, non-fatal) ────
+            # ── Sync compliance knowledge base (smart sync, detached) ─────
             # Compares Qdrant point count to JSON article count.
-            # No-op if already in sync; re-seeds automatically when articles
-            # are added. Does NOT block deployment on failure.
-            echo "Syncing compliance knowledge base..."
-            docker exec retrieva-backend node scripts/seedComplianceKb.js \
-              && echo "Compliance KB sync complete" \
-              || echo "WARN: Compliance KB sync failed — KB may be stale, manual re-seed needed"
+            # No-op if already in sync (~1s); first-run seeding embeds 58
+            # articles via Ollama Cloud and can take 10–15 min.
+            # Run detached (-d) so the deploy job is NOT blocked on the
+            # seed — the operator inspects /var/log/retrieva-seed-kb.log
+            # afterwards if compliance_kb is unexpectedly empty.
+            echo "Starting compliance KB sync (detached)..."
+            docker exec -d retrieva-backend sh -c \
+              'node scripts/seedComplianceKb.js > /tmp/seed-kb.log 2>&1' \
+              && echo "Compliance KB sync started in background (logs: docker exec retrieva-backend cat /tmp/seed-kb.log)" \
+              || echo "WARN: Could not start compliance KB sync — manual re-seed needed"
 
             # ── Cleanup ──────────────────────────────────────────────────
             docker image prune -f
