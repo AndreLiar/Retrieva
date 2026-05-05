@@ -18,7 +18,12 @@ import {
 import { rerankDocuments } from './rag/documentRanking.js';
 import { evaluateAnswer, extractCitedSources, toValidationResult } from './rag/llmJudge.js';
 import { compressDocuments, initChains } from './rag/retrievalEnhancements.js';
-import { formatContext, formatSources } from '../utils/rag/contextFormatter.js';
+import {
+  formatContext,
+  formatSources,
+  deduplicateDocuments,
+} from '../utils/rag/contextFormatter.js';
+import { retrieveRegulationDocs as defaultRetrieveRegulationDocs } from './rag/complianceKbRetriever.js';
 import { sanitizeDocuments, sanitizeFormattedContext } from '../utils/security/contextSanitizer.js';
 import { sanitizeLLMOutput } from '../utils/security/outputSanitizer.js';
 import { scanOutputForSensitiveInfo } from '../utils/security/piiMasker.js';
@@ -120,6 +125,8 @@ class RAGService {
     this._injectedLLM = dependencies.llm || null;
     this.llm = null; // Will be set during init()
     this.vectorStoreFactory = dependencies.vectorStoreFactory || defaultVectorStoreFactory;
+    this.retrieveRegulationDocs =
+      dependencies.retrieveRegulationDocs || defaultRetrieveRegulationDocs;
     this.cache = dependencies.cache || defaultCache;
     this.answerFormatter = dependencies.answerFormatter || defaultAnswerFormatter;
     this.logger = dependencies.logger || defaultLogger;
@@ -520,16 +527,49 @@ class RAGService {
       throw error;
     }
 
-    // Direct vector store retrieval
-    const rawDocs = await this.vectorStore.similaritySearch(searchQuery, 15, qdrantFilter);
-    const rerankedDocs = rerankDocuments(rawDocs, searchQuery, 15);
+    // Direct vector store retrieval — fan out to vendor (workspace-scoped)
+    // and regulation (shared compliance_kb) collections in parallel.
+    // Issue #206: chat must see DORA article text, not just uploaded vendor docs.
+    // Use allSettled so one collection's failure (e.g. embedding-dim drift,
+    // unseeded compliance_kb) doesn't take down the other.
+    const [vendorResult, regulationResult] = await Promise.allSettled([
+      this.vectorStore.similaritySearch(searchQuery, 15, qdrantFilter),
+      this.retrieveRegulationDocs(searchQuery, 5),
+    ]);
+
+    const vendorDocsRaw = vendorResult.status === 'fulfilled' ? vendorResult.value : [];
+    if (vendorResult.status === 'rejected') {
+      this.logger.warn('Vendor collection retrieval failed — continuing with regulation only', {
+        service: 'rag',
+        requestId,
+        error: vendorResult.reason?.message,
+      });
+    }
+    const regulationDocs = regulationResult.status === 'fulfilled' ? regulationResult.value : [];
+    if (regulationResult.status === 'rejected') {
+      this.logger.warn('Regulation collection retrieval failed — continuing with vendor only', {
+        service: 'rag',
+        requestId,
+        error: regulationResult.reason?.message,
+      });
+    }
+
+    const vendorDocs = vendorDocsRaw.map((doc) => ({
+      ...doc,
+      metadata: { ...(doc.metadata || {}), source: doc.metadata?.source || 'vendor' },
+    }));
+
+    const mergedDocs = deduplicateDocuments([...vendorDocs, ...regulationDocs]);
+    const rerankedDocs = rerankDocuments(mergedDocs, searchQuery, 15);
 
     const retrieval = {
       documents: rerankedDocs,
       allQueries: [searchQuery],
       metrics: {
         strategy: 'direct',
-        docsCollected: rawDocs.length,
+        docsCollected: mergedDocs.length,
+        vendorDocs: vendorDocs.length,
+        regulationDocs: regulationDocs.length,
         docsAfterRerank: rerankedDocs.length,
       },
     };
@@ -537,7 +577,9 @@ class RAGService {
     this.logger.info('Retrieval complete', {
       service: 'rag',
       requestId,
-      docsCollected: rawDocs.length,
+      vendorDocs: vendorDocs.length,
+      regulationDocs: regulationDocs.length,
+      docsCollected: mergedDocs.length,
       docsAfterRerank: rerankedDocs.length,
     });
 

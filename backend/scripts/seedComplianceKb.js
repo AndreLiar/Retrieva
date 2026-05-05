@@ -35,7 +35,19 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const QDRANT_URL = process.env.QDRANT_URL || 'http://localhost:6333';
 const QDRANT_API_KEY = process.env.QDRANT_API_KEY;
 export const COMPLIANCE_KB_COLLECTION = 'compliance_kb';
-const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'https://ollama.com';
+// Embeddings prefer the dedicated EMBEDDING_OLLAMA_BASE_URL so a self-hosted
+// embedding endpoint can be used while chat goes through Ollama Cloud.
+// Matches the precedence in backend/config/embeddings.js.
+const OLLAMA_BASE_URL =
+  process.env.EMBEDDING_OLLAMA_BASE_URL || process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
+const OLLAMA_API_KEY =
+  process.env.OLLAMA_API_KEY_1 ||
+  process.env.OLLAMA_API_KEY_2 ||
+  process.env.OLLAMA_API_KEY_3 ||
+  process.env.OLLAMA_API_KEY;
+const OLLAMA_AUTH_HEADERS = OLLAMA_API_KEY
+  ? { Authorization: `Bearer ${OLLAMA_API_KEY}` }
+  : undefined;
 const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL || 'bge-m3:latest';
 const VECTOR_SIZE = 1024; // bge-m3 output dimension
 
@@ -53,6 +65,7 @@ function getEmbeddings() {
   return new OllamaEmbeddings({
     model: EMBEDDING_MODEL,
     baseUrl: OLLAMA_BASE_URL,
+    headers: OLLAMA_AUTH_HEADERS,
   });
 }
 
