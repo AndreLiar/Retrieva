@@ -84,8 +84,16 @@ export default [
     ignores: ['node_modules/**', 'coverage/**', 'dist/**', 'build/**', '*.min.js'],
   },
   {
-    // console.* is the intended output mechanism in these files
-    files: ['instrument.js', 'scripts/**', 'seeds/**', 'utils/rag/qdrantExplorer.js', 'tests/**'],
+    // console.* is the intended output mechanism in these files.
+    // Patterns match both bare (eslint run from backend/) and prefixed
+    // (lint-staged passing absolute paths from repo root) invocations.
+    files: [
+      '**/instrument.js',
+      '**/scripts/**',
+      '**/seeds/**',
+      '**/utils/rag/qdrantExplorer.js',
+      '**/tests/**',
+    ],
     rules: { 'no-console': 'off' },
   },
 ];

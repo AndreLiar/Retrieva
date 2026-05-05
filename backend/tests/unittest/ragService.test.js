@@ -59,6 +59,12 @@ vi.mock('../../services/rag/analyticsTracker.js', () => ({
 vi.mock('../../utils/rag/contextFormatter.js', () => ({
   formatContext: vi.fn(() => 'formatted context'),
   formatSources: vi.fn(() => [{ sourceNumber: 1, title: 'Doc', url: '' }]),
+  deduplicateDocuments: vi.fn((docs) => docs),
+}));
+vi.mock('../../services/rag/complianceKbRetriever.js', () => ({
+  retrieveRegulationDocs: vi.fn(() => []),
+  COMPLIANCE_KB_COLLECTION: 'compliance_kb',
+  _resetForTests: vi.fn(),
 }));
 vi.mock('../../utils/security/contextSanitizer.js', () => ({
   sanitizeDocuments: vi.fn((docs) => docs),
@@ -448,6 +454,137 @@ describe('askWithConversation', () => {
     await svc.askWithConversation('question', { conversationId: 'conv-1' });
 
     expect(mockCache.get).toHaveBeenCalledWith('question', null, 'conv-1');
+  });
+
+  // Issue #206 — chat must merge regulation docs from compliance_kb with vendor docs
+  it('queries compliance_kb in parallel and merges regulation + vendor docs before rerank', async () => {
+    const { rerankDocuments } = await import('../../services/rag/documentRanking.js');
+    const { deduplicateDocuments } = await import('../../utils/rag/contextFormatter.js');
+    rerankDocuments.mockImplementation((docs) => docs);
+    deduplicateDocuments.mockImplementation((docs) => docs);
+
+    const { svc, mockCache, mockConversation } = makeService();
+    svc._initialized = true;
+
+    const vendorDoc = { pageContent: 'vendor chunk', metadata: { documentTitle: 'AWS-Doc.pdf' } };
+    const vendorSearch = vi.fn().mockResolvedValue([vendorDoc]);
+    svc.vectorStore = { similaritySearch: vendorSearch };
+
+    const regulationDoc = {
+      pageContent: 'Article 28 text',
+      metadata: { source: 'regulation', documentTitle: 'DORA Article 28: ICT third-party risk' },
+    };
+    const retrieveRegulationDocs = vi.fn().mockResolvedValue([regulationDoc]);
+    svc.retrieveRegulationDocs = retrieveRegulationDocs;
+
+    mockCache.get.mockResolvedValue(null);
+    mockConversation.findById.mockResolvedValue({ _id: 'conv-1', workspaceId: 'ws-1' });
+
+    // Stub out the rest of the pipeline so the test focuses on retrieval merge.
+    svc._generateAnswer = vi.fn().mockResolvedValue('answer');
+    svc._processAnswer = vi.fn().mockResolvedValue({
+      validation: {
+        confidence: 0.9,
+        isGrounded: true,
+        hasHallucinations: false,
+        isLowQuality: false,
+        issues: [],
+      },
+      citedSources: [],
+    });
+    svc._saveMessages = vi.fn().mockResolvedValue();
+    svc._buildAndCacheResult = vi.fn().mockResolvedValue({ answer: 'answer' });
+
+    await svc.askWithConversation('what does Article 28 require?', { conversationId: 'conv-1' });
+
+    expect(vendorSearch).toHaveBeenCalledTimes(1);
+    expect(retrieveRegulationDocs).toHaveBeenCalledTimes(1);
+    expect(retrieveRegulationDocs).toHaveBeenCalledWith(expect.any(String), 5);
+
+    // Reranker should see merged set (vendor first, regulation second).
+    const mergedArg = rerankDocuments.mock.calls[0][0];
+    expect(mergedArg).toHaveLength(2);
+    expect(mergedArg[0].metadata.source).toBe('vendor');
+    expect(mergedArg[1].metadata.source).toBe('regulation');
+  });
+
+  it('still answers when vendor retrieval throws (e.g. embedding-dim drift)', async () => {
+    const { rerankDocuments } = await import('../../services/rag/documentRanking.js');
+    const { deduplicateDocuments } = await import('../../utils/rag/contextFormatter.js');
+    rerankDocuments.mockImplementation((docs) => docs);
+    deduplicateDocuments.mockImplementation((docs) => docs);
+
+    const { svc, mockCache, mockConversation } = makeService();
+    svc._initialized = true;
+
+    // Vendor collection rejects (e.g. wrong vector dim). Regulation must still flow.
+    svc.vectorStore = {
+      similaritySearch: vi.fn().mockRejectedValue(new Error('Vector dimension error')),
+    };
+    const regulationDoc = {
+      pageContent: 'Article 28 text',
+      metadata: { source: 'regulation', documentTitle: 'DORA Article 28' },
+    };
+    svc.retrieveRegulationDocs = vi.fn().mockResolvedValue([regulationDoc]);
+
+    mockCache.get.mockResolvedValue(null);
+    mockConversation.findById.mockResolvedValue({ _id: 'conv-1', workspaceId: 'ws-1' });
+
+    svc._generateAnswer = vi.fn().mockResolvedValue('answer');
+    svc._processAnswer = vi.fn().mockResolvedValue({
+      validation: {
+        confidence: 0.9,
+        isGrounded: true,
+        hasHallucinations: false,
+        isLowQuality: false,
+        issues: [],
+      },
+      citedSources: [],
+    });
+    svc._saveMessages = vi.fn().mockResolvedValue();
+    svc._buildAndCacheResult = vi.fn().mockResolvedValue({ answer: 'answer' });
+
+    await expect(
+      svc.askWithConversation('What does Article 28 require?', { conversationId: 'conv-1' })
+    ).resolves.toBeDefined();
+
+    const mergedArg = rerankDocuments.mock.calls[0][0];
+    expect(mergedArg).toHaveLength(1);
+    expect(mergedArg[0].metadata.source).toBe('regulation');
+  });
+
+  it('still answers when compliance_kb returns no docs (graceful degrade)', async () => {
+    const { rerankDocuments } = await import('../../services/rag/documentRanking.js');
+    const { deduplicateDocuments } = await import('../../utils/rag/contextFormatter.js');
+    rerankDocuments.mockImplementation((docs) => docs);
+    deduplicateDocuments.mockImplementation((docs) => docs);
+
+    const { svc, mockCache, mockConversation } = makeService();
+    svc._initialized = true;
+    svc.vectorStore = { similaritySearch: vi.fn().mockResolvedValue([]) };
+    svc.retrieveRegulationDocs = vi.fn().mockResolvedValue([]);
+
+    mockCache.get.mockResolvedValue(null);
+    mockConversation.findById.mockResolvedValue({ _id: 'conv-1', workspaceId: 'ws-1' });
+
+    svc._generateAnswer = vi.fn().mockResolvedValue('answer');
+    svc._processAnswer = vi.fn().mockResolvedValue({
+      validation: {
+        confidence: 0.9,
+        isGrounded: true,
+        hasHallucinations: false,
+        isLowQuality: false,
+        issues: [],
+      },
+      citedSources: [],
+    });
+    svc._saveMessages = vi.fn().mockResolvedValue();
+    svc._buildAndCacheResult = vi.fn().mockResolvedValue({ answer: 'answer' });
+
+    await expect(
+      svc.askWithConversation('any question', { conversationId: 'conv-1' })
+    ).resolves.toBeDefined();
+    expect(svc.retrieveRegulationDocs).toHaveBeenCalled();
   });
 });
 
