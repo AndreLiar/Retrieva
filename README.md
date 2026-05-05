@@ -63,10 +63,9 @@ User question → multi-query expansion + HyDE → Qdrant retrieval (k=15)
 ├── backend/          Express 5 API (ES modules, Node.js 20)
 ├── frontend/         Next.js 16 App Router (React 19, TypeScript)
 ├── docs/             Docusaurus documentation site
-├── infra/            Terraform (DigitalOcean + Azure OpenAI)
+├── infra/            Terraform (DigitalOcean droplet)
 ├── nginx/            Reverse proxy config
 ├── docker-compose.yml                 Local development
-├── docker-compose.staging.yml
 └── docker-compose.production.yml
 ```
 
@@ -78,7 +77,7 @@ User question → multi-query expansion + HyDE → Qdrant retrieval (k=15)
 |-------|------------|
 | Frontend | Next.js 16, React 19, TypeScript, Tailwind CSS v3, Shadcn/ui, Zustand, React Query |
 | Backend | Express 5, Node.js 20, ES modules, BullMQ, Winston |
-| AI | Azure OpenAI — `gpt-4o-mini` (LLM) + `text-embedding-3-small` (embeddings) |
+| AI | Ollama Cloud (chat LLM) + self-hosted Ollama with `bge-m3` (embeddings) |
 | Databases | MongoDB Atlas (documents), Qdrant (vectors), Redis (queues + cache) |
 | Auth | JWT (httpOnly cookies, 15 min access / 7 day refresh), bcrypt |
 | Infra | DigitalOcean Droplet (fra1), Docker, GHCR, GitHub Actions CI/CD |
@@ -91,7 +90,7 @@ User question → multi-query expansion + HyDE → Qdrant retrieval (k=15)
 
 - Node.js 20+
 - Docker + Docker Compose
-- Azure OpenAI endpoint (or set `LLM_PROVIDER=openai` with an OpenAI key)
+- Ollama Cloud API key (`OLLAMA_API_KEY_*`) and/or a local Ollama with `bge-m3:latest` pulled
 
 ### 1. Clone and install
 
@@ -241,11 +240,14 @@ frontend/src/
 See [`backend/.env.example`](backend/.env.example) for the full reference. Key variables:
 
 ```bash
-# Azure OpenAI (required)
-AZURE_OPENAI_API_KEY=
-AZURE_OPENAI_ENDPOINT=
-AZURE_OPENAI_LLM_DEPLOYMENT=gpt-4o-mini
-AZURE_OPENAI_EMBEDDING_DEPLOYMENT=text-embedding-3-small
+# Ollama (required for AI features)
+LLM_PROVIDER=ollama
+EMBEDDING_PROVIDER=ollama
+OLLAMA_BASE_URL=https://ollama.com               # Ollama Cloud (chat LLM)
+EMBEDDING_OLLAMA_BASE_URL=http://localhost:11434  # local Ollama (embeddings)
+OLLAMA_API_KEY_1=                                 # Ollama Cloud Bearer token
+EMBEDDING_MODEL=bge-m3:latest
+LLM_MODEL=qwen2.5:14b
 
 # Auth secrets (required — min 32 chars)
 JWT_ACCESS_SECRET=
@@ -294,7 +296,7 @@ hotfix/<name>         ──PR──────────────►  mai
 | Backend | `ghcr.io/andreliar/retrieva/backend:latest` |
 | MongoDB | MongoDB Atlas (free M0, `rag.ukqrhqq.mongodb.net`) |
 | Vector DB | Qdrant (self-hosted Docker, `qdrant/qdrant:v1.13.2`) |
-| AI | Azure OpenAI `oai-rag-backend-wz5nh9.openai.azure.com` |
+| AI | Ollama Cloud (chat) + self-hosted Ollama container `bge-m3:latest` (embeddings) |
 | Email | Resend (domain `retrieva.online`, eu-west-1) |
 
 ---
