@@ -62,7 +62,7 @@ const guardrailsConfig = {
 import { getCallbacks } from '../config/langsmith.js';
 
 // Default dependencies
-import { getDefaultLLM } from '../config/llm.js';
+import { createLLM, getActiveLLMMeta } from '../config/llm.js';
 import { getVectorStore as defaultVectorStoreFactory } from '../config/vectorStore.js';
 import { ragCache as defaultCache } from '../utils/rag/ragCache.js';
 import { answerFormatter as defaultAnswerFormatter } from './answerFormatter.js';
@@ -159,8 +159,14 @@ class RAGService {
       this.llm = this._injectedLLM;
       this.logger.info('Using injected LLM instance', { service: 'rag' });
     } else {
-      this.llm = await getDefaultLLM();
-      this.logger.info('LLM initialized from provider factory', { service: 'rag' });
+      this.llm = await createLLM({ purpose: 'chat' });
+      const meta = getActiveLLMMeta('chat');
+      this.logger.info('LLM initialized from provider factory', {
+        service: 'rag',
+        provider: meta.provider,
+        model: meta.model,
+        purpose: meta.purpose,
+      });
     }
 
     const vectorStore = await this.vectorStoreFactory([]);
@@ -409,6 +415,7 @@ class RAGService {
       retrievalMetrics,
       conversationId,
       totalTime: Date.now() - startTime,
+      llmMeta: getActiveLLMMeta('chat'),
       _outputSanitized: sanitization.modified,
       _sensitiveInfoFiltered: !sensitiveInfoScan.clean,
       _citationValidation: {
