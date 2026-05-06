@@ -1,6 +1,6 @@
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { StringOutputParser } from '@langchain/core/output_parsers';
-import { getDefaultLLM } from '../config/llm.js';
+import { createLLM } from '../config/llm.js';
 import logger from '../config/logger.js';
 
 // Tolerant JSON-array parser. Strips markdown fences and any prose surrounding
@@ -9,7 +9,10 @@ import logger from '../config/logger.js';
 // be recovered — the caller falls back to a heuristic.
 export function parseJsonArrayLoose(raw) {
   if (typeof raw !== 'string') return null;
-  const stripped = raw.replace(/```json\s*/gi, '').replace(/```/g, '').trim();
+  const stripped = raw
+    .replace(/```json\s*/gi, '')
+    .replace(/```/g, '')
+    .trim();
   const start = stripped.indexOf('[');
   const end = stripped.lastIndexOf(']');
   if (start === -1 || end === -1 || end <= start) return null;
@@ -33,7 +36,7 @@ class AnswerFormatter {
   }
 
   async init() {
-    const llm = await getDefaultLLM();
+    const llm = await createLLM({ purpose: 'formatter' });
 
     // Chain to extract structure from answer
     const formattingPrompt = ChatPromptTemplate.fromMessages([

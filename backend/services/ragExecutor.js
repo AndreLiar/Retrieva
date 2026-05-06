@@ -44,6 +44,10 @@ export async function executeRAG({ question, conversationId, filters = null, onE
     service: 'rag-executor',
     sourcesCount: result.sources?.length || 0,
     confidence: result.validation?.confidence,
+    totalTime: result.metadata?.totalTime,
+    llmProvider: result.metadata?.llmProvider,
+    llmModel: result.metadata?.llmModel,
+    llmPurpose: result.metadata?.llmPurpose,
   });
 
   return result;
