@@ -83,6 +83,7 @@ export function buildRAGResult({
   conversationId = null,
   retriedWithMoreContext = false,
   totalTime,
+  llmMeta = null,
 }) {
   const result = {
     answer: answer || '',
@@ -94,6 +95,11 @@ export function buildRAGResult({
       citedSources: citedSources,
       qualityIssues: validation.issues,
       totalTime: totalTime,
+      ...(llmMeta && {
+        llmProvider: llmMeta.provider,
+        llmModel: llmMeta.model,
+        llmPurpose: llmMeta.purpose,
+      }),
     },
   };
 
