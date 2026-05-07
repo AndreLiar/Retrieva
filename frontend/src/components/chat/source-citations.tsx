@@ -29,9 +29,12 @@ function isValidExternalUrl(url: string): boolean {
 interface SourceCitationsProps {
   sources: Source[];
   maxVisible?: number;
+  /** Stable id of the parent message — used to mint per-message DOM ids on
+   * each source card so inline `[Source N]` references can scroll to them. */
+  messageId?: string;
 }
 
-export function SourceCitations({ sources, maxVisible = 3 }: SourceCitationsProps) {
+export function SourceCitations({ sources, maxVisible = 3, messageId }: SourceCitationsProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [expandedSources, setExpandedSources] = useState<Set<string>>(new Set());
 
@@ -69,6 +72,7 @@ export function SourceCitations({ sources, maxVisible = 3 }: SourceCitationsProp
             index={index + 1}
             isExpanded={expandedSources.has(source.id)}
             onToggle={() => toggleSource(source.id)}
+            domId={messageId ? `source-${messageId}-${index + 1}` : undefined}
           />
         ))}
       </div>
@@ -102,9 +106,11 @@ interface SourceCardProps {
   index: number;
   isExpanded: boolean;
   onToggle: () => void;
+  /** DOM id used by inline `[Source N]` jump buttons to scroll here. */
+  domId?: string;
 }
 
-function SourceCard({ source, index, isExpanded, onToggle }: SourceCardProps) {
+function SourceCard({ source, index, isExpanded, onToggle, domId }: SourceCardProps) {
   const hasContent = source.content && source.content.length > 0;
   const truncatedContent =
     source.content && source.content.length > 200
@@ -112,7 +118,10 @@ function SourceCard({ source, index, isExpanded, onToggle }: SourceCardProps) {
       : source.content;
 
   return (
-    <div className="border rounded-lg bg-card overflow-hidden">
+    <div
+      id={domId}
+      className="border rounded-lg bg-card overflow-hidden transition-shadow scroll-mt-20"
+    >
       <Collapsible open={isExpanded} onOpenChange={onToggle}>
         <CollapsibleTrigger asChild>
           <button
