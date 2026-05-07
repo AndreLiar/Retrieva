@@ -279,3 +279,34 @@ export function toValidationResult(evaluation) {
     reasoning: evaluation.reasoning,
   };
 }
+
+export function extractCitedSourcesFromText(answer = '', sources = []) {
+  if (!answer || sources.length === 0) return [];
+  const found = new Set();
+  const regex = /\[Source\s+(\d+)\]/g;
+  let match;
+  while ((match = regex.exec(answer)) !== null) {
+    const idx = Number(match[1]);
+    if (idx >= 1 && idx <= sources.length) found.add(idx);
+  }
+  return Array.from(found)
+    .sort((a, b) => a - b)
+    .map((idx) => sources[idx - 1]);
+}
+
+export function buildSkippedJudgeValidation(citationCount = 0) {
+  return {
+    isLowQuality: false,
+    confidence: 1,
+    issues: [],
+    citationCount,
+    validCitationCount: citationCount,
+    meetsMinConfidence: true,
+    isGrounded: true,
+    isRelevant: true,
+    isComplete: true,
+    hasHallucinations: false,
+    reasoning: 'Skipped (RAG_CHAT_ASYNC_JUDGE)',
+    judged: false,
+  };
+}
