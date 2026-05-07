@@ -16,7 +16,13 @@ import {
 
 // Extracted modules
 import { rerankDocuments } from './rag/documentRanking.js';
-import { evaluateAnswer, extractCitedSources, toValidationResult } from './rag/llmJudge.js';
+import {
+  evaluateAnswer,
+  extractCitedSources,
+  toValidationResult,
+  extractCitedSourcesFromText,
+  buildSkippedJudgeValidation,
+} from './rag/llmJudge.js';
 import { compressDocuments, initChains } from './rag/retrievalEnhancements.js';
 import {
   formatContext,
@@ -642,6 +648,71 @@ class RAGService {
         onEvent: onEvent || undefined,
         responseInstruction: combinedInstruction,
       });
+
+      // Fast path (#244 follow-up): skip the synchronous LLM judge in the chat
+      // request. The judge currently runs gemma3:12b on Ollama Cloud (~5 s) and
+      // dominates totalTime now that retrieval is on Groq. With this flag set,
+      // we extract citations locally via regex, ship 'done' immediately, and
+      // fire the judge in the background for telemetry only. Hallucination
+      // gating is sacrificed by design — only enable when answer quality is
+      // already validated by other means (RAG grounding + retrieval reranking).
+      if (process.env.RAG_CHAT_ASYNC_JUDGE === 'true') {
+        const citedSources = extractCitedSourcesFromText(response, sources);
+        const validation = buildSkippedJudgeValidation(citedSources.length);
+
+        await this._saveMessages(conversationId, question, response);
+
+        const result = await this._buildAndCacheResult({
+          answer: response,
+          sources,
+          validation,
+          citedSources,
+          question,
+          requestId,
+          conversationId,
+          workspaceId,
+          retrievalMetrics: retrieval.metrics,
+          startTime,
+        });
+
+        emit('metadata', {
+          confidence: validation.confidence,
+          citationCount: citedSources.length,
+          citedSources,
+          isGrounded: validation.isGrounded,
+          hasHallucinations: validation.hasHallucinations,
+          isRelevant: validation.isRelevant,
+          reasoning: validation.reasoning,
+          judged: false,
+        });
+        emit('saved', { conversationId });
+        emit('done', { message: 'Streaming complete' });
+
+        // Background judge — fire and forget. Used for telemetry only; no UI
+        // impact since the SSE response is already closing. Wrap in try/catch
+        // so a slow/down judge LLM can't crash the request.
+        Promise.resolve()
+          .then(() => this._processAnswer(response, sources, question, context))
+          .then(({ validation: bgValidation }) => {
+            if (bgValidation.hasHallucinations) {
+              this.logger.warn('Async judge flagged hallucination after stream close', {
+                service: 'rag',
+                requestId,
+                conversationId,
+                confidence: bgValidation.confidence,
+              });
+            }
+          })
+          .catch((err) => {
+            this.logger.warn('Background judge failed (non-fatal)', {
+              service: 'rag',
+              requestId,
+              error: err.message,
+            });
+          });
+
+        return result;
+      }
 
       emit('status', { message: 'Evaluating answer...' });
 

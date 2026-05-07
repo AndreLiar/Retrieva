@@ -12,7 +12,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import type { Message } from '@/types';
-import { SourceCitations } from './source-citations';
+import { SourceCitations, SourceReference } from './source-citations';
 // ISSUE #39 FIX: Import sanitization utility for XSS protection
 import { sanitizeMessageContent, containsSuspiciousContent } from '@/lib/utils/sanitize';
 
@@ -87,13 +87,18 @@ export function MessageBubble({
         >
           {/* Message text with markdown support */}
           <div className="prose prose-sm dark:prose-invert max-w-none">
-            <MessageContent content={message.content} isStreaming={isStreaming} />
+            <MessageContent
+              content={message.content}
+              isStreaming={isStreaming}
+              messageId={message.id}
+              sourcesCount={message.sources?.length ?? 0}
+            />
           </div>
         </div>
 
         {/* Source citations for assistant messages */}
         {!isUser && message.sources && message.sources.length > 0 && (
-          <SourceCitations sources={message.sources} />
+          <SourceCitations sources={message.sources} messageId={message.id} />
         )}
 
         {/* Actions for assistant messages */}
@@ -198,29 +203,72 @@ export function MessageBubble({
   );
 }
 
+function scrollToSource(messageId: string, n: number) {
+  if (typeof document === 'undefined') return;
+  const el = document.getElementById(`source-${messageId}-${n}`);
+  if (!el) return;
+  el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  el.classList.add('ring-2', 'ring-primary');
+  setTimeout(() => el.classList.remove('ring-2', 'ring-primary'), 1200);
+}
+
+function renderLineWithCitations(
+  line: string,
+  messageId: string | undefined,
+  sourcesCount: number,
+  keyPrefix: string
+) {
+  if (!messageId || sourcesCount === 0) return line;
+  const parts: Array<string | { idx: number }> = [];
+  const regex = /\[Source (\d+)\]/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  while ((match = regex.exec(line)) !== null) {
+    if (match.index > lastIndex) parts.push(line.slice(lastIndex, match.index));
+    const idx = Number(match[1]);
+    if (idx >= 1 && idx <= sourcesCount) parts.push({ idx });
+    else parts.push(match[0]);
+    lastIndex = match.index + match[0].length;
+  }
+  if (parts.length === 0) return line;
+  if (lastIndex < line.length) parts.push(line.slice(lastIndex));
+  return parts.map((part, i) => {
+    if (typeof part === 'string') return <span key={`${keyPrefix}-${i}`}>{part}</span>;
+    return (
+      <SourceReference
+        key={`${keyPrefix}-${i}`}
+        index={part.idx}
+        onClick={() => scrollToSource(messageId, part.idx)}
+      />
+    );
+  });
+}
+
 // Simple markdown-like content renderer
 // ISSUE #39 FIX: Added XSS sanitization for message content
 function MessageContent({
   content,
   isStreaming,
+  messageId,
+  sourcesCount = 0,
 }: {
   content: string;
   isStreaming: boolean;
+  messageId?: string;
+  sourcesCount?: number;
 }) {
-  // Memoize sanitized content to avoid re-sanitizing on every render
   const sanitizedContent = useMemo(() => {
     containsSuspiciousContent(content);
     return sanitizeMessageContent(content);
   }, [content]);
 
-  // Simple rendering - can be enhanced with a proper markdown library
   const lines = sanitizedContent.split('\n');
 
   return (
     <div className="whitespace-pre-wrap break-words">
       {lines.map((line, i) => (
         <span key={i}>
-          {line}
+          {renderLineWithCitations(line, messageId, sourcesCount, `m-${i}`)}
           {i < lines.length - 1 && <br />}
         </span>
       ))}
