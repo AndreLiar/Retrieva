@@ -182,7 +182,9 @@ class RAGService {
       ['user', '{input}'],
       [
         'user',
-        'Given the above conversation, generate a search query to look up in order to get information relevant to the conversation',
+        // Strict output format — fast Groq models (#244) tend to emit prose
+        // preambles that get fed into vector search and degrade retrieval.
+        "Rewrite the user's most recent question as a single self-contained search query that includes any context from the conversation it depends on. Output ONLY the rewritten query — no quotes, no preface, no explanation, no surrounding text.",
       ],
     ]);
 

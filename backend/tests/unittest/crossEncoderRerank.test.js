@@ -16,9 +16,9 @@ vi.mock('../../config/logger.js', () => ({
   },
 }));
 
-// Mock LLM
+// Mock LLM — rerank now uses createLLM({purpose:'chat'}) per #244
 vi.mock('../../config/llm.js', () => ({
-  getDefaultLLM: vi.fn().mockResolvedValue({
+  createLLM: vi.fn().mockResolvedValue({
     invoke: vi.fn().mockResolvedValue({
       content: '{"score": 8, "reason": "Highly relevant"}',
     }),
@@ -122,9 +122,7 @@ describe('Cross-Encoder Re-ranking', () => {
       RERANK_CONFIG.provider = 'cohere';
       RERANK_CONFIG.cohereApiKey = null; // Will cause error
 
-      const docs = [
-        { pageContent: 'Document 1', metadata: { score: 0.9 } },
-      ];
+      const docs = [{ pageContent: 'Document 1', metadata: { score: 0.9 } }];
 
       const result = await crossEncoderRerank('test query', docs);
 

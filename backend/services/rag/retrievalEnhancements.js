@@ -9,7 +9,7 @@
 import { StringOutputParser } from '@langchain/core/output_parsers';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { createHash } from 'crypto';
-import { getDefaultLLM } from '../../config/llm.js';
+import { createLLM } from '../../config/llm.js';
 import logger from '../../config/logger.js';
 
 /**
@@ -58,7 +58,9 @@ let cachedLLM = null;
  */
 async function getLLMInstance() {
   if (!cachedLLM) {
-    cachedLLM = await getDefaultLLM();
+    // Multi-query expansion + HyDE run on every chat request, so they share
+    // the chat purpose to keep the entire chat hot path on the fast provider.
+    cachedLLM = await createLLM({ purpose: 'chat' });
   }
   return cachedLLM;
 }
