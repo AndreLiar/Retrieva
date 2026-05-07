@@ -145,4 +145,38 @@ describe('createLLM purpose dispatch', () => {
       purpose: 'analysis',
     });
   });
+
+  it('groq chat default is llama-3.3-70b-versatile (rephrase quality fix from #244)', async () => {
+    // No explicit LLM_*_MODEL — exercise the resolveModelForPurpose default path
+    process.env.LLM_CHAT_PROVIDER = 'groq';
+
+    const { getActiveLLMMeta } = await import('../../config/llmProvider.js');
+
+    expect(getActiveLLMMeta('chat')).toEqual({
+      provider: 'groq',
+      model: 'llama-3.3-70b-versatile',
+      purpose: 'chat',
+    });
+  });
+
+  it('groq formatter default stays on llama-3.1-8b-instant (cheap + JSON-tolerant)', async () => {
+    process.env.LLM_FORMATTER_PROVIDER = 'groq';
+
+    const { getActiveLLMMeta } = await import('../../config/llmProvider.js');
+
+    expect(getActiveLLMMeta('formatter')).toEqual({
+      provider: 'groq',
+      model: 'llama-3.1-8b-instant',
+      purpose: 'formatter',
+    });
+  });
+
+  it('explicit LLM_CHAT_MODEL still wins over the new default', async () => {
+    process.env.LLM_CHAT_PROVIDER = 'groq';
+    process.env.LLM_CHAT_MODEL = 'mixtral-8x7b-32768';
+
+    const { getActiveLLMMeta } = await import('../../config/llmProvider.js');
+
+    expect(getActiveLLMMeta('chat').model).toBe('mixtral-8x7b-32768');
+  });
 });

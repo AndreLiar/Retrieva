@@ -14,7 +14,7 @@
  */
 
 import logger from '../../config/logger.js';
-import { getDefaultLLM } from '../../config/llm.js';
+import { createLLM } from '../../config/llm.js';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { StringOutputParser } from '@langchain/core/output_parsers';
 
@@ -209,7 +209,9 @@ async function rerankWithLLM(query, documents, options = {}) {
   const { topN = RERANK_CONFIG.topN, minScore = RERANK_CONFIG.minScore } = options;
 
   const startTime = Date.now();
-  const llm = await getDefaultLLM();
+  // LLM rerank fires on every chat request, runs in parallel batches — keep on
+  // the chat purpose so it benefits from fast inference.
+  const llm = await createLLM({ purpose: 'chat' });
   const chain = LLM_RERANK_PROMPT.pipe(llm).pipe(new StringOutputParser());
 
   // Score documents in parallel (with concurrency limit)
