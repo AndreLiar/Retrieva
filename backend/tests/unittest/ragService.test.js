@@ -13,7 +13,10 @@ vi.mock('../../config/logger.js', () => ({
   default: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
 }));
 vi.mock('../../config/langsmith.js', () => ({ getCallbacks: vi.fn(() => []) }));
-vi.mock('../../config/llm.js', () => ({ getDefaultLLM: vi.fn() }));
+vi.mock('../../config/llm.js', () => ({
+  createLLM: vi.fn(),
+  getActiveLLMMeta: vi.fn(() => ({ provider: 'ollama', model: 'gemma3:12b', purpose: 'chat' })),
+}));
 vi.mock('../../config/vectorStore.js', () => ({ getVectorStore: vi.fn() }));
 vi.mock('../../utils/rag/ragCache.js', () => ({ ragCache: { get: vi.fn(), set: vi.fn() } }));
 vi.mock('../../services/answerFormatter.js', () => ({

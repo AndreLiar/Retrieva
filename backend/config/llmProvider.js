@@ -50,7 +50,13 @@ function resolveModelForPurpose(purpose, provider) {
   const upper = purpose.toUpperCase();
   const explicit = process.env[`LLM_${upper}_MODEL`] || process.env.LLM_MODEL;
   if (explicit) return explicit;
-  if (provider === LLM_PROVIDERS.GROQ) return 'llama-3.1-8b-instant';
+  // Per-purpose Groq defaults: chat needs strict prompt-following (rephrase
+  // chain on llama-3.1-8b-instant emitted prose preambles in #244), so default
+  // to the larger model. Formatter parses JSON and tolerates noise via
+  // parseJsonArrayLoose, so keep the cheaper 8b default.
+  if (provider === LLM_PROVIDERS.GROQ) {
+    return purpose === 'chat' ? 'llama-3.3-70b-versatile' : 'llama-3.1-8b-instant';
+  }
   return undefined;
 }
 
