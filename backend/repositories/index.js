@@ -26,3 +26,21 @@ export { MessageRepository, messageRepository } from './MessageRepository.js';
 export { ConversationRepository, conversationRepository } from './ConversationRepository.js';
 export { AssessmentRepository, assessmentRepository } from './AssessmentRepository.js';
 export { WorkspaceRepository, workspaceRepository } from './WorkspaceRepository.js';
+export { UserRepository, userRepository } from './UserRepository.js';
+export { OrganizationRepository, organizationRepository } from './OrganizationRepository.js';
+export {
+  OrganizationMemberRepository,
+  organizationMemberRepository,
+} from './OrganizationMemberRepository.js';
+export {
+  WorkspaceMemberRepository,
+  workspaceMemberRepository,
+} from './WorkspaceMemberRepository.js';
+export {
+  QuestionnaireTemplateRepository,
+  questionnaireTemplateRepository,
+} from './QuestionnaireTemplateRepository.js';
+export {
+  VendorQuestionnaireRepository,
+  vendorQuestionnaireRepository,
+} from './VendorQuestionnaireRepository.js';
