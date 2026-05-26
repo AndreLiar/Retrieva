@@ -81,6 +81,15 @@ vi.mock('../../services/rag.js', () => ({
     requestId: 'test-request-id',
   }),
   prewarmRAG: vi.fn().mockResolvedValue(true),
+  // ConversationService consumes ragService as a default dep — provide a stub
+  // so it can be constructed at module-load time without throwing.
+  ragService: {
+    askWithConversation: vi.fn().mockResolvedValue({
+      answer: 'This is a test answer.',
+      sources: [],
+      confidence: 0.8,
+    }),
+  },
 }));
 
 // Mock auth audit service - include all methods used by auth controller
