@@ -90,6 +90,8 @@ vi.mock('../../config/queue.js', () => ({
     getJob: vi.fn().mockResolvedValue(null),
     on: vi.fn(),
   },
+  // QuestionnaireService (loaded transitively via app.js) needs this
+  questionnaireQueue: { add: vi.fn().mockResolvedValue({ id: 'j2' }), on: vi.fn() },
 }));
 
 vi.mock('../../services/fileIngestionService.js', () => ({

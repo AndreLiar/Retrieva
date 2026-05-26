@@ -160,20 +160,19 @@ describe('createQuestionnaire', () => {
   it('returns 400 when vendorName is missing', async () => {
     const req = makeReq({ body: { vendorEmail: 'v@e.com', workspaceId: WS_ID } });
     await createQuestionnaire(req, res, next);
-    expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: false }));
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 400 }));
   });
 
   it('returns 400 when vendorEmail is missing', async () => {
     const req = makeReq({ body: { vendorName: 'Acme', workspaceId: WS_ID } });
     await createQuestionnaire(req, res, next);
-    expect(res.status).toHaveBeenCalledWith(400);
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 400 }));
   });
 
   it('returns 400 when workspaceId is missing', async () => {
     const req = makeReq({ body: { vendorName: 'Acme', vendorEmail: 'v@e.com' } });
     await createQuestionnaire(req, res, next);
-    expect(res.status).toHaveBeenCalledWith(400);
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 400 }));
   });
 
   it('returns 500 when no default template exists', async () => {
@@ -182,7 +181,7 @@ describe('createQuestionnaire', () => {
       body: { vendorName: 'Acme', vendorEmail: 'v@e.com', workspaceId: WS_ID },
     });
     await createQuestionnaire(req, res, next);
-    expect(res.status).toHaveBeenCalledWith(500);
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 500 }));
   });
 
   it('trims and lowercases fields, creates questionnaire, returns 201', async () => {
@@ -244,7 +243,8 @@ describe('listQuestionnaires', () => {
     const req = makeReq({ query: { status: 'complete' } });
     await listQuestionnaires(req, res, next);
     expect(VendorQuestionnaire.find).toHaveBeenCalledWith(
-      expect.objectContaining({ status: 'complete' })
+      expect.objectContaining({ status: 'complete' }),
+      expect.any(Object)
     );
   });
 
@@ -252,7 +252,8 @@ describe('listQuestionnaires', () => {
     const req = makeReq({ query: { workspaceId: WS_ID } });
     await listQuestionnaires(req, res, next);
     expect(VendorQuestionnaire.find).toHaveBeenCalledWith(
-      expect.objectContaining({ workspaceId: WS_ID })
+      expect.objectContaining({ workspaceId: WS_ID }),
+      expect.any(Object)
     );
   });
 
@@ -379,7 +380,7 @@ describe('sendQuestionnaire', () => {
     VendorQuestionnaire.findById.mockResolvedValue(q);
     const req = makeReq({ params: { id: Q_ID } });
     await sendQuestionnaire(req, res, next);
-    expect(res.status).toHaveBeenCalledWith(400);
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 400 }));
   });
 
   it('sets token, saves, sends invitation email, returns 200', async () => {
@@ -491,7 +492,7 @@ describe('submitResponse', () => {
   it('returns 400 when answers is not an array', async () => {
     const req = makeReq({ params: { token: TOKEN }, body: { answers: 'not-array' } });
     await submitResponse(req, res, next);
-    expect(res.status).toHaveBeenCalledWith(400);
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 400 }));
     expect(VendorQuestionnaire.findByToken).not.toHaveBeenCalled();
   });
 
