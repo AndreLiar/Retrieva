@@ -8,7 +8,7 @@
 
 import { Worker } from 'bullmq';
 import { redisConnection } from '../config/redis.js';
-import { Assessment } from '../models/Assessment.js';
+import { assessmentRepository } from '../repositories/index.js';
 import { ingestFile, assessmentCollectionName } from '../services/fileIngestionService.js';
 import logger from '../config/logger.js';
 import { connectDB } from '../config/database.js';
@@ -46,7 +46,7 @@ async function processFileIndex(job) {
   });
 
   // Idempotency guard — skip if already indexed (safe on retries)
-  const existing = await Assessment.findById(assessmentId).lean();
+  const existing = await assessmentRepository.findById(assessmentId, { lean: true });
   if (existing?.documents[documentIndex]?.status === 'indexed') {
     logger.info('Document already indexed, skipping (idempotency guard)', {
       service: 'assessment-worker',
@@ -58,7 +58,7 @@ async function processFileIndex(job) {
   }
 
   // Mark document as indexing
-  await Assessment.findByIdAndUpdate(assessmentId, {
+  await assessmentRepository.updateById(assessmentId, {
     status: 'indexing',
     statusMessage: `Indexing ${fileName}…`,
     [`documents.${documentIndex}.status`]: 'uploading',
@@ -80,7 +80,7 @@ async function processFileIndex(job) {
     });
 
     // Mark document as indexed
-    await Assessment.findByIdAndUpdate(assessmentId, {
+    await assessmentRepository.updateById(assessmentId, {
       [`documents.${documentIndex}.status`]: 'indexed',
       [`documents.${documentIndex}.qdrantCollectionId`]: collectionName,
     });
@@ -103,7 +103,7 @@ async function processFileIndex(job) {
       error: err.message,
     });
 
-    await Assessment.findByIdAndUpdate(assessmentId, {
+    await assessmentRepository.updateById(assessmentId, {
       [`documents.${documentIndex}.status`]: 'failed',
       status: 'failed',
       statusMessage: `Failed to index ${fileName}: ${err.message}`,
@@ -126,7 +126,7 @@ async function processGapAnalysis(job) {
     jobId: job.id,
   });
 
-  await Assessment.findByIdAndUpdate(assessmentId, {
+  await assessmentRepository.updateById(assessmentId, {
     status: 'analyzing',
     statusMessage: 'Running compliance gap analysis…',
   });

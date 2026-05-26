@@ -29,11 +29,12 @@ class BaseRepository {
 
   /**
    * Create a new document
-   * @param {Object} data - Document data
-   * @returns {Promise<Document>}
+   * @param {Object|Array<Object>} data - Document data (object) or array of documents
+   * @param {Object} [options] - Optional create options (e.g. { session } for transactions)
+   * @returns {Promise<Document|Array<Document>>}
    */
-  async create(data) {
-    return this.model.create(data);
+  async create(data, options) {
+    return options ? this.model.create(data, options) : this.model.create(data);
   }
 
   /**
@@ -55,6 +56,7 @@ class BaseRepository {
     const query = this.model.findById(id);
     if (options.select) query.select(options.select);
     if (options.populate) query.populate(options.populate);
+    if (options.lean) query.lean();
     return query.exec();
   }
 
@@ -68,6 +70,7 @@ class BaseRepository {
     const query = this.model.findOne(criteria);
     if (options.select) query.select(options.select);
     if (options.populate) query.populate(options.populate);
+    if (options.lean) query.lean();
     return query.exec();
   }
 
@@ -84,6 +87,7 @@ class BaseRepository {
     if (options.sort) query.sort(options.sort);
     if (options.limit) query.limit(options.limit);
     if (options.skip) query.skip(options.skip);
+    if (options.lean) query.lean();
     return query.exec();
   }
 

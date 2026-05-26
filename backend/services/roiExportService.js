@@ -12,10 +12,9 @@
  */
 
 import XLSX from 'xlsx';
-import { Workspace } from '../models/Workspace.js';
 import { WorkspaceMember } from '../models/WorkspaceMember.js';
-import { Assessment } from '../models/Assessment.js';
 import { VendorQuestionnaire } from '../models/VendorQuestionnaire.js';
+import { assessmentRepository, workspaceRepository } from '../repositories/index.js';
 
 const INSTITUTION_NAME = process.env.INSTITUTION_NAME || 'Financial Entity';
 
@@ -30,10 +29,10 @@ export async function generateRoiWorkbook(userId) {
   // 1. Collect all workspaces the user has access to
   const memberships = await WorkspaceMember.find({ userId, status: 'active' });
   const workspaceIds = memberships.map((m) => m.workspaceId);
-  const workspaces = await Workspace.find({ _id: { $in: workspaceIds } });
+  const workspaces = await workspaceRepository.find({ _id: { $in: workspaceIds } });
 
   // 2. Latest complete assessment per workspace
-  const latestAssessments = await Assessment.aggregate([
+  const latestAssessments = await assessmentRepository.aggregate([
     { $match: { workspaceId: { $in: workspaceIds }, status: 'complete' } },
     { $sort: { createdAt: -1 } },
     { $group: { _id: '$workspaceId', doc: { $first: '$$ROOT' } } },

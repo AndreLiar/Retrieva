@@ -27,7 +27,7 @@ import {
   ShadingType,
   PageBreak,
 } from 'docx';
-import { Assessment } from '../models/Assessment.js';
+import { assessmentRepository } from '../repositories/index.js';
 import { AppError } from '../utils/index.js';
 import logger from '../config/logger.js';
 
@@ -465,7 +465,7 @@ function buildMethodology(assessment) {
  * @returns {Promise<Buffer>} Word document buffer
  */
 export async function generateReport(assessmentId) {
-  const assessment = await Assessment.findById(assessmentId).lean();
+  const assessment = await assessmentRepository.findById(assessmentId, { lean: true });
   if (!assessment) throw new AppError('Assessment not found', 404);
   if (assessment.status !== 'complete') {
     throw new AppError('Assessment must be complete before generating a report', 400);

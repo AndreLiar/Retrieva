@@ -73,8 +73,10 @@ import { getVectorStore as defaultVectorStoreFactory } from '../config/vectorSto
 import { ragCache as defaultCache } from '../utils/rag/ragCache.js';
 import { answerFormatter as defaultAnswerFormatter } from './answerFormatter.js';
 import defaultLogger from '../config/logger.js';
-import { Message as DefaultMessage } from '../models/Message.js';
-import { Conversation as DefaultConversation } from '../models/Conversation.js';
+import {
+  messageRepository as defaultMessageRepository,
+  conversationRepository as defaultConversationRepository,
+} from '../repositories/index.js';
 
 /**
  * @typedef {Object} RAGDependencies
@@ -137,9 +139,9 @@ class RAGService {
     this.answerFormatter = dependencies.answerFormatter || defaultAnswerFormatter;
     this.logger = dependencies.logger || defaultLogger;
 
-    const models = dependencies.models || {};
-    this.Message = models.Message || DefaultMessage;
-    this.Conversation = models.Conversation || DefaultConversation;
+    const repos = dependencies.repositories || {};
+    this.messageRepo = repos.messageRepository || defaultMessageRepository;
+    this.conversationRepo = repos.conversationRepository || defaultConversationRepository;
 
     this.retriever = null;
     this.rephraseChain = null;
@@ -478,7 +480,7 @@ class RAGService {
     const requestId = randomUUID();
 
     // SECURITY: Get conversation and workspaceId BEFORE cache check for tenant isolation
-    const conversation = await this.Conversation.findById(conversationId);
+    const conversation = await this.conversationRepo.findById(conversationId);
     if (!conversation) throw new Error(`Conversation ${conversationId} not found`);
 
     const workspaceId = conversation.workspaceId || null;
@@ -506,10 +508,7 @@ class RAGService {
       return this._handleCacheHit(cached, requestId, workspaceId);
     }
 
-    const messages = await this.Message.find({ conversationId })
-      .sort({ timestamp: -1 })
-      .limit(20)
-      .sort({ timestamp: 1 });
+    const messages = await this.messageRepo.getRecentMessages(conversationId, 20);
     const history = this._convertToHistory(messages);
 
     const memoryContext = { entityContext: '', summaryContext: '' };
@@ -1073,15 +1072,15 @@ class RAGService {
     try {
       await session.withTransaction(async () => {
         // Create both messages within the transaction
-        await this.Message.create([{ conversationId, role: 'user', content: question }], {
+        await this.messageRepo.create([{ conversationId, role: 'user', content: question }], {
           session,
         });
-        await this.Message.create([{ conversationId, role: 'assistant', content: response }], {
+        await this.messageRepo.create([{ conversationId, role: 'assistant', content: response }], {
           session,
         });
 
         // Update conversation metadata
-        await this.Conversation.findByIdAndUpdate(
+        await this.conversationRepo.updateById(
           conversationId,
           {
             lastMessageAt: new Date(),
