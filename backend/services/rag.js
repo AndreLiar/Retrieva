@@ -61,7 +61,6 @@ const guardrailsConfig = {
   },
   retrieval: {
     maxRetryDocuments: 20,
-    sparseSearch: { useInvertedIndex: false },
   },
 };
 
