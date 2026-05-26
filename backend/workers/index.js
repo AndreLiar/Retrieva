@@ -1,4 +1,6 @@
 import './assessmentWorker.js';
+import './questionnaireWorker.js';
+import './monitoringWorker.js';
 import logger from '../config/logger.js';
 import { disconnectRedis } from '../config/redis.js';
 import { closeQueues } from '../config/queue.js';
@@ -9,6 +11,8 @@ logger.info('BullMQ Workers Started');
 logger.info('='.repeat(60));
 logger.info('Active workers:');
 logger.info('  - Assessment Worker (concurrency: 2)');
+logger.info('  - Questionnaire Worker');
+logger.info('  - Monitoring Worker (24h schedule)');
 logger.info('='.repeat(60));
 
 /**

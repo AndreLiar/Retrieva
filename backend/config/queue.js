@@ -3,7 +3,6 @@ import { Queue } from 'bullmq';
 import { redisConnection } from './redis.js';
 import logger from './logger.js';
 
-const MEMORY_DECAY_INTERVAL_HOURS = parseInt(process.env.MEMORY_DECAY_INTERVAL_HOURS) || 24;
 const MONITORING_INTERVAL_HOURS = parseInt(process.env.MONITORING_INTERVAL_HOURS) || 24;
 
 /**
@@ -78,31 +77,6 @@ export const monitoringQueue = new Queue('monitoringJobs', {
 });
 
 /**
- * Queue for memory decay and archival operations
- * Handles:
- * - Archiving old conversations
- * - Entity decay processing
- * - Orphaned data cleanup
- */
-export const memoryDecayQueue = new Queue('memoryDecay', {
-  connection: redisConnection,
-  defaultJobOptions: {
-    attempts: 3,
-    backoff: {
-      type: 'exponential',
-      delay: 60000, // Start with 1 minute
-    },
-    removeOnComplete: {
-      count: 10,
-      age: 24 * 60 * 60, // Keep for 1 day
-    },
-    removeOnFail: {
-      count: 20,
-    },
-  },
-});
-
-/**
  * Helper: wrap a promise with a timeout
  */
 function withTimeout(promise, ms) {
@@ -116,42 +90,6 @@ function withTimeout(promise, ms) {
 }
 
 const QUEUE_OP_TIMEOUT = parseInt(process.env.QUEUE_OP_TIMEOUT_MS) || 10000;
-
-/**
- * Schedule recurring memory decay job
- * Runs every 24 hours by default
- */
-export async function scheduleMemoryDecayJob() {
-  const jobName = 'scheduled-memory-decay';
-
-  // Remove existing repeatable job if any (with timeout to prevent hanging)
-  const existingJobs = await withTimeout(memoryDecayQueue.getRepeatableJobs(), QUEUE_OP_TIMEOUT);
-  for (const job of existingJobs) {
-    if (job.name === jobName) {
-      await withTimeout(memoryDecayQueue.removeRepeatableByKey(job.key), QUEUE_OP_TIMEOUT);
-    }
-  }
-
-  // Schedule new repeatable job
-  await withTimeout(
-    memoryDecayQueue.add(
-      jobName,
-      { scheduled: true, timestamp: new Date().toISOString() },
-      {
-        repeat: {
-          every: MEMORY_DECAY_INTERVAL_HOURS * 60 * 60 * 1000, // Convert hours to ms
-        },
-        jobId: 'memory-decay-scheduled',
-      }
-    ),
-    QUEUE_OP_TIMEOUT
-  );
-
-  logger.info('Memory decay job scheduled', {
-    service: 'queue',
-    intervalHours: MEMORY_DECAY_INTERVAL_HOURS,
-  });
-}
 
 /**
  * Schedule weekly digest email job
@@ -218,17 +156,10 @@ export async function scheduleMonitoringJob() {
 
 // ISSUE #34 FIX: Store event listener references for cleanup
 const queueEventListeners = {
-  memoryDecay: null,
   assessmentJobs: null,
   questionnaireJobs: null,
   monitoringJobs: null,
 };
-
-// Log queue events with stored references
-queueEventListeners.memoryDecay = (error) => {
-  logger.error('Memory decay queue error:', { error: error.message, stack: error.stack });
-};
-memoryDecayQueue.on('error', queueEventListeners.memoryDecay);
 
 queueEventListeners.assessmentJobs = (error) => {
   logger.error('Assessment jobs queue error:', { error: error.message, stack: error.stack });
@@ -254,9 +185,6 @@ logger.info('BullMQ queues initialized successfully');
 export const closeQueues = async () => {
   try {
     // Remove event listeners to prevent memory leaks
-    if (queueEventListeners.memoryDecay) {
-      memoryDecayQueue.off('error', queueEventListeners.memoryDecay);
-    }
     if (queueEventListeners.assessmentJobs) {
       assessmentQueue.off('error', queueEventListeners.assessmentJobs);
     }
@@ -270,7 +198,6 @@ export const closeQueues = async () => {
     }
 
     await Promise.all([
-      memoryDecayQueue.close(),
       assessmentQueue.close(),
       questionnaireQueue.close(),
       monitoringQueue.close(),
@@ -282,11 +209,9 @@ export const closeQueues = async () => {
 };
 
 export default {
-  memoryDecayQueue,
   assessmentQueue,
   questionnaireQueue,
   monitoringQueue,
-  scheduleMemoryDecayJob,
   scheduleMonitoringJob,
   scheduleWeeklyDigestJob,
   closeQueues,
