@@ -1,9 +1,9 @@
 import path from 'path';
 import mongoose from 'mongoose';
 import { AppError } from '../utils/index.js';
-import { Assessment } from '../models/Assessment.js';
-import { Workspace } from '../models/Workspace.js';
 import { User } from '../models/User.js';
+import { assessmentRepository } from '../repositories/AssessmentRepository.js';
+import { workspaceRepository } from '../repositories/WorkspaceRepository.js';
 import { assessmentQueue, monitoringQueue } from '../config/queue.js';
 import * as storageModule from '../config/storage.js';
 import { generateReport } from './reportGenerator.js';
@@ -12,8 +12,8 @@ import logger from '../config/logger.js';
 
 class AssessmentService {
   constructor(deps = {}) {
-    this.Assessment = deps.Assessment || Assessment;
-    this.Workspace = deps.Workspace || Workspace;
+    this.assessmentRepo = deps.assessmentRepo || assessmentRepository;
+    this.workspaceRepo = deps.workspaceRepo || workspaceRepository;
     this.User = deps.User || User;
     this.assessmentQueue = deps.assessmentQueue || assessmentQueue;
     this.monitoringQueue = deps.monitoringQueue || monitoringQueue;
@@ -33,7 +33,7 @@ class AssessmentService {
       status: 'uploading',
     }));
 
-    const assessment = await this.Assessment.create({
+    const assessment = await this.assessmentRepo.create({
       workspaceId,
       name: name.trim(),
       vendorName: vendorName.trim(),
@@ -133,13 +133,14 @@ class AssessmentService {
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const [assessments, total] = await Promise.all([
-      this.Assessment.find(filter)
-        .select('-results.gaps')
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(parseInt(limit))
-        .lean(),
-      this.Assessment.countDocuments(filter),
+      this.assessmentRepo.find(filter, {
+        select: '-results.gaps',
+        sort: { createdAt: -1 },
+        skip,
+        limit: parseInt(limit),
+        lean: true,
+      }),
+      this.assessmentRepo.count(filter),
     ]);
 
     return {
@@ -154,7 +155,7 @@ class AssessmentService {
   }
 
   async getAssessment(id, authorizedWorkspaceIds) {
-    const assessment = await this.Assessment.findById(id).lean();
+    const assessment = await this.assessmentRepo.findById(id, { lean: true });
     if (!assessment) throw new AppError('Assessment not found', 404);
     if (!authorizedWorkspaceIds.includes(assessment.workspaceId.toString())) {
       throw new AppError('Access denied to this assessment', 403);
@@ -163,7 +164,7 @@ class AssessmentService {
   }
 
   async getReportBuffer(id, userId, authorizedWorkspaceIds) {
-    const assessment = await this.Assessment.findById(id).lean();
+    const assessment = await this.assessmentRepo.findById(id, { lean: true });
     if (!assessment) throw new AppError('Assessment not found', 404);
     if (!authorizedWorkspaceIds.includes(assessment.workspaceId.toString())) {
       throw new AppError('Access denied to this assessment', 403);
@@ -194,7 +195,7 @@ class AssessmentService {
   }
 
   async setRiskDecision(id, userId, authorizedWorkspaceIds, { decision, rationale }) {
-    const assessment = await this.Assessment.findById(id);
+    const assessment = await this.assessmentRepo.findById(id);
     if (!assessment) throw new AppError('Assessment not found', 404);
     if (!authorizedWorkspaceIds.includes(assessment.workspaceId.toString())) {
       throw new AppError('Access denied to this assessment', 403);
@@ -217,7 +218,7 @@ class AssessmentService {
 
         if (decision === 'proceed' || decision === 'conditional') {
           nextReviewDate = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
-          await this.Workspace.findByIdAndUpdate(
+          await this.workspaceRepo.updateById(
             assessment.workspaceId,
             { nextReviewDate },
             { session }
@@ -270,7 +271,7 @@ class AssessmentService {
   }
 
   async setClauseSignoff(id, userId, authorizedWorkspaceIds, { clauseRef, status, note }) {
-    const assessment = await this.Assessment.findById(id);
+    const assessment = await this.assessmentRepo.findById(id);
     if (!assessment) throw new AppError('Assessment not found', 404);
     if (!authorizedWorkspaceIds.includes(assessment.workspaceId.toString())) {
       throw new AppError('Access denied to this assessment', 403);
@@ -308,7 +309,7 @@ class AssessmentService {
   }
 
   async getAssessmentFileDownload(id, docIndex, authorizedWorkspaceIds) {
-    const assessment = await this.Assessment.findById(id).lean();
+    const assessment = await this.assessmentRepo.findById(id, { lean: true });
     if (!assessment) throw new AppError('Assessment not found', 404);
     if (!authorizedWorkspaceIds.includes(assessment.workspaceId.toString())) {
       throw new AppError('Access denied to this assessment', 403);
@@ -326,7 +327,7 @@ class AssessmentService {
   }
 
   async deleteAssessment(id, userId, authorizedWorkspaceIds) {
-    const assessment = await this.Assessment.findById(id);
+    const assessment = await this.assessmentRepo.findById(id);
     if (!assessment) throw new AppError('Assessment not found', 404);
     if (!authorizedWorkspaceIds.includes(assessment.workspaceId.toString())) {
       throw new AppError('Access denied to this assessment', 403);
@@ -342,7 +343,7 @@ class AssessmentService {
       })
     );
 
-    await this.Assessment.findByIdAndDelete(id);
+    await this.assessmentRepo.deleteById(id);
 
     this.logger.info('Assessment deleted', { service: 'assessment', assessmentId: id, userId });
   }
