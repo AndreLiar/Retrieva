@@ -14,7 +14,8 @@
 import XLSX from 'xlsx';
 import { WorkspaceMember } from '../models/WorkspaceMember.js';
 import { VendorQuestionnaire } from '../models/VendorQuestionnaire.js';
-import { assessmentRepository, workspaceRepository } from '../repositories/index.js';
+import { assessmentRepository } from '../repositories/AssessmentRepository.js';
+import { workspaceRepository } from '../repositories/WorkspaceRepository.js';
 
 const INSTITUTION_NAME = process.env.INSTITUTION_NAME || 'Financial Entity';
 

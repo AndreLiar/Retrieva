@@ -8,7 +8,7 @@
 
 import { Worker } from 'bullmq';
 import { redisConnection } from '../config/redis.js';
-import { assessmentRepository } from '../repositories/index.js';
+import { assessmentRepository } from '../repositories/AssessmentRepository.js';
 import { ingestFile, assessmentCollectionName } from '../services/fileIngestionService.js';
 import logger from '../config/logger.js';
 import { connectDB } from '../config/database.js';

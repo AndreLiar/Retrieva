@@ -75,21 +75,21 @@ function makeDeps(overrides = {}) {
     getJob: vi.fn().mockResolvedValue(null),
     add: vi.fn().mockResolvedValue({ id: 'j2' }),
   };
-  const Assessment = {
+  const assessmentRepo = {
     create: vi.fn(),
     findById: vi.fn(),
-    findByIdAndDelete: vi.fn(),
+    deleteById: vi.fn(),
     find: vi.fn(),
-    countDocuments: vi.fn(),
+    count: vi.fn(),
   };
-  const Workspace = { findByIdAndUpdate: vi.fn().mockResolvedValue(undefined) };
+  const workspaceRepo = { updateById: vi.fn().mockResolvedValue(undefined) };
   const User = { updateOne: vi.fn().mockReturnValue({ catch: vi.fn() }) };
   const generateReport = vi.fn().mockResolvedValue(Buffer.from('docx'));
   const deleteAssessmentCollection = vi.fn().mockResolvedValue(undefined);
 
   return {
-    Assessment,
-    Workspace,
+    assessmentRepo,
+    workspaceRepo,
     User,
     assessmentQueue,
     monitoringQueue,
@@ -115,7 +115,7 @@ describe('AssessmentService.createAssessment', () => {
 
   it('creates the assessment record with correct fields', async () => {
     const doc = makeAssessmentDoc({ status: 'pending' });
-    deps.Assessment.create.mockResolvedValue(doc);
+    deps.assessmentRepo.create.mockResolvedValue(doc);
 
     const result = await svc.createAssessment(
       USER_ID,
@@ -124,7 +124,7 @@ describe('AssessmentService.createAssessment', () => {
       [makeFile()]
     );
 
-    expect(deps.Assessment.create).toHaveBeenCalledWith(
+    expect(deps.assessmentRepo.create).toHaveBeenCalledWith(
       expect.objectContaining({
         name: 'Q1',
         vendorName: 'Acme',
@@ -136,7 +136,7 @@ describe('AssessmentService.createAssessment', () => {
   });
 
   it('enqueues one fileIndex job per file and one gapAnalysis job', async () => {
-    deps.Assessment.create.mockResolvedValue(makeAssessmentDoc({ documents: [{}] }));
+    deps.assessmentRepo.create.mockResolvedValue(makeAssessmentDoc({ documents: [{}] }));
     const files = [makeFile('a.pdf'), makeFile('b.pdf')];
 
     await svc.createAssessment(
@@ -152,7 +152,7 @@ describe('AssessmentService.createAssessment', () => {
   });
 
   it('skips S3 upload when storage is not configured', async () => {
-    deps.Assessment.create.mockResolvedValue(makeAssessmentDoc());
+    deps.assessmentRepo.create.mockResolvedValue(makeAssessmentDoc());
     deps.storage.isStorageConfigured.mockReturnValue(false);
 
     await svc.createAssessment(
@@ -166,7 +166,7 @@ describe('AssessmentService.createAssessment', () => {
   });
 
   it('fires onboarding checklist update', async () => {
-    deps.Assessment.create.mockResolvedValue(makeAssessmentDoc());
+    deps.assessmentRepo.create.mockResolvedValue(makeAssessmentDoc());
 
     await svc.createAssessment(
       USER_ID,
@@ -192,7 +192,7 @@ describe('AssessmentService.getAssessment', () => {
   });
 
   it('throws 404 when assessment does not exist', async () => {
-    deps.Assessment.findById.mockReturnValue({ lean: vi.fn().mockResolvedValue(null) });
+    deps.assessmentRepo.findById.mockResolvedValue(null);
     await expect(svc.getAssessment(ASSESSMENT_OID.toString(), AUTH_IDS)).rejects.toMatchObject({
       statusCode: 404,
     });
@@ -200,7 +200,7 @@ describe('AssessmentService.getAssessment', () => {
 
   it('throws 403 when workspace is not authorized', async () => {
     const doc = makeAssessmentDoc({ workspaceId: new mongoose.Types.ObjectId() });
-    deps.Assessment.findById.mockReturnValue({ lean: vi.fn().mockResolvedValue(doc) });
+    deps.assessmentRepo.findById.mockResolvedValue(doc);
     await expect(svc.getAssessment(ASSESSMENT_OID.toString(), AUTH_IDS)).rejects.toMatchObject({
       statusCode: 403,
     });
@@ -208,7 +208,7 @@ describe('AssessmentService.getAssessment', () => {
 
   it('returns the assessment when authorized', async () => {
     const doc = makeAssessmentDoc();
-    deps.Assessment.findById.mockReturnValue({ lean: vi.fn().mockResolvedValue(doc) });
+    deps.assessmentRepo.findById.mockResolvedValue(doc);
     const result = await svc.getAssessment(ASSESSMENT_OID.toString(), AUTH_IDS);
     expect(result.name).toBe('DORA Q1');
   });
@@ -224,15 +224,8 @@ describe('AssessmentService.listAssessments', () => {
   beforeEach(() => {
     deps = makeDeps();
     svc = new AssessmentService(deps);
-    const query = {
-      select: vi.fn().mockReturnThis(),
-      sort: vi.fn().mockReturnThis(),
-      skip: vi.fn().mockReturnThis(),
-      limit: vi.fn().mockReturnThis(),
-      lean: vi.fn().mockResolvedValue([makeAssessmentDoc()]),
-    };
-    deps.Assessment.find.mockReturnValue(query);
-    deps.Assessment.countDocuments.mockResolvedValue(1);
+    deps.assessmentRepo.find.mockResolvedValue([makeAssessmentDoc()]);
+    deps.assessmentRepo.count.mockResolvedValue(1);
   });
 
   it('returns assessments and pagination metadata', async () => {
@@ -266,7 +259,7 @@ describe('AssessmentService.setRiskDecision', () => {
   });
 
   it('throws 404 when assessment not found', async () => {
-    deps.Assessment.findById.mockResolvedValue(null);
+    deps.assessmentRepo.findById.mockResolvedValue(null);
     await expect(
       svc.setRiskDecision(ASSESSMENT_OID.toString(), USER_ID, AUTH_IDS, { decision: 'proceed' })
     ).rejects.toMatchObject({ statusCode: 404 });
@@ -274,7 +267,7 @@ describe('AssessmentService.setRiskDecision', () => {
 
   it('throws 403 when workspace not authorized', async () => {
     const doc = makeAssessmentDoc({ workspaceId: new mongoose.Types.ObjectId() });
-    deps.Assessment.findById.mockResolvedValue(doc);
+    deps.assessmentRepo.findById.mockResolvedValue(doc);
     await expect(
       svc.setRiskDecision(ASSESSMENT_OID.toString(), USER_ID, AUTH_IDS, { decision: 'proceed' })
     ).rejects.toMatchObject({ statusCode: 403 });
@@ -282,7 +275,7 @@ describe('AssessmentService.setRiskDecision', () => {
 
   it('saves the risk decision and returns it', async () => {
     const doc = makeAssessmentDoc();
-    deps.Assessment.findById.mockResolvedValue(doc);
+    deps.assessmentRepo.findById.mockResolvedValue(doc);
 
     const result = await svc.setRiskDecision(ASSESSMENT_OID.toString(), USER_ID, AUTH_IDS, {
       decision: 'proceed',
@@ -296,7 +289,7 @@ describe('AssessmentService.setRiskDecision', () => {
   });
 
   it('wraps assessment save and workspace update in a transaction', async () => {
-    deps.Assessment.findById.mockResolvedValue(makeAssessmentDoc());
+    deps.assessmentRepo.findById.mockResolvedValue(makeAssessmentDoc());
     await svc.setRiskDecision(ASSESSMENT_OID.toString(), USER_ID, AUTH_IDS, {
       decision: 'proceed',
     });
@@ -304,7 +297,7 @@ describe('AssessmentService.setRiskDecision', () => {
   });
 
   it('schedules a review reminder for proceed decisions', async () => {
-    deps.Assessment.findById.mockResolvedValue(makeAssessmentDoc());
+    deps.assessmentRepo.findById.mockResolvedValue(makeAssessmentDoc());
     await svc.setRiskDecision(ASSESSMENT_OID.toString(), USER_ID, AUTH_IDS, {
       decision: 'proceed',
     });
@@ -316,13 +309,13 @@ describe('AssessmentService.setRiskDecision', () => {
   });
 
   it('does not schedule a reminder for reject decisions', async () => {
-    deps.Assessment.findById.mockResolvedValue(makeAssessmentDoc());
+    deps.assessmentRepo.findById.mockResolvedValue(makeAssessmentDoc());
     await svc.setRiskDecision(ASSESSMENT_OID.toString(), USER_ID, AUTH_IDS, { decision: 'reject' });
     expect(deps.monitoringQueue.add).not.toHaveBeenCalled();
   });
 
   it('does not throw when reminder scheduling fails (non-critical)', async () => {
-    deps.Assessment.findById.mockResolvedValue(makeAssessmentDoc());
+    deps.assessmentRepo.findById.mockResolvedValue(makeAssessmentDoc());
     deps.monitoringQueue.getJob.mockRejectedValue(new Error('Redis down'));
     await expect(
       svc.setRiskDecision(ASSESSMENT_OID.toString(), USER_ID, AUTH_IDS, { decision: 'proceed' })
@@ -343,7 +336,7 @@ describe('AssessmentService.setClauseSignoff', () => {
   });
 
   it('throws 400 when framework is not CONTRACT_A30', async () => {
-    deps.Assessment.findById.mockResolvedValue(makeAssessmentDoc({ framework: 'DORA' }));
+    deps.assessmentRepo.findById.mockResolvedValue(makeAssessmentDoc({ framework: 'DORA' }));
     await expect(
       svc.setClauseSignoff(ASSESSMENT_OID.toString(), USER_ID, AUTH_IDS, {
         clauseRef: 'Art.30(1)',
@@ -354,7 +347,7 @@ describe('AssessmentService.setClauseSignoff', () => {
 
   it('pushes a new signoff', async () => {
     const doc = makeAssessmentDoc({ framework: 'CONTRACT_A30', clauseSignoffs: [] });
-    deps.Assessment.findById.mockResolvedValue(doc);
+    deps.assessmentRepo.findById.mockResolvedValue(doc);
 
     const result = await svc.setClauseSignoff(ASSESSMENT_OID.toString(), USER_ID, AUTH_IDS, {
       clauseRef: 'Art.30(1)',
@@ -373,7 +366,7 @@ describe('AssessmentService.setClauseSignoff', () => {
       framework: 'CONTRACT_A30',
       clauseSignoffs: [{ clauseRef: 'Art.30(1)', status: 'rejected' }],
     });
-    deps.Assessment.findById.mockResolvedValue(doc);
+    deps.assessmentRepo.findById.mockResolvedValue(doc);
 
     const result = await svc.setClauseSignoff(ASSESSMENT_OID.toString(), USER_ID, AUTH_IDS, {
       clauseRef: 'Art.30(1)',
@@ -395,11 +388,11 @@ describe('AssessmentService.deleteAssessment', () => {
   beforeEach(() => {
     deps = makeDeps();
     svc = new AssessmentService(deps);
-    deps.Assessment.findByIdAndDelete.mockResolvedValue(undefined);
+    deps.assessmentRepo.deleteById.mockResolvedValue(undefined);
   });
 
   it('throws 404 when assessment not found', async () => {
-    deps.Assessment.findById.mockResolvedValue(null);
+    deps.assessmentRepo.findById.mockResolvedValue(null);
     await expect(
       svc.deleteAssessment(ASSESSMENT_OID.toString(), USER_ID, AUTH_IDS)
     ).rejects.toMatchObject({ statusCode: 404 });
@@ -407,25 +400,25 @@ describe('AssessmentService.deleteAssessment', () => {
 
   it('throws 403 when workspace not authorized', async () => {
     const doc = makeAssessmentDoc({ workspaceId: new mongoose.Types.ObjectId() });
-    deps.Assessment.findById.mockResolvedValue(doc);
+    deps.assessmentRepo.findById.mockResolvedValue(doc);
     await expect(
       svc.deleteAssessment(ASSESSMENT_OID.toString(), USER_ID, AUTH_IDS)
     ).rejects.toMatchObject({ statusCode: 403 });
   });
 
   it('throws 403 when caller is not the creator', async () => {
-    deps.Assessment.findById.mockResolvedValue(makeAssessmentDoc({ createdBy: 'other-user' }));
+    deps.assessmentRepo.findById.mockResolvedValue(makeAssessmentDoc({ createdBy: 'other-user' }));
     await expect(
       svc.deleteAssessment(ASSESSMENT_OID.toString(), USER_ID, AUTH_IDS)
     ).rejects.toMatchObject({ statusCode: 403 });
   });
 
   it('deletes the record and fires Qdrant cleanup', async () => {
-    deps.Assessment.findById.mockResolvedValue(makeAssessmentDoc());
+    deps.assessmentRepo.findById.mockResolvedValue(makeAssessmentDoc());
 
     await svc.deleteAssessment(ASSESSMENT_OID.toString(), USER_ID, AUTH_IDS);
 
-    expect(deps.Assessment.findByIdAndDelete).toHaveBeenCalledWith(ASSESSMENT_OID.toString());
+    expect(deps.assessmentRepo.deleteById).toHaveBeenCalledWith(ASSESSMENT_OID.toString());
     expect(deps.deleteAssessmentCollection).toHaveBeenCalledWith(ASSESSMENT_OID.toString());
   });
 });

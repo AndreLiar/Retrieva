@@ -73,10 +73,8 @@ import { getVectorStore as defaultVectorStoreFactory } from '../config/vectorSto
 import { ragCache as defaultCache } from '../utils/rag/ragCache.js';
 import { answerFormatter as defaultAnswerFormatter } from './answerFormatter.js';
 import defaultLogger from '../config/logger.js';
-import {
-  messageRepository as defaultMessageRepository,
-  conversationRepository as defaultConversationRepository,
-} from '../repositories/index.js';
+import { messageRepository as defaultMessageRepository } from '../repositories/MessageRepository.js';
+import { conversationRepository as defaultConversationRepository } from '../repositories/ConversationRepository.js';
 
 /**
  * @typedef {Object} RAGDependencies

@@ -27,7 +27,7 @@ import {
   ShadingType,
   PageBreak,
 } from 'docx';
-import { assessmentRepository } from '../repositories/index.js';
+import { assessmentRepository } from '../repositories/AssessmentRepository.js';
 import { AppError } from '../utils/index.js';
 import logger from '../config/logger.js';
 

@@ -17,7 +17,7 @@ import { QdrantClient } from '@qdrant/js-client-rest';
 import { createReactAgent } from '@langchain/langgraph/prebuilt';
 import { HumanMessage, SystemMessage } from '@langchain/core/messages';
 import { tool } from '@langchain/core/tools';
-import { assessmentRepository } from '../repositories/index.js';
+import { assessmentRepository } from '../repositories/AssessmentRepository.js';
 import { embeddings } from '../config/embeddings.js';
 import { createLLM } from '../config/llmProvider.js';
 import logger from '../config/logger.js';
