@@ -14,18 +14,22 @@ vi.mock('../../config/logger.js', () => ({
   default: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }));
 
-vi.mock('../../models/QuestionnaireTemplate.js', () => ({
-  QuestionnaireTemplate: { findOne: vi.fn() },
+// QuestionnaireService now uses the repositories, not the models directly.
+// Mock the repository singletons that the service constructs at import time.
+vi.mock('../../repositories/QuestionnaireTemplateRepository.js', () => ({
+  questionnaireTemplateRepository: {
+    findDefault: vi.fn(),
+  },
 }));
 
-vi.mock('../../models/VendorQuestionnaire.js', () => ({
-  VendorQuestionnaire: {
+vi.mock('../../repositories/VendorQuestionnaireRepository.js', () => ({
+  vendorQuestionnaireRepository: {
     create: vi.fn(),
     findById: vi.fn(),
     find: vi.fn(),
-    countDocuments: vi.fn(),
-    findOne: vi.fn(),
-    findByIdAndUpdate: vi.fn(),
+    count: vi.fn(),
+    findByToken: vi.fn(),
+    updateById: vi.fn(),
   },
 }));
 
@@ -69,8 +73,8 @@ import {
   getPublicForm,
   submitResponse,
 } from '../../controllers/questionnaireController.js';
-import { QuestionnaireTemplate } from '../../models/QuestionnaireTemplate.js';
-import { VendorQuestionnaire } from '../../models/VendorQuestionnaire.js';
+import { questionnaireTemplateRepository as QuestionnaireTemplate } from '../../repositories/QuestionnaireTemplateRepository.js';
+import { vendorQuestionnaireRepository as VendorQuestionnaire } from '../../repositories/VendorQuestionnaireRepository.js';
 import { questionnaireQueue } from '../../config/queue.js';
 import { emailService } from '../../services/emailService.js';
 
@@ -173,7 +177,7 @@ describe('createQuestionnaire', () => {
   });
 
   it('returns 500 when no default template exists', async () => {
-    QuestionnaireTemplate.findOne.mockResolvedValue(null);
+    QuestionnaireTemplate.findDefault.mockResolvedValue(null);
     const req = makeReq({
       body: { vendorName: 'Acme', vendorEmail: 'v@e.com', workspaceId: WS_ID },
     });
@@ -182,7 +186,7 @@ describe('createQuestionnaire', () => {
   });
 
   it('trims and lowercases fields, creates questionnaire, returns 201', async () => {
-    QuestionnaireTemplate.findOne.mockResolvedValue(MOCK_TEMPLATE);
+    QuestionnaireTemplate.findDefault.mockResolvedValue(MOCK_TEMPLATE);
     const created = makeMockQ();
     VendorQuestionnaire.create.mockResolvedValue(created);
 
@@ -213,20 +217,13 @@ describe('createQuestionnaire', () => {
 // ─── listQuestionnaires ───────────────────────────────────────────────────────
 
 describe('listQuestionnaires', () => {
-  let res, next, findChain;
+  let res, next;
 
   beforeEach(() => {
     res = makeRes();
     next = vi.fn();
-    findChain = {
-      select: vi.fn().mockReturnThis(),
-      sort: vi.fn().mockReturnThis(),
-      skip: vi.fn().mockReturnThis(),
-      limit: vi.fn().mockReturnThis(),
-      lean: vi.fn().mockResolvedValue([]),
-    };
-    VendorQuestionnaire.find.mockReturnValue(findChain);
-    VendorQuestionnaire.countDocuments.mockResolvedValue(0);
+    VendorQuestionnaire.find.mockResolvedValue([]);
+    VendorQuestionnaire.count.mockResolvedValue(0);
   });
 
   it('returns paginated empty list with defaults', async () => {
@@ -262,8 +259,11 @@ describe('listQuestionnaires', () => {
   it('respects custom page and limit', async () => {
     const req = makeReq({ query: { page: '2', limit: '5' } });
     await listQuestionnaires(req, res, next);
-    expect(findChain.skip).toHaveBeenCalledWith(5); // (2-1)*5
-    expect(findChain.limit).toHaveBeenCalledWith(5);
+    // Repo.find is now called with (filter, options) where options carries skip+limit
+    expect(VendorQuestionnaire.find).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.objectContaining({ skip: 5, limit: 5 })
+    );
   });
 });
 
@@ -278,7 +278,7 @@ describe('getQuestionnaire', () => {
   });
 
   it('calls next with 404 AppError when not found', async () => {
-    VendorQuestionnaire.findById.mockReturnValue(makeQueryResult(null));
+    VendorQuestionnaire.findById.mockResolvedValue(null);
     const req = makeReq({ params: { id: Q_ID } });
     await getQuestionnaire(req, res, next);
     expect(next).toHaveBeenCalled();
@@ -287,7 +287,7 @@ describe('getQuestionnaire', () => {
 
   it('calls next with 403 AppError when workspace not authorized', async () => {
     const q = { workspaceId: { toString: () => 'other-ws' } };
-    VendorQuestionnaire.findById.mockReturnValue(makeQueryResult(q));
+    VendorQuestionnaire.findById.mockResolvedValue(q);
     const req = makeReq({ params: { id: Q_ID } });
     await getQuestionnaire(req, res, next);
     expect(next.mock.calls[0][0].statusCode).toBe(403);
@@ -295,7 +295,7 @@ describe('getQuestionnaire', () => {
 
   it('returns 200 with questionnaire when authorized', async () => {
     const q = { workspaceId: { toString: () => WS_ID }, data: 'ok' };
-    VendorQuestionnaire.findById.mockReturnValue(makeQueryResult(q));
+    VendorQuestionnaire.findById.mockResolvedValue(q);
     const req = makeReq({ params: { id: Q_ID } });
     await getQuestionnaire(req, res, next);
     expect(res.status).toHaveBeenCalledWith(200);
@@ -428,14 +428,14 @@ describe('getPublicForm', () => {
   });
 
   it('calls next with 404 when token not found', async () => {
-    VendorQuestionnaire.findOne.mockReturnValue(makeQueryResult(null));
+    VendorQuestionnaire.findByToken.mockResolvedValue(null);
     const req = makeReq({ params: { token: TOKEN } });
     await getPublicForm(req, res, next);
     expect(next.mock.calls[0][0].statusCode).toBe(404);
   });
 
   it('returns 200 with alreadyComplete flag when status=complete', async () => {
-    VendorQuestionnaire.findOne.mockReturnValue(makeQueryResult(makeMockQ({ status: 'complete' })));
+    VendorQuestionnaire.findByToken.mockResolvedValue(makeMockQ({ status: 'complete' }));
     const req = makeReq({ params: { token: TOKEN } });
     await getPublicForm(req, res, next);
     expect(res.status).toHaveBeenCalledWith(200);
@@ -444,20 +444,20 @@ describe('getPublicForm', () => {
 
   it('returns 410 and marks expired when tokenExpiresAt is in the past', async () => {
     const q = makeMockQ({ status: 'sent', tokenExpiresAt: new Date(Date.now() - 1000) });
-    VendorQuestionnaire.findOne.mockReturnValue(makeQueryResult(q));
-    VendorQuestionnaire.findByIdAndUpdate.mockResolvedValue({});
+    VendorQuestionnaire.findByToken.mockResolvedValue(q);
+    VendorQuestionnaire.updateById.mockResolvedValue({});
     const req = makeReq({ params: { token: TOKEN } });
     await getPublicForm(req, res, next);
     expect(res.status).toHaveBeenCalledWith(410);
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ expired: true }));
-    expect(VendorQuestionnaire.findByIdAndUpdate).toHaveBeenCalledWith(q._id, {
+    expect(VendorQuestionnaire.updateById).toHaveBeenCalledWith(q._id, {
       status: 'expired',
     });
   });
 
   it('returns 200 with questions on valid, non-expired form', async () => {
     const q = makeMockQ({ status: 'sent', tokenExpiresAt: new Date(Date.now() + 86400000) });
-    VendorQuestionnaire.findOne.mockReturnValue(makeQueryResult(q));
+    VendorQuestionnaire.findByToken.mockResolvedValue(q);
     const req = makeReq({ params: { token: TOKEN } });
     await getPublicForm(req, res, next);
     expect(res.status).toHaveBeenCalledWith(200);
@@ -470,7 +470,7 @@ describe('getPublicForm', () => {
 
   it('returns questions even with no tokenExpiresAt set', async () => {
     const q = makeMockQ({ status: 'sent', tokenExpiresAt: null });
-    VendorQuestionnaire.findOne.mockReturnValue(makeQueryResult(q));
+    VendorQuestionnaire.findByToken.mockResolvedValue(q);
     const req = makeReq({ params: { token: TOKEN } });
     await getPublicForm(req, res, next);
     expect(res.status).toHaveBeenCalledWith(200);
@@ -492,18 +492,18 @@ describe('submitResponse', () => {
     const req = makeReq({ params: { token: TOKEN }, body: { answers: 'not-array' } });
     await submitResponse(req, res, next);
     expect(res.status).toHaveBeenCalledWith(400);
-    expect(VendorQuestionnaire.findOne).not.toHaveBeenCalled();
+    expect(VendorQuestionnaire.findByToken).not.toHaveBeenCalled();
   });
 
   it('calls next with 404 when token not found', async () => {
-    VendorQuestionnaire.findOne.mockResolvedValue(null);
+    VendorQuestionnaire.findByToken.mockResolvedValue(null);
     const req = makeReq({ params: { token: TOKEN }, body: { answers: [] } });
     await submitResponse(req, res, next);
     expect(next.mock.calls[0][0].statusCode).toBe(404);
   });
 
   it('returns 200 alreadyComplete when status=complete', async () => {
-    VendorQuestionnaire.findOne.mockResolvedValue(makeMockQ({ status: 'complete' }));
+    VendorQuestionnaire.findByToken.mockResolvedValue(makeMockQ({ status: 'complete' }));
     const req = makeReq({ params: { token: TOKEN }, body: { answers: [] } });
     await submitResponse(req, res, next);
     expect(res.status).toHaveBeenCalledWith(200);
@@ -511,7 +511,7 @@ describe('submitResponse', () => {
   });
 
   it('returns 200 alreadyComplete when status=expired', async () => {
-    VendorQuestionnaire.findOne.mockResolvedValue(makeMockQ({ status: 'expired' }));
+    VendorQuestionnaire.findByToken.mockResolvedValue(makeMockQ({ status: 'expired' }));
     const req = makeReq({ params: { token: TOKEN }, body: { answers: [] } });
     await submitResponse(req, res, next);
     expect(res.status).toHaveBeenCalledWith(200);
@@ -520,7 +520,7 @@ describe('submitResponse', () => {
 
   it('returns 410 and saves expired status when tokenExpiresAt is in the past', async () => {
     const q = makeMockQ({ status: 'sent', tokenExpiresAt: new Date(Date.now() - 1000) });
-    VendorQuestionnaire.findOne.mockResolvedValue(q);
+    VendorQuestionnaire.findByToken.mockResolvedValue(q);
     const req = makeReq({ params: { token: TOKEN }, body: { answers: [] } });
     await submitResponse(req, res, next);
     expect(q.status).toBe('expired');
@@ -535,7 +535,7 @@ describe('submitResponse', () => {
       tokenExpiresAt: new Date(Date.now() + 86400000),
       questions: [{ id: 'q1', answer: '' }],
     });
-    VendorQuestionnaire.findOne.mockResolvedValue(q);
+    VendorQuestionnaire.findByToken.mockResolvedValue(q);
     const req = makeReq({
       params: { token: TOKEN },
       body: { answers: [{ id: 'q1', answer: 'Yes' }], final: false },
@@ -558,7 +558,7 @@ describe('submitResponse', () => {
       _id: { toString: () => Q_ID },
       questions: [{ id: 'q1', answer: '' }],
     });
-    VendorQuestionnaire.findOne.mockResolvedValue(q);
+    VendorQuestionnaire.findByToken.mockResolvedValue(q);
     const req = makeReq({
       params: { token: TOKEN },
       body: { answers: [{ id: 'q1', answer: 'Yes' }], final: true },

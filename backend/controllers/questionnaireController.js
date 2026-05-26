@@ -1,54 +1,17 @@
-import { randomUUID } from 'crypto';
-import { QuestionnaireTemplate } from '../models/QuestionnaireTemplate.js';
-import { VendorQuestionnaire } from '../models/VendorQuestionnaire.js';
-import { questionnaireQueue } from '../config/queue.js';
-import { emailService } from '../services/emailService.js';
-import { catchAsync, sendSuccess, sendError, AppError } from '../utils/index.js';
-import logger from '../config/logger.js';
+import { questionnaireService } from '../services/QuestionnaireService.js';
+import { catchAsync, sendSuccess } from '../utils/index.js';
 
-// ---------------------------------------------------------------------------
-// POST /api/v1/questionnaires
-// ---------------------------------------------------------------------------
-
+/**
+ * POST /api/v1/questionnaires
+ */
 export const createQuestionnaire = catchAsync(async (req, res) => {
   const { vendorName, vendorEmail, vendorContactName, workspaceId } = req.body;
 
-  if (!vendorName || !vendorEmail) {
-    return sendError(res, 400, 'Vendor name and email are required');
-  }
-  if (!workspaceId) {
-    return sendError(res, 400, 'workspaceId is required');
-  }
-
-  const template = await QuestionnaireTemplate.findOne({ isDefault: true });
-  if (!template) {
-    return sendError(res, 500, 'No default questionnaire template found. Please contact support.');
-  }
-
-  // Copy questions without answer/score fields
-  const questions = template.questions.map((q) => ({
-    id: q.id,
-    text: q.text,
-    doraArticle: q.doraArticle,
-    category: q.category,
-    hint: q.hint,
-  }));
-
-  const questionnaire = await VendorQuestionnaire.create({
+  const questionnaire = await questionnaireService.createQuestionnaire({
+    vendorName,
+    vendorEmail,
+    vendorContactName,
     workspaceId,
-    templateId: template._id,
-    vendorName: vendorName.trim(),
-    vendorEmail: vendorEmail.trim().toLowerCase(),
-    vendorContactName: vendorContactName?.trim() || '',
-    status: 'draft',
-    statusMessage: 'Created — awaiting send',
-    questions,
-    createdBy: req.user.userId,
-  });
-
-  logger.info('VendorQuestionnaire created', {
-    service: 'questionnaire-controller',
-    questionnaireId: questionnaire._id,
     userId: req.user.userId,
   });
 
@@ -71,143 +34,62 @@ export const createQuestionnaire = catchAsync(async (req, res) => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// GET /api/v1/questionnaires
-// ---------------------------------------------------------------------------
-
+/**
+ * GET /api/v1/questionnaires
+ */
 export const listQuestionnaires = catchAsync(async (req, res) => {
   const { workspaceId, status, page = 1, limit = 20 } = req.query;
-
   const authorizedWorkspaceIds = req.authorizedWorkspaces?.map((w) => w._id) || [];
 
-  const filter = { workspaceId: { $in: authorizedWorkspaceIds } };
-  if (workspaceId) filter.workspaceId = workspaceId;
-  if (status) filter.status = status;
-
-  const skip = (parseInt(page) - 1) * parseInt(limit);
-
-  const [questionnaires, total] = await Promise.all([
-    VendorQuestionnaire.find(filter)
-      .select('-questions.answer -questions.reasoning -results.summary')
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(parseInt(limit))
-      .lean(),
-    VendorQuestionnaire.countDocuments(filter),
-  ]);
-
-  sendSuccess(res, 200, 'Questionnaires retrieved', {
-    questionnaires,
-    pagination: {
-      page: parseInt(page),
-      limit: parseInt(limit),
-      total,
-      pages: Math.ceil(total / parseInt(limit)),
-    },
+  const result = await questionnaireService.listQuestionnaires({
+    authorizedWorkspaceIds,
+    workspaceId,
+    status,
+    page,
+    limit,
   });
+
+  sendSuccess(res, 200, 'Questionnaires retrieved', result);
 });
 
-// ---------------------------------------------------------------------------
-// GET /api/v1/questionnaires/:id
-// ---------------------------------------------------------------------------
-
+/**
+ * GET /api/v1/questionnaires/:id
+ */
 export const getQuestionnaire = catchAsync(async (req, res) => {
   const authorizedWorkspaceIds = req.authorizedWorkspaces?.map((w) => w._id.toString()) || [];
 
-  const questionnaire = await VendorQuestionnaire.findById(req.params.id).lean();
-  if (!questionnaire) {
-    throw new AppError('Questionnaire not found', 404);
-  }
-
-  if (!authorizedWorkspaceIds.includes(questionnaire.workspaceId.toString())) {
-    throw new AppError('Access denied', 403);
-  }
+  const questionnaire = await questionnaireService.getQuestionnaire(
+    req.params.id,
+    authorizedWorkspaceIds
+  );
 
   sendSuccess(res, 200, 'Questionnaire retrieved', { questionnaire });
 });
 
-// ---------------------------------------------------------------------------
-// DELETE /api/v1/questionnaires/:id
-// ---------------------------------------------------------------------------
-
+/**
+ * DELETE /api/v1/questionnaires/:id
+ */
 export const deleteQuestionnaire = catchAsync(async (req, res) => {
   const authorizedWorkspaceIds = req.authorizedWorkspaces?.map((w) => w._id.toString()) || [];
 
-  const questionnaire = await VendorQuestionnaire.findById(req.params.id);
-  if (!questionnaire) {
-    throw new AppError('Questionnaire not found', 404);
-  }
-
-  if (!authorizedWorkspaceIds.includes(questionnaire.workspaceId.toString())) {
-    throw new AppError('Access denied', 403);
-  }
-
-  if (questionnaire.createdBy !== req.user.userId) {
-    throw new AppError('Only the creator can delete this questionnaire', 403);
-  }
-
-  await questionnaire.deleteOne();
-
-  logger.info('VendorQuestionnaire deleted', {
-    service: 'questionnaire-controller',
-    questionnaireId: req.params.id,
-    userId: req.user.userId,
-  });
+  await questionnaireService.deleteQuestionnaire(
+    req.params.id,
+    req.user.userId,
+    authorizedWorkspaceIds
+  );
 
   sendSuccess(res, 200, 'Questionnaire deleted');
 });
 
-// ---------------------------------------------------------------------------
-// POST /api/v1/questionnaires/:id/send
-// ---------------------------------------------------------------------------
-
+/**
+ * POST /api/v1/questionnaires/:id/send
+ */
 export const sendQuestionnaire = catchAsync(async (req, res) => {
-  const authorizedWorkspaceIds = req.authorizedWorkspaces?.map((w) => w._id.toString()) || [];
-
-  const questionnaire = await VendorQuestionnaire.findById(req.params.id);
-  if (!questionnaire) {
-    throw new AppError('Questionnaire not found', 404);
-  }
-
-  if (!authorizedWorkspaceIds.includes(questionnaire.workspaceId.toString())) {
-    throw new AppError('Access denied', 403);
-  }
-
-  if (questionnaire.status === 'complete') {
-    return sendError(res, 400, 'This questionnaire is already complete');
-  }
-
-  const token = randomUUID();
-  const tokenExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
-
-  questionnaire.token = token;
-  questionnaire.tokenExpiresAt = tokenExpiresAt;
-  questionnaire.status = 'sent';
-  questionnaire.sentAt = new Date();
-  questionnaire.statusMessage = 'Invitation sent to vendor';
-  await questionnaire.save();
-
-  // Resolve workspace name for the email
-  const workspaceName =
-    req.authorizedWorkspaces?.find((w) => w._id.toString() === questionnaire.workspaceId.toString())
-      ?.name || 'Your Assessment Team';
-
-  await emailService.sendQuestionnaireInvitation({
-    toEmail: questionnaire.vendorEmail,
-    toName: questionnaire.vendorContactName || questionnaire.vendorName,
-    senderName: req.user.name || req.user.email || 'Your assessment team',
-    workspaceName,
-    questionnaireId: questionnaire._id.toString(),
-    token,
-    expiresAt: tokenExpiresAt,
-  });
-
-  logger.info('VendorQuestionnaire sent', {
-    service: 'questionnaire-controller',
-    questionnaireId: questionnaire._id,
-    vendorEmail: questionnaire.vendorEmail,
-    tokenExpires: tokenExpiresAt,
-  });
+  const questionnaire = await questionnaireService.sendQuestionnaire(
+    req.params.id,
+    { userId: req.user.userId, userName: req.user.name, userEmail: req.user.email },
+    req.authorizedWorkspaces || []
+  );
 
   sendSuccess(res, 200, 'Questionnaire invitation sent', {
     questionnaire: {
@@ -219,20 +101,13 @@ export const sendQuestionnaire = catchAsync(async (req, res) => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// GET /api/v1/questionnaires/respond/:token  (PUBLIC — no auth)
-// ---------------------------------------------------------------------------
-
+/**
+ * GET /api/v1/questionnaires/respond/:token  (PUBLIC — no auth)
+ */
 export const getPublicForm = catchAsync(async (req, res) => {
-  const { token } = req.params;
+  const result = await questionnaireService.getPublicForm(req.params.token);
 
-  const questionnaire = await VendorQuestionnaire.findOne({ token }).lean();
-
-  if (!questionnaire) {
-    throw new AppError('Questionnaire not found', 404);
-  }
-
-  if (questionnaire.status === 'complete') {
+  if (result.state === 'complete') {
     return res.status(200).json({
       success: true,
       alreadyComplete: true,
@@ -240,9 +115,7 @@ export const getPublicForm = catchAsync(async (req, res) => {
     });
   }
 
-  // Check expiry
-  if (questionnaire.tokenExpiresAt && new Date() > new Date(questionnaire.tokenExpiresAt)) {
-    await VendorQuestionnaire.findByIdAndUpdate(questionnaire._id, { status: 'expired' });
+  if (result.state === 'expired') {
     return res.status(410).json({
       success: false,
       expired: true,
@@ -251,6 +124,7 @@ export const getPublicForm = catchAsync(async (req, res) => {
     });
   }
 
+  const { questionnaire } = result;
   sendSuccess(res, 200, 'Questionnaire form loaded', {
     vendorName: questionnaire.vendorName,
     status: questionnaire.status,
@@ -260,45 +134,35 @@ export const getPublicForm = catchAsync(async (req, res) => {
       doraArticle: q.doraArticle,
       category: q.category,
       hint: q.hint,
-      // Return existing partial answer so the vendor can resume
       answer: q.answer || '',
     })),
   });
 });
 
-// ---------------------------------------------------------------------------
-// POST /api/v1/questionnaires/respond/:token  (PUBLIC — no auth)
-// ---------------------------------------------------------------------------
-
+/**
+ * POST /api/v1/questionnaires/respond/:token  (PUBLIC — no auth)
+ */
 export const submitResponse = catchAsync(async (req, res) => {
-  const { token } = req.params;
   const { answers, final } = req.body;
+  const result = await questionnaireService.submitResponse(req.params.token, { answers, final });
 
-  if (!Array.isArray(answers)) {
-    return sendError(res, 400, 'answers must be an array');
-  }
-
-  const questionnaire = await VendorQuestionnaire.findOne({ token });
-
-  if (!questionnaire) {
-    throw new AppError('Questionnaire not found', 404);
-  }
-
-  if (questionnaire.status === 'complete' || questionnaire.status === 'expired') {
+  if (result.state === 'alreadyComplete') {
     return res.status(200).json({
       success: true,
       alreadyComplete: true,
-      message:
-        questionnaire.status === 'complete'
-          ? 'Your response has already been submitted.'
-          : 'This questionnaire link has expired.',
+      message: 'Your response has already been submitted.',
     });
   }
 
-  // Check expiry
-  if (questionnaire.tokenExpiresAt && new Date() > new Date(questionnaire.tokenExpiresAt)) {
-    questionnaire.status = 'expired';
-    await questionnaire.save();
+  if (result.state === 'alreadyExpired') {
+    return res.status(200).json({
+      success: true,
+      alreadyComplete: true,
+      message: 'This questionnaire link has expired.',
+    });
+  }
+
+  if (result.state === 'justExpired') {
     return res.status(410).json({
       success: false,
       expired: true,
@@ -306,38 +170,8 @@ export const submitResponse = catchAsync(async (req, res) => {
     });
   }
 
-  // Merge answers into the questions array
-  const answerMap = new Map(answers.map((a) => [a.id, a.answer || '']));
-  for (const q of questionnaire.questions) {
-    if (answerMap.has(q.id)) {
-      q.answer = answerMap.get(q.id);
-    }
-  }
-
-  if (final) {
-    questionnaire.status = 'partial';
-    questionnaire.statusMessage = 'Response received — scoring in progress';
-    questionnaire.respondedAt = new Date();
-    await questionnaire.save();
-
-    // Enqueue scoring job
-    await questionnaireQueue.add(
-      'scoreQuestionnaire',
-      { questionnaireId: questionnaire._id.toString() },
-      { jobId: `scoreQuestionnaire-${questionnaire._id}` }
-    );
-
-    logger.info('VendorQuestionnaire submitted — scoring enqueued', {
-      service: 'questionnaire-controller',
-      questionnaireId: questionnaire._id,
-    });
-  } else {
-    // Partial save — keep status as 'sent' to allow resume
-    await questionnaire.save();
-  }
-
-  sendSuccess(res, 200, final ? 'Response submitted successfully' : 'Progress saved', {
+  sendSuccess(res, 200, result.final ? 'Response submitted successfully' : 'Progress saved', {
     saved: true,
-    final: !!final,
+    final: result.final,
   });
 });
