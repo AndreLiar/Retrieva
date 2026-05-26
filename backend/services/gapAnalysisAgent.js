@@ -770,22 +770,3 @@ export async function runGapAnalysis({ assessmentId, userId: _userId, job }) {
 
   return { gapCount: gaps.length, overallRisk };
 }
-
-// ---------------------------------------------------------------------------
-// DI-injectable class — enables unit testing without module-level mocking
-// ---------------------------------------------------------------------------
-
-class GapAnalysisAgent {
-  constructor({ Assessment: A, embeddings: emb, createLLM: llmFactory, logger: log } = {}) {
-    this.Assessment = A || Assessment;
-    this.embeddings = emb || embeddings;
-    this.createLLM = llmFactory || createLLM;
-    this.logger = log || logger;
-  }
-
-  async runGapAnalysis(params) {
-    return runGapAnalysis(params);
-  }
-}
-
-export const gapAnalysisAgent = new GapAnalysisAgent();
