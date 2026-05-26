@@ -22,9 +22,17 @@ vi.mock('../../utils/rag/ragCache.js', () => ({ ragCache: { get: vi.fn(), set: v
 vi.mock('../../services/answerFormatter.js', () => ({
   answerFormatter: { format: vi.fn() },
 }));
-vi.mock('../../models/Message.js', () => ({ Message: { find: vi.fn(), create: vi.fn() } }));
-vi.mock('../../models/Conversation.js', () => ({
-  Conversation: { findById: vi.fn(), findByIdAndUpdate: vi.fn() },
+vi.mock('../../repositories/MessageRepository.js', () => ({
+  messageRepository: {
+    getRecentMessages: vi.fn().mockResolvedValue([]),
+    create: vi.fn().mockResolvedValue({}),
+  },
+}));
+vi.mock('../../repositories/ConversationRepository.js', () => ({
+  conversationRepository: {
+    findById: vi.fn().mockResolvedValue({ _id: 'conv-1', workspaceId: 'ws-1' }),
+    updateById: vi.fn().mockResolvedValue({}),
+  },
 }));
 vi.mock('../../prompts/ragPrompt.js', () => ({ ragPrompt: { pipe: vi.fn() } }));
 vi.mock('../../utils/core/asyncHelpers.js', () => ({
@@ -124,17 +132,13 @@ function makeService(overrides = {}) {
   const mockCache = { get: vi.fn().mockResolvedValue(null), set: vi.fn().mockResolvedValue(null) };
   const mockFormatter = { format: vi.fn().mockResolvedValue({ sections: [] }) };
   const mockLogger = { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() };
-  const mockMessage = {
-    find: vi.fn().mockReturnValue({
-      sort: vi.fn().mockReturnValue({
-        limit: vi.fn().mockReturnValue({ sort: vi.fn().mockResolvedValue([]) }),
-      }),
-    }),
+  const mockMessageRepo = {
+    getRecentMessages: vi.fn().mockResolvedValue([]),
     create: vi.fn().mockResolvedValue({}),
   };
-  const mockConversation = {
+  const mockConversationRepo = {
     findById: vi.fn().mockResolvedValue({ _id: 'conv-1', workspaceId: 'ws-1' }),
-    findByIdAndUpdate: vi.fn().mockResolvedValue({}),
+    updateById: vi.fn().mockResolvedValue({}),
   };
   const mockVectorStore = {
     asRetriever: vi.fn().mockReturnValue({}),
@@ -148,7 +152,10 @@ function makeService(overrides = {}) {
     cache: mockCache,
     answerFormatter: mockFormatter,
     logger: mockLogger,
-    models: { Message: mockMessage, Conversation: mockConversation },
+    repositories: {
+      messageRepository: mockMessageRepo,
+      conversationRepository: mockConversationRepo,
+    },
     ...overrides,
   });
 
@@ -158,8 +165,8 @@ function makeService(overrides = {}) {
     mockCache,
     mockFormatter,
     mockLogger,
-    mockMessage,
-    mockConversation,
+    mockMessage: mockMessageRepo,
+    mockConversation: mockConversationRepo,
     mockVectorStore,
   };
 }
@@ -433,11 +440,7 @@ describe('askWithConversation', () => {
     const cached = { answer: 'cached answer', sources: [{ title: 'Doc' }] };
     mockCache.get.mockResolvedValue(cached);
     mockConversation.findById.mockResolvedValue({ _id: 'conv-1', workspaceId: 'ws-1' });
-    mockMessage.find.mockReturnValue({
-      sort: vi.fn().mockReturnValue({
-        limit: vi.fn().mockReturnValue({ sort: vi.fn().mockResolvedValue([]) }),
-      }),
-    });
+    mockMessage.getRecentMessages.mockResolvedValue([]);
 
     const result = await svc.askWithConversation('question', { conversationId: 'conv-1' });
 

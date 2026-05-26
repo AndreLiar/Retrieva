@@ -98,7 +98,8 @@ vi.mock('../../config/queue.js', () => ({
     getJob: vi.fn().mockResolvedValue(null),
     on: vi.fn(),
   },
-  memoryDecayQueue: { add: vi.fn().mockResolvedValue({}), on: vi.fn() },
+  // QuestionnaireService (loaded transitively via app.js) needs this
+  questionnaireQueue: { add: vi.fn().mockResolvedValue({ id: 'test-q-1' }), on: vi.fn() },
 }));
 
 // File ingestion service — prevents Qdrant connections

@@ -85,12 +85,13 @@ vi.mock('../../services/authAuditService.js', () => ({
 
 vi.mock('../../config/queue.js', () => ({
   assessmentQueue: { add: vi.fn().mockResolvedValue({ id: 'j1' }), on: vi.fn() },
-  memoryDecayQueue: { add: vi.fn().mockResolvedValue({}), on: vi.fn() },
   monitoringQueue: {
     add: vi.fn().mockResolvedValue({ id: 'review-r1' }),
     getJob: vi.fn().mockResolvedValue(null),
     on: vi.fn(),
   },
+  // QuestionnaireService (loaded transitively via app.js) needs this
+  questionnaireQueue: { add: vi.fn().mockResolvedValue({ id: 'j2' }), on: vi.fn() },
 }));
 
 vi.mock('../../services/fileIngestionService.js', () => ({

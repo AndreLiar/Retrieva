@@ -16,10 +16,10 @@ vi.mock('../../config/logger.js', () => ({
   default: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
 }));
 
-vi.mock('../../models/Assessment.js', () => ({
-  Assessment: {
+vi.mock('../../repositories/AssessmentRepository.js', () => ({
+  assessmentRepository: {
     findById: vi.fn(),
-    findByIdAndUpdate: vi.fn(),
+    updateById: vi.fn(),
   },
 }));
 
@@ -69,7 +69,7 @@ vi.mock('zod', () => ({
 }));
 
 import { runGapAnalysis } from '../../services/gapAnalysisAgent.js';
-import { Assessment } from '../../models/Assessment.js';
+import { assessmentRepository } from '../../repositories/AssessmentRepository.js';
 import { createReactAgent } from '@langchain/langgraph/prebuilt';
 import { createLLM } from '../../config/llmProvider.js';
 
@@ -106,11 +106,11 @@ const validGapResult = {
 describe('runGapAnalysis', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    Assessment.findByIdAndUpdate.mockResolvedValue({});
+    assessmentRepository.updateById.mockResolvedValue({});
   });
 
   it('throws when assessment not found', async () => {
-    Assessment.findById.mockResolvedValue(null);
+    assessmentRepository.findById.mockResolvedValue(null);
 
     await expect(runGapAnalysis({ assessmentId: 'missing', job: null })).rejects.toThrow(
       'Assessment missing not found'
@@ -118,7 +118,7 @@ describe('runGapAnalysis', () => {
   });
 
   it('succeeds with ReAct agent for DORA framework', async () => {
-    Assessment.findById.mockResolvedValue(makeAssessment());
+    assessmentRepository.findById.mockResolvedValue(makeAssessment());
 
     // Simulate agent capturing result via tool call
     let capturedTool;
@@ -144,7 +144,7 @@ describe('runGapAnalysis', () => {
   });
 
   it('falls back to pipeline when ReAct agent throws without result', async () => {
-    Assessment.findById.mockResolvedValue(makeAssessment());
+    assessmentRepository.findById.mockResolvedValue(makeAssessment());
 
     const mockAgent = { invoke: vi.fn().mockRejectedValue(new Error('Agent failed')) };
     createReactAgent.mockReturnValue(mockAgent);
@@ -175,7 +175,7 @@ describe('runGapAnalysis', () => {
     const result = await runGapAnalysis({ assessmentId: 'assessment-123', job: null });
 
     expect(result).toMatchObject({ gapCount: expect.any(Number), overallRisk: expect.any(String) });
-    expect(Assessment.findByIdAndUpdate).toHaveBeenCalledWith(
+    expect(assessmentRepository.updateById).toHaveBeenCalledWith(
       'assessment-123',
       expect.objectContaining({ status: 'complete' })
     );
@@ -187,14 +187,14 @@ describe('runGapAnalysis', () => {
 describe('Gap normalization (via runGapAnalysis fallback)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    Assessment.findByIdAndUpdate.mockResolvedValue({});
+    assessmentRepository.updateById.mockResolvedValue({});
     createReactAgent.mockReturnValue({
       invoke: vi.fn().mockRejectedValue(new Error('force fallback')),
     });
   });
 
   it('normalizes invalid gapLevel to "missing"', async () => {
-    Assessment.findById.mockResolvedValue(makeAssessment());
+    assessmentRepository.findById.mockResolvedValue(makeAssessment());
 
     const resultWithInvalidGapLevel = {
       ...validGapResult,
@@ -211,12 +211,12 @@ describe('Gap normalization (via runGapAnalysis fallback)', () => {
 
     await runGapAnalysis({ assessmentId: 'assessment-123', job: null });
 
-    const [, updateData] = Assessment.findByIdAndUpdate.mock.calls[0];
+    const [, updateData] = assessmentRepository.updateById.mock.calls[0];
     expect(updateData['results.gaps'][0].gapLevel).toBe('missing');
   });
 
   it('normalizes invalid overallRisk to "High"', async () => {
-    Assessment.findById.mockResolvedValue(makeAssessment());
+    assessmentRepository.findById.mockResolvedValue(makeAssessment());
 
     const resultWithInvalidRisk = { ...validGapResult, overallRisk: 'Critical' };
     const mockLLM = {
@@ -229,12 +229,12 @@ describe('Gap normalization (via runGapAnalysis fallback)', () => {
 
     await runGapAnalysis({ assessmentId: 'assessment-123', job: null });
 
-    const [, updateData] = Assessment.findByIdAndUpdate.mock.calls[0];
+    const [, updateData] = assessmentRepository.updateById.mock.calls[0];
     expect(updateData['results.overallRisk']).toBe('High');
   });
 
   it('normalizes invalid domain to default "Third-Party Risk"', async () => {
-    Assessment.findById.mockResolvedValue(makeAssessment());
+    assessmentRepository.findById.mockResolvedValue(makeAssessment());
 
     const resultWithInvalidDomain = {
       ...validGapResult,
@@ -250,12 +250,12 @@ describe('Gap normalization (via runGapAnalysis fallback)', () => {
 
     await runGapAnalysis({ assessmentId: 'assessment-123', job: null });
 
-    const [, updateData] = Assessment.findByIdAndUpdate.mock.calls[0];
+    const [, updateData] = assessmentRepository.updateById.mock.calls[0];
     expect(updateData['results.gaps'][0].domain).toBe('Third-Party Risk');
   });
 
   it('handles empty gaps array gracefully', async () => {
-    Assessment.findById.mockResolvedValue(makeAssessment());
+    assessmentRepository.findById.mockResolvedValue(makeAssessment());
 
     const emptyResult = { ...validGapResult, gaps: [] };
     const mockLLM = { invoke: vi.fn().mockResolvedValue({ content: JSON.stringify(emptyResult) }) };
@@ -270,7 +270,7 @@ describe('Gap normalization (via runGapAnalysis fallback)', () => {
   });
 
   it('uses CONTRACT_A30 domain defaults for CONTRACT_A30 framework', async () => {
-    Assessment.findById.mockResolvedValue(makeAssessment({ framework: 'CONTRACT_A30' }));
+    assessmentRepository.findById.mockResolvedValue(makeAssessment({ framework: 'CONTRACT_A30' }));
 
     const a30Result = {
       ...validGapResult,
@@ -284,7 +284,7 @@ describe('Gap normalization (via runGapAnalysis fallback)', () => {
 
     await runGapAnalysis({ assessmentId: 'assessment-123', job: null });
 
-    const [, updateData] = Assessment.findByIdAndUpdate.mock.calls[0];
+    const [, updateData] = assessmentRepository.updateById.mock.calls[0];
     // Default domain for CONTRACT_A30 is 'Service Description'
     expect(updateData['results.gaps'][0].domain).toBe('Service Description');
   });
@@ -294,7 +294,7 @@ describe('Gap normalization (via runGapAnalysis fallback)', () => {
 
 describe('Job progress updates', () => {
   it('calls job.updateProgress when job is provided', async () => {
-    Assessment.findById.mockResolvedValue(makeAssessment());
+    assessmentRepository.findById.mockResolvedValue(makeAssessment());
 
     const mockJob = { updateProgress: vi.fn().mockResolvedValue({}) };
     createReactAgent.mockReturnValue({
@@ -315,7 +315,7 @@ describe('Job progress updates', () => {
   });
 
   it('works without a job object (no progress updates)', async () => {
-    Assessment.findById.mockResolvedValue(makeAssessment());
+    assessmentRepository.findById.mockResolvedValue(makeAssessment());
 
     createReactAgent.mockReturnValue({
       invoke: vi.fn().mockRejectedValue(new Error('force fallback')),

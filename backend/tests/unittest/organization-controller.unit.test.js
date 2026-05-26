@@ -81,32 +81,36 @@ const mockActiveMembership = {
   populate: vi.fn().mockReturnThis(),
 };
 
-vi.mock('../../models/Organization.js', () => ({
-  Organization: {
+// OrganizationService (added in P3d) uses the repositories, not the models
+// directly. Mock the repository singletons that the service constructs at
+// import time.
+vi.mock('../../repositories/OrganizationRepository.js', () => ({
+  organizationRepository: {
     create: vi.fn(),
     findById: vi.fn(),
-    findByIdAndUpdate: vi.fn(),
+    updateById: vi.fn(),
   },
 }));
 
-vi.mock('../../models/OrganizationMember.js', () => ({
-  OrganizationMember: {
+vi.mock('../../repositories/OrganizationMemberRepository.js', () => ({
+  organizationMemberRepository: {
     findOne: vi.fn(),
     find: vi.fn(),
     findById: vi.fn(),
-    findByIdAndUpdate: vi.fn(),
     create: vi.fn(),
-    countDocuments: vi.fn(),
-    createInvite: vi.fn(),
+    count: vi.fn(),
+    findActiveByUserId: vi.fn(),
+    revokeMembership: vi.fn(),
     findByToken: vi.fn(),
+    createInvite: vi.fn(),
     activate: vi.fn(),
   },
 }));
 
-vi.mock('../../models/User.js', () => ({
-  User: {
+vi.mock('../../repositories/UserRepository.js', () => ({
+  userRepository: {
     findById: vi.fn(),
-    findByIdAndUpdate: vi.fn(),
+    updateById: vi.fn(),
     updateOne: vi.fn().mockResolvedValue({ modifiedCount: 1 }),
   },
 }));
@@ -123,9 +127,9 @@ import {
   removeMember,
   getInviteInfo,
 } from '../../controllers/organizationController.js';
-import { Organization } from '../../models/Organization.js';
-import { OrganizationMember } from '../../models/OrganizationMember.js';
-import { User } from '../../models/User.js';
+import { organizationRepository as Organization } from '../../repositories/OrganizationRepository.js';
+import { organizationMemberRepository as OrganizationMember } from '../../repositories/OrganizationMemberRepository.js';
+import { userRepository as User } from '../../repositories/UserRepository.js';
 import { emailService } from '../../services/emailService.js';
 import { safeDecrypt } from '../../utils/security/fieldEncryption.js';
 
@@ -168,22 +172,22 @@ describe('createOrganization', () => {
   it('returns 400 when name is missing', async () => {
     const { req, res, next } = makeCtx({ industry: 'banking' });
     await createOrganization(req, res, next);
-    expect(res.status).toHaveBeenCalledWith(400);
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 400 }));
   });
 
   it('returns 409 when user already belongs to an org', async () => {
-    OrganizationMember.findOne.mockResolvedValue(mockActiveMembership);
+    OrganizationMember.findActiveByUserId.mockResolvedValue(mockActiveMembership);
     const { req, res, next } = makeCtx({ name: 'HDI Global SE' });
     await createOrganization(req, res, next);
-    expect(res.status).toHaveBeenCalledWith(409);
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 409 }));
   });
 
   it('creates org, member and updates user, returns 201', async () => {
-    OrganizationMember.findOne.mockResolvedValue(null);
+    OrganizationMember.findActiveByUserId.mockResolvedValue(null);
     Organization.create.mockResolvedValue(mockOrg);
     User.findById.mockResolvedValue(mockUser);
     OrganizationMember.create.mockResolvedValue({});
-    User.findByIdAndUpdate.mockResolvedValue({});
+    User.updateById.mockResolvedValue({});
 
     const { req, res, next } = makeCtx({
       name: 'HDI Global SE',
@@ -198,16 +202,16 @@ describe('createOrganization', () => {
     expect(OrganizationMember.create).toHaveBeenCalledWith(
       expect.objectContaining({ role: 'org_admin', status: 'active' })
     );
-    expect(User.findByIdAndUpdate).toHaveBeenCalled();
+    expect(User.updateById).toHaveBeenCalled();
     expect(res.status).toHaveBeenCalledWith(201);
   });
 
   it('returns org object in response', async () => {
-    OrganizationMember.findOne.mockResolvedValue(null);
+    OrganizationMember.findActiveByUserId.mockResolvedValue(null);
     Organization.create.mockResolvedValue(mockOrg);
     User.findById.mockResolvedValue(mockUser);
     OrganizationMember.create.mockResolvedValue({});
-    User.findByIdAndUpdate.mockResolvedValue({});
+    User.updateById.mockResolvedValue({});
 
     const { req, res, next } = makeCtx({ name: 'HDI Global SE' });
     await createOrganization(req, res, next);
@@ -223,9 +227,7 @@ describe('createOrganization', () => {
 
 describe('getMyOrganization', () => {
   it('returns organization: null when user has no membership', async () => {
-    OrganizationMember.findOne.mockReturnValue({
-      populate: vi.fn().mockResolvedValue(null),
-    });
+    OrganizationMember.findOne.mockResolvedValue(null);
     const { req, res, next } = makeCtx();
     await getMyOrganization(req, res, next);
     const body = res.json.mock.calls[0][0];
@@ -238,9 +240,7 @@ describe('getMyOrganization', () => {
       ...mockActiveMembership,
       organizationId: { _id: ORG_OID, name: 'HDI', industry: 'insurance', country: 'DE' },
     };
-    OrganizationMember.findOne.mockReturnValue({
-      populate: vi.fn().mockResolvedValue(populated),
-    });
+    OrganizationMember.findOne.mockResolvedValue(populated);
 
     const { req, res, next } = makeCtx();
     await getMyOrganization(req, res, next);
@@ -258,49 +258,50 @@ describe('inviteMember', () => {
   it('returns 400 when email is missing', async () => {
     const { req, res, next } = makeCtx({ role: 'analyst' });
     await inviteMember(req, res, next);
-    expect(res.status).toHaveBeenCalledWith(400);
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 400 }));
   });
 
   it('returns 400 for invalid role', async () => {
     const { req, res, next } = makeCtx({ email: 'bob@hdi.de', role: 'superuser' });
     await inviteMember(req, res, next);
-    expect(res.status).toHaveBeenCalledWith(400);
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 400 }));
   });
 
   it('returns 403 when caller is not an org member', async () => {
-    OrganizationMember.findOne.mockResolvedValue(null);
+    OrganizationMember.findActiveByUserId.mockResolvedValue(null);
     const { req, res, next } = makeCtx({ email: 'bob@hdi.de', role: 'analyst' });
     await inviteMember(req, res, next);
-    expect(res.status).toHaveBeenCalledWith(403);
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 403 }));
   });
 
   it('returns 403 when caller is not org_admin', async () => {
-    OrganizationMember.findOne.mockResolvedValue({ ...mockActiveMembership, role: 'analyst' });
+    OrganizationMember.findActiveByUserId.mockResolvedValue({
+      ...mockActiveMembership,
+      role: 'analyst',
+    });
     const { req, res, next } = makeCtx({ email: 'bob@hdi.de', role: 'viewer' });
     await inviteMember(req, res, next);
-    expect(res.status).toHaveBeenCalledWith(403);
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 403 }));
   });
 
   it('returns 409 when email is already an active member', async () => {
-    OrganizationMember.findOne
-      .mockResolvedValueOnce(mockActiveMembership) // caller lookup
-      .mockResolvedValueOnce({ email: 'bob@hdi.de', status: 'active' }); // existing check
+    OrganizationMember.findActiveByUserId.mockResolvedValue(mockActiveMembership);
+    OrganizationMember.findOne.mockResolvedValue({ email: 'bob@hdi.de', status: 'active' });
 
     const { req, res, next } = makeCtx({ email: 'bob@hdi.de', role: 'analyst' });
     await inviteMember(req, res, next);
-    expect(res.status).toHaveBeenCalledWith(409);
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 409 }));
   });
 
   it('creates invite and returns 201', async () => {
     const newMember = { _id: MBR_OID, email: 'bob@hdi.de', role: 'analyst', status: 'pending' };
 
-    OrganizationMember.findOne
-      .mockResolvedValueOnce(mockActiveMembership)
-      .mockResolvedValueOnce(null);
+    OrganizationMember.findActiveByUserId.mockResolvedValue(mockActiveMembership);
+    OrganizationMember.findOne.mockResolvedValue(null);
 
     OrganizationMember.createInvite.mockResolvedValue({ member: newMember, rawToken: 'tok123' });
     Organization.findById.mockResolvedValue(mockOrg);
-    User.findById.mockReturnValue({ select: vi.fn().mockResolvedValue(mockUser) });
+    User.findById.mockResolvedValue(mockUser);
 
     const { req, res, next } = makeCtx({ email: 'bob@hdi.de', role: 'analyst' });
     await inviteMember(req, res, next);
@@ -319,26 +320,24 @@ describe('inviteMember', () => {
 
 describe('getMembers', () => {
   it('returns 403 when caller has no membership', async () => {
-    OrganizationMember.findOne.mockResolvedValue(null);
+    OrganizationMember.findActiveByUserId.mockResolvedValue(null);
     const { req, res, next } = makeCtx();
     await getMembers(req, res, next);
-    expect(res.status).toHaveBeenCalledWith(403);
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 403 }));
   });
 
   it('returns member list with id, email, role, status', async () => {
-    OrganizationMember.findOne.mockResolvedValue(mockActiveMembership);
-    OrganizationMember.find.mockReturnValue({
-      populate: vi.fn().mockResolvedValue([
-        {
-          _id: MBR_OID,
-          email: 'alice@hdi.de',
-          role: 'org_admin',
-          status: 'active',
-          joinedAt: new Date(),
-          userId: { _id: USER_OID, name: 'Alice', email: 'alice@hdi.de' },
-        },
-      ]),
-    });
+    OrganizationMember.findActiveByUserId.mockResolvedValue(mockActiveMembership);
+    OrganizationMember.find.mockResolvedValue([
+      {
+        _id: MBR_OID,
+        email: 'alice@hdi.de',
+        role: 'org_admin',
+        status: 'active',
+        joinedAt: new Date(),
+        userId: { _id: USER_OID, name: 'Alice', email: 'alice@hdi.de' },
+      },
+    ]);
 
     const { req, res, next } = makeCtx();
     await getMembers(req, res, next);
@@ -357,50 +356,51 @@ describe('getMembers', () => {
 
 describe('removeMember', () => {
   it('returns 403 when caller is not org_admin', async () => {
-    OrganizationMember.findOne.mockResolvedValue({ ...mockActiveMembership, role: 'analyst' });
+    OrganizationMember.findActiveByUserId.mockResolvedValue({
+      ...mockActiveMembership,
+      role: 'analyst',
+    });
     const { req, res, next } = makeCtx({}, { memberId: MBR_OID.toString() });
     await removeMember(req, res, next);
-    expect(res.status).toHaveBeenCalledWith(403);
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 403 }));
   });
 
   it('returns 404 when target member not found', async () => {
-    OrganizationMember.findOne.mockResolvedValue(mockActiveMembership);
+    OrganizationMember.findActiveByUserId.mockResolvedValue(mockActiveMembership);
     OrganizationMember.findById.mockResolvedValue(null);
     const { req, res, next } = makeCtx({}, { memberId: MBR_OID.toString() });
     await removeMember(req, res, next);
-    expect(res.status).toHaveBeenCalledWith(404);
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 404 }));
   });
 
   it('returns 400 when attempting to remove the only org admin', async () => {
     const callerMembership = { ...mockActiveMembership, userId: USER_OID.toString() };
-    OrganizationMember.findOne.mockResolvedValue(callerMembership);
+    OrganizationMember.findActiveByUserId.mockResolvedValue(callerMembership);
     OrganizationMember.findById.mockResolvedValue({
       ...callerMembership,
       userId: USER_OID.toString(),
     });
-    OrganizationMember.countDocuments.mockResolvedValue(1); // only one admin
+    OrganizationMember.count.mockResolvedValue(1); // only one admin
 
     const { req, res, next } = makeCtx({}, { memberId: MBR_OID.toString() });
     await removeMember(req, res, next);
-    expect(res.status).toHaveBeenCalledWith(400);
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 400 }));
   });
 
   it('revokes membership and returns 200', async () => {
     const targetOID = new mongoose.Types.ObjectId('ffffffffffffffffffffffff');
-    OrganizationMember.findOne.mockResolvedValue(mockActiveMembership);
+    OrganizationMember.findActiveByUserId.mockResolvedValue(mockActiveMembership);
     OrganizationMember.findById.mockResolvedValue({
       _id: targetOID,
       organizationId: ORG_OID,
       userId: new mongoose.Types.ObjectId('111111111111111111111111'),
     });
-    OrganizationMember.findByIdAndUpdate.mockResolvedValue({});
+    OrganizationMember.revokeMembership.mockResolvedValue({});
 
     const { req, res, next } = makeCtx({}, { memberId: targetOID.toString() });
     await removeMember(req, res, next);
 
-    expect(OrganizationMember.findByIdAndUpdate).toHaveBeenCalledWith(targetOID.toString(), {
-      status: 'revoked',
-    });
+    expect(OrganizationMember.revokeMembership).toHaveBeenCalledWith(targetOID.toString());
     expect(res.status).toHaveBeenCalledWith(200);
   });
 });
@@ -413,14 +413,14 @@ describe('getInviteInfo', () => {
   it('returns 400 when token is missing', async () => {
     const { req, res, next } = makeCtx({}, {}, {});
     await getInviteInfo(req, res, next);
-    expect(res.status).toHaveBeenCalledWith(400);
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 400 }));
   });
 
   it('returns 404 when token is invalid/expired', async () => {
     OrganizationMember.findByToken.mockResolvedValue(null);
     const { req, res, next } = makeCtx({}, {}, { token: 'badtoken' });
     await getInviteInfo(req, res, next);
-    expect(res.status).toHaveBeenCalledWith(404);
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 404 }));
   });
 
   it('returns invite info when token is valid', async () => {
@@ -431,7 +431,7 @@ describe('getInviteInfo', () => {
       invitedBy: USER_OID,
     });
     Organization.findById.mockResolvedValue(mockOrg);
-    User.findById.mockReturnValue({ select: vi.fn().mockResolvedValue(mockUser) });
+    User.findById.mockResolvedValue(mockUser);
 
     const { req, res, next } = makeCtx({}, {}, { token: 'validtoken' });
     await getInviteInfo(req, res, next);

@@ -17,7 +17,7 @@ import { QdrantClient } from '@qdrant/js-client-rest';
 import { createReactAgent } from '@langchain/langgraph/prebuilt';
 import { HumanMessage, SystemMessage } from '@langchain/core/messages';
 import { tool } from '@langchain/core/tools';
-import { Assessment } from '../models/Assessment.js';
+import { assessmentRepository } from '../repositories/AssessmentRepository.js';
 import { embeddings } from '../config/embeddings.js';
 import { createLLM } from '../config/llmProvider.js';
 import logger from '../config/logger.js';
@@ -669,7 +669,7 @@ Respond ONLY with a valid JSON object:
 export async function runGapAnalysis({ assessmentId, userId: _userId, job }) {
   logger.info('Gap analysis started', { service: 'gap-analysis', assessmentId });
 
-  const assessment = await Assessment.findById(assessmentId);
+  const assessment = await assessmentRepository.findById(assessmentId);
   if (!assessment) throw new Error(`Assessment ${assessmentId} not found`);
 
   const emit = (msg, pct) => {
@@ -683,11 +683,11 @@ export async function runGapAnalysis({ assessmentId, userId: _userId, job }) {
     let attempts = 0;
     while (attempts < 12) {
       await new Promise((r) => setTimeout(r, 10000));
-      const fresh = await Assessment.findById(assessmentId);
+      const fresh = await assessmentRepository.findById(assessmentId);
       if (fresh.documents.every((d) => d.status !== 'uploading')) break;
       attempts++;
     }
-    const finalCheck = await Assessment.findById(assessmentId);
+    const finalCheck = await assessmentRepository.findById(assessmentId);
     if (finalCheck.documents.every((d) => d.status === 'failed')) {
       throw new Error('All document indexing jobs failed — cannot run gap analysis');
     }
@@ -751,7 +751,7 @@ export async function runGapAnalysis({ assessmentId, userId: _userId, job }) {
     ? result.overallRisk
     : 'High';
 
-  await Assessment.findByIdAndUpdate(assessmentId, {
+  await assessmentRepository.updateById(assessmentId, {
     status: 'complete',
     statusMessage: 'Analysis complete',
     'results.gaps': gaps,
@@ -770,22 +770,3 @@ export async function runGapAnalysis({ assessmentId, userId: _userId, job }) {
 
   return { gapCount: gaps.length, overallRisk };
 }
-
-// ---------------------------------------------------------------------------
-// DI-injectable class — enables unit testing without module-level mocking
-// ---------------------------------------------------------------------------
-
-class GapAnalysisAgent {
-  constructor({ Assessment: A, embeddings: emb, createLLM: llmFactory, logger: log } = {}) {
-    this.Assessment = A || Assessment;
-    this.embeddings = emb || embeddings;
-    this.createLLM = llmFactory || createLLM;
-    this.logger = log || logger;
-  }
-
-  async runGapAnalysis(params) {
-    return runGapAnalysis(params);
-  }
-}
-
-export const gapAnalysisAgent = new GapAnalysisAgent();
