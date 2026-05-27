@@ -1,5 +1,6 @@
 import { conversationService } from '../services/ConversationService.js';
 import { catchAsync, sendSuccess, getUserId, parsePagination } from '../utils/index.js';
+import { userCanViewSources } from '../utils/security/sourceVisibility.js';
 import logger from '../config/logger.js';
 
 /**
@@ -94,6 +95,9 @@ export const getConversation = catchAsync(async (req, res) => {
     { limit, skip }
   );
 
+  // B1: strip per-message sources when the member can't view sources.
+  const allowSources = await userCanViewSources(req, conversation.workspaceId);
+
   sendSuccess(res, 200, 'Conversation retrieved successfully', {
     conversation: {
       id: conversation._id,
@@ -108,7 +112,7 @@ export const getConversation = catchAsync(async (req, res) => {
       id: m._id,
       role: m.role,
       content: m.content,
-      sources: m.sources || [],
+      sources: allowSources ? m.sources || [] : [],
       timestamp: m.timestamp,
     })),
     pagination: {
@@ -130,6 +134,12 @@ export const askQuestion = catchAsync(async (req, res) => {
   const userId = getUserId(req);
 
   const answer = await conversationService.askQuestion(id, userId, { question, filters });
+
+  // B1: honor the workspace canViewSources permission before returning sources.
+  const workspaceId = req.headers?.['x-workspace-id'] || req.body?.workspaceId;
+  if (answer?.sources?.length && !(await userCanViewSources(req, workspaceId))) {
+    answer.sources = [];
+  }
 
   sendSuccess(res, 200, 'Question answered successfully', {
     answer,
