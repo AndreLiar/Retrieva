@@ -9,13 +9,14 @@ import {
   bulkDeleteConversations,
 } from '../controllers/conversationController.js';
 import { authenticate } from '../middleware/auth.js';
-import { validateBody, validateParams } from '../middleware/validate.js';
+import { validateBody, validateParams, validateQuery } from '../middleware/validate.js';
 import {
   createConversationSchema,
   updateConversationSchema,
   askInConversationSchema,
   bulkDeleteConversationsSchema,
   idParamsSchema,
+  listConversationsQuerySchema,
 } from '../validators/schemas.js';
 
 const router = express.Router();
@@ -24,7 +25,7 @@ const router = express.Router();
 // Conversations are user-scoped (userId), not workspace-scoped
 // Users can only access their own conversations (BOLA protection in controllers)
 router.post('/', authenticate, validateBody(createConversationSchema), createConversation);
-router.get('/', authenticate, getConversations);
+router.get('/', authenticate, validateQuery(listConversationsQuerySchema), getConversations);
 router.post(
   '/bulk-delete',
   authenticate,

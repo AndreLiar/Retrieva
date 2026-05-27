@@ -23,46 +23,55 @@ function sanitizeHtml(str) {
 }
 
 // RAG Endpoint Schemas
-export const askQuestionSchema = z.object({
-  question: z
-    .string()
-    .min(1, 'Question cannot be empty')
-    .max(2000, 'Question too long (max 2000 characters)')
-    .trim(),
-  conversationId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid conversation ID'),
-  filters: z
-    .object({
-      page: z.number().int().positive().optional(),
-      section: z.string().optional(),
-      pageRange: z
-        .object({
-          start: z.number().int().positive(),
-          end: z.number().int().positive(),
-        })
-        .optional(),
-    })
-    .optional(),
-});
+export const askQuestionSchema = z
+  .object({
+    question: z
+      .string()
+      .min(1, 'Question cannot be empty')
+      .max(2000, 'Question too long (max 2000 characters)')
+      .trim(),
+    conversationId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid conversation ID'),
+    // workspaceId may arrive in the body (requireWorkspaceAccess also reads it from
+    // the X-Workspace-Id header); declare it so .strict() doesn't reject it.
+    workspaceId: z.string().max(64).optional(),
+    filters: z
+      .object({
+        page: z.number().int().positive().optional(),
+        section: z.string().optional(),
+        pageRange: z
+          .object({
+            start: z.number().int().positive(),
+            end: z.number().int().positive(),
+          })
+          .optional(),
+      })
+      .optional(),
+  })
+  .strict();
 
 // Alias for backwards compatibility
 export const askWithConversationSchema = askQuestionSchema;
 
-export const streamQuestionSchema = z.object({
-  question: z.string().min(1, 'Question cannot be empty').max(2000, 'Question too long').trim(),
-  conversationId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid conversation ID'),
-  filters: z
-    .object({
-      page: z.number().int().positive().optional(),
-      section: z.string().optional(),
-      pageRange: z
-        .object({
-          start: z.number().int().positive(),
-          end: z.number().int().positive(),
-        })
-        .optional(),
-    })
-    .optional(),
-});
+export const streamQuestionSchema = z
+  .object({
+    question: z.string().min(1, 'Question cannot be empty').max(2000, 'Question too long').trim(),
+    conversationId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid conversation ID'),
+    // See askQuestionSchema: workspaceId may be sent in the body.
+    workspaceId: z.string().max(64).optional(),
+    filters: z
+      .object({
+        page: z.number().int().positive().optional(),
+        section: z.string().optional(),
+        pageRange: z
+          .object({
+            start: z.number().int().positive(),
+            end: z.number().int().positive(),
+          })
+          .optional(),
+      })
+      .optional(),
+  })
+  .strict();
 
 // Conversation Schemas
 // ISSUE #38 FIX: Added .transform(sanitizeHtml) to sanitize title and prevent XSS
@@ -122,49 +131,59 @@ export const bulkDeleteConversationsSchema = z
   .strict();
 
 // Analytics Schemas
-export const analyticsSummarySchema = z.object({
-  startDate: z.string().datetime().optional(),
-  endDate: z.string().datetime().optional(),
-});
+export const analyticsSummarySchema = z
+  .object({
+    startDate: z.string().datetime().optional(),
+    endDate: z.string().datetime().optional(),
+  })
+  .strict();
 
-export const popularQuestionsSchema = z.object({
-  limit: z
-    .string()
-    .transform((val) => parseInt(val, 10))
-    .pipe(z.number().int().min(1).max(100))
-    .default('10'),
-});
+export const popularQuestionsSchema = z
+  .object({
+    limit: z
+      .string()
+      .transform((val) => parseInt(val, 10))
+      .pipe(z.number().int().min(1).max(100))
+      .default('10'),
+  })
+  .strict();
 
-export const feedbackTrendsSchema = z.object({
-  days: z
-    .string()
-    .transform((val) => parseInt(val, 10))
-    .pipe(z.number().int().min(1).max(90))
-    .default('7'),
-});
+export const feedbackTrendsSchema = z
+  .object({
+    days: z
+      .string()
+      .transform((val) => parseInt(val, 10))
+      .pipe(z.number().int().min(1).max(90))
+      .default('7'),
+  })
+  .strict();
 
-export const feedbackSubmitSchema = z.object({
-  requestId: z.string().min(1, 'Request ID is required'),
-  rating: z
-    .number()
-    .int()
-    .min(1, 'Rating must be at least 1')
-    .max(5, 'Rating must be at most 5')
-    .optional(),
-  helpful: z.boolean().optional(),
-  comment: z.string().max(1000, 'Comment too long (max 1000 characters)').optional(),
-});
+export const feedbackSubmitSchema = z
+  .object({
+    requestId: z.string().min(1, 'Request ID is required'),
+    rating: z
+      .number()
+      .int()
+      .min(1, 'Rating must be at least 1')
+      .max(5, 'Rating must be at most 5')
+      .optional(),
+    helpful: z.boolean().optional(),
+    comment: z.string().max(1000, 'Comment too long (max 1000 characters)').optional(),
+  })
+  .strict();
 
 // Keep for backwards compatibility
 export const confidenceTrendsSchema = feedbackTrendsSchema;
 
-export const sourceStatsSchema = z.object({
-  limit: z
-    .string()
-    .transform((val) => parseInt(val, 10))
-    .pipe(z.number().int().min(1).max(100))
-    .default('20'),
-});
+export const sourceStatsSchema = z
+  .object({
+    limit: z
+      .string()
+      .transform((val) => parseInt(val, 10))
+      .pipe(z.number().int().min(1).max(100))
+      .default('20'),
+  })
+  .strict();
 
 /**
  * Common passwords to reject
@@ -282,6 +301,7 @@ export const updateProfileSchema = z
       .optional(),
     email: z.string().email('Invalid email address').toLowerCase().optional(),
   })
+  .strict()
   .refine((data) => data.name || data.email, {
     message: 'At least one field must be provided',
     path: ['name'],
@@ -293,6 +313,7 @@ export const changePasswordSchema = z
     newPassword: createPasswordSchema(),
     confirmPassword: z.string().min(1, 'Password confirmation is required'),
   })
+  .strict()
   .refine((data) => data.newPassword === data.confirmPassword, {
     message: 'Passwords do not match',
     path: ['confirmPassword'],
@@ -377,17 +398,65 @@ export const setClauseSignoffSchema = z
   .strict();
 
 // Pagination schema
-export const paginationSchema = z.object({
-  page: z
+export const paginationSchema = z
+  .object({
+    page: z
+      .string()
+      .transform((val) => parseInt(val, 10))
+      .pipe(z.number().int().min(1))
+      .default('1'),
+    limit: z
+      .string()
+      .transform((val) => parseInt(val, 10))
+      .pipe(z.number().int().min(1).max(100))
+      .default('10'),
+  })
+  .strict();
+
+// ---------------------------------------------------------------------------
+// List/query schemas for paginated GET routes (applied via validateQuery).
+//
+// These are deliberately NOT .strict(): GET endpoints commonly receive extra
+// query params (cache-busters, future filters) and rejecting them would break
+// clients. The goal here is to bound page/limit (a DoS guard — controllers
+// still clamp) and validate the known filters. Bounds are generous so normal
+// requests never trip them.
+// ---------------------------------------------------------------------------
+
+const pageQueryParam = z
+  .string()
+  .regex(/^\d{1,7}$/, 'page must be a positive integer')
+  .transform((v) => parseInt(v, 10))
+  .pipe(z.number().int().min(1))
+  .optional();
+
+const limitQueryParam = z
+  .string()
+  .regex(/^\d{1,7}$/, 'limit must be a positive integer')
+  .transform((v) => parseInt(v, 10))
+  .pipe(z.number().int().min(1).max(1000))
+  .optional();
+
+// Assessments + questionnaires share the same filter shape.
+export const listAssessmentsQuerySchema = z.object({
+  workspaceId: mongoIdSchema.optional(),
+  status: z.string().max(40).optional(),
+  page: pageQueryParam,
+  limit: limitQueryParam,
+});
+
+export const listQuestionnairesQuerySchema = listAssessmentsQuerySchema;
+
+export const listConversationsQuerySchema = z.object({
+  workspaceId: mongoIdSchema.optional(),
+  page: pageQueryParam,
+  limit: limitQueryParam,
+  skip: z
     .string()
-    .transform((val) => parseInt(val, 10))
-    .pipe(z.number().int().min(1))
-    .default('1'),
-  limit: z
-    .string()
-    .transform((val) => parseInt(val, 10))
-    .pipe(z.number().int().min(1).max(100))
-    .default('10'),
+    .regex(/^\d{1,9}$/, 'skip must be a non-negative integer')
+    .transform((v) => parseInt(v, 10))
+    .pipe(z.number().int().min(0))
+    .optional(),
 });
 
 // ---------------------------------------------------------------------------
@@ -415,9 +484,11 @@ export const acceptOrgInviteSchema = z
   })
   .strict();
 
-export const orgInviteInfoQuerySchema = z.object({
-  token: oneTimeTokenSchema,
-});
+export const orgInviteInfoQuerySchema = z
+  .object({
+    token: oneTimeTokenSchema,
+  })
+  .strict();
 
 // ---------------------------------------------------------------------------
 // Questionnaire Schemas

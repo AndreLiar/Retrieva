@@ -10,13 +10,14 @@ import {
 } from '../controllers/questionnaireController.js';
 import { authenticate } from '../middleware/auth.js';
 import { requireWorkspaceAccess } from '../middleware/workspaceAuth.js';
-import { validateBody, validateParams } from '../middleware/validate.js';
+import { validateBody, validateParams, validateQuery } from '../middleware/validate.js';
 import {
   createQuestionnaireSchema,
   sendQuestionnaireSchema,
   submitQuestionnaireResponseSchema,
   idParamsSchema,
   tokenParamsSchema,
+  listQuestionnairesQuerySchema,
 } from '../validators/schemas.js';
 
 const router = Router();
@@ -66,7 +67,13 @@ router.post(
  * @desc   List questionnaires (scoped to user's workspaces)
  * @access Private
  */
-router.get('/', authenticate, requireWorkspaceAccess, listQuestionnaires);
+router.get(
+  '/',
+  authenticate,
+  requireWorkspaceAccess,
+  validateQuery(listQuestionnairesQuerySchema),
+  listQuestionnaires
+);
 
 /**
  * @route  GET /api/v1/questionnaires/:id
