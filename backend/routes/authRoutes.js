@@ -16,6 +16,14 @@ import {
 import { validateBody } from '../middleware/validate.js';
 import { authenticate } from '../middleware/auth.js';
 import {
+  loginLimiter,
+  registerLimiter,
+  passwordResetLimiter,
+  emailVerifyLimiter,
+  resendVerifyLimiter,
+  refreshLimiter,
+} from '../middleware/authRateLimiter.js';
+import {
   registerSchema,
   loginSchema,
   refreshTokenSchema,
@@ -34,21 +42,21 @@ const router = express.Router();
  * @desc    Register a new user (sends verification email)
  * @access  Public
  */
-router.post('/register', validateBody(registerSchema), register);
+router.post('/register', registerLimiter, validateBody(registerSchema), register);
 
 /**
  * @route   POST /api/v1/auth/login
  * @desc    Login user
  * @access  Public
  */
-router.post('/login', validateBody(loginSchema), login);
+router.post('/login', loginLimiter, validateBody(loginSchema), login);
 
 /**
  * @route   POST /api/v1/auth/refresh
  * @desc    Refresh access token (with token rotation)
  * @access  Public
  */
-router.post('/refresh', validateBody(refreshTokenSchema), refreshToken);
+router.post('/refresh', refreshLimiter, validateBody(refreshTokenSchema), refreshToken);
 
 /**
  * @route   POST /api/v1/auth/logout
@@ -77,28 +85,38 @@ router.patch('/profile', authenticate, validateBody(updateProfileSchema), update
  * @desc    Request password reset email
  * @access  Public
  */
-router.post('/forgot-password', validateBody(forgotPasswordSchema), forgotPassword);
+router.post(
+  '/forgot-password',
+  passwordResetLimiter,
+  validateBody(forgotPasswordSchema),
+  forgotPassword
+);
 
 /**
  * @route   POST /api/v1/auth/reset-password
  * @desc    Reset password with token from email
  * @access  Public
  */
-router.post('/reset-password', validateBody(resetPasswordSchema), resetPassword);
+router.post(
+  '/reset-password',
+  passwordResetLimiter,
+  validateBody(resetPasswordSchema),
+  resetPassword
+);
 
 /**
  * @route   POST /api/v1/auth/verify-email
  * @desc    Verify email address with token
  * @access  Public
  */
-router.post('/verify-email', validateBody(verifyEmailSchema), verifyEmail);
+router.post('/verify-email', emailVerifyLimiter, validateBody(verifyEmailSchema), verifyEmail);
 
 /**
  * @route   POST /api/v1/auth/resend-verification
  * @desc    Resend email verification
  * @access  Private
  */
-router.post('/resend-verification', authenticate, resendVerification);
+router.post('/resend-verification', resendVerifyLimiter, authenticate, resendVerification);
 
 /**
  * @route   POST /api/v1/auth/change-password
@@ -112,11 +130,6 @@ router.post('/change-password', authenticate, validateBody(changePasswordSchema)
  * @desc    Update onboarding state (welcome screen dismissed, checklist flags)
  * @access  Private
  */
-router.patch(
-  '/onboarding',
-  authenticate,
-  validateBody(updateOnboardingSchema),
-  updateOnboarding
-);
+router.patch('/onboarding', authenticate, validateBody(updateOnboardingSchema), updateOnboarding);
 
 export default router;

@@ -60,6 +60,9 @@ export default defineConfig({
       RESEND_FROM_EMAIL: 'noreply@retrieva.online',
       SMTP_FROM_NAME: 'Retrieva',
       FRONTEND_URL: 'http://localhost:3000',
+      // PR-L: disable auth rate limits in unit + integration tests so a single
+      // test suite doesn't blow past per-IP caps and start getting 429s.
+      AUTH_RATE_LIMIT_DISABLED: 'true',
     },
   },
 });
