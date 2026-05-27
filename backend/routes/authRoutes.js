@@ -24,6 +24,7 @@ import {
   verifyEmailSchema,
   updateProfileSchema,
   changePasswordSchema,
+  updateOnboardingSchema,
 } from '../validators/schemas.js';
 
 const router = express.Router();
@@ -111,6 +112,11 @@ router.post('/change-password', authenticate, validateBody(changePasswordSchema)
  * @desc    Update onboarding state (welcome screen dismissed, checklist flags)
  * @access  Private
  */
-router.patch('/onboarding', authenticate, updateOnboarding);
+router.patch(
+  '/onboarding',
+  authenticate,
+  validateBody(updateOnboardingSchema),
+  updateOnboarding
+);
 
 export default router;

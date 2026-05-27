@@ -66,24 +66,60 @@ export const streamQuestionSchema = z.object({
 
 // Conversation Schemas
 // ISSUE #38 FIX: Added .transform(sanitizeHtml) to sanitize title and prevent XSS
-export const createConversationSchema = z.object({
-  title: z
-    .string()
-    .min(1, 'Title cannot be empty')
-    .max(200, 'Title too long (max 200 characters)')
-    .transform(sanitizeHtml)
-    .optional(),
-  workspaceId: z.string().optional(),
-});
+export const createConversationSchema = z
+  .object({
+    title: z
+      .string()
+      .min(1, 'Title cannot be empty')
+      .max(200, 'Title too long (max 200 characters)')
+      .transform(sanitizeHtml)
+      .optional(),
+    workspaceId: z.string().max(64).optional(),
+    idempotencyKey: z.string().max(128).optional(),
+  })
+  .strict();
 
-export const updateConversationSchema = z.object({
-  title: z
-    .string()
-    .min(1, 'Title cannot be empty')
-    .max(200, 'Title too long')
-    .transform(sanitizeHtml)
-    .optional(),
-});
+export const updateConversationSchema = z
+  .object({
+    title: z
+      .string()
+      .min(1, 'Title cannot be empty')
+      .max(200, 'Title too long')
+      .transform(sanitizeHtml),
+  })
+  .strict();
+
+export const askInConversationSchema = z
+  .object({
+    question: z
+      .string()
+      .min(1, 'Question cannot be empty')
+      .max(5000, 'Question too long (max 5000 characters)')
+      .trim(),
+    filters: z
+      .object({
+        page: z.number().int().positive().optional(),
+        section: z.string().max(200).optional(),
+        pageRange: z
+          .object({
+            start: z.number().int().positive(),
+            end: z.number().int().positive(),
+          })
+          .optional(),
+      })
+      .optional()
+      .nullable(),
+  })
+  .strict();
+
+export const bulkDeleteConversationsSchema = z
+  .object({
+    ids: z
+      .array(z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid conversation ID'))
+      .min(1, 'ids array is required')
+      .max(100, 'Cannot delete more than 100 conversations at once'),
+  })
+  .strict();
 
 // Analytics Schemas
 export const analyticsSummarySchema = z.object({
@@ -162,6 +198,17 @@ const commonPasswords = [
 ];
 
 /**
+ * One-time-token validator. Used for password reset, email verification,
+ * and org invite tokens. Min 20 chars to reject trivial inputs, max 512 to
+ * bound payload size, restricted to URL-safe characters.
+ */
+const oneTimeTokenSchema = z
+  .string()
+  .min(20, 'Token is too short')
+  .max(512, 'Token is too long')
+  .regex(/^[A-Za-z0-9._\-+/=]+$/, 'Token contains invalid characters');
+
+/**
  * Strong password validation schema
  */
 const createPasswordSchema = () =>
@@ -182,35 +229,48 @@ const createPasswordSchema = () =>
     );
 
 // Authentication Schemas
-export const registerSchema = z.object({
-  email: z.string().email('Invalid email address').toLowerCase(),
-  password: createPasswordSchema(),
-  name: z.string().min(2, 'Name must be at least 2 characters').max(100, 'Name too long').trim(),
-  role: z.enum(['user', 'admin']).default('user'),
-});
+export const registerSchema = z
+  .object({
+    email: z.string().email('Invalid email address').toLowerCase(),
+    password: createPasswordSchema(),
+    name: z.string().min(2, 'Name must be at least 2 characters').max(100, 'Name too long').trim(),
+    role: z.enum(['user', 'admin']).default('user'),
+    inviteToken: oneTimeTokenSchema.optional(),
+  })
+  .strict();
 
-export const loginSchema = z.object({
-  email: z.string().email('Invalid email address').toLowerCase(),
-  password: z.string().min(1, 'Password is required'),
-});
+export const loginSchema = z
+  .object({
+    email: z.string().email('Invalid email address').toLowerCase(),
+    password: z.string().min(1, 'Password is required').max(100),
+  })
+  .strict();
 
 // Refresh token can come from cookies or body, so make body validation optional
-export const refreshTokenSchema = z.object({
-  refreshToken: z.string().min(1, 'Refresh token is required').optional(),
-});
+export const refreshTokenSchema = z
+  .object({
+    refreshToken: z.string().min(1, 'Refresh token is required').max(2048).optional(),
+  })
+  .strict();
 
-export const forgotPasswordSchema = z.object({
-  email: z.string().email('Invalid email address').toLowerCase(),
-});
+export const forgotPasswordSchema = z
+  .object({
+    email: z.string().email('Invalid email address').toLowerCase(),
+  })
+  .strict();
 
-export const resetPasswordSchema = z.object({
-  token: z.string().min(1, 'Reset token is required'),
-  password: createPasswordSchema(),
-});
+export const resetPasswordSchema = z
+  .object({
+    token: oneTimeTokenSchema,
+    password: createPasswordSchema(),
+  })
+  .strict();
 
-export const verifyEmailSchema = z.object({
-  token: z.string().min(1, 'Verification token is required'),
-});
+export const verifyEmailSchema = z
+  .object({
+    token: oneTimeTokenSchema,
+  })
+  .strict();
 
 export const updateProfileSchema = z
   .object({
@@ -246,59 +306,75 @@ export const changePasswordSchema = z
 export const mongoIdSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid ID format');
 
 // Workspace Schemas
-export const createWorkspaceSchema = z.object({
-  name: z.string().min(1, 'Workspace name is required').max(200, 'Name too long').trim(),
-  description: z.string().optional(),
-  vendorTier: z.enum(['critical', 'important', 'standard']).nullable().optional(),
-  serviceType: z.enum(['cloud', 'software', 'data', 'network', 'other']).nullable().optional(),
-  country: z.string().optional(),
-  contractStart: z.string().optional().nullable(),
-  contractEnd: z.string().optional().nullable(),
-  vendorFunctions: z.array(z.string()).optional(),
-});
+export const createWorkspaceSchema = z
+  .object({
+    name: z.string().min(1, 'Workspace name is required').max(200, 'Name too long').trim(),
+    description: z.string().max(2000, 'Description too long').optional(),
+    vendorTier: z.enum(['critical', 'important', 'standard']).nullable().optional(),
+    serviceType: z.enum(['cloud', 'software', 'data', 'network', 'other']).nullable().optional(),
+    country: z.string().max(100, 'Country too long').optional(),
+    contractStart: z.string().max(50).optional().nullable(),
+    contractEnd: z.string().max(50).optional().nullable(),
+    vendorFunctions: z.array(z.string().max(200)).max(50, 'Too many vendor functions').optional(),
+  })
+  .strict();
 
-export const updateWorkspaceSchema = z.object({
-  name: z.string().min(1).max(200).trim().optional(),
-  description: z.string().optional(),
-  vendorTier: z.enum(['critical', 'important', 'standard']).nullable().optional(),
-  serviceType: z.enum(['cloud', 'software', 'data', 'network', 'other']).nullable().optional(),
-  country: z.string().optional(),
-  contractStart: z.string().optional().nullable(),
-  contractEnd: z.string().optional().nullable(),
-  nextReviewDate: z.string().optional().nullable(),
-  vendorStatus: z.enum(['active', 'under-review', 'exited']).optional(),
-  certifications: z.array(z.string()).optional(),
-  exitStrategyDoc: z.string().optional().nullable(),
-  vendorFunctions: z.array(z.string()).optional(),
-});
+export const updateWorkspaceSchema = z
+  .object({
+    name: z.string().min(1).max(200).trim().optional(),
+    description: z.string().max(2000, 'Description too long').optional(),
+    vendorTier: z.enum(['critical', 'important', 'standard']).nullable().optional(),
+    serviceType: z.enum(['cloud', 'software', 'data', 'network', 'other']).nullable().optional(),
+    country: z.string().max(100, 'Country too long').optional(),
+    contractStart: z.string().max(50).optional().nullable(),
+    contractEnd: z.string().max(50).optional().nullable(),
+    nextReviewDate: z.string().max(50).optional().nullable(),
+    vendorStatus: z.enum(['active', 'under-review', 'exited']).optional(),
+    certifications: z.array(z.string().max(200)).max(50, 'Too many certifications').optional(),
+    exitStrategyDoc: z.string().max(2000).optional().nullable(),
+    vendorFunctions: z.array(z.string().max(200)).max(50, 'Too many vendor functions').optional(),
+  })
+  .strict();
 
-export const inviteMemberSchema = z.object({
-  email: z.string().email('Invalid email address').toLowerCase(),
-  role: z.enum(['member', 'viewer']).default('member'),
-});
+export const inviteMemberSchema = z
+  .object({
+    email: z.string().email('Invalid email address').toLowerCase(),
+    role: z.enum(['member', 'viewer']).default('member'),
+  })
+  .strict();
 
 // Assessment Schemas
-export const createAssessmentSchema = z.object({
-  name: z.string().min(1, 'Assessment name is required').max(200, 'Name too long').trim(),
-  vendorName: z.string().min(1, 'Vendor name is required').max(200, 'Vendor name too long').trim(),
-  framework: z.enum(['DORA', 'CONTRACT_A30']).default('DORA'),
-  workspaceId: mongoIdSchema,
-});
+export const createAssessmentSchema = z
+  .object({
+    name: z.string().min(1, 'Assessment name is required').max(200, 'Name too long').trim(),
+    vendorName: z
+      .string()
+      .min(1, 'Vendor name is required')
+      .max(200, 'Vendor name too long')
+      .trim(),
+    framework: z.enum(['DORA', 'CONTRACT_A30']).default('DORA'),
+    workspaceId: mongoIdSchema,
+  })
+  .strict();
 
-export const setRiskDecisionSchema = z.object({
-  decision: z.enum(['proceed', 'conditional', 'reject'], {
-    errorMap: () => ({ message: "decision must be 'proceed', 'conditional', or 'reject'" }),
-  }),
-  rationale: z.string().optional(),
-});
+export const setRiskDecisionSchema = z
+  .object({
+    decision: z.enum(['proceed', 'conditional', 'reject'], {
+      errorMap: () => ({ message: "decision must be 'proceed', 'conditional', or 'reject'" }),
+    }),
+    rationale: z.string().max(5000).optional(),
+  })
+  .strict();
 
-export const setClauseSignoffSchema = z.object({
-  clauseRef: z.string().min(1, 'clauseRef is required'),
-  status: z.enum(['accepted', 'rejected', 'waived'], {
-    errorMap: () => ({ message: "status must be 'accepted', 'rejected', or 'waived'" }),
-  }),
-  note: z.string().optional(),
-});
+export const setClauseSignoffSchema = z
+  .object({
+    clauseRef: z.string().min(1, 'clauseRef is required').max(200),
+    status: z.enum(['accepted', 'rejected', 'waived'], {
+      errorMap: () => ({ message: "status must be 'accepted', 'rejected', or 'waived'" }),
+    }),
+    note: z.string().max(5000).optional(),
+  })
+  .strict();
 
 // Pagination schema
 export const paginationSchema = z.object({
@@ -312,4 +388,115 @@ export const paginationSchema = z.object({
     .transform((val) => parseInt(val, 10))
     .pipe(z.number().int().min(1).max(100))
     .default('10'),
+});
+
+// ---------------------------------------------------------------------------
+// Organization Schemas
+// ---------------------------------------------------------------------------
+
+export const createOrganizationSchema = z
+  .object({
+    name: z.string().min(1, 'Organization name is required').max(200, 'Name too long').trim(),
+    industry: z.string().max(100).optional(),
+    country: z.string().max(100).optional(),
+  })
+  .strict();
+
+export const inviteOrgMemberSchema = z
+  .object({
+    email: z.string().email('Invalid email address').toLowerCase(),
+    role: z.enum(['org_admin', 'analyst', 'viewer']).default('analyst'),
+  })
+  .strict();
+
+export const acceptOrgInviteSchema = z
+  .object({
+    token: oneTimeTokenSchema,
+  })
+  .strict();
+
+export const orgInviteInfoQuerySchema = z.object({
+  token: oneTimeTokenSchema,
+});
+
+// ---------------------------------------------------------------------------
+// Questionnaire Schemas
+// ---------------------------------------------------------------------------
+
+export const createQuestionnaireSchema = z
+  .object({
+    vendorName: z.string().min(1, 'Vendor name is required').max(200).trim(),
+    vendorEmail: z.string().email('Invalid vendor email').toLowerCase(),
+    vendorContactName: z.string().max(200).optional(),
+    workspaceId: mongoIdSchema,
+  })
+  .strict();
+
+// /send currently takes no body, but accept-but-ignore-extras is a footgun.
+export const sendQuestionnaireSchema = z.object({}).strict();
+
+// Public endpoint — bound aggressively. answers ≤ 200 items, each answer ≤ 10k chars.
+export const submitQuestionnaireResponseSchema = z
+  .object({
+    answers: z
+      .array(
+        z.object({
+          id: z.string().min(1).max(64),
+          answer: z.string().max(10000).optional().nullable(),
+        })
+      )
+      .max(200, 'Too many answers'),
+    final: z.boolean().optional(),
+  })
+  .strict();
+
+// ---------------------------------------------------------------------------
+// Onboarding
+// ---------------------------------------------------------------------------
+
+export const updateOnboardingSchema = z
+  .object({
+    completed: z.boolean().optional(),
+    checklist: z
+      .object({
+        vendorCreated: z.boolean().optional(),
+        assessmentCreated: z.boolean().optional(),
+        memberInvited: z.boolean().optional(),
+        monitoringSetup: z.boolean().optional(),
+        dismissed: z.boolean().optional(),
+      })
+      .strict()
+      .optional(),
+  })
+  .strict()
+  .refine((d) => d.completed !== undefined || d.checklist, {
+    message: 'No valid fields to update',
+  });
+
+// ---------------------------------------------------------------------------
+// URL-param schemas (apply via validateParams)
+// ---------------------------------------------------------------------------
+
+export const idParamsSchema = z.object({ id: mongoIdSchema });
+export const memberIdParamsSchema = z.object({ memberId: mongoIdSchema });
+export const workspaceIdParamsSchema = z.object({ workspaceId: mongoIdSchema });
+
+// Combined :id + :docIndex for assessment file download
+export const assessmentFileParamsSchema = z.object({
+  id: mongoIdSchema,
+  docIndex: z
+    .string()
+    .regex(/^\d{1,4}$/, 'docIndex must be a small non-negative integer')
+    .transform((v) => parseInt(v, 10))
+    .pipe(z.number().int().min(0).max(999)),
+});
+
+// Public token-shaped routes (questionnaire respond, org invite-info).
+// The token is a URL-safe random string; allow a generous but bounded range.
+export const tokenParamsSchema = z.object({
+  token: z
+    .string()
+    .min(8, 'Token is too short')
+    .max(256, 'Token is too long')
+    .regex(/^[A-Za-z0-9._\-+/=]+$/, 'Token contains invalid characters'),
 });
