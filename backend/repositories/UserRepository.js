@@ -13,6 +13,17 @@ class UserRepository extends BaseRepository {
   async updateLastLogin(userId) {
     return this.model.updateOne({ _id: userId }, { $set: { lastLogin: new Date() } });
   }
+
+  /**
+   * Flip the onboarding "assessment created" checklist flag (idempotent —
+   * only writes when still false). Best-effort, fire-and-forget at call sites.
+   */
+  async markAssessmentCreated(userId) {
+    return this.model.updateOne(
+      { _id: userId, 'onboardingChecklist.assessmentCreated': false },
+      { $set: { 'onboardingChecklist.assessmentCreated': true } }
+    );
+  }
 }
 
 export const userRepository = new UserRepository();

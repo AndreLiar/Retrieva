@@ -1,9 +1,9 @@
 import path from 'path';
 import mongoose from 'mongoose';
 import { AppError } from '../utils/index.js';
-import { User } from '../models/User.js';
 import { assessmentRepository } from '../repositories/AssessmentRepository.js';
 import { workspaceRepository } from '../repositories/WorkspaceRepository.js';
+import { userRepository } from '../repositories/UserRepository.js';
 import { assessmentQueue, monitoringQueue } from '../config/queue.js';
 import * as storageModule from '../config/storage.js';
 import { generateReport } from './reportGenerator.js';
@@ -14,7 +14,7 @@ class AssessmentService {
   constructor(deps = {}) {
     this.assessmentRepo = deps.assessmentRepo || assessmentRepository;
     this.workspaceRepo = deps.workspaceRepo || workspaceRepository;
-    this.User = deps.User || User;
+    this.userRepo = deps.userRepo || userRepository;
     this.assessmentQueue = deps.assessmentQueue || assessmentQueue;
     this.monitoringQueue = deps.monitoringQueue || monitoringQueue;
     this.storage = deps.storage || storageModule;
@@ -51,10 +51,7 @@ class AssessmentService {
       fileCount: files.length,
     });
 
-    this.User.updateOne(
-      { _id: userId, 'onboardingChecklist.assessmentCreated': false },
-      { $set: { 'onboardingChecklist.assessmentCreated': true } }
-    ).catch(() => {});
+    this.userRepo.markAssessmentCreated(userId).catch(() => {});
 
     if (this.storage.isStorageConfigured() && organizationId) {
       await Promise.all(
