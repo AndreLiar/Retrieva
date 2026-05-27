@@ -7,7 +7,7 @@
 
 import { Worker } from 'bullmq';
 import { redisConnection } from '../config/redis.js';
-import { VendorQuestionnaire } from '../models/VendorQuestionnaire.js';
+import { vendorQuestionnaireRepository } from '../repositories/VendorQuestionnaireRepository.js';
 import { runScoring } from '../services/questionnaireScorer.js';
 import logger from '../config/logger.js';
 import { connectDB } from '../config/database.js';
@@ -76,7 +76,7 @@ worker.on('failed', async (job, err) => {
 
   if (job?.data?.questionnaireId) {
     try {
-      await VendorQuestionnaire.findByIdAndUpdate(job.data.questionnaireId, {
+      await vendorQuestionnaireRepository.updateById(job.data.questionnaireId, {
         status: 'failed',
         statusMessage: err.message,
       });
