@@ -12,13 +12,14 @@ import {
 import { authenticate } from '../middleware/auth.js';
 import { requireWorkspaceAccess } from '../middleware/workspaceAuth.js';
 import { assessmentUploadMiddleware } from '../middleware/fileUpload.js';
-import { validateBody, validateParams } from '../middleware/validate.js';
+import { validateBody, validateParams, validateQuery } from '../middleware/validate.js';
 import {
   createAssessmentSchema,
   setRiskDecisionSchema,
   setClauseSignoffSchema,
   idParamsSchema,
   assessmentFileParamsSchema,
+  listAssessmentsQuerySchema,
 } from '../validators/schemas.js';
 
 const router = Router();
@@ -42,7 +43,13 @@ router.post(
  * @desc   List assessments (scoped to user's workspaces)
  * @access Private
  */
-router.get('/', authenticate, requireWorkspaceAccess, listAssessments);
+router.get(
+  '/',
+  authenticate,
+  requireWorkspaceAccess,
+  validateQuery(listAssessmentsQuerySchema),
+  listAssessments
+);
 
 /**
  * @route  GET /api/v1/assessments/:id
