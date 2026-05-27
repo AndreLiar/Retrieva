@@ -12,6 +12,7 @@ import {
 import { sha256 } from '../utils/security/crypto.js';
 import { safeDecrypt } from '../utils/security/fieldEncryption.js';
 import { emailService } from './emailService.js';
+import { authAuditService } from './authAuditService.js';
 import logger from '../config/logger.js';
 
 const RESEND_VERIFICATION_COOLDOWN_MS = 60 * 1000;
@@ -36,6 +37,7 @@ class AuthService {
     this.organizationRepo = deps.organizationRepo || organizationRepository;
     this.memberRepo = deps.memberRepo || organizationMemberRepository;
     this.emailService = deps.emailService || emailService;
+    this.authAudit = deps.authAudit || authAuditService;
     this.logger = deps.logger || logger;
   }
 
@@ -118,6 +120,7 @@ class AuthService {
       role: userDoc.role,
       hasOrg: !!organizationId,
     });
+    this.authAudit.logRegisterSuccess?.({ userId: userDoc._id, email: userDoc.email });
 
     return {
       user: {
@@ -133,6 +136,40 @@ class AuthService {
     };
   }
 
+  /**
+   * A3: notify a user out-of-band that all their sessions were revoked because
+   * a refresh token was reused (a sign of theft). Best-effort and fully
+   * defensive — never throws into, or blocks, the auth flow.
+   */
+  _sendTokenTheftAlert(user) {
+    try {
+      const result = this.emailService.sendEmail?.({
+        to: user.email,
+        subject: 'Security alert: we signed you out of all devices',
+        html:
+          `<p>Hi ${user.name || 'there'},</p>` +
+          `<p>We detected that an old sign-in token for your Retrieva account was ` +
+          `reused, which can indicate it was stolen. As a precaution we revoked ` +
+          `all active sessions.</p>` +
+          `<p><strong>If this was you</strong> (e.g. an old tab or device), just ` +
+          `sign in again.</p>` +
+          `<p><strong>If this wasn't you</strong>, reset your password immediately ` +
+          `and review your account.</p><p>— The Retrieva team</p>`,
+      });
+      result?.catch?.((err) =>
+        this.logger.warn('Failed to send token-theft alert email', {
+          userId: user._id,
+          error: err.message,
+        })
+      );
+    } catch (err) {
+      this.logger.warn('Failed to send token-theft alert email', {
+        userId: user._id,
+        error: err.message,
+      });
+    }
+  }
+
   async login({ email, password, deviceInfo }) {
     const user = await this.userRepo.model.findByCredentials(email);
 
@@ -146,6 +183,7 @@ class AuthService {
         userId: user._id,
         lockUntil: user.lockUntil,
       });
+      this.authAudit.logLoginBlockedLocked?.({ userId: user._id, email });
       throw new AppError('Account is temporarily locked. Please try again later.', 423);
     }
 
@@ -158,6 +196,10 @@ class AuthService {
     if (!isPasswordValid) {
       this.logger.warn('Failed login attempt', { email });
       await user.incLoginAttempts();
+      this.authAudit.logLoginFailed?.({ userId: user._id, email });
+      if (user.isLocked) {
+        this.authAudit.logAccountLocked?.({ userId: user._id, email });
+      }
       throw new AppError('Invalid credentials', 401);
     }
 
@@ -178,6 +220,7 @@ class AuthService {
       userId: user._id,
       email: user.email,
     });
+    this.authAudit.logLoginSuccess?.({ userId: user._id, email: user.email });
 
     return {
       user: toUserPayload(user, { organization }),
@@ -223,6 +266,10 @@ class AuthService {
         userId: user._id,
       });
       await user.clearAllRefreshTokens();
+      this.authAudit.logTokenTheftDetected?.({ userId: user._id });
+      // A3: alert the user out-of-band that all sessions were revoked. Best-effort;
+      // never block the 401 on email delivery.
+      this._sendTokenTheftAlert(user);
       throw new AppError('Invalid refresh token. Please login again.', 401);
     }
 
@@ -239,12 +286,10 @@ class AuthService {
     const newTokenHash = hashRefreshToken(newRefreshToken);
     await user.addRefreshToken(newTokenHash, deviceInfo);
 
-    await this.userRepo.updateOne(
-      { _id: user._id },
-      { $set: { lastLogin: new Date() } }
-    );
+    await this.userRepo.updateOne({ _id: user._id }, { $set: { lastLogin: new Date() } });
 
     this.logger.info('Tokens rotated successfully', { userId: user._id });
+    this.authAudit.logTokenRefresh?.({ userId: user._id });
 
     return { accessToken: newAccessToken, refreshToken: newRefreshToken };
   }
@@ -256,6 +301,7 @@ class AuthService {
     if (logoutAll) {
       await user.clearAllRefreshTokens();
       this.logger.info('User logged out from all devices', { userId: user._id });
+      this.authAudit.logLogout?.({ userId: user._id, allDevices: true });
       return;
     }
 
@@ -264,6 +310,7 @@ class AuthService {
       await user.consumeRefreshToken(tokenHash);
     }
     this.logger.info('User logged out', { userId: user._id });
+    this.authAudit.logLogout?.({ userId: user._id, allDevices: false });
   }
 
   async getMe(userId) {
@@ -344,6 +391,7 @@ class AuthService {
     }
 
     this.logger.info('Password reset email sent', { userId: user._id, email: user.email });
+    this.authAudit.logPasswordResetRequest?.({ userId: user._id, email: user.email });
   }
 
   async resetPassword({ token, password }) {
@@ -370,6 +418,7 @@ class AuthService {
     await user.save();
 
     this.logger.info('Password reset successful', { userId: user._id });
+    this.authAudit.logPasswordResetSuccess?.({ userId: user._id });
   }
 
   async verifyEmail({ token }) {
@@ -385,10 +434,7 @@ class AuthService {
 
     if (!user) {
       this.logger.warn('Invalid or expired email verification token');
-      throw new AppError(
-        'Invalid or expired verification token. Please request a new one.',
-        400
-      );
+      throw new AppError('Invalid or expired verification token. Please request a new one.', 400);
     }
 
     const userName = user.name; // capture before save() re-encrypts
@@ -402,15 +448,14 @@ class AuthService {
       userId: user._id,
       email: user.email,
     });
+    this.authAudit.logEmailVerified?.({ userId: user._id, email: user.email });
 
-    this.emailService
-      .sendWelcomeEmail({ toEmail: user.email, toName: userName })
-      .catch((err) => {
-        this.logger.warn('Failed to send welcome email after verification', {
-          userId: user._id,
-          error: err.message,
-        });
+    this.emailService.sendWelcomeEmail({ toEmail: user.email, toName: userName }).catch((err) => {
+      this.logger.warn('Failed to send welcome email after verification', {
+        userId: user._id,
+        error: err.message,
       });
+    });
   }
 
   async resendVerification(userId) {

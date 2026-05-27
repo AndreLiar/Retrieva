@@ -13,6 +13,7 @@ import { verifyAccessToken } from '../utils/security/jwt.js';
 import { User } from '../models/User.js';
 import { sendError } from '../utils/core/responseFormatter.js';
 import { getAccessToken } from '../utils/security/cookieConfig.js';
+import { authAuditService } from '../services/authAuditService.js';
 import logger from '../config/logger.js';
 
 /**
@@ -209,7 +210,12 @@ export const optionalAuth = async (req, res, next) => {
         userAgent: req.headers['user-agent']?.substring(0, 100),
       });
 
-      // Security logging removed (securityLogger service not available in MVP)
+      // A5: record the invalid/replayed token as an auth audit event.
+      authAuditService.logTokenTheftDetected?.({
+        path: req.path,
+        ip: req.ip,
+        errorType: error.name,
+      });
     }
 
     next();
