@@ -10,6 +10,14 @@ import {
 } from '../controllers/questionnaireController.js';
 import { authenticate } from '../middleware/auth.js';
 import { requireWorkspaceAccess } from '../middleware/workspaceAuth.js';
+import { validateBody, validateParams } from '../middleware/validate.js';
+import {
+  createQuestionnaireSchema,
+  sendQuestionnaireSchema,
+  submitQuestionnaireResponseSchema,
+  idParamsSchema,
+  tokenParamsSchema,
+} from '../validators/schemas.js';
 
 const router = Router();
 
@@ -22,14 +30,19 @@ const router = Router();
  * @desc   Load the public vendor questionnaire form
  * @access Public (token-gated)
  */
-router.get('/respond/:token', getPublicForm);
+router.get('/respond/:token', validateParams(tokenParamsSchema), getPublicForm);
 
 /**
  * @route  POST /api/v1/questionnaires/respond/:token
  * @desc   Save partial or final vendor response
  * @access Public (token-gated)
  */
-router.post('/respond/:token', submitResponse);
+router.post(
+  '/respond/:token',
+  validateParams(tokenParamsSchema),
+  validateBody(submitQuestionnaireResponseSchema),
+  submitResponse
+);
 
 // ---------------------------------------------------------------------------
 // Authenticated routes — require JWT + workspace membership
@@ -40,7 +53,13 @@ router.post('/respond/:token', submitResponse);
  * @desc   Create a new vendor questionnaire from the default DORA template
  * @access Private
  */
-router.post('/', authenticate, requireWorkspaceAccess, createQuestionnaire);
+router.post(
+  '/',
+  authenticate,
+  requireWorkspaceAccess,
+  validateBody(createQuestionnaireSchema),
+  createQuestionnaire
+);
 
 /**
  * @route  GET /api/v1/questionnaires
@@ -54,20 +73,39 @@ router.get('/', authenticate, requireWorkspaceAccess, listQuestionnaires);
  * @desc   Get a single questionnaire with full results and answers
  * @access Private
  */
-router.get('/:id', authenticate, requireWorkspaceAccess, getQuestionnaire);
+router.get(
+  '/:id',
+  authenticate,
+  requireWorkspaceAccess,
+  validateParams(idParamsSchema),
+  getQuestionnaire
+);
 
 /**
  * @route  POST /api/v1/questionnaires/:id/send
  * @desc   Generate token and email questionnaire invitation to vendor
  * @access Private
  */
-router.post('/:id/send', authenticate, requireWorkspaceAccess, sendQuestionnaire);
+router.post(
+  '/:id/send',
+  authenticate,
+  requireWorkspaceAccess,
+  validateParams(idParamsSchema),
+  validateBody(sendQuestionnaireSchema),
+  sendQuestionnaire
+);
 
 /**
  * @route  DELETE /api/v1/questionnaires/:id
  * @desc   Delete a questionnaire (creator only)
  * @access Private
  */
-router.delete('/:id', authenticate, requireWorkspaceAccess, deleteQuestionnaire);
+router.delete(
+  '/:id',
+  authenticate,
+  requireWorkspaceAccess,
+  validateParams(idParamsSchema),
+  deleteQuestionnaire
+);
 
 export default router;
