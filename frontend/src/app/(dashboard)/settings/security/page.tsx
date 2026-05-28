@@ -29,6 +29,7 @@ import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { authApi } from '@/lib/api';
 import { useAuthStore } from '@/lib/stores/auth-store';
+import { MfaSection } from '@/features/settings/components/mfa-section';
 
 const changePasswordSchema = z
   .object({
@@ -211,6 +212,11 @@ export default function SecuritySettingsPage() {
           </Form>
         </CardContent>
       </Card>
+
+      {/* Two-Factor Authentication */}
+      <div className="mt-6">
+        <MfaSection />
+      </div>
     </div>
   );
 }

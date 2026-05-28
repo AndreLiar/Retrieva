@@ -260,4 +260,55 @@ describe('authApi', () => {
       expect(result.status).toBe('success');
     });
   });
+
+  // -------------------------------------------------------------------------
+  // MFA (TOTP)
+  // -------------------------------------------------------------------------
+  describe('MFA', () => {
+    it('login() passes through an MFA challenge response', async () => {
+      mockPost.mockResolvedValue({
+        data: { status: 'success', data: { mfaRequired: true, mfaToken: 'mfa-tok' } },
+      });
+      const result = await authApi.login({ email: 'a@b.io', password: 'x' });
+      expect(result.data.mfaRequired).toBe(true);
+      expect(result.data.mfaToken).toBe('mfa-tok');
+    });
+
+    it('verifyMfa() posts the challenge token + code', async () => {
+      mockPost.mockResolvedValue({ data: { status: 'success', data: mockAuthResponse } });
+      const result = await authApi.verifyMfa('mfa-tok', '123456');
+      expect(mockPost).toHaveBeenCalledWith('/auth/mfa/verify', {
+        mfaToken: 'mfa-tok',
+        code: '123456',
+      });
+      expect(result.data.user.email).toBe('alice@example.com');
+    });
+
+    it('setupMfa() posts to /auth/mfa/setup', async () => {
+      mockPost.mockResolvedValue({
+        data: { status: 'success', data: { secret: 'S', otpauthUrl: 'otpauth://x' } },
+      });
+      const result = await authApi.setupMfa();
+      expect(mockPost).toHaveBeenCalledWith('/auth/mfa/setup');
+      expect(result.data.otpauthUrl).toBe('otpauth://x');
+    });
+
+    it('enableMfa() posts the token and returns recovery codes', async () => {
+      mockPost.mockResolvedValue({
+        data: { status: 'success', data: { recoveryCodes: ['a-b', 'c-d'] } },
+      });
+      const result = await authApi.enableMfa('123456');
+      expect(mockPost).toHaveBeenCalledWith('/auth/mfa/enable', { token: '123456' });
+      expect(result.data.recoveryCodes).toHaveLength(2);
+    });
+
+    it('disableMfa() posts password + code', async () => {
+      mockPost.mockResolvedValue({ data: { status: 'success' } });
+      await authApi.disableMfa('pw', '123456');
+      expect(mockPost).toHaveBeenCalledWith('/auth/mfa/disable', {
+        password: 'pw',
+        code: '123456',
+      });
+    });
+  });
 });

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
@@ -27,6 +27,11 @@ export default function LoginPage() {
   const setUser = useAuthStore((state) => state.setUser);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // MFA challenge state: when set, the user passed password auth but must enter
+  // a TOTP/recovery code to finish (step 2).
+  const [mfaToken, setMfaToken] = useState<string | null>(null);
+  const [mfaCode, setMfaCode] = useState('');
+  const [verifyingMfa, setVerifyingMfa] = useState(false);
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -38,25 +43,62 @@ export default function LoginPage() {
 
   const { isSubmitting } = form.formState;
 
+  const completeLogin = (user: Parameters<typeof setUser>[0]) => {
+    setUser(user);
+    router.push('/chat');
+  };
+
   const onSubmit = async (data: LoginFormData) => {
     setError(null);
     try {
       const response = await authApi.login({ email: data.email, password: data.password });
-      if (response.status === 'success' && response.data) {
-        setUser(response.data.user);
+      const result = response.data;
+      if (response.status === 'success' && result) {
+        // MFA-enabled accounts get a challenge instead of a session.
+        if (result.mfaRequired && result.mfaToken) {
+          setMfaToken(result.mfaToken);
+          return;
+        }
+        completeLogin(result.user);
       }
-      router.push('/chat');
     } catch (err) {
       setError(getErrorMessage(err));
     }
   };
 
+  const onVerifyMfa = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!mfaToken) return;
+    setError(null);
+    setVerifyingMfa(true);
+    try {
+      const response = await authApi.verifyMfa(mfaToken, mfaCode.trim());
+      if (response.status === 'success' && response.data) {
+        completeLogin(response.data.user);
+      }
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setVerifyingMfa(false);
+    }
+  };
+
+  const cancelMfa = () => {
+    setMfaToken(null);
+    setMfaCode('');
+    setError(null);
+  };
+
   return (
     <div className="space-y-6">
       <div className="space-y-2 text-center">
-        <h2 className="text-2xl font-semibold tracking-tight">Welcome back</h2>
+        <h2 className="text-2xl font-semibold tracking-tight">
+          {mfaToken ? 'Two-factor authentication' : 'Welcome back'}
+        </h2>
         <p className="text-sm text-muted-foreground">
-          Enter your credentials to access your account
+          {mfaToken
+            ? 'Enter the 6-digit code from your authenticator app, or a recovery code'
+            : 'Enter your credentials to access your account'}
         </p>
       </div>
 
@@ -66,7 +108,43 @@ export default function LoginPage() {
         </div>
       )}
 
-      <Form {...form}>
+      {mfaToken ? (
+        <form onSubmit={onVerifyMfa} className="space-y-4">
+          <Input
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            autoFocus
+            placeholder="6-digit code or recovery code"
+            value={mfaCode}
+            onChange={(e) => setMfaCode(e.target.value)}
+            disabled={verifyingMfa}
+          />
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={verifyingMfa || mfaCode.trim().length < 6}
+          >
+            {verifyingMfa ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Verifying...
+              </>
+            ) : (
+              'Verify'
+            )}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            className="w-full"
+            onClick={cancelMfa}
+            disabled={verifyingMfa}
+          >
+            Use a different account
+          </Button>
+        </form>
+      ) : (
+        <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <FormField
             control={form.control}
@@ -147,14 +225,17 @@ export default function LoginPage() {
             )}
           </Button>
         </form>
-      </Form>
+        </Form>
+      )}
 
-      <div className="text-center text-sm">
-        <span className="text-muted-foreground">Don&apos;t have an account? </span>
-        <Link href="/register" className="text-primary hover:underline font-medium">
-          Sign up
-        </Link>
-      </div>
+      {!mfaToken && (
+        <div className="text-center text-sm">
+          <span className="text-muted-foreground">Don&apos;t have an account? </span>
+          <Link href="/register" className="text-primary hover:underline font-medium">
+            Sign up
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

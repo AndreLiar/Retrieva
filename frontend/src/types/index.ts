@@ -47,6 +47,7 @@ export interface User {
   name: string;
   role: GlobalRole;
   isEmailVerified?: boolean;
+  mfaEnabled?: boolean;
   createdAt?: string;
   lastLogin?: string;
   organizationId?: string | null;
@@ -65,6 +66,20 @@ export interface AuthResponse {
   accessToken: string;
   refreshToken: string;
   needsOrganization?: boolean;
+  // Present instead of user/tokens when the account has MFA enabled: the client
+  // must call verifyMfa with this short-lived token + a code to finish login.
+  mfaRequired?: boolean;
+  mfaToken?: string;
+}
+
+// MFA (TOTP) enrollment + verification
+export interface MfaSetupResponse {
+  secret: string;
+  otpauthUrl: string;
+}
+
+export interface MfaEnableResponse {
+  recoveryCodes: string[];
 }
 
 // Workspace Types
