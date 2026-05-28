@@ -12,10 +12,10 @@
  */
 
 import XLSX from 'xlsx';
-import { WorkspaceMember } from '../models/WorkspaceMember.js';
-import { VendorQuestionnaire } from '../models/VendorQuestionnaire.js';
 import { assessmentRepository } from '../repositories/AssessmentRepository.js';
 import { workspaceRepository } from '../repositories/WorkspaceRepository.js';
+import { workspaceMemberRepository } from '../repositories/WorkspaceMemberRepository.js';
+import { vendorQuestionnaireRepository } from '../repositories/VendorQuestionnaireRepository.js';
 
 const INSTITUTION_NAME = process.env.INSTITUTION_NAME || 'Financial Entity';
 
@@ -28,7 +28,7 @@ function fmtDate(d) {
 
 export async function generateRoiWorkbook(userId) {
   // 1. Collect all workspaces the user has access to
-  const memberships = await WorkspaceMember.find({ userId, status: 'active' });
+  const memberships = await workspaceMemberRepository.findActiveByUserId(userId);
   const workspaceIds = memberships.map((m) => m.workspaceId);
   const workspaces = await workspaceRepository.find({ _id: { $in: workspaceIds } });
 
@@ -40,7 +40,7 @@ export async function generateRoiWorkbook(userId) {
   ]);
 
   // 3. Latest complete questionnaire per workspace
-  const latestQuestionnaires = await VendorQuestionnaire.aggregate([
+  const latestQuestionnaires = await vendorQuestionnaireRepository.aggregate([
     { $match: { workspaceId: { $in: workspaceIds }, status: 'complete' } },
     { $sort: { createdAt: -1 } },
     { $group: { _id: '$workspaceId', doc: { $first: '$$ROOT' } } },

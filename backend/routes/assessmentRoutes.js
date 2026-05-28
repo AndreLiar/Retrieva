@@ -12,11 +12,14 @@ import {
 import { authenticate } from '../middleware/auth.js';
 import { requireWorkspaceAccess } from '../middleware/workspaceAuth.js';
 import { assessmentUploadMiddleware } from '../middleware/fileUpload.js';
-import { validateBody } from '../middleware/validate.js';
+import { validateBody, validateParams, validateQuery } from '../middleware/validate.js';
 import {
   createAssessmentSchema,
   setRiskDecisionSchema,
   setClauseSignoffSchema,
+  idParamsSchema,
+  assessmentFileParamsSchema,
+  listAssessmentsQuerySchema,
 } from '../validators/schemas.js';
 
 const router = Router();
@@ -40,21 +43,39 @@ router.post(
  * @desc   List assessments (scoped to user's workspaces)
  * @access Private
  */
-router.get('/', authenticate, requireWorkspaceAccess, listAssessments);
+router.get(
+  '/',
+  authenticate,
+  requireWorkspaceAccess,
+  validateQuery(listAssessmentsQuerySchema),
+  listAssessments
+);
 
 /**
  * @route  GET /api/v1/assessments/:id
  * @desc   Get a single assessment with full results
  * @access Private
  */
-router.get('/:id', authenticate, requireWorkspaceAccess, getAssessment);
+router.get(
+  '/:id',
+  authenticate,
+  requireWorkspaceAccess,
+  validateParams(idParamsSchema),
+  getAssessment
+);
 
 /**
  * @route  GET /api/v1/assessments/:id/report
  * @desc   Download DORA compliance report as .docx
  * @access Private
  */
-router.get('/:id/report', authenticate, requireWorkspaceAccess, downloadReport);
+router.get(
+  '/:id/report',
+  authenticate,
+  requireWorkspaceAccess,
+  validateParams(idParamsSchema),
+  downloadReport
+);
 
 /**
  * @route  PATCH /api/v1/assessments/:id/risk-decision
@@ -65,6 +86,7 @@ router.patch(
   '/:id/risk-decision',
   authenticate,
   requireWorkspaceAccess,
+  validateParams(idParamsSchema),
   validateBody(setRiskDecisionSchema),
   setRiskDecision
 );
@@ -78,6 +100,7 @@ router.patch(
   '/:id/clause-signoff',
   authenticate,
   requireWorkspaceAccess,
+  validateParams(idParamsSchema),
   validateBody(setClauseSignoffSchema),
   setClauseSignoff
 );
@@ -87,13 +110,25 @@ router.patch(
  * @desc   Download an original vendor document from DigitalOcean Spaces
  * @access Private
  */
-router.get('/:id/files/:docIndex', authenticate, requireWorkspaceAccess, downloadAssessmentFile);
+router.get(
+  '/:id/files/:docIndex',
+  authenticate,
+  requireWorkspaceAccess,
+  validateParams(assessmentFileParamsSchema),
+  downloadAssessmentFile
+);
 
 /**
  * @route  DELETE /api/v1/assessments/:id
  * @desc   Delete an assessment and its Qdrant collection
  * @access Private (creator only)
  */
-router.delete('/:id', authenticate, requireWorkspaceAccess, deleteAssessment);
+router.delete(
+  '/:id',
+  authenticate,
+  requireWorkspaceAccess,
+  validateParams(idParamsSchema),
+  deleteAssessment
+);
 
 export default router;

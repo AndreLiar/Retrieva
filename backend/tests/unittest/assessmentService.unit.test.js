@@ -7,7 +7,7 @@ import { AssessmentService } from '../../services/AssessmentService.js';
 // ---------------------------------------------------------------------------
 vi.mock('../../models/Assessment.js', () => ({ Assessment: {} }));
 vi.mock('../../models/Workspace.js', () => ({ Workspace: {} }));
-vi.mock('../../models/User.js', () => ({ User: {} }));
+vi.mock('../../repositories/UserRepository.js', () => ({ userRepository: {} }));
 vi.mock('../../config/queue.js', () => ({
   assessmentQueue: { add: vi.fn() },
   monitoringQueue: { getJob: vi.fn(), add: vi.fn() },
@@ -83,14 +83,14 @@ function makeDeps(overrides = {}) {
     count: vi.fn(),
   };
   const workspaceRepo = { updateById: vi.fn().mockResolvedValue(undefined) };
-  const User = { updateOne: vi.fn().mockReturnValue({ catch: vi.fn() }) };
+  const userRepo = { markAssessmentCreated: vi.fn().mockReturnValue({ catch: vi.fn() }) };
   const generateReport = vi.fn().mockResolvedValue(Buffer.from('docx'));
   const deleteAssessmentCollection = vi.fn().mockResolvedValue(undefined);
 
   return {
     assessmentRepo,
     workspaceRepo,
-    User,
+    userRepo,
     assessmentQueue,
     monitoringQueue,
     storage,
@@ -175,7 +175,7 @@ describe('AssessmentService.createAssessment', () => {
       [makeFile()]
     );
 
-    expect(deps.User.updateOne).toHaveBeenCalled();
+    expect(deps.userRepo.markAssessmentCreated).toHaveBeenCalled();
   });
 });
 

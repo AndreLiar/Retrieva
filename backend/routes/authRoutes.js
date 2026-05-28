@@ -12,9 +12,21 @@ import {
   resendVerification,
   changePassword,
   updateOnboarding,
+  verifyMfa,
+  setupMfa,
+  enableMfa,
+  disableMfa,
 } from '../controllers/authController.js';
 import { validateBody } from '../middleware/validate.js';
 import { authenticate } from '../middleware/auth.js';
+import {
+  loginLimiter,
+  registerLimiter,
+  passwordResetLimiter,
+  emailVerifyLimiter,
+  resendVerifyLimiter,
+  refreshLimiter,
+} from '../middleware/authRateLimiter.js';
 import {
   registerSchema,
   loginSchema,
@@ -24,6 +36,10 @@ import {
   verifyEmailSchema,
   updateProfileSchema,
   changePasswordSchema,
+  updateOnboardingSchema,
+  mfaVerifySchema,
+  mfaEnableSchema,
+  mfaDisableSchema,
 } from '../validators/schemas.js';
 
 const router = express.Router();
@@ -33,21 +49,28 @@ const router = express.Router();
  * @desc    Register a new user (sends verification email)
  * @access  Public
  */
-router.post('/register', validateBody(registerSchema), register);
+router.post('/register', registerLimiter, validateBody(registerSchema), register);
 
 /**
  * @route   POST /api/v1/auth/login
  * @desc    Login user
  * @access  Public
  */
-router.post('/login', validateBody(loginSchema), login);
+router.post('/login', loginLimiter, validateBody(loginSchema), login);
+
+/**
+ * @route   POST /api/v1/auth/mfa/verify
+ * @desc    Step 2 of MFA login — exchange the challenge token + code for a session
+ * @access  Public (requires a valid short-lived MFA challenge token)
+ */
+router.post('/mfa/verify', loginLimiter, validateBody(mfaVerifySchema), verifyMfa);
 
 /**
  * @route   POST /api/v1/auth/refresh
  * @desc    Refresh access token (with token rotation)
  * @access  Public
  */
-router.post('/refresh', validateBody(refreshTokenSchema), refreshToken);
+router.post('/refresh', refreshLimiter, validateBody(refreshTokenSchema), refreshToken);
 
 /**
  * @route   POST /api/v1/auth/logout
@@ -76,28 +99,38 @@ router.patch('/profile', authenticate, validateBody(updateProfileSchema), update
  * @desc    Request password reset email
  * @access  Public
  */
-router.post('/forgot-password', validateBody(forgotPasswordSchema), forgotPassword);
+router.post(
+  '/forgot-password',
+  passwordResetLimiter,
+  validateBody(forgotPasswordSchema),
+  forgotPassword
+);
 
 /**
  * @route   POST /api/v1/auth/reset-password
  * @desc    Reset password with token from email
  * @access  Public
  */
-router.post('/reset-password', validateBody(resetPasswordSchema), resetPassword);
+router.post(
+  '/reset-password',
+  passwordResetLimiter,
+  validateBody(resetPasswordSchema),
+  resetPassword
+);
 
 /**
  * @route   POST /api/v1/auth/verify-email
  * @desc    Verify email address with token
  * @access  Public
  */
-router.post('/verify-email', validateBody(verifyEmailSchema), verifyEmail);
+router.post('/verify-email', emailVerifyLimiter, validateBody(verifyEmailSchema), verifyEmail);
 
 /**
  * @route   POST /api/v1/auth/resend-verification
  * @desc    Resend email verification
  * @access  Private
  */
-router.post('/resend-verification', authenticate, resendVerification);
+router.post('/resend-verification', resendVerifyLimiter, authenticate, resendVerification);
 
 /**
  * @route   POST /api/v1/auth/change-password
@@ -107,10 +140,19 @@ router.post('/resend-verification', authenticate, resendVerification);
 router.post('/change-password', authenticate, validateBody(changePasswordSchema), changePassword);
 
 /**
+ * @route   POST /api/v1/auth/mfa/setup | /mfa/enable | /mfa/disable
+ * @desc    TOTP enrollment (setup → enable) and teardown (disable)
+ * @access  Private
+ */
+router.post('/mfa/setup', authenticate, setupMfa);
+router.post('/mfa/enable', authenticate, validateBody(mfaEnableSchema), enableMfa);
+router.post('/mfa/disable', authenticate, validateBody(mfaDisableSchema), disableMfa);
+
+/**
  * @route   PATCH /api/v1/auth/onboarding
  * @desc    Update onboarding state (welcome screen dismissed, checklist flags)
  * @access  Private
  */
-router.patch('/onboarding', authenticate, updateOnboarding);
+router.patch('/onboarding', authenticate, validateBody(updateOnboardingSchema), updateOnboarding);
 
 export default router;

@@ -8,17 +8,62 @@ import type {
   ForgotPasswordData,
   ResetPasswordData,
   ChangePasswordData,
+  MfaSetupResponse,
+  MfaEnableResponse,
 } from '@/types';
 
 export const authApi = {
   /**
-   * Login with email and password
+   * Login with email and password.
+   * When the account has MFA enabled, the response carries
+   * `{ mfaRequired: true, mfaToken }` instead of a session — call `verifyMfa`.
    */
   login: async (credentials: LoginCredentials) => {
     const response = await apiClient.post<ApiResponse<AuthResponse>>(
       '/auth/login',
       credentials
     );
+    return response.data;
+  },
+
+  /**
+   * Step 2 of MFA login: exchange the challenge token + a TOTP or recovery code
+   * for a session.
+   */
+  verifyMfa: async (mfaToken: string, code: string) => {
+    const response = await apiClient.post<ApiResponse<AuthResponse>>('/auth/mfa/verify', {
+      mfaToken,
+      code,
+    });
+    return response.data;
+  },
+
+  /**
+   * Start MFA enrollment — returns the TOTP secret + otpauth URI (not yet enabled).
+   */
+  setupMfa: async () => {
+    const response = await apiClient.post<ApiResponse<MfaSetupResponse>>('/auth/mfa/setup');
+    return response.data;
+  },
+
+  /**
+   * Finish MFA enrollment — verify the first code, enable MFA, return recovery codes.
+   */
+  enableMfa: async (token: string) => {
+    const response = await apiClient.post<ApiResponse<MfaEnableResponse>>('/auth/mfa/enable', {
+      token,
+    });
+    return response.data;
+  },
+
+  /**
+   * Disable MFA — requires the current password and a valid TOTP/recovery code.
+   */
+  disableMfa: async (password: string, code: string) => {
+    const response = await apiClient.post<ApiResponse>('/auth/mfa/disable', {
+      password,
+      code,
+    });
     return response.data;
   },
 

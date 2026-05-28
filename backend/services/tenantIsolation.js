@@ -64,8 +64,13 @@ export function withTenantContext(context, fn) {
  * app.use(setTenantContext);
  */
 export function setTenantContext(req, res, next) {
+  // X-Workspace-Id is how the frontend signals the active workspace; fall back
+  // to a loaded workspace doc or an explicit body/query workspaceId.
   const workspaceId =
-    req.workspace?._id?.toString() || req.body?.workspaceId || req.query?.workspaceId;
+    req.workspace?._id?.toString() ||
+    req.headers?.['x-workspace-id'] ||
+    req.body?.workspaceId ||
+    req.query?.workspaceId;
   const userId = req.user?.userId || req.user?.id;
 
   if (workspaceId || userId) {
@@ -126,11 +131,11 @@ export function tenantIsolationPlugin(schema, options = {}) {
           });
         }
       } else if (this.getOptions()?.requireTenant !== false) {
-        // Log warning for queries without tenant context (unless explicitly allowed)
-        logger.warn('Query executed without tenant context', {
+        // Queries outside a request (workers, startup, scripts) legitimately run
+        // without tenant context — log at debug to avoid flooding worker logs.
+        logger.debug('Query executed without tenant context', {
           operation: hook,
           collection: this.model?.collection?.name,
-          query: JSON.stringify(this.getQuery()),
         });
       }
     });

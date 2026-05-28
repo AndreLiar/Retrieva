@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { tenantIsolationPlugin } from '../services/tenantIsolation.js';
 
 const questionResponseSchema = new mongoose.Schema(
   {
@@ -57,6 +58,16 @@ const vendorQuestionnaireSchema = new mongoose.Schema(
 
 vendorQuestionnaireSchema.index({ workspaceId: 1, createdAt: -1 });
 vendorQuestionnaireSchema.index({ createdBy: 1, status: 1 });
+
+// B2: database-level tenant isolation (see Assessment / Conversation). Auto-filters
+// by the active workspace when a tenant context is set. Disabled in tests.
+if (process.env.NODE_ENV !== 'test') {
+  vendorQuestionnaireSchema.plugin(tenantIsolationPlugin, {
+    tenantField: 'workspaceId',
+    enforceOnSave: true,
+    auditLog: process.env.NODE_ENV !== 'production',
+  });
+}
 
 export const VendorQuestionnaire = mongoose.model('VendorQuestionnaire', vendorQuestionnaireSchema);
 

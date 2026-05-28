@@ -13,6 +13,7 @@ import { verifyAccessToken } from '../utils/security/jwt.js';
 import { User } from '../models/User.js';
 import { sendError } from '../utils/core/responseFormatter.js';
 import { getAccessToken } from '../utils/security/cookieConfig.js';
+import { authAuditService } from '../services/authAuditService.js';
 import logger from '../config/logger.js';
 
 /**
@@ -111,10 +112,18 @@ export const authenticate = async (req, res, next) => {
 };
 
 /**
- * Authorization middleware factory - checks if user has required role
- * Must be used after authenticate middleware
+ * Authorization middleware factory — checks the **global** `User.role`
+ * (`user` | `admin`). Must run after `authenticate`.
  *
- * @param {...('user'|'admin')} roles - Allowed roles for this route
+ * SCOPE (audit gap B3): this gates routes on the platform-wide role only.
+ * Tenant-scoped access (the common case) is NOT handled here — use
+ * `requireWorkspaceAccess` / workspace membership permissions in
+ * `middleware/workspaceAuth.js` instead. This factory is intended for the
+ * narrow set of admin-only / platform routes and is intentionally kept (not
+ * deprecated) for that purpose. If you reach for it on a workspace resource,
+ * you almost certainly want `requireWorkspaceAccess`.
+ *
+ * @param {...('user'|'admin')} roles - Allowed global roles for this route
  * @returns {function(Request, Response, NextFunction): void} Express middleware
  */
 export const authorize = (...roles) => {
@@ -201,7 +210,12 @@ export const optionalAuth = async (req, res, next) => {
         userAgent: req.headers['user-agent']?.substring(0, 100),
       });
 
-      // Security logging removed (securityLogger service not available in MVP)
+      // A5: record the invalid/replayed token as an auth audit event.
+      authAuditService.logTokenTheftDetected?.({
+        path: req.path,
+        ip: req.ip,
+        errorType: error.name,
+      });
     }
 
     next();

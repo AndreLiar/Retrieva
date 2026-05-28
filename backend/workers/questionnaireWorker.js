@@ -7,8 +7,9 @@
 
 import { Worker } from 'bullmq';
 import { redisConnection } from '../config/redis.js';
-import { VendorQuestionnaire } from '../models/VendorQuestionnaire.js';
+import { vendorQuestionnaireRepository } from '../repositories/VendorQuestionnaireRepository.js';
 import { runScoring } from '../services/questionnaireScorer.js';
+import { withTenantContext } from '../services/tenantIsolation.js';
 import logger from '../config/logger.js';
 import { connectDB } from '../config/database.js';
 
@@ -40,16 +41,34 @@ async function processScoreQuestionnaire(job) {
   return { questionnaireId, scored: true };
 }
 
+// B2 follow-up: run each job inside its questionnaire's tenant context so all
+// DB work is workspace-scoped. The bootstrap lookup runs outside any context
+// (unfiltered) purely to resolve the workspace.
+async function runInQuestionnaireTenantContext(job, fn) {
+  const { questionnaireId } = job.data;
+  const doc = questionnaireId
+    ? await vendorQuestionnaireRepository.findById(questionnaireId, {
+        select: 'workspaceId',
+        lean: true,
+      })
+    : null;
+  const workspaceId = doc?.workspaceId?.toString();
+  if (!workspaceId) return fn();
+  return withTenantContext({ workspaceId }, fn);
+}
+
 const worker = new Worker(
   'questionnaireJobs',
-  async (job) => {
-    switch (job.name) {
-      case 'scoreQuestionnaire':
-        return processScoreQuestionnaire(job);
-      default:
-        logger.warn('Unknown questionnaire job type', { jobName: job.name, jobId: job.id });
-    }
-  },
+  async (job) =>
+    runInQuestionnaireTenantContext(job, () => {
+      switch (job.name) {
+        case 'scoreQuestionnaire':
+          return processScoreQuestionnaire(job);
+        default:
+          logger.warn('Unknown questionnaire job type', { jobName: job.name, jobId: job.id });
+          return undefined;
+      }
+    }),
   {
     connection: redisConnection,
     concurrency: CONCURRENCY,
@@ -76,7 +95,7 @@ worker.on('failed', async (job, err) => {
 
   if (job?.data?.questionnaireId) {
     try {
-      await VendorQuestionnaire.findByIdAndUpdate(job.data.questionnaireId, {
+      await vendorQuestionnaireRepository.updateById(job.data.questionnaireId, {
         status: 'failed',
         statusMessage: err.message,
       });

@@ -1,5 +1,6 @@
 import { executeRAG, InputGuardrailError } from '../services/ragExecutor.js';
 import { catchAsync, sendSuccess, sendError } from '../utils/index.js';
+import { userCanViewSources } from '../utils/security/sourceVisibility.js';
 import logger from '../config/logger.js';
 
 /**
@@ -17,6 +18,8 @@ export const askQuestion = catchAsync(async (req, res) => {
     return sendError(res, 400, 'conversationId is required');
   }
 
+  const workspaceId = req.headers?.['x-workspace-id'] || req.body?.workspaceId;
+
   try {
     const result = await executeRAG({
       question,
@@ -26,6 +29,11 @@ export const askQuestion = catchAsync(async (req, res) => {
       forceIntent: forceIntent || null,
       useIntentAware,
     });
+
+    // B1: honor the workspace canViewSources permission before returning sources.
+    if (result?.sources?.length && !(await userCanViewSources(req, workspaceId))) {
+      result.sources = [];
+    }
 
     sendSuccess(res, 200, 'Question answered successfully', result);
   } catch (error) {
@@ -51,6 +59,11 @@ export const askQuestionStream = catchAsync(async (req, res) => {
     return sendError(res, 400, 'conversationId is required');
   }
 
+  // B1: resolve once up-front so the synchronous SSE writer can drop the
+  // `sources` event when this member is not allowed to see sources.
+  const workspaceId = req.headers?.['x-workspace-id'] || req.body?.workspaceId;
+  const allowSources = await userCanViewSources(req, workspaceId);
+
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache, no-transform');
   res.setHeader('Connection', 'keep-alive');
@@ -60,6 +73,7 @@ export const askQuestionStream = catchAsync(async (req, res) => {
   let closed = false;
   const send = (event, data) => {
     if (closed || res.writableEnded) return;
+    if (event === 'sources' && !allowSources) return;
     res.write(`event: ${event}\n`);
     res.write(`data: ${JSON.stringify(data)}\n\n`);
   };
