@@ -21,6 +21,7 @@ import billingRoutes from './routes/billingRoutes.js';
 import { handleStripeWebhook } from './controllers/billingController.js';
 import { requireActivePlan } from './middleware/requireActivePlan.js';
 import { optionalAuth } from './middleware/auth.js';
+import { setTenantContext } from './services/tenantIsolation.js';
 import logger from './config/logger.js';
 import { globalErrorHandler } from './utils/index.js';
 
@@ -243,12 +244,28 @@ app.use('/api/v1/billing', billingRoutes);
 // have no token and pass through to the router's own authenticate.
 // authenticate is idempotent so the router's router.use(authenticate) is a
 // no-op when req.user is already set by optionalAuth.
-app.use('/api/v1', optionalAuth, requireActivePlan, ragRoutes);
-app.use('/api/v1/conversations', optionalAuth, requireActivePlan, conversationRoutes);
+// B2: setTenantContext (after auth) makes the active workspace available to the
+// tenantIsolationPlugin, which then filters workspace-scoped models by it. Only
+// applied to the workspace-scoped routers — NOT /workspaces (which legitimately
+// queries across all of a user's workspaces, e.g. my-workspaces).
+app.use('/api/v1', optionalAuth, requireActivePlan, setTenantContext, ragRoutes);
+app.use(
+  '/api/v1/conversations',
+  optionalAuth,
+  requireActivePlan,
+  setTenantContext,
+  conversationRoutes
+);
 app.use('/api/v1/workspaces', optionalAuth, requireActivePlan, workspaceRoutes);
-app.use('/api/v1/assessments', optionalAuth, requireActivePlan, assessmentRoutes);
+app.use('/api/v1/assessments', optionalAuth, requireActivePlan, setTenantContext, assessmentRoutes);
 app.use('/api/v1/compliance', optionalAuth, requireActivePlan, complianceRoutes);
-app.use('/api/v1/questionnaires', optionalAuth, requireActivePlan, questionnaireRoutes);
+app.use(
+  '/api/v1/questionnaires',
+  optionalAuth,
+  requireActivePlan,
+  setTenantContext,
+  questionnaireRoutes
+);
 
 app.get('/', (req, res) => {
   res.send('Hello from a secure app.js!');
