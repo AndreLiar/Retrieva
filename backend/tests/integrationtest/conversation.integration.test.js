@@ -137,6 +137,7 @@ describe('Conversation API Integration Tests', () => {
   let user1Id;
   let user2Id;
   let workspaceId;
+  let foreignWorkspaceId; // a workspace user1 is NOT a member of
 
   beforeAll(async () => {
     mongoServer = await MongoMemoryServer.create({
@@ -222,6 +223,22 @@ describe('Conversation API Integration Tests', () => {
         canManageMembers: false,
         canManageSettings: false,
       },
+    });
+
+    // A second workspace that user1 is NOT a member of (owned by user2) — used
+    // to prove the active X-Workspace-Id is validated against membership.
+    const foreignWorkspace = await Workspace.create({
+      name: 'Foreign Workspace',
+      userId: user2Id,
+      syncStatus: 'synced',
+    });
+    foreignWorkspaceId = foreignWorkspace._id.toString();
+    await WorkspaceMember.create({
+      workspaceId: foreignWorkspace._id,
+      userId: user2Id,
+      role: 'owner',
+      status: 'active',
+      permissions: { canQuery: true, canManageMembers: true, canManageSettings: true },
     });
   }, 30000);
 
@@ -387,6 +404,36 @@ describe('Conversation API Integration Tests', () => {
         .set('X-Workspace-Id', workspaceId.toString());
 
       expect([400, 404, 500]).toContain(res.status);
+    });
+  });
+
+  // =============================================================================
+  // Tenant isolation — active workspace must be a membership
+  // =============================================================================
+  describe('tenant isolation (active workspace must be a membership)', () => {
+    it('rejects GET /conversations when X-Workspace-Id is a non-member workspace', async () => {
+      const res = await request
+        .get(`${API_BASE}/conversations`)
+        .set('Authorization', `Bearer ${user1Token}`)
+        .set('X-Workspace-Id', foreignWorkspaceId);
+      expect(res.status).toBe(403);
+    });
+
+    it('rejects GET /conversations/:id when X-Workspace-Id is a non-member workspace', async () => {
+      // Create a conversation in user1's real workspace...
+      const created = await request
+        .post(`${API_BASE}/conversations`)
+        .set('Authorization', `Bearer ${user1Token}`)
+        .set('X-Workspace-Id', workspaceId.toString())
+        .send({ title: 'isolation probe' });
+      const id = created.body.data?.conversation?.id || created.body.data?.conversation?._id;
+
+      // ...then try to read it while claiming a workspace user1 does not belong to.
+      const res = await request
+        .get(`${API_BASE}/conversations/${id}`)
+        .set('Authorization', `Bearer ${user1Token}`)
+        .set('X-Workspace-Id', foreignWorkspaceId);
+      expect(res.status).toBe(403);
     });
   });
 
