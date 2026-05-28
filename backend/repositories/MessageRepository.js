@@ -7,6 +7,7 @@
 
 import { BaseRepository } from './BaseRepository.js';
 import { Message } from '../models/Message.js';
+import { escapeRegExp } from '../utils/core/escapeRegExp.js';
 
 class MessageRepository extends BaseRepository {
   constructor(model = Message) {
@@ -163,7 +164,8 @@ class MessageRepository extends BaseRepository {
     return this.find(
       {
         conversationId,
-        content: { $regex: searchTerm, $options: 'i' },
+        // D2: escape user input to prevent regex injection / ReDoS.
+        content: { $regex: escapeRegExp(String(searchTerm).slice(0, 200)), $options: 'i' },
       },
       { sort: { timestamp: 1 }, ...options }
     );
