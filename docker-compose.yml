@@ -26,8 +26,6 @@
 #   docker compose down -v            # Stop and remove volumes
 # =============================================================================
 
-version: '3.8'
-
 services:
   # ===========================================================================
   # Frontend (Next.js)
@@ -81,6 +79,10 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - QDRANT_URL=http://qdrant:6333
+      # Embeddings hit the self-hosted Ollama sidecar — Ollama Cloud does not
+      # authorize the embeddings API. Overrides OLLAMA_BASE_URL from .env so the
+      # chat LLM can stay on Ollama Cloud while embeddings run locally (bge-m3).
+      - EMBEDDING_OLLAMA_BASE_URL=http://ollama:11434
     depends_on:
       mongodb:
         condition: service_healthy
@@ -88,6 +90,10 @@ services:
         condition: service_healthy
       qdrant:
         condition: service_healthy
+      ollama:
+        condition: service_healthy
+      ollama-pull:
+        condition: service_completed_successfully
     volumes:
       - ./backend:/app
       - /app/node_modules
@@ -184,6 +190,49 @@ services:
       - rag-network
     restart: unless-stopped
 
+  # ===========================================================================
+  # Ollama (self-hosted embeddings — bge-m3, 1024-dim)
+  # ===========================================================================
+  # Ollama Cloud serves chat/generate but NOT the embeddings API (it returns
+  # "unauthorized"). RAG embeddings therefore run against this local sidecar,
+  # which keeps the existing 1024-dim Qdrant vectors valid (no re-indexing).
+  ollama:
+    image: ollama/ollama:latest
+    container_name: rag-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - rag-network
+    restart: unless-stopped
+
+  # One-shot: pull the embedding model into the ollama volume, then exit.
+  # Runs on every `up` but is a fast no-op once bge-m3 is cached.
+  ollama-pull:
+    image: ollama/ollama:latest
+    container_name: rag-ollama-pull
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+    entrypoint: ["/bin/sh", "-c", "ollama pull bge-m3:latest"]
+    networks:
+      - rag-network
+    restart: "no"
+
 # =============================================================================
 # Networks
 # =============================================================================
@@ -198,3 +247,4 @@ volumes:
   mongodb_data:
   redis_data:
   qdrant_data:
+  ollama_data:
