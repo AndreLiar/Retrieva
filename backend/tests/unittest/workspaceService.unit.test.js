@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import mongoose from 'mongoose';
 import { WorkspaceService, serializeWorkspace } from '../../services/WorkspaceService.js';
-import { AppError } from '../../utils/index.js';
 
 // ---------------------------------------------------------------------------
 // Mock module-level imports so the singleton doesn't crash on load

@@ -120,8 +120,6 @@ describe('runGapAnalysis', () => {
   it('succeeds with ReAct agent for DORA framework', async () => {
     assessmentRepository.findById.mockResolvedValue(makeAssessment());
 
-    // Simulate agent capturing result via tool call
-    let capturedTool;
     createReactAgent.mockReturnValue({
       invoke: vi.fn().mockImplementation(async () => {
         // The tool's fn is captured when buildTools is called.
@@ -133,9 +131,6 @@ describe('runGapAnalysis', () => {
     // We need to intercept the tool() call to simulate gap capture
     const { tool } = await import('@langchain/core/tools');
     tool.mockImplementation((fn, config) => {
-      if (config?.name === 'record_gap_analysis') {
-        capturedTool = { fn, config };
-      }
       return { fn, config };
     });
 

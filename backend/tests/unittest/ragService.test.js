@@ -598,7 +598,7 @@ describe('askWithConversation', () => {
 
 describe('init()', () => {
   it('sets _initialized to true after successful init', async () => {
-    const { svc, mockLLM, mockVectorStore } = makeService();
+    const { svc, mockLLM } = makeService();
     const mockChain = { pipe: vi.fn().mockReturnThis() };
     mockLLM.pipe.mockReturnValue(mockChain);
 
@@ -613,7 +613,7 @@ describe('init()', () => {
   });
 
   it('does not re-initialize if already initialized', async () => {
-    const { svc, mockVectorStore } = makeService();
+    const { svc } = makeService();
     svc._initialized = true;
 
     await svc.init();
@@ -622,7 +622,7 @@ describe('init()', () => {
   });
 
   it('reuses existing _initPromise for concurrent calls', async () => {
-    const { svc, mockLLM, mockVectorStore } = makeService();
+    const { svc, mockLLM } = makeService();
     const mockChain = { pipe: vi.fn().mockReturnThis() };
     mockLLM.pipe.mockReturnValue(mockChain);
 
