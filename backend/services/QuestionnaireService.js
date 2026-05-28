@@ -27,10 +27,7 @@ class QuestionnaireService {
 
     const template = await this.templateRepo.findDefault();
     if (!template) {
-      throw new AppError(
-        'No default questionnaire template found. Please contact support.',
-        500
-      );
+      throw new AppError('No default questionnaire template found. Please contact support.', 500);
     }
 
     const questions = template.questions.map((q) => ({
@@ -119,7 +116,7 @@ class QuestionnaireService {
     });
   }
 
-  async sendQuestionnaire(id, { userId, userName, userEmail }, authorizedWorkspaces) {
+  async sendQuestionnaire(id, { userName, userEmail }, authorizedWorkspaces) {
     const authorizedWorkspaceIds = authorizedWorkspaces.map((w) => w._id.toString());
     const questionnaire = await this.questionnaireRepo.findById(id);
     if (!questionnaire) throw new AppError('Questionnaire not found', 404);
@@ -141,9 +138,8 @@ class QuestionnaireService {
     await questionnaire.save();
 
     const workspaceName =
-      authorizedWorkspaces.find(
-        (w) => w._id.toString() === questionnaire.workspaceId.toString()
-      )?.name || 'Your Assessment Team';
+      authorizedWorkspaces.find((w) => w._id.toString() === questionnaire.workspaceId.toString())
+        ?.name || 'Your Assessment Team';
 
     await this.emailService.sendQuestionnaireInvitation({
       toEmail: questionnaire.vendorEmail,
@@ -173,10 +169,7 @@ class QuestionnaireService {
       return { state: 'complete' };
     }
 
-    if (
-      questionnaire.tokenExpiresAt &&
-      new Date() > new Date(questionnaire.tokenExpiresAt)
-    ) {
+    if (questionnaire.tokenExpiresAt && new Date() > new Date(questionnaire.tokenExpiresAt)) {
       await this.questionnaireRepo.updateById(questionnaire._id, { status: 'expired' });
       return { state: 'expired' };
     }
@@ -201,10 +194,7 @@ class QuestionnaireService {
     }
 
     // Token expired during THIS request — flip status and signal a 410.
-    if (
-      questionnaire.tokenExpiresAt &&
-      new Date() > new Date(questionnaire.tokenExpiresAt)
-    ) {
+    if (questionnaire.tokenExpiresAt && new Date() > new Date(questionnaire.tokenExpiresAt)) {
       questionnaire.status = 'expired';
       await questionnaire.save();
       return { state: 'justExpired' };

@@ -103,17 +103,6 @@ function makeReq(overrides = {}) {
   };
 }
 
-/**
- * Returns an object that works for BOTH usage patterns found in the controller:
- *   await VendorQuestionnaire.findById(id)          → resolves to doc
- *   await VendorQuestionnaire.findById(id).lean()   → resolves to doc
- */
-function makeQueryResult(doc) {
-  return Object.assign(Promise.resolve(doc), {
-    lean: () => Promise.resolve(doc),
-  });
-}
-
 const MOCK_TEMPLATE = {
   _id: 'tpl-001',
   isDefault: true,
