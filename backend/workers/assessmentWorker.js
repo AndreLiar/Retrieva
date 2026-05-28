@@ -10,6 +10,7 @@ import { Worker } from 'bullmq';
 import { redisConnection } from '../config/redis.js';
 import { assessmentRepository } from '../repositories/AssessmentRepository.js';
 import { ingestFile, assessmentCollectionName } from '../services/fileIngestionService.js';
+import { withTenantContext } from '../services/tenantIsolation.js';
 import logger from '../config/logger.js';
 import { connectDB } from '../config/database.js';
 
@@ -140,18 +141,33 @@ async function processGapAnalysis(job) {
 // Worker
 // ---------------------------------------------------------------------------
 
+// B2 follow-up: run each job inside its assessment's tenant context so all
+// DB work is workspace-scoped (matching request-path isolation). The bootstrap
+// lookup runs outside any context (unfiltered) purely to resolve the workspace.
+async function runInAssessmentTenantContext(job, fn) {
+  const { assessmentId, userId } = job.data;
+  const doc = assessmentId
+    ? await assessmentRepository.findById(assessmentId, { select: 'workspaceId', lean: true })
+    : null;
+  const workspaceId = doc?.workspaceId?.toString();
+  if (!workspaceId) return fn();
+  return withTenantContext({ workspaceId, userId }, fn);
+}
+
 const worker = new Worker(
   'assessmentJobs',
-  async (job) => {
-    switch (job.name) {
-      case 'fileIndex':
-        return processFileIndex(job);
-      case 'gapAnalysis':
-        return processGapAnalysis(job);
-      default:
-        logger.warn('Unknown assessment job type', { jobName: job.name, jobId: job.id });
-    }
-  },
+  async (job) =>
+    runInAssessmentTenantContext(job, () => {
+      switch (job.name) {
+        case 'fileIndex':
+          return processFileIndex(job);
+        case 'gapAnalysis':
+          return processGapAnalysis(job);
+        default:
+          logger.warn('Unknown assessment job type', { jobName: job.name, jobId: job.id });
+          return undefined;
+      }
+    }),
   {
     connection: redisConnection,
     concurrency: CONCURRENCY,
