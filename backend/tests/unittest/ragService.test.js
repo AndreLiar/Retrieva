@@ -598,7 +598,7 @@ describe('askWithConversation', () => {
 
 describe('init()', () => {
   it('sets _initialized to true after successful init', async () => {
-    const { svc, mockLLM, mockVectorStore } = makeService();
+    const { svc, mockLLM } = makeService();
     const mockChain = { pipe: vi.fn().mockReturnThis() };
     mockLLM.pipe.mockReturnValue(mockChain);
 
@@ -613,7 +613,7 @@ describe('init()', () => {
   });
 
   it('does not re-initialize if already initialized', async () => {
-    const { svc, mockVectorStore } = makeService();
+    const { svc } = makeService();
     svc._initialized = true;
 
     await svc.init();
@@ -622,7 +622,7 @@ describe('init()', () => {
   });
 
   it('reuses existing _initPromise for concurrent calls', async () => {
-    const { svc, mockLLM, mockVectorStore } = makeService();
+    const { svc, mockLLM } = makeService();
     const mockChain = { pipe: vi.fn().mockReturnThis() };
     mockLLM.pipe.mockReturnValue(mockChain);
 
@@ -633,5 +633,82 @@ describe('init()', () => {
     await Promise.all([svc.init(), svc.init()]);
 
     expect(svc._initialized).toBe(true);
+  });
+});
+
+// ─── Tenant isolation (cross-workspace document exposure) ──────────────────────
+
+describe('tenant isolation: _assertWorkspaceAuthorized', () => {
+  it('allows when the conversation workspace is in the caller authorized set', () => {
+    const { svc } = makeService();
+    expect(() =>
+      svc._assertWorkspaceAuthorized('ws-A', 'owner', {
+        userId: 'u1',
+        authorizedWorkspaceIds: ['ws-A', 'ws-C'],
+      })
+    ).not.toThrow();
+  });
+
+  it('rejects (403) when the conversation workspace is NOT in the caller set', () => {
+    const { svc } = makeService();
+    let thrown;
+    try {
+      svc._assertWorkspaceAuthorized('ws-B', 'owner', {
+        userId: 'attacker',
+        authorizedWorkspaceIds: ['ws-A'],
+      });
+    } catch (e) {
+      thrown = e;
+    }
+    expect(thrown).toBeDefined();
+    expect(thrown.statusCode).toBe(403);
+  });
+
+  it('allows a personal (null/default) conversation for its owner', () => {
+    const { svc } = makeService();
+    expect(() =>
+      svc._assertWorkspaceAuthorized(null, 'u1', { userId: 'u1', authorizedWorkspaceIds: [] })
+    ).not.toThrow();
+    expect(() =>
+      svc._assertWorkspaceAuthorized('default', 'u1', { userId: 'u1', authorizedWorkspaceIds: [] })
+    ).not.toThrow();
+  });
+
+  it('rejects a personal conversation for a non-owner', () => {
+    const { svc } = makeService();
+    expect(() =>
+      svc._assertWorkspaceAuthorized(null, 'owner', {
+        userId: 'attacker',
+        authorizedWorkspaceIds: [],
+      })
+    ).toThrow();
+  });
+
+  it('is a no-op for internal/worker callers (no userId or authorizedWorkspaceIds)', () => {
+    const { svc } = makeService();
+    expect(() => svc._assertWorkspaceAuthorized('ws-B', 'owner', {})).not.toThrow();
+  });
+});
+
+describe('tenant isolation: askWithConversation blocks cross-workspace retrieval', () => {
+  it('throws 403 before retrieval when the conversation is in a workspace the caller is not in', async () => {
+    const { svc, mockConversation, mockVectorStore } = makeService();
+    svc._initialized = true; // skip init
+    mockConversation.findById.mockResolvedValue({
+      _id: 'conv-x',
+      workspaceId: 'ws-B',
+      userId: 'victim',
+    });
+
+    await expect(
+      svc.askWithConversation('what are the secret findings?', {
+        conversationId: 'conv-x',
+        userId: 'attacker',
+        authorizedWorkspaceIds: ['ws-A'],
+      })
+    ).rejects.toMatchObject({ statusCode: 403 });
+
+    // No vector search should have happened — isolation rejects before retrieval.
+    expect(mockVectorStore.similaritySearch).not.toHaveBeenCalled();
   });
 });
