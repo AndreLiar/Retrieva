@@ -146,6 +146,31 @@ services:
       - rag-network
 
   # ---------------------------------------------------------------------------
+  # Ollama model pull (one-shot)
+  # ---------------------------------------------------------------------------
+  # Ensures the embedding model (bge-m3, 1024-dim) is present in the ollama
+  # volume so embeddings work. Runs on every deploy but is a fast no-op once the
+  # model is cached. Backend depends on `ollama` (started), NOT on this one-shot,
+  # so a transient pull failure can never block an API deploy or trigger rollback.
+  ollama-pull:
+    image: ollama/ollama:latest
+    container_name: retrieva-ollama-pull
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+    entrypoint: ["/bin/sh", "-c", "ollama pull bge-m3:latest"]
+    restart: "no"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - rag-network
+
+  # ---------------------------------------------------------------------------
   # Backend (Node.js/Express)
   # ---------------------------------------------------------------------------
   # MongoDB connection string comes from backend/.env
