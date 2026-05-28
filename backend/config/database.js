@@ -4,6 +4,16 @@ import logger from './logger.js';
 
 dotenv.config();
 
+// D5: query hardening. `strictQuery` drops filter conditions on paths not in
+// the schema (defense-in-depth against unexpected/injected filter keys).
+//
+// NOTE: we intentionally do NOT enable global `sanitizeFilter` — it wraps any
+// filter *value* that is an operator object in `$eq`, which would break the
+// many legitimate code-written operator queries here ({ workspaceId: { $in } },
+// date { $gte/$lte }, etc.). User-input injection is already neutralized at the
+// request boundary by middleware/securitySanitizer.js.
+mongoose.set('strictQuery', true);
+
 // FIX 2: MongoDB Connection Resilience
 let reconnectAttempts = 0;
 const MAX_RECONNECT_ATTEMPTS = 10;
@@ -22,12 +32,37 @@ export const connectDB = async () => {
       // Auto-reconnect settings
       retryWrites: true,
       retryReads: true,
+
+      // D3: don't auto-build indexes on every boot in production (blocking on
+      // large collections); we sync them explicitly below instead.
+      autoIndex: process.env.NODE_ENV !== 'production',
     });
 
     logger.info(`MongoDB Connected: ${conn.connection.host}`, {
       service: 'database',
       database: conn.connection.name,
     });
+
+    // D3: with autoIndex off in production, sync declared indexes once on
+    // startup. Models are already registered (app.js is imported before this
+    // runs). Best-effort per model so one failure can't block boot.
+    if (process.env.NODE_ENV === 'production') {
+      await Promise.all(
+        mongoose.connection.modelNames().map((name) =>
+          mongoose
+            .model(name)
+            .syncIndexes()
+            .catch((err) =>
+              logger.warn('Index sync failed', {
+                service: 'database',
+                model: name,
+                error: err.message,
+              })
+            )
+        )
+      );
+      logger.info('Indexes synced', { service: 'database' });
+    }
 
     // Reset reconnect attempts on successful connection
     reconnectAttempts = 0;
