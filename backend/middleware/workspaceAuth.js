@@ -70,6 +70,24 @@ export const requireWorkspaceAccess = async (req, res, next) => {
     // Attach authorized workspaces to request
     req.authorizedWorkspaces = activeWorkspaces;
 
+    // SECURITY (tenant isolation): if the client names an active workspace
+    // (X-Workspace-Id / body / query), it MUST be one this user belongs to.
+    // Otherwise a member of workspace A could set X-Workspace-Id: B and have
+    // downstream code (setTenantContext, retrieval) operate on workspace B.
+    const requestedWorkspaceId =
+      req.headers?.['x-workspace-id'] || req.body?.workspaceId || req.query?.workspaceId;
+    if (requestedWorkspaceId) {
+      const isMember = activeWorkspaces.some((w) => w.workspaceId === String(requestedWorkspaceId));
+      if (!isMember) {
+        logger.warn('Active workspace not authorized for user', {
+          service: 'workspace-auth',
+          userId,
+          requestedWorkspaceId: String(requestedWorkspaceId),
+        });
+        return sendError(res, 403, 'You do not have access to this workspace');
+      }
+    }
+
     logger.debug('Workspace access granted', {
       service: 'workspace-auth',
       userId,

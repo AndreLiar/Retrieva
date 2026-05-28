@@ -133,7 +133,11 @@ export const askQuestion = catchAsync(async (req, res) => {
   const { question, filters } = req.body;
   const userId = getUserId(req);
 
-  const answer = await conversationService.askQuestion(id, userId, { question, filters });
+  const answer = await conversationService.askQuestion(id, userId, {
+    question,
+    filters,
+    authorizedWorkspaceIds: req.authorizedWorkspaces?.map((w) => w.workspaceId) || [],
+  });
 
   // B1: honor the workspace canViewSources permission before returning sources.
   const workspaceId = req.headers?.['x-workspace-id'] || req.body?.workspaceId;

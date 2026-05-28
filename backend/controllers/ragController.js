@@ -26,6 +26,7 @@ export const askQuestion = catchAsync(async (req, res) => {
       conversationId,
       filters: filters || null,
       userId: req.user?.userId?.toString(),
+      authorizedWorkspaceIds: req.authorizedWorkspaces?.map((w) => w.workspaceId) || [],
       forceIntent: forceIntent || null,
       useIntentAware,
     });
@@ -88,6 +89,7 @@ export const askQuestionStream = catchAsync(async (req, res) => {
       conversationId,
       filters: filters || null,
       userId: req.user?.userId?.toString(),
+      authorizedWorkspaceIds: req.authorizedWorkspaces?.map((w) => w.workspaceId) || [],
       forceIntent: forceIntent || null,
       useIntentAware,
       onEvent: send,

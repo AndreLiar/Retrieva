@@ -3,6 +3,7 @@ import { ChatPromptTemplate, MessagesPlaceholder } from '@langchain/core/prompts
 import { HumanMessage, AIMessage } from '@langchain/core/messages';
 import { randomUUID } from 'crypto';
 import mongoose from 'mongoose';
+import { AppError } from '../utils/index.js';
 
 // Prompts
 import { ragPrompt } from '../prompts/ragPrompt.js';
@@ -227,6 +228,33 @@ class RAGService {
     const sources = formatSources(sanitizedDocs);
 
     return { context, sources, sanitizedDocs };
+  }
+
+  /**
+   * SECURITY (tenant isolation): authorize the workspace used for retrieval
+   * against the caller's real memberships. Throws 403 if the caller is not a
+   * member of the conversation's workspace (or, for personal/legacy
+   * null/'default' conversations, is not the owner). Called without HTTP
+   * context (workers/internal), it is a no-op — those callers are trusted.
+   */
+  _assertWorkspaceAuthorized(
+    workspaceId,
+    conversationOwnerId,
+    { userId, authorizedWorkspaceIds } = {}
+  ) {
+    if (!userId && !authorizedWorkspaceIds) return;
+    const ws = workspaceId && workspaceId !== 'default' ? String(workspaceId) : null;
+    if (ws) {
+      const allowed = (authorizedWorkspaceIds || []).map(String);
+      if (!allowed.includes(ws)) {
+        throw new AppError('You do not have access to this workspace', 403);
+      }
+      return;
+    }
+    // Personal / legacy conversation (no workspace): must be the owner.
+    if (userId && conversationOwnerId && String(conversationOwnerId) !== String(userId)) {
+      throw new AppError('You do not have access to this conversation', 403);
+    }
   }
 
   async _resolveQdrantWorkspaceId(workspaceId) {
@@ -462,6 +490,10 @@ class RAGService {
       filters = null,
       onEvent = null,
       responseInstruction: callerInstruction = '',
+      // SECURITY (tenant isolation): supplied by the HTTP layer so retrieval can
+      // be authorized against the caller's real workspace memberships.
+      userId = null,
+      authorizedWorkspaceIds = null,
     } = options;
 
     if (!conversationId) {
@@ -481,6 +513,15 @@ class RAGService {
     if (!conversation) throw new Error(`Conversation ${conversationId} not found`);
 
     const workspaceId = conversation.workspaceId || null;
+
+    // SECURITY (tenant isolation): the retrieval workspace IS the conversation's
+    // workspace. Authorize it against the caller's real memberships so a user
+    // cannot read another workspace's documents via a spoofed X-Workspace-Id or
+    // a conversation id they do not own.
+    this._assertWorkspaceAuthorized(workspaceId, conversation.userId, {
+      userId,
+      authorizedWorkspaceIds,
+    });
 
     this.logger.info('Processing RAG question', {
       service: 'rag',
