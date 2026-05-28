@@ -8,11 +8,14 @@ import {
   generateAccessToken,
   generateRefreshToken,
   hashRefreshToken,
+  generateMfaToken,
+  verifyMfaToken,
 } from '../utils/security/jwt.js';
 import { sha256 } from '../utils/security/crypto.js';
 import { safeDecrypt } from '../utils/security/fieldEncryption.js';
 import { emailService } from './emailService.js';
 import { authAuditService } from './authAuditService.js';
+import { mfaService } from './mfaService.js';
 import logger from '../config/logger.js';
 
 const RESEND_VERIFICATION_COOLDOWN_MS = 60 * 1000;
@@ -38,6 +41,7 @@ class AuthService {
     this.memberRepo = deps.memberRepo || organizationMemberRepository;
     this.emailService = deps.emailService || emailService;
     this.authAudit = deps.authAudit || authAuditService;
+    this.mfa = deps.mfa || mfaService;
     this.logger = deps.logger || logger;
   }
 
@@ -205,6 +209,22 @@ class AuthService {
 
     await user.resetLoginAttempts();
 
+    // A1: if MFA is enabled, password is only step 1. Return a short-lived
+    // challenge instead of tokens; step 2 is POST /auth/mfa/verify.
+    if (user.mfaEnabled) {
+      this.logger.info('Login passed password, MFA required', { userId: user._id });
+      this.authAudit.logLoginSuccess?.({ userId: user._id, email: user.email, mfa: 'pending' });
+      return { mfaRequired: true, mfaToken: generateMfaToken({ userId: user._id }) };
+    }
+
+    return this._issueSession(user, deviceInfo);
+  }
+
+  /**
+   * Issue tokens + a refresh session for an already-authenticated user, and
+   * return the standard login payload. Shared by password login and MFA verify.
+   */
+  async _issueSession(user, deviceInfo) {
     const tokens = generateTokenPair({
       userId: user._id,
       email: user.email,
@@ -226,6 +246,127 @@ class AuthService {
       user: toUserPayload(user, { organization }),
       tokens,
     };
+  }
+
+  // ---------------------------------------------------------------------------
+  // MFA (TOTP) — audit gap A1
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Step 1 of enrollment: generate (but do not yet enable) a TOTP secret.
+   * Returns the secret + otpauth URI for the authenticator app / QR.
+   */
+  async setupMfa(userId) {
+    const user = await this.userRepo.findById(userId);
+    if (!user) throw new AppError('User not found', 404);
+    if (user.mfaEnabled) throw new AppError('MFA is already enabled', 409);
+
+    const secret = this.mfa.generateSecret();
+    user.mfaSecret = secret;
+    await user.save();
+
+    return {
+      secret,
+      otpauthUrl: this.mfa.keyUri(user.email, secret),
+    };
+  }
+
+  /**
+   * Step 2 of enrollment: verify the first code, enable MFA, and return the
+   * one-time recovery codes (shown to the user exactly once).
+   */
+  async enableMfa(userId, token) {
+    const user = await this.userRepo.findById(userId, { select: '+mfaSecret' });
+    if (!user) throw new AppError('User not found', 404);
+    if (user.mfaEnabled) throw new AppError('MFA is already enabled', 409);
+    if (!user.mfaSecret) throw new AppError('Start MFA setup first', 400);
+
+    if (!this.mfa.verifyTotp(user.mfaSecret, token)) {
+      throw new AppError('Invalid verification code', 400);
+    }
+
+    const { plain, hashed } = this.mfa.generateRecoveryCodes();
+    user.mfaEnabled = true;
+    user.mfaRecoveryCodes = hashed;
+    await user.save();
+
+    this.logger.info('MFA enabled', { userId: user._id });
+    return { recoveryCodes: plain };
+  }
+
+  /**
+   * Step 2 of login: exchange a valid MFA challenge token + TOTP (or recovery)
+   * code for a real session.
+   */
+  async verifyMfa({ mfaToken, code, deviceInfo }) {
+    let decoded;
+    try {
+      decoded = verifyMfaToken(mfaToken);
+    } catch (error) {
+      throw new AppError(error.message || 'Invalid MFA token', 401);
+    }
+
+    const user = await this.userRepo.findById(decoded.userId, {
+      select: '+mfaSecret +mfaRecoveryCodes',
+    });
+    if (!user || !user.mfaEnabled) {
+      throw new AppError('MFA is not enabled for this account', 400);
+    }
+    if (!user.isActive) throw new AppError('Account is inactive', 401);
+
+    if (!this._consumeMfaCode(user, code)) {
+      this.authAudit.logLoginFailed?.({ userId: user._id, reason: 'mfa' });
+      throw new AppError('Invalid verification code', 401);
+    }
+
+    // _consumeMfaCode may have spent a recovery code → persist before issuing.
+    if (user.isModified?.('mfaRecoveryCodes')) await user.save();
+
+    return this._issueSession(user, deviceInfo);
+  }
+
+  /**
+   * Disable MFA. Requires the current password AND a valid TOTP/recovery code
+   * so a hijacked session alone can't turn it off.
+   */
+  async disableMfa(userId, { password, code }) {
+    const user = await this.userRepo.findById(userId, {
+      select: '+password +mfaSecret +mfaRecoveryCodes',
+    });
+    if (!user) throw new AppError('User not found', 404);
+    if (!user.mfaEnabled) throw new AppError('MFA is not enabled', 400);
+
+    if (!(await user.comparePassword(password))) {
+      throw new AppError('Invalid password', 401);
+    }
+    if (!this._consumeMfaCode(user, code)) {
+      throw new AppError('Invalid verification code', 401);
+    }
+
+    user.mfaEnabled = false;
+    user.mfaSecret = null;
+    user.mfaRecoveryCodes = undefined;
+    await user.save();
+
+    this.logger.info('MFA disabled', { userId: user._id });
+    return { disabled: true };
+  }
+
+  /**
+   * Verify a code against the user's TOTP secret, falling back to single-use
+   * recovery codes (which are consumed in place). Returns true on success.
+   */
+  _consumeMfaCode(user, code) {
+    if (this.mfa.verifyTotp(user.mfaSecret, code)) return true;
+
+    const hash = this.mfa.hashRecoveryCode(code || '');
+    const codes = user.mfaRecoveryCodes || [];
+    const idx = codes.indexOf(hash);
+    if (idx === -1) return false;
+
+    codes.splice(idx, 1); // consume
+    user.mfaRecoveryCodes = codes;
+    return true;
   }
 
   /**

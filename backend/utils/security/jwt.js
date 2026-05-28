@@ -154,6 +154,45 @@ export const generateTokenPair = (payload) => {
   };
 };
 
+// Short-lived token issued after password auth when MFA is required. It only
+// proves "this user passed step 1"; the distinct audience ('rag-mfa') means it
+// can never be accepted as an access token, and vice versa.
+const MFA_TOKEN_EXPIRY = process.env.JWT_MFA_EXPIRY || '5m';
+
+/**
+ * Generate an MFA challenge token (step-1 → step-2 handoff).
+ * @param {Object} payload - { userId }
+ * @returns {string} JWT
+ */
+export const generateMfaToken = (payload) => {
+  return jwt.sign({ userId: payload.userId, purpose: 'mfa' }, ACCESS_TOKEN_SECRET, {
+    expiresIn: MFA_TOKEN_EXPIRY,
+    issuer: 'rag-backend',
+    audience: 'rag-mfa',
+  });
+};
+
+/**
+ * Verify an MFA challenge token.
+ * @param {string} token
+ * @returns {Object} decoded payload ({ userId, purpose })
+ */
+export const verifyMfaToken = (token) => {
+  try {
+    const decoded = jwt.verify(token, ACCESS_TOKEN_SECRET, {
+      issuer: 'rag-backend',
+      audience: 'rag-mfa',
+    });
+    if (decoded.purpose !== 'mfa') throw new Error('Invalid MFA token');
+    return decoded;
+  } catch (error) {
+    if (error.name === 'TokenExpiredError') {
+      throw new Error('MFA session expired. Please log in again.');
+    }
+    throw new Error('Invalid MFA token');
+  }
+};
+
 /**
  * Decode token without verification (for debugging)
  * @param {string} token - JWT token

@@ -172,6 +172,23 @@ const userSchema = new mongoose.Schema(
       monitoringSetup: { type: Boolean, default: false },
       dismissed: { type: Boolean, default: false },
     },
+    // MFA (TOTP) — audit gap A1. The secret is encrypted at rest (see the
+    // encryption plugin below) and never returned by default (select: false).
+    // Recovery codes are stored as one-way hashes and consumed on use.
+    mfaEnabled: {
+      type: Boolean,
+      default: false,
+    },
+    mfaSecret: {
+      type: String,
+      select: false,
+      default: null,
+    },
+    mfaRecoveryCodes: {
+      type: [String],
+      select: false,
+      default: undefined,
+    },
   },
   {
     timestamps: true,
@@ -422,6 +439,6 @@ userSchema.methods.verifyEmail = async function (rawToken) {
 // Apply field-level encryption to PII
 // Note: email is NOT encrypted because it's used for authentication lookups and unique index
 // Password is already hashed with bcrypt, so no additional encryption needed
-userSchema.plugin(createEncryptionPlugin(['name']));
+userSchema.plugin(createEncryptionPlugin(['name', 'mfaSecret']));
 
 export const User = mongoose.model('User', userSchema);

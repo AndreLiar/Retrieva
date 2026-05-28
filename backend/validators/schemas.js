@@ -323,6 +323,28 @@ export const changePasswordSchema = z
     path: ['newPassword'],
   });
 
+// MFA (TOTP) schemas — audit gap A1.
+// `code` accepts a 6-digit TOTP or an 11-char recovery code (xxxxx-xxxxx).
+export const mfaEnableSchema = z
+  .object({
+    token: z.string().min(6, 'Code must be 6 digits').max(10),
+  })
+  .strict();
+
+export const mfaVerifySchema = z
+  .object({
+    mfaToken: z.string().min(10, 'MFA token is required').max(1024),
+    code: z.string().min(6, 'Enter your 6-digit code or a recovery code').max(20),
+  })
+  .strict();
+
+export const mfaDisableSchema = z
+  .object({
+    password: z.string().min(1, 'Password is required').max(100),
+    code: z.string().min(6, 'Enter your 6-digit code or a recovery code').max(20),
+  })
+  .strict();
+
 // MongoDB ID validation
 export const mongoIdSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid ID format');
 

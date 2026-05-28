@@ -12,6 +12,10 @@ import {
   resendVerification,
   changePassword,
   updateOnboarding,
+  verifyMfa,
+  setupMfa,
+  enableMfa,
+  disableMfa,
 } from '../controllers/authController.js';
 import { validateBody } from '../middleware/validate.js';
 import { authenticate } from '../middleware/auth.js';
@@ -33,6 +37,9 @@ import {
   updateProfileSchema,
   changePasswordSchema,
   updateOnboardingSchema,
+  mfaVerifySchema,
+  mfaEnableSchema,
+  mfaDisableSchema,
 } from '../validators/schemas.js';
 
 const router = express.Router();
@@ -50,6 +57,13 @@ router.post('/register', registerLimiter, validateBody(registerSchema), register
  * @access  Public
  */
 router.post('/login', loginLimiter, validateBody(loginSchema), login);
+
+/**
+ * @route   POST /api/v1/auth/mfa/verify
+ * @desc    Step 2 of MFA login — exchange the challenge token + code for a session
+ * @access  Public (requires a valid short-lived MFA challenge token)
+ */
+router.post('/mfa/verify', loginLimiter, validateBody(mfaVerifySchema), verifyMfa);
 
 /**
  * @route   POST /api/v1/auth/refresh
@@ -124,6 +138,15 @@ router.post('/resend-verification', resendVerifyLimiter, authenticate, resendVer
  * @access  Private
  */
 router.post('/change-password', authenticate, validateBody(changePasswordSchema), changePassword);
+
+/**
+ * @route   POST /api/v1/auth/mfa/setup | /mfa/enable | /mfa/disable
+ * @desc    TOTP enrollment (setup → enable) and teardown (disable)
+ * @access  Private
+ */
+router.post('/mfa/setup', authenticate, setupMfa);
+router.post('/mfa/enable', authenticate, validateBody(mfaEnableSchema), enableMfa);
+router.post('/mfa/disable', authenticate, validateBody(mfaDisableSchema), disableMfa);
 
 /**
  * @route   PATCH /api/v1/auth/onboarding

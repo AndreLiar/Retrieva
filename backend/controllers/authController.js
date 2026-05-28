@@ -1,6 +1,10 @@
 import { authService } from '../services/AuthService.js';
 import { catchAsync, sendSuccess } from '../utils/index.js';
-import { setAuthCookies, clearAuthCookies, getRefreshToken } from '../utils/security/cookieConfig.js';
+import {
+  setAuthCookies,
+  clearAuthCookies,
+  getRefreshToken,
+} from '../utils/security/cookieConfig.js';
 import logger from '../config/logger.js';
 
 const getDeviceInfo = (req) => {
@@ -44,9 +48,39 @@ export const register = catchAsync(async (req, res) => {
 export const login = catchAsync(async (req, res) => {
   const { email, password } = req.body;
 
-  const { user, tokens } = await authService.login({
+  const result = await authService.login({
     email,
     password,
+    deviceInfo: getDeviceInfo(req),
+  });
+
+  // A1: MFA-enabled accounts get a challenge instead of a session.
+  if (result.mfaRequired) {
+    sendSuccess(res, 200, 'MFA verification required', {
+      mfaRequired: true,
+      mfaToken: result.mfaToken,
+    });
+    return;
+  }
+
+  setAuthCookies(res, result.tokens);
+
+  sendSuccess(res, 200, 'Login successful', {
+    user: result.user,
+    ...result.tokens,
+  });
+});
+
+/**
+ * POST /api/v1/auth/mfa/verify
+ * Step 2 of MFA login: exchange the challenge token + code for a session.
+ */
+export const verifyMfa = catchAsync(async (req, res) => {
+  const { mfaToken, code } = req.body;
+
+  const { user, tokens } = await authService.verifyMfa({
+    mfaToken,
+    code,
     deviceInfo: getDeviceInfo(req),
   });
 
@@ -56,6 +90,38 @@ export const login = catchAsync(async (req, res) => {
     user,
     ...tokens,
   });
+});
+
+/**
+ * POST /api/v1/auth/mfa/setup
+ * Step 1 of enrollment: returns the TOTP secret + otpauth URI (not yet enabled).
+ */
+export const setupMfa = catchAsync(async (req, res) => {
+  const result = await authService.setupMfa(req.user.userId);
+  sendSuccess(res, 200, 'Scan the QR code in your authenticator app, then confirm', result);
+});
+
+/**
+ * POST /api/v1/auth/mfa/enable
+ * Step 2 of enrollment: verify the first code, enable MFA, return recovery codes.
+ */
+export const enableMfa = catchAsync(async (req, res) => {
+  const { recoveryCodes } = await authService.enableMfa(req.user.userId, req.body.token);
+  sendSuccess(res, 200, 'MFA enabled. Save your recovery codes now — they are shown once.', {
+    recoveryCodes,
+  });
+});
+
+/**
+ * POST /api/v1/auth/mfa/disable
+ * Disable MFA (requires current password + a valid code).
+ */
+export const disableMfa = catchAsync(async (req, res) => {
+  await authService.disableMfa(req.user.userId, {
+    password: req.body.password,
+    code: req.body.code,
+  });
+  sendSuccess(res, 200, 'MFA disabled');
 });
 
 /**
@@ -105,7 +171,11 @@ export const logout = async (req, res, next) => {
   }
 
   clearAuthCookies(res);
-  sendSuccess(res, 200, req.query.all === 'true' ? 'Logged out from all devices' : 'Logout successful');
+  sendSuccess(
+    res,
+    200,
+    req.query.all === 'true' ? 'Logged out from all devices' : 'Logout successful'
+  );
   if (typeof next === 'function') return;
 };
 
