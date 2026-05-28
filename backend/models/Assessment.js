@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { tenantIsolationPlugin } from '../services/tenantIsolation.js';
 
 // ── Formal risk decision recorded by a compliance officer ──────────────────────
 const riskDecisionSchema = new mongoose.Schema(
@@ -121,5 +122,16 @@ const assessmentSchema = new mongoose.Schema(
 // Compound index for listing assessments per workspace
 assessmentSchema.index({ workspaceId: 1, createdAt: -1 });
 assessmentSchema.index({ createdBy: 1, status: 1 });
+
+// B2: database-level tenant isolation. Auto-filters queries by the active
+// workspace when a tenant context is set (see setTenantContext). Disabled in
+// tests to keep fixtures simple, matching the Conversation model.
+if (process.env.NODE_ENV !== 'test') {
+  assessmentSchema.plugin(tenantIsolationPlugin, {
+    tenantField: 'workspaceId',
+    enforceOnSave: true,
+    auditLog: process.env.NODE_ENV !== 'production',
+  });
+}
 
 export const Assessment = mongoose.model('Assessment', assessmentSchema);
