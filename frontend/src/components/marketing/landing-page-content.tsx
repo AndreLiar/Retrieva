@@ -11,6 +11,9 @@ import {
   Database,
   FileSearch,
   FileSpreadsheet,
+  FileText,
+  Gauge,
+  ListChecks,
   Lock,
   ShieldCheck,
   Upload,
@@ -111,9 +114,24 @@ export function LandingPageContent() {
             description="One-click EBA-compliant DORA Article 28(3) XLSX export — RT.01.01 to RT.04.01 sheets generated automatically."
           />
           <FeatureCard
+            icon={<Gauge className="h-8 w-8" />}
+            title="Live Compliance Score"
+            description="A real-time DORA compliance score per workspace, with a 30-day trend and Red/Amber/Green status — board-ready at a glance."
+          />
+          <FeatureCard
+            icon={<ListChecks className="h-8 w-8" />}
+            title="Risk Register"
+            description="Track vendor risk decisions, criticality tiers, and gap remediation across your whole third-party estate in one register."
+          />
+          <FeatureCard
+            icon={<FileText className="h-8 w-8" />}
+            title="Regulator-Ready Reports"
+            description="Generate a downloadable Word (.docx) DORA gap-analysis report per vendor — formatted for review and submission."
+          />
+          <FeatureCard
             icon={<Lock className="h-8 w-8" />}
             title="Enterprise-Grade Security"
-            description="Workspace isolation, PII detection, audit logging, and encrypted secrets — built for regulated industries."
+            description="Workspace isolation, MFA, PII detection, audit logging, and encrypted secrets — built for regulated industries."
           />
         </div>
       </section>
@@ -126,10 +144,10 @@ export function LandingPageContent() {
             viewport={{ once: true }}
             className="text-center mb-12"
           >
-            <h2 className="text-3xl font-bold mb-4">Connect your knowledge sources</h2>
+            <h2 className="text-3xl font-bold mb-4">Bring your vendor documentation</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Upload documents, crawl URLs, or sync from Confluence — all feeding the same
-              high-quality RAG pipeline.
+              Upload vendor contracts, ICT policies, and audit reports — parsed, chunked, and
+              embedded into a high-quality RAG pipeline automatically.
             </p>
           </motion.div>
 
@@ -145,15 +163,15 @@ export function LandingPageContent() {
                   <Upload className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="font-semibold">Built-in Connectors</h3>
+                  <h3 className="font-semibold">Document Ingestion</h3>
                   <p className="text-xs text-muted-foreground">Zero infrastructure required</p>
                 </div>
               </div>
               <ul className="space-y-2 text-sm text-muted-foreground mb-4">
                 {[
                   'File upload — PDF, DOCX, XLSX',
-                  'Web URL crawling',
-                  'Confluence Cloud (direct API)',
+                  'Automatic parsing, chunking & embedding',
+                  'Self-hosted embeddings — your content stays private',
                 ].map((item) => (
                   <li key={item} className="flex items-center gap-2">
                     <CheckCircle2 className="h-3.5 w-3.5 text-green-500 shrink-0" />
