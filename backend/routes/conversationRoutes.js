@@ -22,9 +22,10 @@ import {
 
 const router = express.Router();
 
-// Conversation management — all routes require authentication
-// Conversations are user-scoped (userId), not workspace-scoped
-// Users can only access their own conversations (BOLA protection in controllers)
+// Conversation management — every route requires authentication AND workspace
+// access. requireWorkspaceAccess rejects an X-Workspace-Id the caller is not a
+// member of; per-conversation access is further enforced by ownership (BOLA)
+// checks in the controllers/services.
 router.post(
   '/',
   authenticate,
@@ -32,22 +33,42 @@ router.post(
   validateBody(createConversationSchema),
   createConversation
 );
-router.get('/', authenticate, validateQuery(listConversationsQuerySchema), getConversations);
+router.get(
+  '/',
+  authenticate,
+  requireWorkspaceAccess,
+  validateQuery(listConversationsQuerySchema),
+  getConversations
+);
 router.post(
   '/bulk-delete',
   authenticate,
+  requireWorkspaceAccess,
   validateBody(bulkDeleteConversationsSchema),
   bulkDeleteConversations
 ); // Must be before /:id routes
-router.get('/:id', authenticate, validateParams(idParamsSchema), getConversation);
+router.get(
+  '/:id',
+  authenticate,
+  requireWorkspaceAccess,
+  validateParams(idParamsSchema),
+  getConversation
+);
 router.patch(
   '/:id',
   authenticate,
+  requireWorkspaceAccess,
   validateParams(idParamsSchema),
   validateBody(updateConversationSchema),
   updateConversation
 );
-router.delete('/:id', authenticate, validateParams(idParamsSchema), deleteConversation);
+router.delete(
+  '/:id',
+  authenticate,
+  requireWorkspaceAccess,
+  validateParams(idParamsSchema),
+  deleteConversation
+);
 
 // Ask question in conversation
 router.post(
