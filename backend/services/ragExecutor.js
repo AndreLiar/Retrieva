@@ -26,7 +26,14 @@ export class InputGuardrailError extends AppError {
  * @param {Function} [params.onEvent]      SSE callback: (type, data) => void
  * @returns {Object} RAG result
  */
-export async function executeRAG({ question, conversationId, filters = null, onEvent = null }) {
+export async function executeRAG({
+  question,
+  conversationId,
+  filters = null,
+  onEvent = null,
+  userId = null,
+  authorizedWorkspaceIds = null,
+}) {
   logger.info('Executing RAG query', {
     service: 'rag-executor',
     questionLength: question.length,
@@ -38,6 +45,8 @@ export async function executeRAG({ question, conversationId, filters = null, onE
     conversationId,
     filters,
     onEvent,
+    userId,
+    authorizedWorkspaceIds,
   });
 
   logger.info('RAG query completed', {

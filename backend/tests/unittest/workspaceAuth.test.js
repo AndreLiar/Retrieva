@@ -152,6 +152,49 @@ describe('Workspace Auth Middleware', () => {
       expect(mockNext).toHaveBeenCalled();
     });
 
+    it('rejects 403 when X-Workspace-Id is not a workspace the user belongs to', async () => {
+      mockReq.user = { userId: 'user-123' };
+      mockReq.headers = { 'x-workspace-id': 'ws-B' }; // attacker requests another workspace
+
+      WorkspaceMember.find.mockReturnValue({
+        populate: vi.fn().mockResolvedValue([
+          {
+            workspaceId: { _id: { toString: () => 'ws-A' }, name: 'My WS', syncStatus: 'synced' },
+            role: 'member',
+            permissions: { canQuery: true },
+          },
+        ]),
+      });
+
+      await requireWorkspaceAccess(mockReq, mockRes, mockNext);
+
+      expect(mockRes.status).toHaveBeenCalledWith(403);
+      expect(mockRes.json).toHaveBeenCalledWith(
+        expect.objectContaining({ message: expect.stringContaining('access to this workspace') })
+      );
+      expect(mockNext).not.toHaveBeenCalled();
+    });
+
+    it('allows when X-Workspace-Id matches one of the user memberships', async () => {
+      mockReq.user = { userId: 'user-123' };
+      mockReq.headers = { 'x-workspace-id': 'ws-A' };
+
+      WorkspaceMember.find.mockReturnValue({
+        populate: vi.fn().mockResolvedValue([
+          {
+            workspaceId: { _id: { toString: () => 'ws-A' }, name: 'My WS', syncStatus: 'synced' },
+            role: 'member',
+            permissions: { canQuery: true },
+          },
+        ]),
+      });
+
+      await requireWorkspaceAccess(mockReq, mockRes, mockNext);
+
+      expect(mockNext).toHaveBeenCalled();
+      expect(mockRes.status).not.toHaveBeenCalledWith(403);
+    });
+
     it('should filter out null workspace references', async () => {
       mockReq.user = { userId: 'user-123' };
 

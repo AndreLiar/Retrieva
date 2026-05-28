@@ -100,6 +100,7 @@ describe('ragController — askQuestion', () => {
       conversationId: 'conv-abc',
       filters: { domain: 'ICT' },
       userId: 'user-123',
+      authorizedWorkspaceIds: [],
       forceIntent: 'compliance',
       useIntentAware: false,
     });

@@ -120,7 +120,7 @@ class ConversationService {
     return { conversation, messages, totalMessages };
   }
 
-  async askQuestion(id, userId, { question, filters }) {
+  async askQuestion(id, userId, { question, filters, authorizedWorkspaceIds = null }) {
     if (!question || question.trim().length === 0) {
       throw new AppError('Question is required', 400);
     }
@@ -144,6 +144,8 @@ class ConversationService {
     return this.ragService.askWithConversation(question, {
       conversationId: id,
       filters: filters || null,
+      userId,
+      authorizedWorkspaceIds,
     });
   }
 
