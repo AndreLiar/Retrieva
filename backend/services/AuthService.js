@@ -27,6 +27,7 @@ function toUserPayload(user, overrides = {}) {
     name: safeDecrypt(user.name),
     role: user.role,
     isEmailVerified: user.isEmailVerified,
+    mfaEnabled: !!user.mfaEnabled,
     organizationId: user.organizationId ? user.organizationId.toString() : null,
     onboardingCompleted: user.onboardingCompleted,
     onboardingChecklist: user.onboardingChecklist,
