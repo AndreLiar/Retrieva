@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, KeyboardEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Send, Loader2, StopCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -22,9 +23,10 @@ export function ChatInput({
   isLoading = false,
   isStreaming = false,
   disabled = false,
-  placeholder = 'Ask a question about your knowledge base...',
+  placeholder,
   maxLength = 4000,
 }: ChatInputProps) {
+  const { t } = useTranslation();
   const [message, setMessage] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -84,7 +86,7 @@ export function ChatInput({
             value={message}
             onChange={(e) => setMessage(e.target.value.slice(0, maxLength))}
             onKeyDown={handleKeyDown}
-            placeholder={disabled ? 'You do not have permission to send messages' : placeholder}
+            placeholder={disabled ? t('chat.ui.input.disabledSend') : (placeholder ?? t('chat.ui.input.placeholder'))}
             disabled={disabled || isLoading}
             className={cn(
               'min-h-[52px] max-h-[200px] resize-none pr-24 py-3',
@@ -115,7 +117,7 @@ export function ChatInput({
                 onClick={handleStop}
               >
                 <StopCircle className="h-4 w-4" />
-                <span className="sr-only">Stop generating</span>
+                <span className="sr-only">{t('chat.ui.input.stop')}</span>
               </Button>
             ) : (
               <Button
@@ -130,7 +132,7 @@ export function ChatInput({
                 ) : (
                   <Send className="h-4 w-4" />
                 )}
-                <span className="sr-only">Send message</span>
+                <span className="sr-only">{t('chat.ui.input.send')}</span>
               </Button>
             )}
           </div>
@@ -138,8 +140,9 @@ export function ChatInput({
 
         {/* Help text */}
         <p className="mt-2 text-xs text-muted-foreground text-center">
-          Press <kbd className="px-1 py-0.5 bg-muted rounded text-[10px]">Enter</kbd> to send,{' '}
-          <kbd className="px-1 py-0.5 bg-muted rounded text-[10px]">Shift+Enter</kbd> for new line
+          {t('chat.ui.input.helpPress')}{' '}
+          <kbd className="px-1 py-0.5 bg-muted rounded text-[10px]">Enter</kbd> {t('chat.ui.input.helpToSend')}{' '}
+          <kbd className="px-1 py-0.5 bg-muted rounded text-[10px]">Shift+Enter</kbd> {t('chat.ui.input.helpNewLine')}
         </p>
       </div>
     </div>

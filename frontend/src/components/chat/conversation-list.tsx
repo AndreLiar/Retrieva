@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import {
   MessageSquare,
   Pin,
@@ -51,6 +52,7 @@ export function ConversationList({
   onNewConversation,
   selectedId,
 }: ConversationListProps) {
+  const { t } = useTranslation();
   const pathname = usePathname();
   const queryClient = useQueryClient();
   const activeWorkspace = useActiveWorkspace();
@@ -90,7 +92,7 @@ export function ConversationList({
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
     },
     onError: () => {
-      toast.error('Failed to update conversation');
+      toast.error(t('chat.ui.sidebar.updateFailed'));
     },
   });
 
@@ -101,12 +103,12 @@ export function ConversationList({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
-      toast.success('Conversation deleted');
+      toast.success(t('chat.list.toast.deleted'));
       setDeleteDialogOpen(false);
       setConversationToDelete(null);
     },
     onError: () => {
-      toast.error('Failed to delete conversation');
+      toast.error(t('chat.list.toast.deleteFailed'));
     },
   });
 
@@ -133,7 +135,7 @@ export function ConversationList({
   if (!activeWorkspace) {
     return (
       <div className="p-4 text-center text-sm text-muted-foreground">
-        Select a workspace to view conversations
+        {t('chat.selectWorkspaceConv')}
       </div>
     );
   }
@@ -148,14 +150,14 @@ export function ConversationList({
           size="sm"
         >
           <Plus className="h-4 w-4 mr-2" />
-          New Chat
+          {t('chat.list.newChat')}
         </Button>
 
         {/* Search */}
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search conversations..."
+            placeholder={t('chat.ui.sidebar.search')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-8 h-8 text-sm"
@@ -173,11 +175,11 @@ export function ConversationList({
           </div>
         ) : error ? (
           <div className="p-4 text-center text-sm text-destructive">
-            Failed to load conversations
+            {t('chat.list.failedLoad')}
           </div>
         ) : filteredConversations.length === 0 ? (
           <div className="p-4 text-center text-sm text-muted-foreground">
-            {search ? 'No conversations found' : 'No conversations yet'}
+            {search ? t('chat.ui.sidebar.noneFound') : t('chat.ui.sidebar.noneYet')}
           </div>
         ) : (
           <div className="p-2">
@@ -185,7 +187,7 @@ export function ConversationList({
             {pinnedConversations.length > 0 && (
               <div className="mb-4">
                 <p className="px-2 py-1 text-xs font-medium text-muted-foreground uppercase">
-                  Pinned
+                  {t('chat.ui.sidebar.pinned')}
                 </p>
                 {pinnedConversations.map((conversation) => (
                   <ConversationItem
@@ -212,7 +214,7 @@ export function ConversationList({
               <div>
                 {pinnedConversations.length > 0 && (
                   <p className="px-2 py-1 text-xs font-medium text-muted-foreground uppercase">
-                    Recent
+                    {t('chat.ui.sidebar.recent')}
                   </p>
                 )}
                 {unpinnedConversations.map((conversation) => (
@@ -242,14 +244,13 @@ export function ConversationList({
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete conversation?</AlertDialogTitle>
+            <AlertDialogTitle>{t('chat.list.deleteOne')}</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the
-              conversation and all its messages.
+              {t('chat.ui.sidebar.deleteDesc')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDelete}
               className={destructiveActionClasses}
@@ -257,7 +258,7 @@ export function ConversationList({
               {deleteMutation.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                'Delete'
+                t('common.delete')
               )}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -281,6 +282,7 @@ function ConversationItem({
   onTogglePin,
   onDelete,
 }: ConversationItemProps) {
+  const { t } = useTranslation();
   const formattedDate = new Date(conversation.lastMessageAt).toLocaleDateString(
     undefined,
     { month: 'short', day: 'numeric' }
@@ -301,7 +303,7 @@ function ConversationItem({
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium truncate">{conversation.title}</p>
           <p className="text-xs text-muted-foreground">
-            {formattedDate} · {conversation.messageCount} messages
+            {formattedDate} · {t('chat.messageCount', { count: conversation.messageCount })}
           </p>
         </div>
         {conversation.isPinned && (
@@ -317,7 +319,7 @@ function ConversationItem({
             variant="ghost"
             size="icon"
             className="h-7 w-7 opacity-0 group-hover:opacity-100 focus:opacity-100 shrink-0"
-            aria-label={`Actions for conversation: ${conversation.title}`}
+            aria-label={t('chat.ui.sidebar.actionsAria', { title: conversation.title })}
           >
             <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
           </Button>
@@ -327,12 +329,12 @@ function ConversationItem({
             {conversation.isPinned ? (
               <>
                 <PinOff className="h-4 w-4 mr-2" />
-                Unpin
+                {t('chat.ui.sidebar.unpin')}
               </>
             ) : (
               <>
                 <Pin className="h-4 w-4 mr-2" />
-                Pin
+                {t('chat.ui.sidebar.pin')}
               </>
             )}
           </DropdownMenuItem>
@@ -341,7 +343,7 @@ function ConversationItem({
             className="text-destructive focus:text-destructive"
           >
             <Trash2 className="h-4 w-4 mr-2" />
-            Delete
+            {t('common.delete')}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

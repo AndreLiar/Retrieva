@@ -728,6 +728,49 @@
         "bulkDeleted": "{{count}} conversations supprimées",
         "bulkDeleteFailed": "Échec de la suppression des conversations"
       }
+    },
+    "ui": {
+      "retry": "Réessayer",
+      "input": {
+        "placeholder": "Posez une question sur votre base de connaissances…",
+        "disabledSend": "Vous n'avez pas la permission d'envoyer des messages",
+        "disabledQuery": "Vous n'avez pas la permission de poser des questions",
+        "stop": "Arrêter la génération",
+        "send": "Envoyer le message",
+        "helpPress": "Appuyez sur",
+        "helpToSend": "pour envoyer,",
+        "helpNewLine": "pour un saut de ligne"
+      },
+      "sources": {
+        "title": "Sources ({{count}})",
+        "showLess": "Afficher moins",
+        "showMore": "Afficher {{count}} sources de plus",
+        "relevance": "Pertinence : {{pct}} %"
+      },
+      "bubble": {
+        "copyAria": "Copier le message",
+        "copiedAria": "Copié dans le presse-papiers",
+        "copyTooltip": "Copier",
+        "copiedTooltip": "Copié !",
+        "goodAria": "Marquer comme bonne réponse",
+        "badAria": "Marquer comme mauvaise réponse",
+        "goodTooltip": "Bonne réponse",
+        "badTooltip": "Mauvaise réponse",
+        "regenerateAria": "Régénérer la réponse",
+        "regenerateTooltip": "Régénérer"
+      },
+      "sidebar": {
+        "search": "Rechercher des conversations…",
+        "noneFound": "Aucune conversation trouvée",
+        "noneYet": "Aucune conversation pour le moment",
+        "pinned": "Épinglées",
+        "recent": "Récentes",
+        "actionsAria": "Actions pour la conversation : {{title}}",
+        "unpin": "Désépingler",
+        "pin": "Épingler",
+        "deleteDesc": "Cette action est irréversible. Elle supprimera définitivement la conversation et tous ses messages.",
+        "updateFailed": "Échec de la mise à jour de la conversation"
+      }
     }
   }
 }

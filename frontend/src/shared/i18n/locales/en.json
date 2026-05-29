@@ -728,6 +728,49 @@
         "bulkDeleted": "{{count}} conversations deleted",
         "bulkDeleteFailed": "Failed to delete conversations"
       }
+    },
+    "ui": {
+      "retry": "Retry",
+      "input": {
+        "placeholder": "Ask a question about your knowledge base...",
+        "disabledSend": "You do not have permission to send messages",
+        "disabledQuery": "You do not have permission to ask questions",
+        "stop": "Stop generating",
+        "send": "Send message",
+        "helpPress": "Press",
+        "helpToSend": "to send,",
+        "helpNewLine": "for new line"
+      },
+      "sources": {
+        "title": "Sources ({{count}})",
+        "showLess": "Show less",
+        "showMore": "Show {{count}} more sources",
+        "relevance": "Relevance: {{pct}}%"
+      },
+      "bubble": {
+        "copyAria": "Copy message",
+        "copiedAria": "Copied to clipboard",
+        "copyTooltip": "Copy",
+        "copiedTooltip": "Copied!",
+        "goodAria": "Mark as good response",
+        "badAria": "Mark as bad response",
+        "goodTooltip": "Good response",
+        "badTooltip": "Bad response",
+        "regenerateAria": "Regenerate response",
+        "regenerateTooltip": "Regenerate"
+      },
+      "sidebar": {
+        "search": "Search conversations...",
+        "noneFound": "No conversations found",
+        "noneYet": "No conversations yet",
+        "pinned": "Pinned",
+        "recent": "Recent",
+        "actionsAria": "Actions for conversation: {{title}}",
+        "unpin": "Unpin",
+        "pin": "Pin",
+        "deleteDesc": "This action cannot be undone. This will permanently delete the conversation and all its messages.",
+        "updateFailed": "Failed to update conversation"
+      }
     }
   }
 }

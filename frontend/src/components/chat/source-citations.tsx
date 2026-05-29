@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronDown, ChevronUp, FileText, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -35,6 +36,7 @@ interface SourceCitationsProps {
 }
 
 export function SourceCitations({ sources, maxVisible = 3, messageId }: SourceCitationsProps) {
+  const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   const [expandedSources, setExpandedSources] = useState<Set<string>>(new Set());
 
@@ -60,7 +62,7 @@ export function SourceCitations({ sources, maxVisible = 3, messageId }: SourceCi
       <div className="flex items-center gap-2 mb-2">
         <FileText className="h-3.5 w-3.5 text-muted-foreground" />
         <span className="text-xs font-medium text-muted-foreground">
-          Sources ({sources.length})
+          {t('chat.ui.sources.title', { count: sources.length })}
         </span>
       </div>
 
@@ -87,12 +89,12 @@ export function SourceCitations({ sources, maxVisible = 3, messageId }: SourceCi
           {isExpanded ? (
             <>
               <ChevronUp className="h-3 w-3 mr-1" />
-              Show less
+              {t('chat.ui.sources.showLess')}
             </>
           ) : (
             <>
               <ChevronDown className="h-3 w-3 mr-1" />
-              Show {sources.length - maxVisible} more sources
+              {t('chat.ui.sources.showMore', { count: sources.length - maxVisible })}
             </>
           )}
         </Button>
@@ -111,6 +113,7 @@ interface SourceCardProps {
 }
 
 function SourceCard({ source, index, isExpanded, onToggle, domId }: SourceCardProps) {
+  const { t } = useTranslation();
   const hasContent = source.content && source.content.length > 0;
   const truncatedContent =
     source.content && source.content.length > 200
@@ -140,7 +143,7 @@ function SourceCard({ source, index, isExpanded, onToggle, domId }: SourceCardPr
               <p className="text-sm font-medium truncate">{source.title}</p>
               {source.score !== undefined && (
                 <p className="text-xs text-muted-foreground">
-                  Relevance: {Math.round(source.score * 100)}%
+                  {t('chat.ui.sources.relevance', { pct: Math.round(source.score * 100) })}
                 </p>
               )}
             </div>
