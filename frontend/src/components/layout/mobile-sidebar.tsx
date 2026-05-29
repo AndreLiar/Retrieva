@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { MessageSquare } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -13,6 +14,7 @@ import { usePermissions } from '@/lib/hooks/use-permissions';
 import { mobileMainNavItems, bottomNavItems, type NavItem } from '@/lib/constants/nav-items';
 
 export function MobileSidebar() {
+  const { t } = useTranslation();
   const pathname = usePathname();
   const sidebarOpen = useUIStore((state) => state.sidebarOpen);
   const setSidebarOpen = useUIStore((state) => state.setSidebarOpen);
@@ -74,7 +76,7 @@ export function MobileSidebar() {
                 >
                   <Link href={item.href}>
                     <item.icon className="mr-2 h-4 w-4" />
-                    <span>{item.title}</span>
+                    <span>{t(item.title)}</span>
                   </Link>
                 </Button>
               );
@@ -95,7 +97,7 @@ export function MobileSidebar() {
                 >
                   <Link href={item.href}>
                     <item.icon className="mr-2 h-4 w-4" />
-                    <span>{item.title}</span>
+                    <span>{t(item.title)}</span>
                   </Link>
                 </Button>
               );

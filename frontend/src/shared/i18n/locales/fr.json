@@ -12,6 +12,37 @@
     "en": "English",
     "fr": "Français"
   },
+  "nav": {
+    "sections": {
+      "compliance": "Conformité",
+      "intelligence": "Intelligence"
+    },
+    "items": {
+      "riskRegister": "Registre des risques",
+      "vendors": "Fournisseurs",
+      "gapAnalysis": "Analyse d'écarts",
+      "questionnaires": "Questionnaires",
+      "askAi": "Demander à l'IA",
+      "history": "Historique",
+      "settings": "Paramètres"
+    },
+    "titles": {
+      "riskRegister": "Registre des risques",
+      "vendors": "Fournisseurs",
+      "gapAnalysis": "Analyse d'écarts",
+      "questionnaires": "Questionnaires",
+      "askAi": "Demander à l'IA",
+      "conversationHistory": "Historique des conversations",
+      "settings": "Paramètres",
+      "security": "Sécurité",
+      "team": "Équipe",
+      "billing": "Facturation",
+      "assessmentDetail": "Détail de l'évaluation",
+      "vendorDetail": "Détail du fournisseur",
+      "conversation": "Conversation",
+      "questionnaire": "Questionnaire"
+    }
+  },
   "landing": {
     "badge": "Règlement DORA (UE) 2022/2554",
     "heroTitle": "Intelligence de conformité DORA",
