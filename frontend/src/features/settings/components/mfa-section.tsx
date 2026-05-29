@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { Loader2, ShieldCheck, ShieldOff, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -26,6 +27,7 @@ import type { MfaSetupResponse } from '@/types';
  * → MFA enabled, recovery codes shown once. Disable requires password + a code.
  */
 export function MfaSection() {
+  const { t } = useTranslation();
   const user = useAuthStore((state) => state.user);
   const setUser = useAuthStore((state) => state.setUser);
   const enabled = !!user?.mfaEnabled;
@@ -52,7 +54,7 @@ export function MfaSection() {
       setSetup(null);
       setCode('');
       if (user) setUser({ ...user, mfaEnabled: true });
-      toast.success('Two-factor authentication enabled');
+      toast.success(t('settings.mfa.toastEnabled'));
     },
     onError: (err) => toast.error(getErrorMessage(err)),
   });
@@ -63,7 +65,7 @@ export function MfaSection() {
       if (user) setUser({ ...user, mfaEnabled: false });
       setDisablePassword('');
       setDisableCode('');
-      toast.success('Two-factor authentication disabled');
+      toast.success(t('settings.mfa.toastDisabled'));
     },
     onError: (err) => toast.error(getErrorMessage(err)),
   });
@@ -71,7 +73,7 @@ export function MfaSection() {
   const copyRecoveryCodes = () => {
     if (recoveryCodes) {
       navigator.clipboard?.writeText(recoveryCodes.join('\n'));
-      toast.success('Recovery codes copied');
+      toast.success(t('settings.mfa.toastCopied'));
     }
   };
 
@@ -84,12 +86,12 @@ export function MfaSection() {
           ) : (
             <ShieldOff className="h-5 w-5 text-muted-foreground" />
           )}
-          Two-Factor Authentication
+          {t('settings.mfa.title')}
         </CardTitle>
         <CardDescription>
           {enabled
-            ? 'Your account is protected with an authenticator app.'
-            : 'Add a second step at sign-in using an authenticator app (TOTP).'}
+            ? t('settings.mfa.descEnabled')
+            : t('settings.mfa.descDisabled')}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -97,8 +99,7 @@ export function MfaSection() {
         {recoveryCodes && (
           <div className="rounded-md border border-amber-300 bg-amber-50 p-4 space-y-3 dark:bg-amber-950/30">
             <p className="text-sm font-medium">
-              Save these recovery codes now — they are shown only once. Each can be used once
-              if you lose your device.
+              {t('settings.mfa.recoveryNote')}
             </p>
             <div className="grid grid-cols-2 gap-2 font-mono text-sm">
               {recoveryCodes.map((rc) => (
@@ -107,7 +108,7 @@ export function MfaSection() {
             </div>
             <Button type="button" variant="outline" size="sm" onClick={copyRecoveryCodes}>
               <Copy className="mr-2 h-4 w-4" />
-              Copy codes
+              {t('settings.mfa.copyCodes')}
             </Button>
           </div>
         )}
@@ -116,16 +117,16 @@ export function MfaSection() {
         {!enabled && !setup && (
           <Button onClick={() => setupMutation.mutate()} disabled={setupMutation.isPending}>
             {setupMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Set up two-factor authentication
+            {t('settings.mfa.setup')}
           </Button>
         )}
 
         {!enabled && setup && (
           <div className="space-y-4">
             <div className="space-y-1">
-              <p className="text-sm font-medium">1. Add this account to your authenticator app</p>
+              <p className="text-sm font-medium">{t('settings.mfa.step1')}</p>
               <p className="text-xs text-muted-foreground">
-                Scan the otpauth URL as a QR code, or enter the secret manually:
+                {t('settings.mfa.step1Desc')}
               </p>
               <code className="block break-all rounded bg-muted px-2 py-1 text-xs">
                 {setup.secret}
@@ -136,11 +137,11 @@ export function MfaSection() {
             </div>
             <Separator />
             <div className="space-y-2">
-              <p className="text-sm font-medium">2. Enter the 6-digit code to confirm</p>
+              <p className="text-sm font-medium">{t('settings.mfa.step2')}</p>
               <Input
                 inputMode="numeric"
                 autoComplete="one-time-code"
-                placeholder="123456"
+                placeholder={t('settings.mfa.codePlaceholder')}
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
                 disabled={enableMutation.isPending}
@@ -151,7 +152,7 @@ export function MfaSection() {
                   disabled={enableMutation.isPending || code.trim().length < 6}
                 >
                   {enableMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Enable
+                  {t('settings.mfa.enable')}
                 </Button>
                 <Button
                   variant="ghost"
@@ -161,7 +162,7 @@ export function MfaSection() {
                   }}
                   disabled={enableMutation.isPending}
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </Button>
               </div>
             </div>
@@ -172,12 +173,12 @@ export function MfaSection() {
         {enabled && (
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              To disable, confirm your password and a current code.
+              {t('settings.mfa.disablePrompt')}
             </p>
             <Input
               type="password"
               autoComplete="current-password"
-              placeholder="Current password"
+              placeholder={t('settings.mfa.currentPasswordPlaceholder')}
               value={disablePassword}
               onChange={(e) => setDisablePassword(e.target.value)}
               disabled={disableMutation.isPending}
@@ -185,7 +186,7 @@ export function MfaSection() {
             <Input
               inputMode="numeric"
               autoComplete="one-time-code"
-              placeholder="6-digit code or recovery code"
+              placeholder={t('settings.mfa.disableCodePlaceholder')}
               value={disableCode}
               onChange={(e) => setDisableCode(e.target.value)}
               disabled={disableMutation.isPending}
@@ -200,7 +201,7 @@ export function MfaSection() {
               }
             >
               {disableMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Disable two-factor authentication
+              {t('settings.mfa.disable')}
             </Button>
           </div>
         )}
