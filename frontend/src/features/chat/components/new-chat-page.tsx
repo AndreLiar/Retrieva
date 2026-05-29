@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { Loader2, MessageSquarePlus } from 'lucide-react';
 
 import { ChatInterface } from '@/components/chat';
@@ -11,6 +12,7 @@ import type { Conversation } from '@/types';
 // ChatInterface creates the conversation on first send, then onConversationCreated
 // redirects the user to /conversations/<id> so the URL reflects the saved session.
 export function NewChatPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const activeWorkspace = useActiveWorkspace();
   const { isLoading: workspacesLoading } = useWorkspaceListQuery();
@@ -30,7 +32,7 @@ export function NewChatPage() {
   if (!activeWorkspace) {
     return (
       <div className="flex h-full items-center justify-center">
-        <p className="text-muted-foreground">Select a workspace to start a conversation</p>
+        <p className="text-muted-foreground">{t('chat.selectWorkspaceStart')}</p>
       </div>
     );
   }
@@ -39,7 +41,7 @@ export function NewChatPage() {
     <div className="flex h-full flex-col">
       <div className="flex items-center border-b px-4 py-2">
         <MessageSquarePlus className="h-4 w-4 mr-2 text-muted-foreground" />
-        <h1 className="text-sm font-medium">New Conversation</h1>
+        <h1 className="text-sm font-medium">{t('chat.newConversation')}</h1>
       </div>
       <div className="flex-1 overflow-hidden">
         <ChatInterface onConversationCreated={handleConversationCreated} />
