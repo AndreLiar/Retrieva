@@ -5,7 +5,9 @@
     "startFree": "Start Free",
     "pricing": "Pricing",
     "contactSales": "Contact Sales",
-    "startFreeTrial": "Start free trial"
+    "startFreeTrial": "Start free trial",
+    "cancel": "Cancel",
+    "delete": "Delete"
   },
   "language": {
     "label": "Language",
@@ -195,6 +197,49 @@
       "certs": "Certs",
       "nextReview": "Next Review",
       "compliance": "Compliance"
+    }
+  },
+  "questionnaires": {
+    "title": "Questionnaires",
+    "subtitle": "DORA Art.28/30 vendor due diligence questionnaires",
+    "exportRoi": "Export RoI (Excel)",
+    "send": "Send Questionnaire",
+    "selectWorkspace": "Select a workspace first",
+    "loadError": "Failed to load questionnaires. Please refresh.",
+    "copyLink": "Copy vendor link",
+    "deleteTitle": "Delete questionnaire",
+    "deleteConfirmTitle": "Delete questionnaire?",
+    "deleteConfirmDesc1": "This will permanently delete the questionnaire for ",
+    "deleteConfirmDesc2": " and all collected responses. This cannot be undone.",
+    "status": {
+      "draft": "Draft",
+      "sent": "Sent",
+      "partial": "Responding",
+      "complete": "Complete",
+      "expired": "Expired",
+      "failed": "Failed"
+    },
+    "cols": {
+      "vendor": "Vendor",
+      "email": "Email",
+      "status": "Status",
+      "score": "Score",
+      "sent": "Sent",
+      "actions": "Actions"
+    },
+    "empty": {
+      "heading": "No questionnaires sent",
+      "description": "Send a structured Art. 28/30 due diligence questionnaire to a vendor. They complete it via a secure link - no Retrieva account required.",
+      "cta": "Send a questionnaire",
+      "hint": "Completed responses are automatically scored and feed into the Risk Register."
+    },
+    "toast": {
+      "deleted": "Questionnaire deleted",
+      "deleteFailed": "Failed to delete questionnaire",
+      "exportFailed": "Export failed",
+      "exportFailedDesc": "Could not generate the RoI workbook.",
+      "noLink": "No link yet - send the questionnaire first",
+      "linkCopied": "Vendor link copied to clipboard"
     }
   },
   "landing": {

@@ -5,7 +5,9 @@
     "startFree": "Commencer gratuitement",
     "pricing": "Tarifs",
     "contactSales": "Contacter le service commercial",
-    "startFreeTrial": "Démarrer l'essai gratuit"
+    "startFreeTrial": "Démarrer l'essai gratuit",
+    "cancel": "Annuler",
+    "delete": "Supprimer"
   },
   "language": {
     "label": "Langue",
@@ -195,6 +197,49 @@
       "certs": "Certif.",
       "nextReview": "Prochaine revue",
       "compliance": "Conformité"
+    }
+  },
+  "questionnaires": {
+    "title": "Questionnaires",
+    "subtitle": "Questionnaires de due diligence fournisseurs (DORA art. 28/30)",
+    "exportRoi": "Exporter le RoI (Excel)",
+    "send": "Envoyer un questionnaire",
+    "selectWorkspace": "Sélectionnez d'abord un espace de travail",
+    "loadError": "Échec du chargement des questionnaires. Veuillez actualiser.",
+    "copyLink": "Copier le lien fournisseur",
+    "deleteTitle": "Supprimer le questionnaire",
+    "deleteConfirmTitle": "Supprimer le questionnaire ?",
+    "deleteConfirmDesc1": "Cela supprimera définitivement le questionnaire de ",
+    "deleteConfirmDesc2": " et toutes les réponses collectées. Cette action est irréversible.",
+    "status": {
+      "draft": "Brouillon",
+      "sent": "Envoyé",
+      "partial": "En cours",
+      "complete": "Terminé",
+      "expired": "Expiré",
+      "failed": "Échoué"
+    },
+    "cols": {
+      "vendor": "Fournisseur",
+      "email": "E-mail",
+      "status": "Statut",
+      "score": "Score",
+      "sent": "Envoyé le",
+      "actions": "Actions"
+    },
+    "empty": {
+      "heading": "Aucun questionnaire envoyé",
+      "description": "Envoyez un questionnaire de due diligence structuré (art. 28/30) à un fournisseur. Il le complète via un lien sécurisé — aucun compte Retrieva requis.",
+      "cta": "Envoyer un questionnaire",
+      "hint": "Les réponses complétées sont notées automatiquement et alimentent le registre des risques."
+    },
+    "toast": {
+      "deleted": "Questionnaire supprimé",
+      "deleteFailed": "Échec de la suppression du questionnaire",
+      "exportFailed": "Échec de l'export",
+      "exportFailedDesc": "Impossible de générer le classeur RoI.",
+      "noLink": "Pas encore de lien — envoyez d'abord le questionnaire",
+      "linkCopied": "Lien fournisseur copié dans le presse-papiers"
     }
   },
   "landing": {
