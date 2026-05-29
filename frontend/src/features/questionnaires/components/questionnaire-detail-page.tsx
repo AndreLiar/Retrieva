@@ -3,6 +3,7 @@
 import { use, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import {
   ArrowLeft,
@@ -38,7 +39,7 @@ import {
 import { questionnairesApi } from '@/lib/api/questionnaires';
 import type { VendorQuestionnaire, QuestionnaireQuestion, QuestionnaireStatus, GapLevel } from '@/lib/api/questionnaires';
 
-const STEP_LABELS = ['Draft', 'Sent', 'Vendor Responding', 'Scoring', 'Complete'];
+const STEP_KEYS = ['draft', 'sent', 'responding', 'scoring', 'complete'] as const;
 
 const GAP_VARIANT: Record<GapLevel, 'default' | 'secondary' | 'destructive'> = {
   covered: 'default',
@@ -46,14 +47,14 @@ const GAP_VARIANT: Record<GapLevel, 'default' | 'secondary' | 'destructive'> = {
   missing: 'destructive',
 };
 
-function getRiskLabel(score: number): { label: string; variant: 'default' | 'secondary' | 'destructive' } {
+function getRiskLabelKey(score: number): { labelKey: string; variant: 'default' | 'secondary' | 'destructive' } {
   if (score >= 70) {
-    return { label: 'Low Risk', variant: 'default' };
+    return { labelKey: 'questionnaireDetail.risk.low', variant: 'default' };
   }
   if (score >= 40) {
-    return { label: 'Medium Risk', variant: 'secondary' };
+    return { labelKey: 'questionnaireDetail.risk.medium', variant: 'secondary' };
   }
-  return { label: 'High Risk', variant: 'destructive' };
+  return { labelKey: 'questionnaireDetail.risk.high', variant: 'destructive' };
 }
 
 function getScoreColor(score: number) {
@@ -67,6 +68,7 @@ function getScoreColor(score: number) {
 }
 
 function ProgressStepper({ status }: { status: QuestionnaireStatus }) {
+  const { t } = useTranslation();
   const stepIndex =
     status === 'draft' ? 0
       : status === 'sent' ? 1
@@ -76,13 +78,13 @@ function ProgressStepper({ status }: { status: QuestionnaireStatus }) {
 
   return (
     <div className="flex items-center gap-1">
-      {STEP_LABELS.map((label, index) => {
+      {STEP_KEYS.map((key, index) => {
         const isComplete = index < stepIndex;
         const isCurrent = index === stepIndex;
         const isFuture = index > stepIndex;
 
         return (
-          <div key={label} className="flex items-center">
+          <div key={key} className="flex items-center">
             <div className="flex flex-col items-center">
               <div
                 className={`h-7 w-7 rounded-full flex items-center justify-center text-xs font-medium border-2 transition-colors
@@ -96,10 +98,10 @@ function ProgressStepper({ status }: { status: QuestionnaireStatus }) {
               <span
                 className={`text-xs mt-1 whitespace-nowrap ${isFuture ? 'text-muted-foreground/40' : isCurrent ? 'text-foreground font-medium' : 'text-muted-foreground'}`}
               >
-                {label}
+                {t(`questionnaireDetail.steps.${key}`)}
               </span>
             </div>
-            {index < STEP_LABELS.length - 1 && (
+            {index < STEP_KEYS.length - 1 && (
               <div
                 className={`h-px w-8 mx-1 mb-4 transition-colors ${isComplete ? 'bg-primary' : 'bg-muted-foreground/20'}`}
               />
@@ -153,6 +155,7 @@ function CategoryBreakdown({ questions }: { questions: QuestionnaireQuestion[] }
 }
 
 function AnswerRow({ q }: { q: QuestionnaireQuestion }) {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
   const answer = q.answer || '';
   const truncated = answer.length > 120 ? `${answer.slice(0, 120)}…` : answer;
@@ -171,13 +174,13 @@ function AnswerRow({ q }: { q: QuestionnaireQuestion }) {
             onClick={() => setExpanded(!expanded)}
           >
             {expanded ? (
-              <><ChevronUp className="h-3 w-3" /> Show less</>
+              <><ChevronUp className="h-3 w-3" /> {t('questionnaireDetail.showLess')}</>
             ) : (
-              <><ChevronDown className="h-3 w-3" /> Show more</>
+              <><ChevronDown className="h-3 w-3" /> {t('questionnaireDetail.showMore')}</>
             )}
           </button>
         )}
-        {!answer && <span className="text-muted-foreground text-xs italic">No answer</span>}
+        {!answer && <span className="text-muted-foreground text-xs italic">{t('questionnaireDetail.noAnswer')}</span>}
       </TableCell>
       <TableCell>
         {q.score !== undefined ? (
@@ -189,7 +192,7 @@ function AnswerRow({ q }: { q: QuestionnaireQuestion }) {
       <TableCell>
         {q.gapLevel ? (
           <Badge variant={GAP_VARIANT[q.gapLevel]} className="capitalize text-xs">
-            {q.gapLevel}
+            {t(`questionnaireDetail.gap.${q.gapLevel}`)}
           </Badge>
         ) : (
           <span className="text-muted-foreground text-sm">-</span>
@@ -203,6 +206,7 @@ function AnswerRow({ q }: { q: QuestionnaireQuestion }) {
 }
 
 function RiskDecisionPanel({ q }: { q: VendorQuestionnaire }) {
+  const { t } = useTranslation();
   const router = useRouter();
   const score = q.overallScore ?? 0;
 
@@ -217,43 +221,43 @@ function RiskDecisionPanel({ q }: { q: VendorQuestionnaire }) {
   type Decision = 'proceed' | 'conditional' | 'reject';
   const decision: Decision = score >= 70 ? 'proceed' : score >= 40 ? 'conditional' : 'reject';
 
+  const reviewContract = { label: t('questionnaireDetail.decision.actions.reviewContract'), icon: FileText, href: '/assessments/new?framework=CONTRACT_A30' };
+  const runGapAnalysis = { label: t('questionnaireDetail.decision.actions.runGapAnalysis'), icon: FileSearch, href: '/assessments/new' };
+
   const config = {
     proceed: {
       Icon: CheckCircle2,
       iconClass: 'text-success',
       borderClass: 'border-green-200 bg-green-50 dark:bg-green-950/20 dark:border-green-800',
       badge: 'bg-success-muted text-success border-success-muted',
-      label: 'Proceed to contracting',
-      headline: 'Vendor meets baseline DORA requirements.',
-      detail: `Score of ${score}/100 indicates acceptable ICT risk posture. ${totalGaps > 0 ? `${totalGaps} partial gap(s) should be addressed via contract clauses.` : 'No critical gaps identified.'}`,
-      next: [
-        { label: 'Review Contract (Art. 30)', icon: FileText, href: '/assessments/new?framework=CONTRACT_A30' },
-      ],
+      label: t('questionnaireDetail.decision.proceed.label'),
+      headline: t('questionnaireDetail.decision.proceed.headline'),
+      detail:
+        t('questionnaireDetail.decision.proceed.detailBase', { score }) +
+        (totalGaps > 0
+          ? t('questionnaireDetail.decision.proceed.detailGaps', { count: totalGaps })
+          : t('questionnaireDetail.decision.proceed.detailNoGaps')),
+      next: [reviewContract],
     },
     conditional: {
       Icon: AlertTriangle,
       iconClass: 'text-warning',
       borderClass: 'border-warning-muted bg-warning-muted',
       badge: 'bg-warning-muted text-warning border-warning-muted',
-      label: 'Proceed with conditions',
-      headline: 'Vendor may proceed to contracting with remediation conditions.',
-      detail: `Score of ${score}/100. ${missingGaps.length} critical gap(s) must be addressed in the contract or via a vendor remediation plan before signature.`,
-      next: [
-        { label: 'Run Gap Analysis', icon: FileSearch, href: '/assessments/new' },
-        { label: 'Review Contract (Art. 30)', icon: FileText, href: '/assessments/new?framework=CONTRACT_A30' },
-      ],
+      label: t('questionnaireDetail.decision.conditional.label'),
+      headline: t('questionnaireDetail.decision.conditional.headline'),
+      detail: t('questionnaireDetail.decision.conditional.detail', { score, missing: missingGaps.length }),
+      next: [runGapAnalysis, reviewContract],
     },
     reject: {
       Icon: XCircle,
       iconClass: 'text-destructive',
       borderClass: 'border-destructive/30 bg-destructive/5',
       badge: 'bg-red-100 text-red-800 border-red-200',
-      label: 'Do not proceed',
-      headline: 'Significant ICT risk gaps - contracting not recommended.',
-      detail: `Score of ${score}/100. ${missingGaps.length} critical gap(s) identified. Request a vendor remediation plan and re-assess before contracting.`,
-      next: [
-        { label: 'Run Gap Analysis', icon: FileSearch, href: '/assessments/new' },
-      ],
+      label: t('questionnaireDetail.decision.reject.label'),
+      headline: t('questionnaireDetail.decision.reject.headline'),
+      detail: t('questionnaireDetail.decision.reject.detail', { score, missing: missingGaps.length }),
+      next: [runGapAnalysis],
     },
   }[decision];
 
@@ -262,7 +266,7 @@ function RiskDecisionPanel({ q }: { q: VendorQuestionnaire }) {
       <CardHeader className="pb-3">
         <div className="flex items-center gap-2">
           <config.Icon className={`h-5 w-5 ${config.iconClass}`} />
-          <CardTitle className="text-base">Contracting Decision</CardTitle>
+          <CardTitle className="text-base">{t('questionnaireDetail.decision.title')}</CardTitle>
           <span className={`ml-auto text-xs font-medium px-2 py-0.5 rounded-full border ${config.badge}`}>
             {config.label}
           </span>
@@ -277,7 +281,7 @@ function RiskDecisionPanel({ q }: { q: VendorQuestionnaire }) {
         {missingGaps.length > 0 && (
           <div className="rounded-md border bg-background p-3 space-y-1">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-              Critical gaps requiring action
+              {t('questionnaireDetail.decision.criticalGaps')}
             </p>
             {missingGaps.map((gap) => (
               <div key={gap.id} className="flex items-start gap-2 text-sm">
@@ -290,7 +294,7 @@ function RiskDecisionPanel({ q }: { q: VendorQuestionnaire }) {
 
         <div className="flex gap-2 flex-wrap pt-1">
           <p className="w-full text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-            Next step
+            {t('questionnaireDetail.decision.nextStep')}
           </p>
           {config.next.map((action) => (
             <Button
@@ -315,6 +319,7 @@ interface QuestionnaireDetailPageProps {
 }
 
 export function QuestionnaireDetailPage({ params }: QuestionnaireDetailPageProps) {
+  const { t } = useTranslation();
   const { id } = use(params);
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -335,15 +340,15 @@ export function QuestionnaireDetailPage({ params }: QuestionnaireDetailPageProps
   const resendMutation = useMutation({
     mutationFn: () => questionnairesApi.send(id),
     onSuccess: () => {
-      toast.success('Invitation email resent');
+      toast.success(t('questionnaireDetail.toast.resent'));
       queryClient.invalidateQueries({ queryKey: ['questionnaire', id] });
     },
-    onError: () => toast.error('Failed to resend email'),
+    onError: () => toast.error(t('questionnaireDetail.toast.resendFailed')),
   });
 
   const copyLink = () => {
     if (!data?.token) {
-      toast.error('No vendor link yet - the questionnaire has not been sent');
+      toast.error(t('questionnaireDetail.toast.noLink'));
       return;
     }
 
@@ -353,7 +358,7 @@ export function QuestionnaireDetailPage({ params }: QuestionnaireDetailPageProps
 
     navigator.clipboard.writeText(link).then(() => {
       setCopied(true);
-      toast.success('Vendor link copied');
+      toast.success(t('questionnaireDetail.toast.linkCopied'));
       setTimeout(() => setCopied(false), 2000);
     });
   };
@@ -372,20 +377,20 @@ export function QuestionnaireDetailPage({ params }: QuestionnaireDetailPageProps
     return (
       <div className="p-6 flex items-center gap-2 text-destructive">
         <AlertCircle className="h-5 w-5" />
-        <span>Failed to load questionnaire. Please go back and try again.</span>
+        <span>{t('questionnaireDetail.toast.loadError')}</span>
       </div>
     );
   }
 
   const questionnaire = data;
-  const risk = questionnaire.overallScore !== undefined ? getRiskLabel(questionnaire.overallScore) : null;
+  const risk = questionnaire.overallScore !== undefined ? getRiskLabelKey(questionnaire.overallScore) : null;
   const isPolling = questionnaire.status === 'sent' || questionnaire.status === 'partial';
 
   return (
     <div className="page-container max-w-5xl mx-auto">
       <Button variant="ghost" size="sm" className="-ml-2" onClick={() => router.push('/questionnaires')}>
         <ArrowLeft className="h-4 w-4 mr-1" />
-        Questionnaires
+        {t('questionnaires.title')}
       </Button>
 
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -394,9 +399,9 @@ export function QuestionnaireDetailPage({ params }: QuestionnaireDetailPageProps
           <p className="text-muted-foreground text-sm mt-0.5">{questionnaire.vendorEmail}</p>
           {questionnaire.sentAt && (
             <p className="text-muted-foreground text-xs mt-1">
-              Sent {format(new Date(questionnaire.sentAt), 'dd MMM yyyy')}
+              {t('questionnaireDetail.sentOn', { date: format(new Date(questionnaire.sentAt), 'dd MMM yyyy') })}
               {questionnaire.tokenExpiresAt &&
-                ` · Expires ${format(new Date(questionnaire.tokenExpiresAt), 'dd MMM yyyy')}`}
+                t('questionnaireDetail.expiresSuffix', { date: format(new Date(questionnaire.tokenExpiresAt), 'dd MMM yyyy') })}
             </p>
           )}
         </div>
@@ -404,7 +409,7 @@ export function QuestionnaireDetailPage({ params }: QuestionnaireDetailPageProps
           {isPolling && (
             <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              Waiting for vendor...
+              {t('questionnaireDetail.waitingForVendor')}
             </span>
           )}
           {(questionnaire.status === 'sent' || questionnaire.status === 'partial') && (
@@ -419,7 +424,7 @@ export function QuestionnaireDetailPage({ params }: QuestionnaireDetailPageProps
               ) : (
                 <Mail className="h-4 w-4 mr-1.5" />
               )}
-              Resend Email
+              {t('questionnaireDetail.resendEmail')}
             </Button>
           )}
           <Button variant="outline" size="sm" onClick={copyLink}>
@@ -428,7 +433,7 @@ export function QuestionnaireDetailPage({ params }: QuestionnaireDetailPageProps
             ) : (
               <Copy className="h-4 w-4 mr-1.5" />
             )}
-            Copy Vendor Link
+            {t('questionnaireDetail.copyVendorLink')}
           </Button>
         </div>
       </div>
@@ -442,7 +447,7 @@ export function QuestionnaireDetailPage({ params }: QuestionnaireDetailPageProps
       {questionnaire.status === 'complete' && questionnaire.overallScore !== undefined && risk && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Assessment Result</CardTitle>
+            <CardTitle className="text-base">{t('questionnaireDetail.assessmentResult')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center gap-4">
@@ -452,7 +457,7 @@ export function QuestionnaireDetailPage({ params }: QuestionnaireDetailPageProps
               <div>
                 <span className="text-muted-foreground text-lg">/100</span>
                 <div className="mt-1">
-                  <Badge variant={risk.variant}>{risk.label}</Badge>
+                  <Badge variant={risk.variant}>{t(risk.labelKey)}</Badge>
                 </div>
               </div>
             </div>
@@ -462,7 +467,7 @@ export function QuestionnaireDetailPage({ params }: QuestionnaireDetailPageProps
             )}
             {questionnaire.results?.generatedAt && (
               <p className="text-xs text-muted-foreground">
-                Generated {format(new Date(questionnaire.results.generatedAt), 'dd MMM yyyy HH:mm')}
+                {t('questionnaireDetail.generatedOn', { date: format(new Date(questionnaire.results.generatedAt), 'dd MMM yyyy HH:mm') })}
               </p>
             )}
           </CardContent>
@@ -478,11 +483,8 @@ export function QuestionnaireDetailPage({ params }: QuestionnaireDetailPageProps
           <CardContent className="flex items-center gap-3 pt-5 pb-5">
             <Loader2 className="h-5 w-5 animate-spin text-warning" />
             <div>
-              <p className="font-medium text-sm">Scoring in progress</p>
-              <p className="text-xs text-muted-foreground">
-                The vendor has submitted their responses. LLM scoring is running - this page will
-                update automatically.
-              </p>
+              <p className="font-medium text-sm">{t('questionnaireDetail.scoringTitle')}</p>
+              <p className="text-xs text-muted-foreground">{t('questionnaireDetail.scoringDesc')}</p>
             </div>
           </CardContent>
         </Card>
@@ -493,11 +495,11 @@ export function QuestionnaireDetailPage({ params }: QuestionnaireDetailPageProps
           <CardContent className="flex items-center gap-3 pt-5 pb-5">
             <AlertCircle className="h-5 w-5 text-destructive" />
             <div>
-              <p className="font-medium text-sm capitalize">{questionnaire.status}</p>
+              <p className="font-medium text-sm">{t(`questionnaires.status.${questionnaire.status}`)}</p>
               <p className="text-xs text-muted-foreground">
                 {questionnaire.statusMessage || (questionnaire.status === 'expired'
-                  ? 'The vendor link has expired. Create a new questionnaire to retry.'
-                  : 'Scoring encountered an error. Please contact support.')}
+                  ? t('questionnaireDetail.expiredMsg')
+                  : t('questionnaireDetail.failedMsg'))}
               </p>
             </div>
           </CardContent>
@@ -507,7 +509,7 @@ export function QuestionnaireDetailPage({ params }: QuestionnaireDetailPageProps
       {questionnaire.status === 'complete' && questionnaire.questions.some((question) => question.gapLevel) && (
         <div className="space-y-2">
           <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
-            By Category
+            {t('questionnaireDetail.byCategory')}
           </h2>
           <CategoryBreakdown questions={questionnaire.questions} />
         </div>
@@ -516,18 +518,18 @@ export function QuestionnaireDetailPage({ params }: QuestionnaireDetailPageProps
       {questionnaire.questions.some((question) => question.answer) && (
         <div className="space-y-2">
           <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
-            Vendor Responses
+            {t('questionnaireDetail.vendorResponses')}
           </h2>
           <div className="border rounded-lg overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-28">Article</TableHead>
-                  <TableHead className="w-36">Category</TableHead>
-                  <TableHead>Answer</TableHead>
-                  <TableHead className="w-16">Score</TableHead>
-                  <TableHead className="w-24">Gap</TableHead>
-                  <TableHead>Reasoning</TableHead>
+                  <TableHead className="w-28">{t('questionnaireDetail.cols.article')}</TableHead>
+                  <TableHead className="w-36">{t('questionnaireDetail.cols.category')}</TableHead>
+                  <TableHead>{t('questionnaireDetail.cols.answer')}</TableHead>
+                  <TableHead className="w-16">{t('questionnaireDetail.cols.score')}</TableHead>
+                  <TableHead className="w-24">{t('questionnaireDetail.cols.gap')}</TableHead>
+                  <TableHead>{t('questionnaireDetail.cols.reasoning')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

@@ -265,6 +265,82 @@
       "toastSent": "Questionnaire sent to vendor"
     }
   },
+  "questionnaireDetail": {
+    "steps": {
+      "draft": "Draft",
+      "sent": "Sent",
+      "responding": "Vendor Responding",
+      "scoring": "Scoring",
+      "complete": "Complete"
+    },
+    "risk": {
+      "low": "Low Risk",
+      "medium": "Medium Risk",
+      "high": "High Risk"
+    },
+    "gap": {
+      "covered": "covered",
+      "partial": "partial",
+      "missing": "missing"
+    },
+    "showMore": "Show more",
+    "showLess": "Show less",
+    "noAnswer": "No answer",
+    "sentOn": "Sent {{date}}",
+    "expiresSuffix": " · Expires {{date}}",
+    "waitingForVendor": "Waiting for vendor...",
+    "resendEmail": "Resend Email",
+    "copyVendorLink": "Copy Vendor Link",
+    "assessmentResult": "Assessment Result",
+    "generatedOn": "Generated {{date}}",
+    "scoringTitle": "Scoring in progress",
+    "scoringDesc": "The vendor has submitted their responses. LLM scoring is running - this page will update automatically.",
+    "expiredMsg": "The vendor link has expired. Create a new questionnaire to retry.",
+    "failedMsg": "Scoring encountered an error. Please contact support.",
+    "byCategory": "By Category",
+    "vendorResponses": "Vendor Responses",
+    "cols": {
+      "article": "Article",
+      "category": "Category",
+      "answer": "Answer",
+      "score": "Score",
+      "gap": "Gap",
+      "reasoning": "Reasoning"
+    },
+    "toast": {
+      "resent": "Invitation email resent",
+      "resendFailed": "Failed to resend email",
+      "noLink": "No vendor link yet - the questionnaire has not been sent",
+      "linkCopied": "Vendor link copied",
+      "loadError": "Failed to load questionnaire. Please go back and try again."
+    },
+    "decision": {
+      "title": "Contracting Decision",
+      "criticalGaps": "Critical gaps requiring action",
+      "nextStep": "Next step",
+      "actions": {
+        "reviewContract": "Review Contract (Art. 30)",
+        "runGapAnalysis": "Run Gap Analysis"
+      },
+      "proceed": {
+        "label": "Proceed to contracting",
+        "headline": "Vendor meets baseline DORA requirements.",
+        "detailBase": "Score of {{score}}/100 indicates acceptable ICT risk posture. ",
+        "detailGaps": "{{count}} partial gap(s) should be addressed via contract clauses.",
+        "detailNoGaps": "No critical gaps identified."
+      },
+      "conditional": {
+        "label": "Proceed with conditions",
+        "headline": "Vendor may proceed to contracting with remediation conditions.",
+        "detail": "Score of {{score}}/100. {{missing}} critical gap(s) must be addressed in the contract or via a vendor remediation plan before signature."
+      },
+      "reject": {
+        "label": "Do not proceed",
+        "headline": "Significant ICT risk gaps - contracting not recommended.",
+        "detail": "Score of {{score}}/100. {{missing}} critical gap(s) identified. Request a vendor remediation plan and re-assess before contracting."
+      }
+    }
+  },
   "landing": {
     "badge": "DORA Regulation (EU) 2022/2554",
     "heroTitle": "DORA Compliance Intelligence",
