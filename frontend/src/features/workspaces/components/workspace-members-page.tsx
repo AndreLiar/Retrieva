@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useTranslation } from 'react-i18next';
 import {
   ArrowLeft,
   Loader2,
@@ -79,6 +80,7 @@ interface WorkspaceMembersPageProps {
 }
 
 export function WorkspaceMembersPage({ id }: WorkspaceMembersPageProps) {
+  const { t } = useTranslation();
   const router = useRouter();
   const queryClient = useQueryClient();
   const currentUser = useAuthStore((state) => state.user);
@@ -101,9 +103,9 @@ export function WorkspaceMembersPage({ id }: WorkspaceMembersPageProps) {
   useEffect(() => {
     if (workspace && !isWorkspaceOwner) {
       router.replace(`/workspaces/${id}`);
-      toast.error('You do not have permission to manage members');
+      toast.error(t('workspaces.members.permDenied'));
     }
-  }, [workspace, isWorkspaceOwner, router, id]);
+  }, [workspace, isWorkspaceOwner, router, id, t]);
 
   const { data: members, isLoading } = useQuery({
     queryKey: ['workspace-members', id],
@@ -127,13 +129,13 @@ export function WorkspaceMembersPage({ id }: WorkspaceMembersPageProps) {
       await workspacesApi.members.invite(id, data);
     },
     onSuccess: () => {
-      toast.success('Invitation sent');
+      toast.success(t('workspaces.members.toastInviteSent'));
       setInviteDialogOpen(false);
       form.reset();
       queryClient.invalidateQueries({ queryKey: ['workspace-members', id] });
     },
     onError: () => {
-      toast.error('Failed to send invitation');
+      toast.error(t('workspaces.members.toastInviteFailed'));
     },
   });
 
@@ -142,13 +144,13 @@ export function WorkspaceMembersPage({ id }: WorkspaceMembersPageProps) {
       await workspacesApi.members.remove(id, memberId);
     },
     onSuccess: () => {
-      toast.success('Member removed');
+      toast.success(t('workspaces.members.toastMemberRemoved'));
       setRemoveDialogOpen(false);
       setMemberToRemove(null);
       queryClient.invalidateQueries({ queryKey: ['workspace-members', id] });
     },
     onError: () => {
-      toast.error('Failed to remove member');
+      toast.error(t('workspaces.members.toastRemoveFailed'));
     },
   });
 
@@ -163,13 +165,13 @@ export function WorkspaceMembersPage({ id }: WorkspaceMembersPageProps) {
       await workspacesApi.members.update(id, memberId, { role });
     },
     onSuccess: () => {
-      toast.success('Role updated');
+      toast.success(t('workspaces.members.toastRoleUpdated'));
       setRoleChangeDialogOpen(false);
       setPendingRoleChange(null);
       queryClient.invalidateQueries({ queryKey: ['workspace-members', id] });
     },
     onError: () => {
-      toast.error('Failed to update role');
+      toast.error(t('workspaces.members.toastRoleFailed'));
     },
   });
 
@@ -217,30 +219,30 @@ export function WorkspaceMembersPage({ id }: WorkspaceMembersPageProps) {
       <Link href={`/workspaces/${id}`}>
         <Button variant="ghost" size="sm" className="mb-4">
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Workspace
+          {t('workspaces.members.back')}
         </Button>
       </Link>
 
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="page-title">Team Members</h1>
+          <h1 className="page-title">{t('workspaces.members.title')}</h1>
           <p className="text-muted-foreground">
-            Manage who has access to {workspace.name}
+            {t('workspaces.members.subtitle', { name: workspace.name })}
           </p>
         </div>
         <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
           <DialogTrigger asChild>
             <Button>
               <UserPlus className="h-4 w-4 mr-2" />
-              Invite Member
+              {t('workspaces.members.inviteMember')}
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Invite Team Member</DialogTitle>
+              <DialogTitle>{t('workspaces.members.inviteTitle')}</DialogTitle>
               <DialogDescription>
-                Send an invitation to join this workspace
+                {t('workspaces.members.inviteDesc')}
               </DialogDescription>
             </DialogHeader>
             <Form {...form}>
@@ -253,9 +255,9 @@ export function WorkspaceMembersPage({ id }: WorkspaceMembersPageProps) {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email</FormLabel>
+                      <FormLabel>{t('workspaces.members.email')}</FormLabel>
                       <FormControl>
-                        <Input placeholder="colleague@example.com" {...field} />
+                        <Input placeholder={t('workspaces.members.emailPlaceholder')} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -266,27 +268,27 @@ export function WorkspaceMembersPage({ id }: WorkspaceMembersPageProps) {
                   name="role"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Role</FormLabel>
+                      <FormLabel>{t('workspaces.members.role')}</FormLabel>
                       <Select
                         onValueChange={field.onChange}
                         defaultValue={field.value}
                       >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select a role" />
+                            <SelectValue placeholder={t('workspaces.members.selectRole')} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
                           <SelectItem value="member">
                             <div className="flex items-center gap-2">
                               <User className="h-4 w-4" />
-                              Member - Can query and view sources
+                              {t('workspaces.members.memberOption')}
                             </div>
                           </SelectItem>
                           <SelectItem value="viewer">
                             <div className="flex items-center gap-2">
                               <Eye className="h-4 w-4" />
-                              Viewer - Read-only access
+                              {t('workspaces.members.viewerOption')}
                             </div>
                           </SelectItem>
                         </SelectContent>
@@ -301,13 +303,13 @@ export function WorkspaceMembersPage({ id }: WorkspaceMembersPageProps) {
                     variant="outline"
                     onClick={() => setInviteDialogOpen(false)}
                   >
-                    Cancel
+                    {t('common.cancel')}
                   </Button>
                   <Button type="submit" disabled={inviteMutation.isPending}>
                     {inviteMutation.isPending && (
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     )}
-                    Send Invite
+                    {t('workspaces.members.sendInvite')}
                   </Button>
                 </DialogFooter>
               </form>
@@ -319,7 +321,7 @@ export function WorkspaceMembersPage({ id }: WorkspaceMembersPageProps) {
       {/* Members list */}
       <Card>
         <CardHeader>
-          <CardTitle>Members ({members?.length || 0})</CardTitle>
+          <CardTitle>{t('workspaces.members.membersCount', { count: members?.length || 0 })}</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -336,7 +338,7 @@ export function WorkspaceMembersPage({ id }: WorkspaceMembersPageProps) {
             </div>
           ) : !members || members.length === 0 ? (
             <p className="text-muted-foreground text-center py-8">
-              No members yet
+              {t('workspaces.members.noMembers')}
             </p>
           ) : (
             <div className="space-y-4">
@@ -366,7 +368,7 @@ export function WorkspaceMembersPage({ id }: WorkspaceMembersPageProps) {
                           <p className="font-medium">{member.user.name}</p>
                           {isCurrentUser && (
                             <Badge variant="outline" className="text-xs">
-                              You
+                              {t('workspaces.members.you')}
                             </Badge>
                           )}
                         </div>
@@ -396,7 +398,7 @@ export function WorkspaceMembersPage({ id }: WorkspaceMembersPageProps) {
                                 variant="ghost"
                                 size="icon"
                                 className="h-8 w-8"
-                                aria-label={`Actions for ${member.user.name}`}
+                                aria-label={t('workspaces.members.actionsAria', { name: member.user.name })}
                               >
                                 <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
                               </Button>
@@ -414,7 +416,7 @@ export function WorkspaceMembersPage({ id }: WorkspaceMembersPageProps) {
                                 disabled={member.role === 'member'}
                               >
                                 <User className="h-4 w-4 mr-2" />
-                                Make Member
+                                {t('workspaces.members.makeMember')}
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() =>
@@ -428,7 +430,7 @@ export function WorkspaceMembersPage({ id }: WorkspaceMembersPageProps) {
                                 disabled={member.role === 'viewer'}
                               >
                                 <Eye className="h-4 w-4 mr-2" />
-                                Make Viewer
+                                {t('workspaces.members.makeViewer')}
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
@@ -439,7 +441,7 @@ export function WorkspaceMembersPage({ id }: WorkspaceMembersPageProps) {
                                 className="text-destructive focus:text-destructive"
                               >
                                 <Trash2 className="h-4 w-4 mr-2" />
-                                Remove
+                                {t('workspaces.members.remove')}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -458,14 +460,13 @@ export function WorkspaceMembersPage({ id }: WorkspaceMembersPageProps) {
       <AlertDialog open={removeDialogOpen} onOpenChange={setRemoveDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remove Member?</AlertDialogTitle>
+            <AlertDialogTitle>{t('workspaces.members.removeTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              This will revoke their access to this workspace. They can be
-              re-invited later.
+              {t('workspaces.members.removeDesc')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => memberToRemove && removeMutation.mutate(memberToRemove)}
               className={destructiveActionClasses}
@@ -473,7 +474,7 @@ export function WorkspaceMembersPage({ id }: WorkspaceMembersPageProps) {
               {removeMutation.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                'Remove'
+                t('workspaces.members.remove')
               )}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -484,17 +485,18 @@ export function WorkspaceMembersPage({ id }: WorkspaceMembersPageProps) {
       <AlertDialog open={roleChangeDialogOpen} onOpenChange={setRoleChangeDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Reduce Member Permissions?</AlertDialogTitle>
+            <AlertDialogTitle>{t('workspaces.members.reduceTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
               {pendingRoleChange && (
                 <>
-                  You are about to change <strong>{pendingRoleChange.memberName}</strong>&apos;s
-                  role from <strong>{getRoleDisplayName(pendingRoleChange.currentRole)}</strong> to{' '}
-                  <strong>{getRoleDisplayName(pendingRoleChange.newRole)}</strong>.
+                  {t('workspaces.members.reduceP1')}<strong>{pendingRoleChange.memberName}</strong>
+                  {t('workspaces.members.reduceP2')}<strong>{getRoleDisplayName(pendingRoleChange.currentRole)}</strong>
+                  {t('workspaces.members.reduceP3')}<strong>{getRoleDisplayName(pendingRoleChange.newRole)}</strong>
+                  {t('workspaces.members.reduceP4')}
                   <br /><br />
-                  This will reduce their permissions in this workspace.
+                  {t('workspaces.members.reduceBody')}
                   {pendingRoleChange.newRole === 'viewer' && (
-                    <> They will no longer be able to query the knowledge base.</>
+                    <>{t('workspaces.members.reduceViewer')}</>
                   )}
                 </>
               )}
@@ -506,7 +508,7 @@ export function WorkspaceMembersPage({ id }: WorkspaceMembersPageProps) {
                 setPendingRoleChange(null);
               }}
             >
-              Cancel
+              {t('common.cancel')}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
@@ -521,7 +523,7 @@ export function WorkspaceMembersPage({ id }: WorkspaceMembersPageProps) {
               {updateRoleMutation.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                'Confirm Change'
+                t('workspaces.members.confirmChange')
               )}
             </AlertDialogAction>
           </AlertDialogFooter>
