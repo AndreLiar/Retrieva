@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import {
   AlertTriangle,
@@ -43,38 +44,42 @@ function daysFrom(date: string | null | undefined): number | null {
 }
 
 function RiskBadge({ risk }: { risk: OverallRisk | null | undefined }) {
+  const { t } = useTranslation();
   if (!risk) return <span className="text-muted-foreground text-xs">—</span>;
   return (
     <Badge
       variant={risk === 'High' ? 'destructive' : risk === 'Medium' ? 'secondary' : 'default'}
       className="text-xs"
     >
-      {risk}
+      {t(`riskRegister.risk.${risk}`)}
     </Badge>
   );
 }
 
 function TierBadge({ tier }: { tier: string | null | undefined }) {
+  const { t } = useTranslation();
   if (!tier) return <span className="text-muted-foreground text-xs">—</span>;
   if (tier === 'critical')
-    return <Badge variant="destructive" className="text-xs">Critical</Badge>;
+    return <Badge variant="destructive" className="text-xs">{t('riskRegister.tier.critical')}</Badge>;
   if (tier === 'important')
-    return <Badge className="bg-warning-muted text-warning border-warning-muted hover:bg-warning-muted text-xs">Important</Badge>;
-  return <Badge variant="outline" className="text-xs">Standard</Badge>;
+    return <Badge className="bg-warning-muted text-warning border-warning-muted hover:bg-warning-muted text-xs">{t('riskRegister.tier.important')}</Badge>;
+  return <Badge variant="outline" className="text-xs">{t('riskRegister.tier.standard')}</Badge>;
 }
 
 function ComplianceStatus({ steps }: { steps: number }) {
-  if (steps === 5) return <span className="flex items-center gap-1 text-success text-xs font-medium"><CheckCircle2 className="h-3.5 w-3.5" />Complete</span>;
-  if (steps >= 3)  return <span className="flex items-center gap-1 text-warning text-xs font-medium"><AlertTriangle className="h-3.5 w-3.5" />{steps}/5 steps</span>;
-  return <span className="flex items-center gap-1 text-muted-foreground text-xs"><Circle className="h-3.5 w-3.5" />{steps}/5 steps</span>;
+  const { t } = useTranslation();
+  if (steps === 5) return <span className="flex items-center gap-1 text-success text-xs font-medium"><CheckCircle2 className="h-3.5 w-3.5" />{t('riskRegister.complete')}</span>;
+  if (steps >= 3)  return <span className="flex items-center gap-1 text-warning text-xs font-medium"><AlertTriangle className="h-3.5 w-3.5" />{t('riskRegister.steps', { n: steps })}</span>;
+  return <span className="flex items-center gap-1 text-muted-foreground text-xs"><Circle className="h-3.5 w-3.5" />{t('riskRegister.steps', { n: steps })}</span>;
 }
 
 function CertChip({ days }: { days: number | null }) {
+  const { t } = useTranslation();
   if (days === null) return <span className="text-muted-foreground text-xs">—</span>;
-  if (days < 0)  return <span className="text-xs font-medium text-destructive">Expired</span>;
-  if (days <= 30) return <span className="text-xs font-medium text-destructive">{days}d</span>;
-  if (days <= 90) return <span className="text-xs font-medium text-warning">{days}d</span>;
-  return <span className="text-xs font-medium text-success">{days}d</span>;
+  if (days < 0)  return <span className="text-xs font-medium text-destructive">{t('riskRegister.expired')}</span>;
+  if (days <= 30) return <span className="text-xs font-medium text-destructive">{t('riskRegister.daysShort', { n: days })}</span>;
+  if (days <= 90) return <span className="text-xs font-medium text-warning">{t('riskRegister.daysShort', { n: days })}</span>;
+  return <span className="text-xs font-medium text-success">{t('riskRegister.daysShort', { n: days })}</span>;
 }
 
 function RiskScoreChip({ m }: { m: RiskMatrixResult }) {
@@ -190,6 +195,7 @@ function buildRow(
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export function RiskRegisterPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { data: workspaceList = [] } = useWorkspaceListQuery();
 
@@ -244,15 +250,13 @@ export function RiskRegisterPage() {
       {/* Page header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="page-title">Vendor Risk Register</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            DORA Art. 28(3) — portfolio-level ICT third-party risk overview
-          </p>
+          <h1 className="page-title">{t('riskRegister.title')}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">{t('riskRegister.subtitle')}</p>
         </div>
         <Link href="/questionnaires">
           <Button variant="outline" size="sm">
             <FileDown className="h-4 w-4 mr-2" />
-            Export RoI (Excel)
+            {t('riskRegister.exportRoi')}
           </Button>
         </Link>
       </div>
@@ -260,9 +264,9 @@ export function RiskRegisterPage() {
       {/* Summary cards */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label: 'Total vendors',       value: rows.length,    color: '' },
-          { label: 'High risk',           value: highRiskCount,  color: highRiskCount > 0 ? 'text-destructive' : 'text-green-600' },
-          { label: 'Fully compliant',     value: completeCount,  color: 'text-green-600' },
+          { label: t('riskRegister.totalVendors'), value: rows.length,    color: '' },
+          { label: t('riskRegister.highRisk'),     value: highRiskCount,  color: highRiskCount > 0 ? 'text-destructive' : 'text-green-600' },
+          { label: t('riskRegister.fullyCompliant'), value: completeCount, color: 'text-green-600' },
         ].map((s) => (
           <div key={s.label} className="rounded-lg border p-4 text-center">
             <p className={`text-3xl font-bold ${s.color}`}>{s.value}</p>
@@ -273,7 +277,7 @@ export function RiskRegisterPage() {
       {expiringCount > 0 && (
         <div className="flex items-center gap-2 text-sm text-amber-600 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-md px-3 py-2">
           <AlertTriangle className="h-4 w-4 shrink-0" />
-          {expiringCount} vendor{expiringCount > 1 ? 's' : ''} with certifications expiring within 90 days
+          {t('riskRegister.expiringWarning', { count: expiringCount })}
         </div>
       )}
 
@@ -285,25 +289,25 @@ export function RiskRegisterPage() {
       ) : rows.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
           <Building2 className="h-12 w-12 text-muted-foreground/40" />
-          <p className="text-muted-foreground">No vendors yet.</p>
-          <Button size="sm" onClick={() => router.push('/workspaces')}>Add your first vendor</Button>
+          <p className="text-muted-foreground">{t('riskRegister.empty')}</p>
+          <Button size="sm" onClick={() => router.push('/workspaces')}>{t('riskRegister.addFirst')}</Button>
         </div>
       ) : (
         <div className="rounded-md border overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="min-w-[160px]">Vendor</TableHead>
-                <TableHead>Tier</TableHead>
-                <TableHead>Service</TableHead>
-                <TableHead>DORA Risk</TableHead>
-                <TableHead>Risk Score</TableHead>
-                <TableHead>Gaps</TableHead>
-                <TableHead>Q Score</TableHead>
-                <TableHead>Contract</TableHead>
-                <TableHead>Certs</TableHead>
-                <TableHead>Next Review</TableHead>
-                <TableHead>Compliance</TableHead>
+                <TableHead className="min-w-[160px]">{t('riskRegister.cols.vendor')}</TableHead>
+                <TableHead>{t('riskRegister.cols.tier')}</TableHead>
+                <TableHead>{t('riskRegister.cols.service')}</TableHead>
+                <TableHead>{t('riskRegister.cols.doraRisk')}</TableHead>
+                <TableHead>{t('riskRegister.cols.riskScore')}</TableHead>
+                <TableHead>{t('riskRegister.cols.gaps')}</TableHead>
+                <TableHead>{t('riskRegister.cols.qScore')}</TableHead>
+                <TableHead>{t('riskRegister.cols.contract')}</TableHead>
+                <TableHead>{t('riskRegister.cols.certs')}</TableHead>
+                <TableHead>{t('riskRegister.cols.nextReview')}</TableHead>
+                <TableHead>{t('riskRegister.cols.compliance')}</TableHead>
                 <TableHead className="w-8"></TableHead>
               </TableRow>
             </TableHeader>
@@ -356,8 +360,8 @@ export function RiskRegisterPage() {
                     <TableCell>
                       {latestA30 ? (
                         contractOk
-                          ? <span className="flex items-center gap-1 text-xs text-green-600"><CheckCircle2 className="h-3.5 w-3.5" />OK</span>
-                          : <span className="flex items-center gap-1 text-xs text-amber-600"><AlertTriangle className="h-3.5 w-3.5" />Gaps</span>
+                          ? <span className="flex items-center gap-1 text-xs text-green-600"><CheckCircle2 className="h-3.5 w-3.5" />{t('riskRegister.contractOk')}</span>
+                          : <span className="flex items-center gap-1 text-xs text-amber-600"><AlertTriangle className="h-3.5 w-3.5" />{t('riskRegister.contractGaps')}</span>
                       ) : (
                         <span className="text-muted-foreground text-xs">—</span>
                       )}
@@ -366,7 +370,7 @@ export function RiskRegisterPage() {
                     <TableCell>
                       {reviewDays !== null ? (
                         <span className={`text-xs font-medium ${reviewDays < 0 ? 'text-destructive' : reviewDays <= 30 ? 'text-amber-600' : 'text-muted-foreground'}`}>
-                          {reviewDays < 0 ? `${Math.abs(reviewDays)}d overdue` : format(new Date(workspace.nextReviewDate!), 'dd MMM yy')}
+                          {reviewDays < 0 ? t('riskRegister.overdue', { n: Math.abs(reviewDays) }) : format(new Date(workspace.nextReviewDate!), 'dd MMM yy')}
                         </span>
                       ) : (
                         <span className="text-muted-foreground text-xs">—</span>

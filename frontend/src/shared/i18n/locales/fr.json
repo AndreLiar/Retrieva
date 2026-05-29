@@ -155,6 +155,48 @@
       "questionnaire": "Questionnaire"
     }
   },
+  "riskRegister": {
+    "title": "Registre des risques fournisseurs",
+    "subtitle": "DORA art. 28(3) — vue d'ensemble du risque TIC tiers au niveau du portefeuille",
+    "exportRoi": "Exporter le RoI (Excel)",
+    "totalVendors": "Total fournisseurs",
+    "highRisk": "Risque élevé",
+    "fullyCompliant": "Entièrement conforme",
+    "expiringWarning_one": "{{count}} fournisseur avec des certifications expirant sous 90 jours",
+    "expiringWarning_other": "{{count}} fournisseurs avec des certifications expirant sous 90 jours",
+    "empty": "Aucun fournisseur pour l'instant.",
+    "addFirst": "Ajouter votre premier fournisseur",
+    "complete": "Complet",
+    "steps": "{{n}}/5 étapes",
+    "expired": "Expiré",
+    "daysShort": "{{n}} j",
+    "overdue": "{{n}} j de retard",
+    "contractOk": "OK",
+    "contractGaps": "Écarts",
+    "tier": {
+      "critical": "Critique",
+      "important": "Important",
+      "standard": "Standard"
+    },
+    "risk": {
+      "High": "Élevé",
+      "Medium": "Moyen",
+      "Low": "Faible"
+    },
+    "cols": {
+      "vendor": "Fournisseur",
+      "tier": "Niveau",
+      "service": "Service",
+      "doraRisk": "Risque DORA",
+      "riskScore": "Score de risque",
+      "gaps": "Écarts",
+      "qScore": "Score Q",
+      "contract": "Contrat",
+      "certs": "Certif.",
+      "nextReview": "Prochaine revue",
+      "compliance": "Conformité"
+    }
+  },
   "landing": {
     "badge": "Règlement DORA (UE) 2022/2554",
     "heroTitle": "Intelligence de conformité DORA",
