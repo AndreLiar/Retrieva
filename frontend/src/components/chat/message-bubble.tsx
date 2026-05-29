@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { User, Bot, Copy, Check, ThumbsUp, ThumbsDown, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -31,6 +32,7 @@ export function MessageBubble({
   onRegenerate,
   showActions = true,
 }: MessageBubbleProps) {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   const isUser = message.role === 'user';
 
@@ -115,7 +117,7 @@ export function MessageBubble({
                     size="icon"
                     className="h-7 w-7"
                     onClick={handleCopy}
-                    aria-label={copied ? 'Copied to clipboard' : 'Copy message'}
+                    aria-label={copied ? t('chat.ui.bubble.copiedAria') : t('chat.ui.bubble.copyAria')}
                   >
                     {copied ? (
                       <Check className="h-3.5 w-3.5 text-green-500" aria-hidden="true" />
@@ -125,7 +127,7 @@ export function MessageBubble({
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>{copied ? 'Copied!' : 'Copy'}</p>
+                  <p>{copied ? t('chat.ui.bubble.copiedTooltip') : t('chat.ui.bubble.copyTooltip')}</p>
                 </TooltipContent>
               </Tooltip>
 
@@ -142,14 +144,14 @@ export function MessageBubble({
                           message.feedback === 'positive' && 'text-green-500'
                         )}
                         onClick={() => handleFeedback('positive')}
-                        aria-label="Mark as good response"
+                        aria-label={t('chat.ui.bubble.goodAria')}
                         aria-pressed={message.feedback === 'positive'}
                       >
                         <ThumbsUp className="h-3.5 w-3.5" aria-hidden="true" />
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Good response</p>
+                      <p>{t('chat.ui.bubble.goodTooltip')}</p>
                     </TooltipContent>
                   </Tooltip>
 
@@ -163,14 +165,14 @@ export function MessageBubble({
                           message.feedback === 'negative' && 'text-red-500'
                         )}
                         onClick={() => handleFeedback('negative')}
-                        aria-label="Mark as bad response"
+                        aria-label={t('chat.ui.bubble.badAria')}
                         aria-pressed={message.feedback === 'negative'}
                       >
                         <ThumbsDown className="h-3.5 w-3.5" aria-hidden="true" />
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Bad response</p>
+                      <p>{t('chat.ui.bubble.badTooltip')}</p>
                     </TooltipContent>
                   </Tooltip>
                 </>
@@ -185,13 +187,13 @@ export function MessageBubble({
                       size="icon"
                       className="h-7 w-7"
                       onClick={onRegenerate}
-                      aria-label="Regenerate response"
+                      aria-label={t('chat.ui.bubble.regenerateAria')}
                     >
                       <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>Regenerate</p>
+                    <p>{t('chat.ui.bubble.regenerateTooltip')}</p>
                   </TooltipContent>
                 </Tooltip>
               )}

@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 
 import { MessageList } from './message-list';
@@ -23,6 +24,7 @@ export function ChatInterface({
   onConversationCreated,
   onMessageAdded,
 }: ChatInterfaceProps) {
+  const { t } = useTranslation();
   const {
     activeWorkspace,
     canQuery,
@@ -63,7 +65,7 @@ export function ChatInterface({
                 className="ml-4 shrink-0"
               >
                 <RefreshCw className="h-3 w-3 mr-1" />
-                Retry
+                {t('chat.ui.retry')}
               </Button>
             )}
           </AlertDescription>
@@ -99,8 +101,8 @@ export function ChatInterface({
         disabled={!canQuery}
         placeholder={
           canQuery
-            ? 'Ask a question about your knowledge base...'
-            : 'You do not have permission to ask questions'
+            ? t('chat.ui.input.placeholder')
+            : t('chat.ui.input.disabledQuery')
         }
       />
     </div>
