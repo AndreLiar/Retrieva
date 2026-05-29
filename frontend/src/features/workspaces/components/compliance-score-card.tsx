@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { Minus, TrendingDown, TrendingUp } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
 import type { ComplianceScore } from '@/features/workspaces/api/workspaces';
@@ -14,13 +15,14 @@ const STATUS_STYLES = {
   red: 'text-red-700 bg-red-50 border-red-200',
 } as const;
 
-const STATUS_LABEL = {
-  green: 'Good',
-  amber: 'Needs attention',
-  red: 'At risk',
+const STATUS_LABEL_KEY = {
+  green: 'workspaces.score.good',
+  amber: 'workspaces.score.needsAttention',
+  red: 'workspaces.score.atRisk',
 } as const;
 
 export function ComplianceScoreCard({ score }: ComplianceScoreCardProps) {
+  const { t } = useTranslation();
   if (!score) return null;
 
   const TrendIcon = score.trend > 0 ? TrendingUp : score.trend < 0 ? TrendingDown : Minus;
@@ -32,16 +34,16 @@ export function ComplianceScoreCard({ score }: ComplianceScoreCardProps) {
         : 'text-muted-foreground';
   const trendLabel =
     score.trend > 0
-      ? `+${score.trend} pts`
+      ? t('workspaces.score.trendUp', { pts: score.trend })
       : score.trend < 0
-        ? `${score.trend} pts`
-        : 'No change';
+        ? t('workspaces.score.trendDown', { pts: score.trend })
+        : t('workspaces.score.noChange');
 
   return (
     <Card className="mb-4">
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-          Portfolio Compliance Score
+          {t('workspaces.score.title')}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -55,15 +57,14 @@ export function ComplianceScoreCard({ score }: ComplianceScoreCardProps) {
             <span
               className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${STATUS_STYLES[score.status]}`}
             >
-              {STATUS_LABEL[score.status]}
+              {t(STATUS_LABEL_KEY[score.status])}
             </span>
             <div className={`flex items-center gap-1 text-sm font-medium ${trendColor}`}>
               <TrendIcon className="h-3.5 w-3.5" />
-              {trendLabel} vs 30 days ago
+              {trendLabel} {t('workspaces.score.vs30')}
             </div>
             <p className="text-xs text-muted-foreground">
-              {score.assessmentCount} completed assessment
-              {score.assessmentCount !== 1 ? 's' : ''}
+              {t('workspaces.score.assessmentCount', { count: score.assessmentCount })}
             </p>
           </div>
         </div>

@@ -2,6 +2,7 @@
 
 import { use } from 'react';
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { AlertTriangle, ArrowLeft, Building2, Calendar, Globe, Loader2 } from 'lucide-react';
 
@@ -16,11 +17,12 @@ import { WorkspaceHeader } from '@/features/workspaces/components/workspace-head
 import { useWorkspaceOverview } from '@/features/workspaces/hooks/use-workspace-overview';
 
 function ContractDaysChip({ contractEnd }: { contractEnd: string }) {
+  const { t } = useTranslation();
   const days = Math.ceil((new Date(contractEnd).getTime() - new Date().getTime()) / 86_400_000);
   const color = days < 30 ? 'text-destructive' : days < 90 ? 'text-warning' : 'text-success';
   return (
     <span className={`text-xs font-medium ${color}`}>
-      ({days < 0 ? `${Math.abs(days)}d overdue` : `+${days}d`})
+      {days < 0 ? t('workspaces.overview.daysOverdue', { days: Math.abs(days) }) : t('workspaces.overview.daysLeft', { days })}
     </span>
   );
 }
@@ -30,6 +32,7 @@ interface WorkspaceOverviewPageProps {
 }
 
 export function WorkspaceOverviewPage({ params }: WorkspaceOverviewPageProps) {
+  const { t } = useTranslation();
   const { id } = use(params);
   const {
     workspace,
@@ -56,7 +59,7 @@ export function WorkspaceOverviewPage({ params }: WorkspaceOverviewPageProps) {
       <div className="flex h-full items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading workspace...</p>
+          <p className="text-muted-foreground">{t('workspaces.overview.loading')}</p>
         </div>
       </div>
     );
@@ -75,7 +78,7 @@ export function WorkspaceOverviewPage({ params }: WorkspaceOverviewPageProps) {
       <Link href="/workspaces">
         <Button variant="ghost" size="sm" className="mb-4">
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Vendors
+          {t('workspaces.overview.back')}
         </Button>
       </Link>
 
@@ -95,7 +98,7 @@ export function WorkspaceOverviewPage({ params }: WorkspaceOverviewPageProps) {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-              Profile
+              {t('workspaces.overview.profile')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
@@ -113,13 +116,13 @@ export function WorkspaceOverviewPage({ params }: WorkspaceOverviewPageProps) {
             )}
             {!hasVendorProfile && (
               <p className="text-muted-foreground text-sm">
-                No vendor profile data —{' '}
+                {t('workspaces.overview.noProfile1')}
                 {isOwner ? (
                   <Link href={`/workspaces/${id}/settings`} className="underline underline-offset-2">
-                    add details in Settings
+                    {t('workspaces.overview.addInSettings')}
                   </Link>
                 ) : (
-                  'contact the workspace owner'
+                  t('workspaces.overview.contactOwner')
                 )}
               </p>
             )}
@@ -129,31 +132,31 @@ export function WorkspaceOverviewPage({ params }: WorkspaceOverviewPageProps) {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-              Contract
+              {t('workspaces.overview.contract')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
             {workspace.contractStart && (
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-muted-foreground" />
-                <span>Start: {format(new Date(workspace.contractStart), 'dd MMM yyyy')}</span>
+                <span>{t('workspaces.overview.start', { date: format(new Date(workspace.contractStart), 'dd MMM yyyy') })}</span>
               </div>
             )}
             {workspace.contractEnd && (
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-muted-foreground" />
-                <span>End: {format(new Date(workspace.contractEnd), 'dd MMM yyyy')}</span>
+                <span>{t('workspaces.overview.end', { date: format(new Date(workspace.contractEnd), 'dd MMM yyyy') })}</span>
                 <ContractDaysChip contractEnd={workspace.contractEnd} />
               </div>
             )}
             {workspace.nextReviewDate && (
               <div className="flex items-center gap-2">
                 <AlertTriangle className="h-4 w-4 text-warning" />
-                <span>Next review: {format(new Date(workspace.nextReviewDate), 'dd MMM yyyy')}</span>
+                <span>{t('workspaces.overview.nextReview', { date: format(new Date(workspace.nextReviewDate), 'dd MMM yyyy') })}</span>
               </div>
             )}
             {!workspace.contractStart && !workspace.contractEnd && !workspace.nextReviewDate && (
-              <p className="text-muted-foreground">No contract dates set</p>
+              <p className="text-muted-foreground">{t('workspaces.overview.noDates')}</p>
             )}
           </CardContent>
         </Card>

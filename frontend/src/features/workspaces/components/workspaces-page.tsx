@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { Plus, Building2, Users, ChevronRight, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
@@ -18,26 +19,29 @@ import { getRoleDisplayName, getRoleBadgeColor } from '@/lib/utils/permissions';
 import type { VendorTier, VendorStatus } from '@/types';
 
 function TierBadge({ tier }: { tier: VendorTier }) {
+  const { t } = useTranslation();
   if (tier === 'critical') {
-    return <Badge variant="destructive" className="text-xs h-5">Critical</Badge>;
+    return <Badge variant="destructive" className="text-xs h-5">{t('workspaces.tier.critical')}</Badge>;
   }
   if (tier === 'important') {
-    return <Badge className="text-xs h-5 bg-warning-muted text-warning border-warning-muted hover:bg-warning-muted">Important</Badge>;
+    return <Badge className="text-xs h-5 bg-warning-muted text-warning border-warning-muted hover:bg-warning-muted">{t('workspaces.tier.important')}</Badge>;
   }
-  return <Badge variant="outline" className="text-xs h-5">Standard</Badge>;
+  return <Badge variant="outline" className="text-xs h-5">{t('workspaces.tier.standard')}</Badge>;
 }
 
 function VendorStatusChip({ status }: { status: VendorStatus }) {
+  const { t } = useTranslation();
   if (status === 'active') {
     return null;
   }
   if (status === 'under-review') {
-    return <Badge variant="secondary" className="text-xs h-5">Under Review</Badge>;
+    return <Badge variant="secondary" className="text-xs h-5">{t('workspaces.status.underReview')}</Badge>;
   }
-  return <Badge variant="outline" className="text-xs h-5">Exited</Badge>;
+  return <Badge variant="outline" className="text-xs h-5">{t('workspaces.status.exited')}</Badge>;
 }
 
 function ContractExpiryBar({ contractEnd }: { contractEnd: string }) {
+  const { t } = useTranslation();
   const nowMs = new Date().getTime();
   const days = Math.ceil((new Date(contractEnd).getTime() - nowMs) / 86_400_000);
   if (days > 60) {
@@ -48,8 +52,8 @@ function ContractExpiryBar({ contractEnd }: { contractEnd: string }) {
     ? 'bg-destructive/10 border-destructive/30 text-destructive'
     : 'bg-warning-muted border-warning-muted text-warning';
   const label = days <= 0
-    ? `Contract expired ${Math.abs(days)}d ago`
-    : `Contract expires in ${days} days`;
+    ? t('workspaces.contractBar.expiredAgo', { days: Math.abs(days) })
+    : t('workspaces.contractBar.expiresIn', { days });
 
   return (
     <div className={`flex items-center gap-1.5 text-xs px-2 py-1 rounded border mt-2 ${colorClass}`}>
@@ -60,6 +64,7 @@ function ContractExpiryBar({ contractEnd }: { contractEnd: string }) {
 }
 
 export function WorkspacesPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
@@ -77,22 +82,22 @@ export function WorkspacesPage() {
 
     if (connected === 'true') {
       if (isNew === 'true') {
-        toast.success(`Workspace "${workspaceName}" connected successfully!`);
+        toast.success(t('workspaces.toast.connected', { name: workspaceName }));
       } else {
-        toast.success(`Workspace "${workspaceName}" reconnected`, {
-          description: 'Credentials have been updated.',
+        toast.success(t('workspaces.toast.reconnected', { name: workspaceName }), {
+          description: t('workspaces.toast.reconnectedDesc'),
         });
       }
 
       queryClient.invalidateQueries({ queryKey: ['workspaces'] });
       router.replace('/workspaces', { scroll: false });
     } else if (error) {
-      toast.error('Failed to connect workspace', {
+      toast.error(t('workspaces.toast.connectFailed'), {
         description: errorDescription || error,
       });
       router.replace('/workspaces', { scroll: false });
     }
-  }, [searchParams, router, queryClient]);
+  }, [searchParams, router, queryClient, t]);
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
@@ -102,25 +107,25 @@ export function WorkspacesPage() {
 
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="page-title">Vendors</h1>
+          <h1 className="page-title">{t('workspaces.title')}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Manage your third-party ICT vendors and DORA compliance
+            {t('workspaces.subtitle')}
           </p>
         </div>
         <Button onClick={() => openModal(MODAL_IDS.CREATE_WORKSPACE)}>
           <Plus className="h-4 w-4 mr-2" />
-          New Vendor
+          {t('workspaces.newVendor')}
         </Button>
       </div>
 
       {workspaces.length === 0 ? (
         <EmptyState
           icon={Building2}
-          heading="No vendors yet"
-          description="Add your first ICT vendor to begin the DORA Article 28 compliance workflow - classification, due diligence, gap analysis, and monitoring."
-          cta="Add your first vendor"
+          heading={t('workspaces.empty.heading')}
+          description={t('workspaces.empty.description')}
+          cta={t('workspaces.empty.cta')}
           onAction={() => openModal(MODAL_IDS.CREATE_WORKSPACE)}
-          hint="Each vendor gets its own workspace with a 5-step compliance checklist."
+          hint={t('workspaces.empty.hint')}
         />
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
@@ -164,7 +169,7 @@ export function WorkspacesPage() {
                 <div className="flex items-center gap-4 text-xs text-muted-foreground">
                   <span className="flex items-center gap-1">
                     <Users className="h-3.5 w-3.5" />
-                    Team
+                    {t('workspaces.team')}
                   </span>
                   {workspace.syncStatus && (
                     <span className="flex items-center gap-1">
@@ -178,10 +183,10 @@ export function WorkspacesPage() {
                         }`}
                       />
                       {workspace.syncStatus === 'syncing'
-                        ? 'Syncing'
+                        ? t('workspaces.sync.syncing')
                         : workspace.syncStatus === 'error'
-                          ? 'Sync Error'
-                          : 'Synced'}
+                          ? t('workspaces.sync.error')
+                          : t('workspaces.sync.synced')}
                     </span>
                   )}
                 </div>

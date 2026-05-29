@@ -934,5 +934,77 @@
       "toastMemberRemoved": "Membre retiré",
       "toastRemoveFailed": "Échec du retrait du membre"
     }
+  },
+  "workspaces": {
+    "title": "Fournisseurs",
+    "subtitle": "Gérez vos fournisseurs TIC tiers et la conformité DORA",
+    "newVendor": "Nouveau fournisseur",
+    "team": "Équipe",
+    "empty": {
+      "heading": "Aucun fournisseur pour le moment",
+      "description": "Ajoutez votre premier fournisseur TIC pour démarrer le flux de conformité à l'article 28 de DORA — classification, due diligence, analyse d'écart et surveillance.",
+      "cta": "Ajoutez votre premier fournisseur",
+      "hint": "Chaque fournisseur dispose de son propre espace de travail avec une checklist de conformité en 5 étapes."
+    },
+    "tier": {
+      "critical": "Critique",
+      "important": "Important",
+      "standard": "Standard"
+    },
+    "status": {
+      "active": "Actif",
+      "underReview": "En cours d'examen",
+      "exited": "Sorti"
+    },
+    "sync": {
+      "syncing": "Synchronisation",
+      "error": "Erreur de synchro",
+      "synced": "Synchronisé"
+    },
+    "toast": {
+      "connected": "Espace de travail « {{name}} » connecté avec succès !",
+      "reconnected": "Espace de travail « {{name}} » reconnecté",
+      "reconnectedDesc": "Les identifiants ont été mis à jour.",
+      "connectFailed": "Échec de la connexion de l'espace de travail"
+    },
+    "header": {
+      "settings": "Paramètres"
+    },
+    "overview": {
+      "back": "Fournisseurs",
+      "loading": "Chargement de l'espace de travail…",
+      "profile": "Profil",
+      "noProfile1": "Aucune donnée de profil fournisseur — ",
+      "addInSettings": "ajoutez des détails dans les paramètres",
+      "contactOwner": "contactez le propriétaire de l'espace de travail",
+      "contract": "Contrat",
+      "start": "Début : {{date}}",
+      "end": "Fin : {{date}}",
+      "nextReview": "Prochain examen : {{date}}",
+      "noDates": "Aucune date de contrat définie",
+      "daysOverdue": "({{days}} j de retard)",
+      "daysLeft": "(+{{days}} j)"
+    },
+    "contractBar": {
+      "expiredAgo": "Contrat expiré il y a {{days}} j",
+      "expiresIn": "Le contrat expire dans {{days}} jours"
+    },
+    "score": {
+      "title": "Score de conformité du portefeuille",
+      "good": "Bon",
+      "needsAttention": "À surveiller",
+      "atRisk": "À risque",
+      "trendUp": "+{{pts}} pts",
+      "trendDown": "{{pts}} pts",
+      "noChange": "Aucun changement",
+      "vs30": "vs il y a 30 jours",
+      "assessmentCount_one": "{{count}} évaluation terminée",
+      "assessmentCount_other": "{{count}} évaluations terminées"
+    },
+    "assessmentsCard": {
+      "title": "Analyses d'écart DORA",
+      "date": "Date",
+      "noneYet": "Aucune évaluation pour ce fournisseur"
+    }
   }
 }
