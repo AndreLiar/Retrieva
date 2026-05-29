@@ -418,5 +418,76 @@
         "desc": "Generate regulator-ready outputs including the Register of Information and gap remediation artefacts."
       }
     }
+  },
+  "assessments": {
+    "selectWorkspace": "Select a workspace to view assessments",
+    "title": "DORA Assessments",
+    "subtitle": "Third-party ICT risk assessments under Regulation (EU) 2022/2554",
+    "newButton": "New Assessment",
+    "loadError": "Failed to load assessments.",
+    "empty": {
+      "heading": "No gap analyses yet",
+      "description": "Upload vendor ICT documentation to identify DORA Article 28/29 compliance gaps using AI-powered analysis.",
+      "cta": "Run your first gap analysis",
+      "hint": "Supported formats: PDF, Word. Results include gap findings, risk level, and remediation recommendations."
+    },
+    "cols": {
+      "vendor": "Vendor",
+      "assessment": "Assessment",
+      "status": "Status",
+      "risk": "Risk",
+      "created": "Created",
+      "actions": "Actions"
+    },
+    "status": {
+      "pending": "pending",
+      "indexing": "indexing",
+      "analyzing": "analyzing",
+      "complete": "complete",
+      "failed": "failed"
+    },
+    "risk": {
+      "Low": "Low",
+      "Medium": "Medium",
+      "High": "High"
+    },
+    "art30Badge": "Art. 30",
+    "downloadReportTitle": "Download report",
+    "deleteTitle": "Delete assessment",
+    "deleteConfirmTitle": "Delete assessment?",
+    "deleteConfirmDesc1": "This will permanently remove the assessment for ",
+    "deleteConfirmDesc2": " and all indexed documents. This action cannot be undone.",
+    "toast": {
+      "deleted": "Assessment deleted",
+      "deleteFailed": "Failed to delete assessment",
+      "downloadFailed": "Failed to download report"
+    },
+    "form": {
+      "selectWorkspace": "Select a workspace first",
+      "back": "Assessments",
+      "titleDora": "New DORA Assessment",
+      "titleA30": "New Contract Review (Art. 30)",
+      "subtitleDora": "Upload vendor ICT documentation to run a gap analysis against Regulation (EU) 2022/2554.",
+      "subtitleA30": "Upload the ICT contract to check all 12 mandatory DORA Article 30 clauses.",
+      "type": "Assessment type",
+      "typeDora": "Gap Analysis (Art. 28/29)",
+      "typeA30": "Contract Review (Art. 30)",
+      "vendorName": "Vendor name",
+      "vendorNamePlaceholder": "e.g. Acme Cloud Services",
+      "vendorNameDesc": "Pre-filled from your workspace. Edit if needed.",
+      "name": "Assessment name",
+      "resetAuto": "Reset to auto",
+      "nameDescAuto": "Auto-generated from vendor name and assessment type.",
+      "nameDescCustom": "Custom label — edit freely or reset to auto.",
+      "nameTypeDora": "DORA Gap Analysis",
+      "nameTypeA30": "Art.30 Contract Review",
+      "vendorFallback": "Vendor",
+      "docsDora": "Vendor documents",
+      "docsA30": "Contract document",
+      "uploadAtLeastOne": "Please upload at least one document.",
+      "start": "Start Assessment",
+      "uploading": "Uploading…",
+      "toastCreated": "Assessment created — indexing documents…"
+    }
   }
 }

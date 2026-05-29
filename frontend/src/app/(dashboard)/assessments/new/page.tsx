@@ -6,6 +6,7 @@ import { useMutation } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Loader2, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -36,15 +37,20 @@ interface FileWithId extends File {
   id: string;
 }
 
-function buildAssessmentName(vendor: string, fw: 'DORA' | 'CONTRACT_A30'): string {
+function buildAssessmentName(
+  vendor: string,
+  typeLabel: string,
+  locale: string,
+  vendorFallback: string,
+): string {
   const now = new Date();
-  const month = now.toLocaleString('en-US', { month: 'short' });
+  const month = now.toLocaleString(locale === 'fr' ? 'fr-FR' : 'en-US', { month: 'short' });
   const year = now.getFullYear();
-  const type = fw === 'CONTRACT_A30' ? 'Art.30 Contract Review' : 'DORA Gap Analysis';
-  return `${vendor.trim() || 'Vendor'} — ${type} ${month} ${year}`;
+  return `${vendor.trim() || vendorFallback} — ${typeLabel} ${month} ${year}`;
 }
 
 export default function NewAssessmentPage() {
+  const { t, i18n } = useTranslation();
   const router = useRouter();
   const activeWorkspace = useActiveWorkspace();
   const [files, setFiles] = useState<FileWithId[]>([]);
@@ -58,6 +64,16 @@ export default function NewAssessmentPage() {
 
   const vendorName = form.watch('vendorName');
 
+  const computeName = () =>
+    buildAssessmentName(
+      vendorName,
+      framework === 'CONTRACT_A30'
+        ? t('assessments.form.nameTypeA30')
+        : t('assessments.form.nameTypeDora'),
+      i18n.language,
+      t('assessments.form.vendorFallback'),
+    );
+
   // Seed vendorName (and auto name) once the workspace is available
   useEffect(() => {
     if (!activeWorkspace?.name) return;
@@ -68,13 +84,13 @@ export default function NewAssessmentPage() {
   // Auto-regenerate assessment name whenever vendor or framework changes
   useEffect(() => {
     if (!nameIsAuto) return;
-    form.setValue('name', buildAssessmentName(vendorName, framework));
+    form.setValue('name', computeName());
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vendorName, framework, nameIsAuto]);
+  }, [vendorName, framework, nameIsAuto, i18n.language]);
 
   const createMutation = useMutation({
     mutationFn: async (values: FormValues) => {
-      if (files.length === 0) throw new Error('Please upload at least one document.');
+      if (files.length === 0) throw new Error(t('assessments.form.uploadAtLeastOne'));
       const formData = new FormData();
       formData.append('name', values.name);
       formData.append('vendorName', values.vendorName);
@@ -85,7 +101,7 @@ export default function NewAssessmentPage() {
     },
     onSuccess: (res) => {
       const id = res.data?.assessment?._id;
-      toast.success('Assessment created — indexing documents…');
+      toast.success(t('assessments.form.toastCreated'));
       router.push(id ? `/assessments/${id}` : '/assessments');
     },
     onError: (err) => {
@@ -96,7 +112,7 @@ export default function NewAssessmentPage() {
   if (!activeWorkspace) {
     return (
       <div className="flex h-full items-center justify-center">
-        <p className="text-muted-foreground">Select a workspace first</p>
+        <p className="text-muted-foreground">{t('assessments.form.selectWorkspace')}</p>
       </div>
     );
   }
@@ -111,18 +127,20 @@ export default function NewAssessmentPage() {
         onClick={() => router.push('/assessments')}
       >
         <ArrowLeft className="h-4 w-4 mr-1" />
-        Assessments
+        {t('assessments.form.back')}
       </Button>
 
       {/* Header */}
       <div>
         <h1 className="font-display text-3xl font-semibold tracking-tight">
-          {framework === 'CONTRACT_A30' ? 'New Contract Review (Art. 30)' : 'New DORA Assessment'}
+          {framework === 'CONTRACT_A30'
+            ? t('assessments.form.titleA30')
+            : t('assessments.form.titleDora')}
         </h1>
         <p className="text-muted-foreground mt-1">
           {framework === 'CONTRACT_A30'
-            ? 'Upload the ICT contract to check all 12 mandatory DORA Article 30 clauses.'
-            : 'Upload vendor ICT documentation to run a gap analysis against Regulation (EU) 2022/2554.'}
+            ? t('assessments.form.subtitleA30')
+            : t('assessments.form.subtitleDora')}
         </p>
       </div>
 
@@ -134,7 +152,7 @@ export default function NewAssessmentPage() {
         >
           {/* Framework toggle */}
           <div className="space-y-2">
-            <p className="text-sm font-medium leading-none">Assessment type</p>
+            <p className="text-sm font-medium leading-none">{t('assessments.form.type')}</p>
             <div className="flex gap-2">
               <Button
                 type="button"
@@ -142,7 +160,7 @@ export default function NewAssessmentPage() {
                 size="sm"
                 onClick={() => setFramework('DORA')}
               >
-                Gap Analysis (Art. 28/29)
+                {t('assessments.form.typeDora')}
               </Button>
               <Button
                 type="button"
@@ -150,7 +168,7 @@ export default function NewAssessmentPage() {
                 size="sm"
                 onClick={() => setFramework('CONTRACT_A30')}
               >
-                Contract Review (Art. 30)
+                {t('assessments.form.typeA30')}
               </Button>
             </div>
           </div>
@@ -160,12 +178,12 @@ export default function NewAssessmentPage() {
             name="vendorName"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Vendor name</FormLabel>
+                <FormLabel>{t('assessments.form.vendorName')}</FormLabel>
                 <FormControl>
-                  <Input placeholder="e.g. Acme Cloud Services" {...field} />
+                  <Input placeholder={t('assessments.form.vendorNamePlaceholder')} {...field} />
                 </FormControl>
                 <FormDescription>
-                  Pre-filled from your workspace. Edit if needed.
+                  {t('assessments.form.vendorNameDesc')}
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -178,18 +196,18 @@ export default function NewAssessmentPage() {
             render={({ field }) => (
               <FormItem>
                 <div className="flex items-center justify-between">
-                  <FormLabel>Assessment name</FormLabel>
+                  <FormLabel>{t('assessments.form.name')}</FormLabel>
                   {!nameIsAuto && (
                     <button
                       type="button"
                       className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
                       onClick={() => {
                         setNameIsAuto(true);
-                        form.setValue('name', buildAssessmentName(vendorName, framework));
+                        form.setValue('name', computeName());
                       }}
                     >
                       <RotateCcw className="h-3 w-3" />
-                      Reset to auto
+                      {t('assessments.form.resetAuto')}
                     </button>
                   )}
                 </div>
@@ -204,8 +222,8 @@ export default function NewAssessmentPage() {
                 </FormControl>
                 <FormDescription>
                   {nameIsAuto
-                    ? 'Auto-generated from vendor name and assessment type.'
-                    : 'Custom label — edit freely or reset to auto.'}
+                    ? t('assessments.form.nameDescAuto')
+                    : t('assessments.form.nameDescCustom')}
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -215,12 +233,14 @@ export default function NewAssessmentPage() {
           {/* File upload */}
           <div className="space-y-2">
             <p className="text-sm font-medium leading-none">
-              {framework === 'CONTRACT_A30' ? 'Contract document' : 'Vendor documents'}
+              {framework === 'CONTRACT_A30'
+                ? t('assessments.form.docsA30')
+                : t('assessments.form.docsDora')}
             </p>
             <FileUploadZone files={files} onChange={setFiles} />
             {files.length === 0 && createMutation.isError && (
               <p className="text-xs text-destructive">
-                Please upload at least one document.
+                {t('assessments.form.uploadAtLeastOne')}
               </p>
             )}
           </div>
@@ -232,7 +252,7 @@ export default function NewAssessmentPage() {
               onClick={() => router.push('/assessments')}
               disabled={createMutation.isPending}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               type="submit"
@@ -241,10 +261,10 @@ export default function NewAssessmentPage() {
               {createMutation.isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Uploading…
+                  {t('assessments.form.uploading')}
                 </>
               ) : (
-                'Start Assessment'
+                t('assessments.form.start')
               )}
             </Button>
           </div>
