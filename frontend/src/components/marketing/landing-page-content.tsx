@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import {
   ArrowRight,
   Bell,
@@ -22,9 +23,12 @@ import {
 import { PricingSection } from '@/components/marketing/pricing-section';
 import { VideoHero } from '@/components/marketing/VideoHero';
 import { ThemeToggle } from '@/components/theme/theme-toggle';
+import { LanguageSwitcher } from '@/shared/ui/language-switcher';
 import { Button } from '@/shared/ui/button';
 
 export function LandingPageContent() {
+  const { t } = useTranslation();
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b">
@@ -34,15 +38,16 @@ export function LandingPageContent() {
             <span className="font-bold text-xl">Retrieva</span>
           </div>
           <div className="flex items-center gap-4">
+            <LanguageSwitcher />
             <ThemeToggle />
             <Link href="/pricing">
-              <Button variant="ghost">Pricing</Button>
+              <Button variant="ghost">{t('common.pricing')}</Button>
             </Link>
             <Link href="/login">
-              <Button variant="ghost">Sign In</Button>
+              <Button variant="ghost">{t('common.signIn')}</Button>
             </Link>
             <Link href="/register">
-              <Button>Get Started</Button>
+              <Button>{t('common.getStarted')}</Button>
             </Link>
           </div>
         </div>
@@ -56,25 +61,24 @@ export function LandingPageContent() {
         >
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border bg-muted text-sm text-muted-foreground mb-6">
             <ShieldCheck className="h-3.5 w-3.5 text-primary" />
-            DORA Regulation (EU) 2022/2554
+            {t('landing.badge')}
           </div>
           <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6">
-            DORA Compliance Intelligence{' '}
-            <span className="text-primary">for Financial Entities</span>
+            {t('landing.heroTitle')}{' '}
+            <span className="text-primary">{t('landing.heroTitleAccent')}</span>
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
-            Automate third-party ICT risk assessments, identify compliance gaps against DORA
-            requirements, and get instant answers from an AI copilot trained on your documentation.
+            {t('landing.heroSubtitle')}
           </p>
           <div className="flex gap-4 justify-center">
             <Link href="/register">
               <Button size="lg" className="gap-2">
-                Start Free <ArrowRight className="h-4 w-4" />
+                {t('common.startFree')} <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>
             <Link href="/login">
               <Button size="lg" variant="outline">
-                Sign In
+                {t('common.signIn')}
               </Button>
             </Link>
           </div>
@@ -84,54 +88,52 @@ export function LandingPageContent() {
       <VideoHero />
 
       <section className="container mx-auto px-4 py-24">
-        <h2 className="text-3xl font-bold text-center mb-12">
-          Everything you need to meet DORA obligations
-        </h2>
+        <h2 className="text-3xl font-bold text-center mb-12">{t('landing.featuresHeading')}</h2>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           <FeatureCard
             icon={<FileSearch className="h-8 w-8" />}
-            title="Automated Gap Analysis"
-            description="Upload vendor ICT documentation and get a structured DORA compliance gap report in minutes."
+            title={t('landing.features.gapAnalysis.title')}
+            description={t('landing.features.gapAnalysis.desc')}
           />
           <FeatureCard
             icon={<ClipboardCheck className="h-8 w-8" />}
-            title="Vendor Questionnaires"
-            description="Auto-generate security questionnaires, invite vendors to respond, and get LLM-scored compliance results instantly."
+            title={t('landing.features.questionnaires.title')}
+            description={t('landing.features.questionnaires.desc')}
           />
           <FeatureCard
             icon={<Bot className="h-8 w-8" />}
-            title="DORA Copilot"
-            description="Ask compliance questions in natural language. The agentic copilot searches your docs and DORA articles."
+            title={t('landing.features.copilot.title')}
+            description={t('landing.features.copilot.desc')}
           />
           <FeatureCard
             icon={<Bell className="h-8 w-8" />}
-            title="Monitoring Alerts"
-            description="Automated 24-hour alerts for certification expiry (90/30/7 days), contract renewal, and overdue assessments."
+            title={t('landing.features.monitoring.title')}
+            description={t('landing.features.monitoring.desc')}
           />
           <FeatureCard
             icon={<FileSpreadsheet className="h-8 w-8" />}
-            title="Register of Information"
-            description="One-click EBA-compliant DORA Article 28(3) XLSX export — RT.01.01 to RT.04.01 sheets generated automatically."
+            title={t('landing.features.roi.title')}
+            description={t('landing.features.roi.desc')}
           />
           <FeatureCard
             icon={<Gauge className="h-8 w-8" />}
-            title="Live Compliance Score"
-            description="A real-time DORA compliance score per workspace, with a 30-day trend and Red/Amber/Green status — board-ready at a glance."
+            title={t('landing.features.score.title')}
+            description={t('landing.features.score.desc')}
           />
           <FeatureCard
             icon={<ListChecks className="h-8 w-8" />}
-            title="Risk Register"
-            description="Track vendor risk decisions, criticality tiers, and gap remediation across your whole third-party estate in one register."
+            title={t('landing.features.riskRegister.title')}
+            description={t('landing.features.riskRegister.desc')}
           />
           <FeatureCard
             icon={<FileText className="h-8 w-8" />}
-            title="Regulator-Ready Reports"
-            description="Generate a downloadable Word (.docx) DORA gap-analysis report per vendor — formatted for review and submission."
+            title={t('landing.features.reports.title')}
+            description={t('landing.features.reports.desc')}
           />
           <FeatureCard
             icon={<Lock className="h-8 w-8" />}
-            title="Enterprise-Grade Security"
-            description="Workspace isolation, MFA, PII detection, audit logging, and encrypted secrets — built for regulated industries."
+            title={t('landing.features.security.title')}
+            description={t('landing.features.security.desc')}
           />
         </div>
       </section>
@@ -144,10 +146,9 @@ export function LandingPageContent() {
             viewport={{ once: true }}
             className="text-center mb-12"
           >
-            <h2 className="text-3xl font-bold mb-4">Bring your vendor documentation</h2>
+            <h2 className="text-3xl font-bold mb-4">{t('landing.ingestionHeading')}</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Upload vendor contracts, ICT policies, and audit reports — parsed, chunked, and
-              embedded into a high-quality RAG pipeline automatically.
+              {t('landing.ingestionSubtitle')}
             </p>
           </motion.div>
 
@@ -163,15 +164,17 @@ export function LandingPageContent() {
                   <Upload className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="font-semibold">Document Ingestion</h3>
-                  <p className="text-xs text-muted-foreground">Zero infrastructure required</p>
+                  <h3 className="font-semibold">{t('landing.ingestionCardTitle')}</h3>
+                  <p className="text-xs text-muted-foreground">
+                    {t('landing.ingestionCardSubtitle')}
+                  </p>
                 </div>
               </div>
               <ul className="space-y-2 text-sm text-muted-foreground mb-4">
                 {[
-                  'File upload — PDF, DOCX, XLSX',
-                  'Automatic parsing, chunking & embedding',
-                  'Self-hosted embeddings — your content stays private',
+                  t('landing.ingestionItems.files'),
+                  t('landing.ingestionItems.parsing'),
+                  t('landing.ingestionItems.selfHosted'),
                 ].map((item) => (
                   <li key={item} className="flex items-center gap-2">
                     <CheckCircle2 className="h-3.5 w-3.5 text-green-500 shrink-0" />
@@ -180,7 +183,7 @@ export function LandingPageContent() {
                 ))}
               </ul>
               <p className="text-xs text-muted-foreground border-t pt-3">
-                Fill in a form — Retrieva handles the rest.
+                {t('landing.ingestionFootnote')}
               </p>
             </motion.div>
           </div>
@@ -189,37 +192,37 @@ export function LandingPageContent() {
 
       <section className="bg-muted/30 py-24">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-12">How It Works</h2>
+          <h2 className="text-3xl font-bold text-center mb-12">{t('landing.howItWorksHeading')}</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 max-w-6xl mx-auto">
             <StepCard
               number="1"
               icon={<Database className="h-6 w-6" />}
-              title="Index Documentation"
-              description="Upload vendor contracts, ICT policies, and audit reports. Retrieva parses, chunks, and embeds them automatically."
+              title={t('landing.steps.index.title')}
+              description={t('landing.steps.index.desc')}
             />
             <StepCard
               number="2"
               icon={<ShieldCheck className="h-6 w-6" />}
-              title="Run DORA Assessment"
-              description="AI analyses documents against each DORA article and classifies coverage as covered, partial, or missing."
+              title={t('landing.steps.assess.title')}
+              description={t('landing.steps.assess.desc')}
             />
             <StepCard
               number="3"
               icon={<ClipboardCheck className="h-6 w-6" />}
-              title="Invite Vendors"
-              description="Send tokenised due diligence questionnaires and get scored responses back without vendor logins."
+              title={t('landing.steps.invite.title')}
+              description={t('landing.steps.invite.desc')}
             />
             <StepCard
               number="4"
               icon={<Bot className="h-6 w-6" />}
-              title="Ask the Copilot"
-              description="Query your knowledge base in natural language and get cited answers grounded in your own documentation."
+              title={t('landing.steps.ask.title')}
+              description={t('landing.steps.ask.desc')}
             />
             <StepCard
               number="5"
               icon={<FileSpreadsheet className="h-6 w-6" />}
-              title="Export Evidence"
-              description="Generate regulator-ready outputs including the Register of Information and gap remediation artefacts."
+              title={t('landing.steps.export.title')}
+              description={t('landing.steps.export.desc')}
             />
           </div>
         </div>
