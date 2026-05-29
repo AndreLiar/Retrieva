@@ -12,6 +12,31 @@
     "en": "English",
     "fr": "Français"
   },
+  "auth": {
+    "common": {
+      "email": "E-mail",
+      "emailPlaceholder": "vous@exemple.com",
+      "password": "Mot de passe",
+      "showPassword": "Afficher le mot de passe",
+      "hidePassword": "Masquer le mot de passe"
+    },
+    "login": {
+      "title": "Bon retour",
+      "subtitle": "Saisissez vos identifiants pour accéder à votre compte",
+      "mfaTitle": "Authentification à deux facteurs",
+      "mfaSubtitle": "Saisissez le code à 6 chiffres de votre application d'authentification, ou un code de récupération",
+      "mfaCodePlaceholder": "Code à 6 chiffres ou code de récupération",
+      "verify": "Vérifier",
+      "verifying": "Vérification…",
+      "useDifferentAccount": "Utiliser un autre compte",
+      "forgotPassword": "Mot de passe oublié ?",
+      "passwordPlaceholder": "Saisissez votre mot de passe",
+      "signIn": "Se connecter",
+      "signingIn": "Connexion…",
+      "noAccount": "Vous n'avez pas de compte ? ",
+      "signUp": "S'inscrire"
+    }
+  },
   "nav": {
     "sections": {
       "compliance": "Conformité",

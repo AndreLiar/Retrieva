@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useTranslation } from 'react-i18next';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -23,6 +24,7 @@ import { loginSchema, type LoginFormData } from '@/lib/utils/validation';
 import { getErrorMessage } from '@/lib/api';
 
 export default function LoginPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const setUser = useAuthStore((state) => state.setUser);
   const [showPassword, setShowPassword] = useState(false);
@@ -93,12 +95,10 @@ export default function LoginPage() {
     <div className="space-y-6">
       <div className="space-y-2 text-center">
         <h2 className="text-2xl font-semibold tracking-tight">
-          {mfaToken ? 'Two-factor authentication' : 'Welcome back'}
+          {mfaToken ? t('auth.login.mfaTitle') : t('auth.login.title')}
         </h2>
         <p className="text-sm text-muted-foreground">
-          {mfaToken
-            ? 'Enter the 6-digit code from your authenticator app, or a recovery code'
-            : 'Enter your credentials to access your account'}
+          {mfaToken ? t('auth.login.mfaSubtitle') : t('auth.login.subtitle')}
         </p>
       </div>
 
@@ -114,7 +114,7 @@ export default function LoginPage() {
             inputMode="numeric"
             autoComplete="one-time-code"
             autoFocus
-            placeholder="6-digit code or recovery code"
+            placeholder={t('auth.login.mfaCodePlaceholder')}
             value={mfaCode}
             onChange={(e) => setMfaCode(e.target.value)}
             disabled={verifyingMfa}
@@ -127,10 +127,10 @@ export default function LoginPage() {
             {verifyingMfa ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Verifying...
+                {t('auth.login.verifying')}
               </>
             ) : (
-              'Verify'
+              t('auth.login.verify')
             )}
           </Button>
           <Button
@@ -140,7 +140,7 @@ export default function LoginPage() {
             onClick={cancelMfa}
             disabled={verifyingMfa}
           >
-            Use a different account
+            {t('auth.login.useDifferentAccount')}
           </Button>
         </form>
       ) : (
@@ -151,11 +151,11 @@ export default function LoginPage() {
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Email</FormLabel>
+                <FormLabel>{t('auth.common.email')}</FormLabel>
                 <FormControl>
                   <Input
                     type="email"
-                    placeholder="you@example.com"
+                    placeholder={t('auth.common.emailPlaceholder')}
                     autoComplete="email"
                     disabled={isSubmitting}
                     {...field}
@@ -172,19 +172,19 @@ export default function LoginPage() {
             render={({ field }) => (
               <FormItem>
                 <div className="flex items-center justify-between">
-                  <FormLabel>Password</FormLabel>
+                  <FormLabel>{t('auth.common.password')}</FormLabel>
                   <Link
                     href="/forgot-password"
                     className="text-sm text-primary hover:underline"
                   >
-                    Forgot password?
+                    {t('auth.login.forgotPassword')}
                   </Link>
                 </div>
                 <div className="relative">
                   <FormControl>
                     <Input
                       type={showPassword ? 'text' : 'password'}
-                      placeholder="Enter your password"
+                      placeholder={t('auth.login.passwordPlaceholder')}
                       autoComplete="current-password"
                       disabled={isSubmitting}
                       className="pr-10"
@@ -205,7 +205,7 @@ export default function LoginPage() {
                       <Eye className="h-4 w-4 text-muted-foreground" />
                     )}
                     <span className="sr-only">
-                      {showPassword ? 'Hide password' : 'Show password'}
+                      {showPassword ? t('auth.common.hidePassword') : t('auth.common.showPassword')}
                     </span>
                   </Button>
                 </div>
@@ -218,10 +218,10 @@ export default function LoginPage() {
             {isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Signing in...
+                {t('auth.login.signingIn')}
               </>
             ) : (
-              'Sign in'
+              t('auth.login.signIn')
             )}
           </Button>
         </form>
@@ -230,9 +230,9 @@ export default function LoginPage() {
 
       {!mfaToken && (
         <div className="text-center text-sm">
-          <span className="text-muted-foreground">Don&apos;t have an account? </span>
+          <span className="text-muted-foreground">{t('auth.login.noAccount')}</span>
           <Link href="/register" className="text-primary hover:underline font-medium">
-            Sign up
+            {t('auth.login.signUp')}
           </Link>
         </div>
       )}
