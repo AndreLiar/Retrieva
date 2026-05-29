@@ -772,5 +772,101 @@
         "updateFailed": "Failed to update conversation"
       }
     }
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Manage your account settings and preferences",
+    "profile": {
+      "title": "Profile",
+      "desc": "Your personal information and profile settings",
+      "name": "Name",
+      "email": "Email",
+      "emailDesc": "Email cannot be changed. Contact support if you need to update it.",
+      "save": "Save Changes",
+      "toastUpdated": "Profile updated successfully",
+      "toastFailed": "Failed to update profile"
+    },
+    "emailVerify": {
+      "title": "Email Verification",
+      "notVerified": "Not Verified",
+      "verified": "Verified",
+      "notVerifiedDesc": "Please verify your email address to access all features",
+      "sentTo1": "We sent a verification email to ",
+      "sentTo2": ". Click the link in the email to verify your account.",
+      "resend": "Resend Verification Email",
+      "pleaseWait": "Please wait {{seconds}}s",
+      "rateLimitNote": "Requests are limited to once per minute to protect your verification link.",
+      "verifiedDesc": "Your email address has been verified.",
+      "toastSent": "Verification email sent! Check your inbox.",
+      "toastSendFailed": "Failed to send verification email",
+      "toastWaitDefault": "Please wait before requesting another verification email.",
+      "toastUnable": "Unable to send verification email"
+    },
+    "notifications": {
+      "title": "Notifications",
+      "desc": "Choose what notifications you want to receive",
+      "email": "Email Notifications",
+      "emailDesc": "Receive notifications via email",
+      "sync": "Sync Alerts",
+      "syncDesc": "Get notified when document syncs complete or fail",
+      "digest": "Weekly Digest",
+      "digestDesc": "Receive a weekly summary of activity"
+    },
+    "teamLink": {
+      "title": "Team",
+      "desc": "Invite colleagues, manage roles, and control who can access the compliance platform",
+      "manage": "Manage Team"
+    },
+    "securityLink": {
+      "title": "Security",
+      "desc": "Manage your password and security settings",
+      "manage": "Manage Security Settings"
+    },
+    "billingLink": {
+      "title": "Billing",
+      "desc": "Manage your subscription and payment methods",
+      "manage": "Manage billing"
+    },
+    "security": {
+      "back": "Back to Settings",
+      "title": "Security Settings",
+      "subtitle": "Manage your account security and authentication",
+      "activity": "Account Activity",
+      "lastLogin": "Last Login",
+      "accountCreated": "Account Created",
+      "emailVerified": "Email Verified",
+      "never": "Never",
+      "yes": "Yes",
+      "no": "No",
+      "changePassword": "Change Password",
+      "changePasswordDesc": "Update your password to keep your account secure",
+      "currentPassword": "Current Password",
+      "newPassword": "New Password",
+      "newPasswordDesc": "Must be at least 8 characters with uppercase, lowercase, and number",
+      "confirmPassword": "Confirm New Password",
+      "update": "Update Password",
+      "toastChanged": "Password changed successfully",
+      "toastChangeFailed": "Failed to change password. Please check your current password."
+    },
+    "mfa": {
+      "title": "Two-Factor Authentication",
+      "descEnabled": "Your account is protected with an authenticator app.",
+      "descDisabled": "Add a second step at sign-in using an authenticator app (TOTP).",
+      "recoveryNote": "Save these recovery codes now — they are shown only once. Each can be used once if you lose your device.",
+      "copyCodes": "Copy codes",
+      "setup": "Set up two-factor authentication",
+      "step1": "1. Add this account to your authenticator app",
+      "step1Desc": "Scan the otpauth URL as a QR code, or enter the secret manually:",
+      "step2": "2. Enter the 6-digit code to confirm",
+      "codePlaceholder": "123456",
+      "enable": "Enable",
+      "disablePrompt": "To disable, confirm your password and a current code.",
+      "currentPasswordPlaceholder": "Current password",
+      "disableCodePlaceholder": "6-digit code or recovery code",
+      "disable": "Disable two-factor authentication",
+      "toastEnabled": "Two-factor authentication enabled",
+      "toastDisabled": "Two-factor authentication disabled",
+      "toastCopied": "Recovery codes copied"
+    }
   }
 }

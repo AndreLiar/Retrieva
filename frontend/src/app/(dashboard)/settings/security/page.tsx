@@ -4,6 +4,7 @@ import { useMutation } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Loader2, Shield, Key, Clock } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
@@ -51,6 +52,7 @@ const changePasswordSchema = z
 type ChangePasswordFormData = z.infer<typeof changePasswordSchema>;
 
 export default function SecuritySettingsPage() {
+  const { t } = useTranslation();
   const user = useAuthStore((state) => state.user);
 
   const form = useForm<ChangePasswordFormData>({
@@ -70,16 +72,16 @@ export default function SecuritySettingsPage() {
       });
     },
     onSuccess: () => {
-      toast.success('Password changed successfully');
+      toast.success(t('settings.security.toastChanged'));
       form.reset();
     },
     onError: () => {
-      toast.error('Failed to change password. Please check your current password.');
+      toast.error(t('settings.security.toastChangeFailed'));
     },
   });
 
   const formatDate = (dateString?: string) => {
-    if (!dateString) return 'Never';
+    if (!dateString) return t('settings.security.never');
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
@@ -95,7 +97,7 @@ export default function SecuritySettingsPage() {
       <Link href="/settings">
         <Button variant="ghost" size="sm" className="mb-4">
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Settings
+          {t('settings.security.back')}
         </Button>
       </Link>
 
@@ -103,10 +105,10 @@ export default function SecuritySettingsPage() {
       <div className="mb-6">
         <h1 className="font-display text-3xl font-semibold tracking-tight flex items-center gap-2">
           <Shield className="h-6 w-6" />
-          Security Settings
+          {t('settings.security.title')}
         </h1>
         <p className="text-muted-foreground">
-          Manage your account security and authentication
+          {t('settings.security.subtitle')}
         </p>
       </div>
 
@@ -115,24 +117,24 @@ export default function SecuritySettingsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <Clock className="h-4 w-4" />
-            Account Activity
+            {t('settings.security.activity')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Last Login</span>
+            <span className="text-muted-foreground">{t('settings.security.lastLogin')}</span>
             <span className="font-medium">{formatDate(user?.lastLogin)}</span>
           </div>
           <Separator />
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Account Created</span>
+            <span className="text-muted-foreground">{t('settings.security.accountCreated')}</span>
             <span className="font-medium">{formatDate(user?.createdAt)}</span>
           </div>
           <Separator />
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Email Verified</span>
+            <span className="text-muted-foreground">{t('settings.security.emailVerified')}</span>
             <span className="font-medium">
-              {user?.isEmailVerified ? 'Yes' : 'No'}
+              {user?.isEmailVerified ? t('settings.security.yes') : t('settings.security.no')}
             </span>
           </div>
         </CardContent>
@@ -143,10 +145,10 @@ export default function SecuritySettingsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Key className="h-5 w-5" />
-            Change Password
+            {t('settings.security.changePassword')}
           </CardTitle>
           <CardDescription>
-            Update your password to keep your account secure
+            {t('settings.security.changePasswordDesc')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -162,7 +164,7 @@ export default function SecuritySettingsPage() {
                 name="currentPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Current Password</FormLabel>
+                    <FormLabel>{t('settings.security.currentPassword')}</FormLabel>
                     <FormControl>
                       <Input type="password" {...field} />
                     </FormControl>
@@ -175,12 +177,12 @@ export default function SecuritySettingsPage() {
                 name="newPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>New Password</FormLabel>
+                    <FormLabel>{t('settings.security.newPassword')}</FormLabel>
                     <FormControl>
                       <Input type="password" {...field} />
                     </FormControl>
                     <FormDescription>
-                      Must be at least 8 characters with uppercase, lowercase, and number
+                      {t('settings.security.newPasswordDesc')}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -191,7 +193,7 @@ export default function SecuritySettingsPage() {
                 name="confirmPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Confirm New Password</FormLabel>
+                    <FormLabel>{t('settings.security.confirmPassword')}</FormLabel>
                     <FormControl>
                       <Input type="password" {...field} />
                     </FormControl>
@@ -206,7 +208,7 @@ export default function SecuritySettingsPage() {
                 {changePasswordMutation.isPending && (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 )}
-                Update Password
+                {t('settings.security.update')}
               </Button>
             </form>
           </Form>

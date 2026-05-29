@@ -772,5 +772,101 @@
         "updateFailed": "Échec de la mise à jour de la conversation"
       }
     }
+  },
+  "settings": {
+    "title": "Paramètres",
+    "subtitle": "Gérez les paramètres et préférences de votre compte",
+    "profile": {
+      "title": "Profil",
+      "desc": "Vos informations personnelles et paramètres de profil",
+      "name": "Nom",
+      "email": "E-mail",
+      "emailDesc": "L'e-mail ne peut pas être modifié. Contactez le support si vous devez le mettre à jour.",
+      "save": "Enregistrer les modifications",
+      "toastUpdated": "Profil mis à jour avec succès",
+      "toastFailed": "Échec de la mise à jour du profil"
+    },
+    "emailVerify": {
+      "title": "Vérification de l'e-mail",
+      "notVerified": "Non vérifié",
+      "verified": "Vérifié",
+      "notVerifiedDesc": "Veuillez vérifier votre adresse e-mail pour accéder à toutes les fonctionnalités",
+      "sentTo1": "Nous avons envoyé un e-mail de vérification à ",
+      "sentTo2": ". Cliquez sur le lien dans l'e-mail pour vérifier votre compte.",
+      "resend": "Renvoyer l'e-mail de vérification",
+      "pleaseWait": "Veuillez patienter {{seconds}} s",
+      "rateLimitNote": "Les demandes sont limitées à une par minute pour protéger votre lien de vérification.",
+      "verifiedDesc": "Votre adresse e-mail a été vérifiée.",
+      "toastSent": "E-mail de vérification envoyé ! Vérifiez votre boîte de réception.",
+      "toastSendFailed": "Échec de l'envoi de l'e-mail de vérification",
+      "toastWaitDefault": "Veuillez patienter avant de demander un nouvel e-mail de vérification.",
+      "toastUnable": "Impossible d'envoyer l'e-mail de vérification"
+    },
+    "notifications": {
+      "title": "Notifications",
+      "desc": "Choisissez les notifications que vous souhaitez recevoir",
+      "email": "Notifications par e-mail",
+      "emailDesc": "Recevez des notifications par e-mail",
+      "sync": "Alertes de synchronisation",
+      "syncDesc": "Soyez averti lorsque les synchronisations de documents aboutissent ou échouent",
+      "digest": "Récapitulatif hebdomadaire",
+      "digestDesc": "Recevez un résumé hebdomadaire de l'activité"
+    },
+    "teamLink": {
+      "title": "Équipe",
+      "desc": "Invitez des collègues, gérez les rôles et contrôlez l'accès à la plateforme de conformité",
+      "manage": "Gérer l'équipe"
+    },
+    "securityLink": {
+      "title": "Sécurité",
+      "desc": "Gérez votre mot de passe et vos paramètres de sécurité",
+      "manage": "Gérer les paramètres de sécurité"
+    },
+    "billingLink": {
+      "title": "Facturation",
+      "desc": "Gérez votre abonnement et vos moyens de paiement",
+      "manage": "Gérer la facturation"
+    },
+    "security": {
+      "back": "Retour aux paramètres",
+      "title": "Paramètres de sécurité",
+      "subtitle": "Gérez la sécurité et l'authentification de votre compte",
+      "activity": "Activité du compte",
+      "lastLogin": "Dernière connexion",
+      "accountCreated": "Compte créé le",
+      "emailVerified": "E-mail vérifié",
+      "never": "Jamais",
+      "yes": "Oui",
+      "no": "Non",
+      "changePassword": "Changer le mot de passe",
+      "changePasswordDesc": "Mettez à jour votre mot de passe pour sécuriser votre compte",
+      "currentPassword": "Mot de passe actuel",
+      "newPassword": "Nouveau mot de passe",
+      "newPasswordDesc": "Au moins 8 caractères avec une majuscule, une minuscule et un chiffre",
+      "confirmPassword": "Confirmer le nouveau mot de passe",
+      "update": "Mettre à jour le mot de passe",
+      "toastChanged": "Mot de passe modifié avec succès",
+      "toastChangeFailed": "Échec du changement de mot de passe. Vérifiez votre mot de passe actuel."
+    },
+    "mfa": {
+      "title": "Authentification à deux facteurs",
+      "descEnabled": "Votre compte est protégé par une application d'authentification.",
+      "descDisabled": "Ajoutez une seconde étape à la connexion via une application d'authentification (TOTP).",
+      "recoveryNote": "Enregistrez ces codes de récupération maintenant — ils ne sont affichés qu'une seule fois. Chacun est utilisable une fois si vous perdez votre appareil.",
+      "copyCodes": "Copier les codes",
+      "setup": "Configurer l'authentification à deux facteurs",
+      "step1": "1. Ajoutez ce compte à votre application d'authentification",
+      "step1Desc": "Scannez l'URL otpauth sous forme de QR code, ou saisissez le secret manuellement :",
+      "step2": "2. Saisissez le code à 6 chiffres pour confirmer",
+      "codePlaceholder": "123456",
+      "enable": "Activer",
+      "disablePrompt": "Pour désactiver, confirmez votre mot de passe et un code actuel.",
+      "currentPasswordPlaceholder": "Mot de passe actuel",
+      "disableCodePlaceholder": "Code à 6 chiffres ou code de récupération",
+      "disable": "Désactiver l'authentification à deux facteurs",
+      "toastEnabled": "Authentification à deux facteurs activée",
+      "toastDisabled": "Authentification à deux facteurs désactivée",
+      "toastCopied": "Codes de récupération copiés"
+    }
   }
 }

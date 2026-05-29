@@ -5,6 +5,7 @@ import { useMutation } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useTranslation } from 'react-i18next';
 import { Loader2, User, Mail, Shield, Bell, CheckCircle, AlertCircle, Users, CreditCard } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
@@ -45,6 +46,7 @@ const RESEND_COOLDOWN_SECONDS = 60;
 type ProfileFormData = z.infer<typeof profileSchema>;
 
 export default function SettingsPage() {
+  const { t } = useTranslation();
   const user = useAuthStore((state) => state.user);
   const updateUser = useAuthStore((state) => state.updateUser);
 
@@ -116,10 +118,10 @@ export default function SettingsPage() {
       if (updatedUser) {
         updateUser(updatedUser);
       }
-      toast.success('Profile updated successfully');
+      toast.success(t('settings.profile.toastUpdated'));
     },
     onError: () => {
-      toast.error('Failed to update profile');
+      toast.error(t('settings.profile.toastFailed'));
     },
   });
 
@@ -130,7 +132,7 @@ export default function SettingsPage() {
     },
     onSuccess: () => {
       startResendCooldown();
-      toast.success('Verification email sent! Check your inbox.');
+      toast.success(t('settings.emailVerify.toastSent'));
     },
     onError: (error: unknown) => {
       if (axios.isAxiosError(error) && error.response) {
@@ -138,22 +140,22 @@ export default function SettingsPage() {
         if (error.response.status === 429) {
           startResendCooldown();
           const message = error.response.data?.message ??
-            'Please wait before requesting another verification email.';
+            t('settings.emailVerify.toastWaitDefault');
           toast.error(message);
           return;
         }
         // Handle already verified (400) or other errors with backend message
         if (error.response.status === 400) {
-          const message = error.response.data?.message ?? 'Unable to send verification email';
+          const message = error.response.data?.message ?? t('settings.emailVerify.toastUnable');
           toast.info(message); // Use info toast for "already verified" messages
           return;
         }
         // Handle other errors with backend message if available
-        const message = error.response.data?.message ?? 'Failed to send verification email';
+        const message = error.response.data?.message ?? t('settings.emailVerify.toastSendFailed');
         toast.error(message);
         return;
       }
-      toast.error('Failed to send verification email');
+      toast.error(t('settings.emailVerify.toastSendFailed'));
     },
   });
 
@@ -170,9 +172,9 @@ export default function SettingsPage() {
     <div className="p-6 max-w-3xl mx-auto">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="font-display text-3xl font-semibold tracking-tight">Settings</h1>
+        <h1 className="font-display text-3xl font-semibold tracking-tight">{t('settings.title')}</h1>
         <p className="text-muted-foreground">
-          Manage your account settings and preferences
+          {t('settings.subtitle')}
         </p>
       </div>
 
@@ -181,10 +183,10 @@ export default function SettingsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <User className="h-5 w-5" />
-            Profile
+            {t('settings.profile.title')}
           </CardTitle>
           <CardDescription>
-            Your personal information and profile settings
+            {t('settings.profile.desc')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -210,7 +212,7 @@ export default function SettingsPage() {
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Name</FormLabel>
+                    <FormLabel>{t('settings.profile.name')}</FormLabel>
                     <FormControl>
                       <Input {...field} />
                     </FormControl>
@@ -223,12 +225,12 @@ export default function SettingsPage() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel>{t('settings.profile.email')}</FormLabel>
                     <FormControl>
                       <Input type="email" {...field} disabled />
                     </FormControl>
                     <FormDescription>
-                      Email cannot be changed. Contact support if you need to update it.
+                      {t('settings.profile.emailDesc')}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -241,7 +243,7 @@ export default function SettingsPage() {
                 {updateProfileMutation.isPending && (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 )}
-                Save Changes
+                {t('settings.profile.save')}
               </Button>
             </form>
           </Form>
@@ -254,20 +256,19 @@ export default function SettingsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Mail className="h-5 w-5" />
-              Email Verification
+              {t('settings.emailVerify.title')}
               <Badge variant="outline" className="ml-2 text-warning border-warning/50">
                 <AlertCircle className="h-3 w-3 mr-1" />
-                Not Verified
+                {t('settings.emailVerify.notVerified')}
               </Badge>
             </CardTitle>
             <CardDescription>
-              Please verify your email address to access all features
+              {t('settings.emailVerify.notVerifiedDesc')}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground mb-4">
-              We sent a verification email to <strong>{user?.email}</strong>.
-              Click the link in the email to verify your account.
+              {t('settings.emailVerify.sentTo1')}<strong>{user?.email}</strong>{t('settings.emailVerify.sentTo2')}
             </p>
             <Button
               variant="outline"
@@ -280,12 +281,12 @@ export default function SettingsPage() {
                 <Mail className="h-4 w-4 mr-2" />
               )}
               {cooldownRemaining > 0
-                ? `Please wait ${cooldownRemaining}s`
-                : 'Resend Verification Email'}
+                ? t('settings.emailVerify.pleaseWait', { seconds: cooldownRemaining })
+                : t('settings.emailVerify.resend')}
             </Button>
             {cooldownRemaining > 0 && (
               <p className="text-xs text-muted-foreground mt-2">
-                Requests are limited to once per minute to protect your verification link.
+                {t('settings.emailVerify.rateLimitNote')}
               </p>
             )}
           </CardContent>
@@ -297,16 +298,16 @@ export default function SettingsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Mail className="h-5 w-5" />
-              Email Verification
+              {t('settings.emailVerify.title')}
               <Badge variant="default" className="ml-2 bg-success">
                 <CheckCircle className="h-3 w-3 mr-1" />
-                Verified
+                {t('settings.emailVerify.verified')}
               </Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              Your email address has been verified.
+              {t('settings.emailVerify.verifiedDesc')}
             </p>
           </CardContent>
         </Card>
@@ -317,18 +318,18 @@ export default function SettingsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Bell className="h-5 w-5" />
-            Notifications
+            {t('settings.notifications.title')}
           </CardTitle>
           <CardDescription>
-            Choose what notifications you want to receive
+            {t('settings.notifications.desc')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-medium">Email Notifications</p>
+              <p className="font-medium">{t('settings.notifications.email')}</p>
               <p className="text-sm text-muted-foreground">
-                Receive notifications via email
+                {t('settings.notifications.emailDesc')}
               </p>
             </div>
             <Switch
@@ -344,9 +345,9 @@ export default function SettingsPage() {
           <Separator />
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-medium">Sync Alerts</p>
+              <p className="font-medium">{t('settings.notifications.sync')}</p>
               <p className="text-sm text-muted-foreground">
-                Get notified when document syncs complete or fail
+                {t('settings.notifications.syncDesc')}
               </p>
             </div>
             <Switch
@@ -362,9 +363,9 @@ export default function SettingsPage() {
           <Separator />
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-medium">Weekly Digest</p>
+              <p className="font-medium">{t('settings.notifications.digest')}</p>
               <p className="text-sm text-muted-foreground">
-                Receive a weekly summary of activity
+                {t('settings.notifications.digestDesc')}
               </p>
             </div>
             <Switch
@@ -385,15 +386,15 @@ export default function SettingsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
-            Team
+            {t('settings.teamLink.title')}
           </CardTitle>
           <CardDescription>
-            Invite colleagues, manage roles, and control who can access the compliance platform
+            {t('settings.teamLink.desc')}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Link href="/settings/team">
-            <Button variant="outline">Manage Team</Button>
+            <Button variant="outline">{t('settings.teamLink.manage')}</Button>
           </Link>
         </CardContent>
       </Card>
@@ -403,15 +404,15 @@ export default function SettingsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5" />
-            Security
+            {t('settings.securityLink.title')}
           </CardTitle>
           <CardDescription>
-            Manage your password and security settings
+            {t('settings.securityLink.desc')}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Link href="/settings/security">
-            <Button variant="outline">Manage Security Settings</Button>
+            <Button variant="outline">{t('settings.securityLink.manage')}</Button>
           </Link>
         </CardContent>
       </Card>
@@ -421,15 +422,15 @@ export default function SettingsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <CreditCard className="h-5 w-5" />
-            Billing
+            {t('settings.billingLink.title')}
           </CardTitle>
           <CardDescription>
-            Manage your subscription and payment methods
+            {t('settings.billingLink.desc')}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Link href="/settings/billing">
-            <Button variant="outline">Manage billing</Button>
+            <Button variant="outline">{t('settings.billingLink.manage')}</Button>
           </Link>
         </CardContent>
       </Card>
