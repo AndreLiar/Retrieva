@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Table,
   TableBody,
@@ -22,17 +23,12 @@ const GAP_VARIANT: Record<GapLevel, 'default' | 'secondary' | 'destructive'> = {
   missing: 'destructive',
 };
 
-const GAP_LABEL: Record<GapLevel, string> = {
-  covered: 'Covered',
-  partial: 'Partial',
-  missing: 'Missing',
-};
-
 interface GapAnalysisTableProps {
   gaps: Gap[];
 }
 
 export function GapAnalysisTable({ gaps }: GapAnalysisTableProps) {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
 
   const toggle = (idx: number) => {
@@ -46,7 +42,7 @@ export function GapAnalysisTable({ gaps }: GapAnalysisTableProps) {
 
   if (gaps.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground text-center py-8">No gaps recorded.</p>
+      <p className="text-sm text-muted-foreground text-center py-8">{t('assessments.gapTable.empty')}</p>
     );
   }
 
@@ -56,10 +52,10 @@ export function GapAnalysisTable({ gaps }: GapAnalysisTableProps) {
         <TableHeader>
           <TableRow>
             <TableHead className="w-8" />
-            <TableHead>Article</TableHead>
-            <TableHead>Domain</TableHead>
-            <TableHead className="hidden md:table-cell">Requirement</TableHead>
-            <TableHead>Gap</TableHead>
+            <TableHead>{t('assessments.gapTable.article')}</TableHead>
+            <TableHead>{t('assessments.gapTable.domain')}</TableHead>
+            <TableHead className="hidden md:table-cell">{t('assessments.gapTable.requirement')}</TableHead>
+            <TableHead>{t('assessments.gapTable.gap')}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -86,7 +82,7 @@ export function GapAnalysisTable({ gaps }: GapAnalysisTableProps) {
                     {gap.requirement}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={GAP_VARIANT[gap.gapLevel]}>{GAP_LABEL[gap.gapLevel]}</Badge>
+                    <Badge variant={GAP_VARIANT[gap.gapLevel]}>{t(`assessments.gapTable.level.${gap.gapLevel}`)}</Badge>
                   </TableCell>
                 </TableRow>
 
@@ -97,19 +93,19 @@ export function GapAnalysisTable({ gaps }: GapAnalysisTableProps) {
                       <div className="space-y-3 text-sm">
                         <div>
                           <p className="font-medium text-xs uppercase tracking-wide text-muted-foreground mb-1">
-                            Requirement
+                            {t('assessments.gapTable.requirement')}
                           </p>
                           <p>{gap.requirement}</p>
                         </div>
                         <div>
                           <p className="font-medium text-xs uppercase tracking-wide text-muted-foreground mb-1">
-                            Vendor Coverage
+                            {t('assessments.gapTable.vendorCoverage')}
                           </p>
                           <p>{gap.vendorCoverage}</p>
                         </div>
                         <div>
                           <p className="font-medium text-xs uppercase tracking-wide text-muted-foreground mb-1">
-                            Recommendation
+                            {t('assessments.gapTable.recommendation')}
                           </p>
                           <p
                             className={cn(
@@ -123,7 +119,7 @@ export function GapAnalysisTable({ gaps }: GapAnalysisTableProps) {
                         {gap.sourceChunks.length > 0 && (
                           <div>
                             <p className="font-medium text-xs uppercase tracking-wide text-muted-foreground mb-1">
-                              Evidence chunks
+                              {t('assessments.gapTable.evidence')}
                             </p>
                             <ul className="list-disc list-inside space-y-1 text-xs text-muted-foreground">
                               {gap.sourceChunks.map((chunk, ci) => (

@@ -488,6 +488,104 @@
       "start": "Lancer l'évaluation",
       "uploading": "Téléversement…",
       "toastCreated": "Évaluation créée — indexation des documents…"
+    },
+    "detail": {
+      "back": "Évaluations",
+      "badgeA30": "Revue de contrat (art. 30)",
+      "badgeDora": "Analyse d'écart DORA",
+      "createdAt": "Créée le {{date}}",
+      "download": "Télécharger le rapport (.docx)",
+      "documents": "Documents ({{count}})",
+      "downloadDocTitle": "Télécharger le document",
+      "docStatus": {
+        "pending": "en attente",
+        "indexing": "indexation",
+        "indexed": "indexé",
+        "failed": "échoué"
+      },
+      "inProgressTitle": "Analyse en cours",
+      "inProgressIndexing": "Analyse et vectorisation de vos documents dans la base vectorielle…",
+      "inProgressA30": "Revue des clauses contractuelles au regard des 12 exigences de l'article 30…",
+      "inProgressDora": "Analyse d'écart DORA sur l'ensemble du contenu indexé…",
+      "overallRisk": "Risque global",
+      "summary": "Synthèse",
+      "totalGaps": "Total des écarts",
+      "totalClauses": "Total des clauses",
+      "missing": "Manquant",
+      "partial": "Partiel",
+      "scorecardA30": "Grille des clauses de l'article 30",
+      "scorecardDora": "Analyse d'écart",
+      "generatedAt": "Rapport généré le {{date}} · Domaines analysés : {{domains}}",
+      "notFound": "Évaluation introuvable ou échec du chargement.",
+      "failedFallback": "L'évaluation a échoué. Veuillez réessayer avec d'autres documents.",
+      "riskDescDora": {
+        "Low": "Le fournisseur démontre une large conformité à DORA avec des écarts mineurs.",
+        "Medium": "Plusieurs obligations DORA ne sont que partiellement satisfaites.",
+        "High": "Écarts de conformité importants détectés — remédiation requise avant le renouvellement du contrat."
+      },
+      "riskDescContract": {
+        "Low": "Le contrat satisfait globalement les clauses obligatoires de l'article 30 de DORA.",
+        "Medium": "Plusieurs clauses de l'article 30 ne sont que partiellement traitées — renégociation recommandée.",
+        "High": "Écarts critiques sur les clauses de l'article 30 — le contrat doit être renégocié avant utilisation."
+      },
+      "toast": {
+        "complete": "Analyse terminée — rapport prêt",
+        "failed": "L'évaluation a échoué",
+        "downloadFailed": "Échec du téléchargement du rapport"
+      },
+      "nextSteps": {
+        "rejectTitle": "Fournisseur rejeté — progression bloquée",
+        "rejectBody1": "Une décision formelle de ",
+        "rejectWord": "Rejet",
+        "rejectBody2": " a été enregistrée. Ce fournisseur ne peut pas être intégré dans le cadre des contrôles actuels. Pour annuler, enregistrez une nouvelle décision de risque ci-dessus.",
+        "rejectReason": "Motif : « {{rationale}} »",
+        "backToVendor": "Retour au fournisseur",
+        "contractReviewTitle": "Étape suivante — Revue de contrat (art. 30)",
+        "highRiskCount": "{{count}} écart(s) critique(s)",
+        "highRiskTail": " ont été détectés. Demandez un plan de remédiation au fournisseur avant la revue de contrat, ou enregistrez une décision conditionnelle ci-dessus.",
+        "lowRiskComplete": "Analyse d'écart terminée.",
+        "lowRiskPartial": "{{count}} écart(s) partiel(s) devraient être traités dans les clauses du contrat.",
+        "lowRiskNoCritical": "Aucun écart critique détecté.",
+        "lowRiskTail": "Importez le contrat TIC et vérifiez les 12 clauses obligatoires de l'article 30 de DORA.",
+        "reviewContract": "Revoir le contrat (art. 30)",
+        "contractCompleteTitle": "Revue de contrat terminée",
+        "contractOk": "Les 12 clauses obligatoires de l'article 30 de DORA sont satisfaites. Ce contrat est prêt à être exécuté.",
+        "contractMissing": "{{count}} clause(s) manquante(s) doivent être ajoutées avant l'exécution.",
+        "contractMissingPartialTail": " {{count}} clause(s) supplémentaire(s) nécessitent un renforcement.",
+        "contractPartial": "{{count}} clause(s) partiellement traitée(s) — renégociation recommandée avant signature.",
+        "backToVendorWorkspace": "Retour à l'espace fournisseur",
+        "rerunRevised": "Relancer avec le contrat révisé"
+      }
+    },
+    "stepper": {
+      "submitted": "Soumise",
+      "submittedDesc": "Évaluation créée",
+      "indexing": "Indexation",
+      "indexingDesc": "Analyse et vectorisation des documents",
+      "analyzing": "Analyse",
+      "analyzingDesc": "Analyse d'écart DORA en cours",
+      "complete": "Terminée",
+      "completeDesc": "Rapport prêt"
+    },
+    "upload": {
+      "drop": "Déposez les fichiers ici…",
+      "prompt": "Glissez-déposez les documents du fournisseur ici, ou cliquez pour parcourir",
+      "hint": "PDF, XLSX, XLS, DOCX — max {{size}} Mo par fichier, jusqu'à {{count}} fichiers"
+    },
+    "gapTable": {
+      "empty": "Aucun écart enregistré.",
+      "article": "Article",
+      "domain": "Domaine",
+      "requirement": "Exigence",
+      "gap": "Écart",
+      "vendorCoverage": "Couverture fournisseur",
+      "recommendation": "Recommandation",
+      "evidence": "Extraits de preuve",
+      "level": {
+        "covered": "Couvert",
+        "partial": "Partiel",
+        "missing": "Manquant"
+      }
     }
   }
 }

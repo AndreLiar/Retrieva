@@ -2,6 +2,7 @@
 
 import { useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
+import { useTranslation } from 'react-i18next';
 import { Upload, X, FileText, FileSpreadsheet } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -39,6 +40,7 @@ function formatSize(bytes: number) {
 }
 
 export function FileUploadZone({ files, onChange }: FileUploadZoneProps) {
+  const { t } = useTranslation();
   const onDrop = useCallback(
     (accepted: File[]) => {
       const withId = accepted.map((f) =>
@@ -77,14 +79,14 @@ export function FileUploadZone({ files, onChange }: FileUploadZoneProps) {
         <input {...getInputProps()} />
         <Upload className="mx-auto h-8 w-8 text-muted-foreground mb-3" />
         {isDragActive ? (
-          <p className="text-sm font-medium text-primary">Drop files here…</p>
+          <p className="text-sm font-medium text-primary">{t('assessments.upload.drop')}</p>
         ) : (
           <>
             <p className="text-sm font-medium">
-              Drag &amp; drop vendor documents here, or click to browse
+              {t('assessments.upload.prompt')}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              PDF, XLSX, XLS, DOCX — max {MAX_SIZE_MB}MB per file, up to {MAX_FILES} files
+              {t('assessments.upload.hint', { size: MAX_SIZE_MB, count: MAX_FILES })}
             </p>
           </>
         )}
