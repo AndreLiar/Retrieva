@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { Building2, Settings } from 'lucide-react';
 
 import { Button } from '@/shared/ui/button';
@@ -8,21 +9,23 @@ import { Badge } from '@/shared/ui/badge';
 import type { VendorTier, VendorStatus, WorkspaceWithMembership } from '@/types';
 
 function TierBadge({ tier }: { tier: VendorTier }) {
-  if (tier === 'critical') return <Badge variant="destructive">Critical</Badge>;
+  const { t } = useTranslation();
+  if (tier === 'critical') return <Badge variant="destructive">{t('workspaces.tier.critical')}</Badge>;
   if (tier === 'important') {
     return (
       <Badge className="bg-warning-muted text-warning border-warning-muted hover:bg-warning-muted">
-        Important
+        {t('workspaces.tier.important')}
       </Badge>
     );
   }
-  return <Badge variant="outline">Standard</Badge>;
+  return <Badge variant="outline">{t('workspaces.tier.standard')}</Badge>;
 }
 
 function VendorStatusBadge({ status }: { status: VendorStatus }) {
-  if (status === 'active') return <Badge variant="default">Active</Badge>;
-  if (status === 'under-review') return <Badge variant="secondary">Under Review</Badge>;
-  return <Badge variant="outline">Exited</Badge>;
+  const { t } = useTranslation();
+  if (status === 'active') return <Badge variant="default">{t('workspaces.status.active')}</Badge>;
+  if (status === 'under-review') return <Badge variant="secondary">{t('workspaces.status.underReview')}</Badge>;
+  return <Badge variant="outline">{t('workspaces.status.exited')}</Badge>;
 }
 
 interface WorkspaceHeaderProps {
@@ -36,6 +39,7 @@ export function WorkspaceHeader({
   workspaceId,
   isOwner,
 }: WorkspaceHeaderProps) {
+  const { t } = useTranslation();
   return (
     <div className="flex items-start justify-between mb-6">
       <div className="flex items-center gap-4">
@@ -57,7 +61,7 @@ export function WorkspaceHeader({
         <Link href={`/workspaces/${workspaceId}/settings`}>
           <Button variant="outline">
             <Settings className="h-4 w-4 mr-2" />
-            Settings
+            {t('workspaces.header.settings')}
           </Button>
         </Link>
       )}
