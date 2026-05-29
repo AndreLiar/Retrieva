@@ -6,6 +6,11 @@
 
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
+import i18n from '@/shared/i18n/config';
+
+// Initialize the app i18n instance in English so components that call
+// useTranslation()/t() render their real copy (not raw keys) in component tests.
+i18n.changeLanguage('en');
 
 // Mock next/navigation
 vi.mock('next/navigation', () => ({

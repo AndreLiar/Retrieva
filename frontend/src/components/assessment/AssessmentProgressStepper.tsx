@@ -1,20 +1,21 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { CheckCircle2, Circle, Loader2, XCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { AssessmentStatus } from '@/lib/api/assessments';
 
 interface Step {
   key: AssessmentStatus;
-  label: string;
-  description: string;
+  labelKey: string;
+  descKey: string;
 }
 
 const STEPS: Step[] = [
-  { key: 'pending', label: 'Submitted', description: 'Assessment created' },
-  { key: 'indexing', label: 'Indexing', description: 'Parsing & embedding documents' },
-  { key: 'analyzing', label: 'Analyzing', description: 'Running DORA gap analysis' },
-  { key: 'complete', label: 'Complete', description: 'Report ready' },
+  { key: 'pending', labelKey: 'assessments.stepper.submitted', descKey: 'assessments.stepper.submittedDesc' },
+  { key: 'indexing', labelKey: 'assessments.stepper.indexing', descKey: 'assessments.stepper.indexingDesc' },
+  { key: 'analyzing', labelKey: 'assessments.stepper.analyzing', descKey: 'assessments.stepper.analyzingDesc' },
+  { key: 'complete', labelKey: 'assessments.stepper.complete', descKey: 'assessments.stepper.completeDesc' },
 ];
 
 const STATUS_ORDER: Record<AssessmentStatus, number> = {
@@ -31,6 +32,7 @@ interface AssessmentProgressStepperProps {
 }
 
 export function AssessmentProgressStepper({ status, statusMessage }: AssessmentProgressStepperProps) {
+  const { t } = useTranslation();
   const currentOrder = STATUS_ORDER[status];
   const isFailed = status === 'failed';
 
@@ -85,10 +87,10 @@ export function AssessmentProgressStepper({ status, statusMessage }: AssessmentP
                     (isDone || isActive) && !isFailed ? 'text-foreground' : 'text-muted-foreground'
                   )}
                 >
-                  {step.label}
+                  {t(step.labelKey)}
                 </p>
                 <p className="text-xs text-muted-foreground text-center hidden sm:block">
-                  {step.description}
+                  {t(step.descKey)}
                 </p>
               </div>
             </li>

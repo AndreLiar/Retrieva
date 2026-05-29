@@ -488,6 +488,104 @@
       "start": "Start Assessment",
       "uploading": "Uploading…",
       "toastCreated": "Assessment created — indexing documents…"
+    },
+    "detail": {
+      "back": "Assessments",
+      "badgeA30": "Art. 30 Contract Review",
+      "badgeDora": "DORA Gap Analysis",
+      "createdAt": "Created {{date}}",
+      "download": "Download Report (.docx)",
+      "documents": "Documents ({{count}})",
+      "downloadDocTitle": "Download document",
+      "docStatus": {
+        "pending": "pending",
+        "indexing": "indexing",
+        "indexed": "indexed",
+        "failed": "failed"
+      },
+      "inProgressTitle": "Analysis in progress",
+      "inProgressIndexing": "Parsing and embedding your documents into the vector store…",
+      "inProgressA30": "Running contract clause review against all 12 Article 30 requirements…",
+      "inProgressDora": "Running the DORA gap analysis against all indexed content…",
+      "overallRisk": "Overall Risk",
+      "summary": "Summary",
+      "totalGaps": "Total gaps",
+      "totalClauses": "Total clauses",
+      "missing": "Missing",
+      "partial": "Partial",
+      "scorecardA30": "Article 30 Clause Scorecard",
+      "scorecardDora": "Gap Analysis",
+      "generatedAt": "Report generated at {{date}} · Domains analyzed: {{domains}}",
+      "notFound": "Assessment not found or failed to load.",
+      "failedFallback": "Assessment failed. Please try again with different documents.",
+      "riskDescDora": {
+        "Low": "The vendor demonstrates broad DORA compliance with minor gaps.",
+        "Medium": "Several DORA obligations are only partially addressed.",
+        "High": "Significant compliance gaps detected — remediation required before contract renewal."
+      },
+      "riskDescContract": {
+        "Low": "The contract broadly satisfies DORA Article 30 mandatory clause requirements.",
+        "Medium": "Several Article 30 clauses are only partially addressed — renegotiation recommended.",
+        "High": "Critical Article 30 clause gaps detected — contract must be renegotiated before use."
+      },
+      "toast": {
+        "complete": "Analysis complete — report ready",
+        "failed": "Assessment failed",
+        "downloadFailed": "Failed to download report"
+      },
+      "nextSteps": {
+        "rejectTitle": "Vendor Rejected — Progression Blocked",
+        "rejectBody1": "A formal ",
+        "rejectWord": "Reject",
+        "rejectBody2": " decision has been recorded. This vendor cannot be onboarded under current controls. To reverse, record a new risk decision above.",
+        "rejectReason": "Reason: \"{{rationale}}\"",
+        "backToVendor": "Back to Vendor",
+        "contractReviewTitle": "Next Step — Contract Review (Art. 30)",
+        "highRiskCount": "{{count}} critical gap(s)",
+        "highRiskTail": " were found. Request a vendor remediation plan before proceeding to contract review, or record a Conditional decision above.",
+        "lowRiskComplete": "Gap analysis complete.",
+        "lowRiskPartial": "{{count}} partial gap(s) should be addressed in the contract clauses.",
+        "lowRiskNoCritical": "No critical gaps found.",
+        "lowRiskTail": "Proceed to upload the ICT contract and verify all 12 mandatory DORA Article 30 clauses.",
+        "reviewContract": "Review Contract (Art. 30)",
+        "contractCompleteTitle": "Contract Review Complete",
+        "contractOk": "All 12 mandatory DORA Article 30 clauses are satisfied. This contract is ready for execution.",
+        "contractMissing": "{{count}} clause(s) are missing and must be added before execution.",
+        "contractMissingPartialTail": " {{count}} further clause(s) need strengthening.",
+        "contractPartial": "{{count}} clause(s) are partially addressed — renegotiation recommended before signature.",
+        "backToVendorWorkspace": "Back to Vendor Workspace",
+        "rerunRevised": "Re-run with revised contract"
+      }
+    },
+    "stepper": {
+      "submitted": "Submitted",
+      "submittedDesc": "Assessment created",
+      "indexing": "Indexing",
+      "indexingDesc": "Parsing & embedding documents",
+      "analyzing": "Analyzing",
+      "analyzingDesc": "Running DORA gap analysis",
+      "complete": "Complete",
+      "completeDesc": "Report ready"
+    },
+    "upload": {
+      "drop": "Drop files here…",
+      "prompt": "Drag & drop vendor documents here, or click to browse",
+      "hint": "PDF, XLSX, XLS, DOCX — max {{size}}MB per file, up to {{count}} files"
+    },
+    "gapTable": {
+      "empty": "No gaps recorded.",
+      "article": "Article",
+      "domain": "Domain",
+      "requirement": "Requirement",
+      "gap": "Gap",
+      "vendorCoverage": "Vendor Coverage",
+      "recommendation": "Recommendation",
+      "evidence": "Evidence chunks",
+      "level": {
+        "covered": "Covered",
+        "partial": "Partial",
+        "missing": "Missing"
+      }
     }
   }
 }
