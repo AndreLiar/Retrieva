@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 
 export interface NavItem {
+  /** i18n key (e.g. 'nav.items.riskRegister') — resolved with t() at render. */
   title: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
@@ -16,6 +17,7 @@ export interface NavItem {
 }
 
 export interface NavSection {
+  /** i18n key (e.g. 'nav.sections.compliance') — resolved with t() at render. */
   label: string;
   items: NavItem[];
 }
@@ -23,19 +25,24 @@ export interface NavSection {
 // Grouped navigation for the desktop sidebar
 export const desktopNavSections: NavSection[] = [
   {
-    label: 'Compliance',
+    label: 'nav.sections.compliance',
     items: [
-      { title: 'Risk Register', href: '/risk-register', icon: BarChart3 },
-      { title: 'Vendors', href: '/workspaces', icon: Building2 },
-      { title: 'Gap Analysis', href: '/assessments', icon: ShieldCheck },
-      { title: 'Questionnaires', href: '/questionnaires', icon: ClipboardList, workspaceRoles: ['owner', 'member'] },
+      { title: 'nav.items.riskRegister', href: '/risk-register', icon: BarChart3 },
+      { title: 'nav.items.vendors', href: '/workspaces', icon: Building2 },
+      { title: 'nav.items.gapAnalysis', href: '/assessments', icon: ShieldCheck },
+      {
+        title: 'nav.items.questionnaires',
+        href: '/questionnaires',
+        icon: ClipboardList,
+        workspaceRoles: ['owner', 'member'],
+      },
     ],
   },
   {
-    label: 'Intelligence',
+    label: 'nav.sections.intelligence',
     items: [
-      { title: 'Ask AI', href: '/chat', icon: MessageSquare },
-      { title: 'History', href: '/conversations', icon: FolderOpen },
+      { title: 'nav.items.askAi', href: '/chat', icon: MessageSquare },
+      { title: 'nav.items.history', href: '/conversations', icon: FolderOpen },
     ],
   },
 ];
@@ -44,12 +51,17 @@ export const desktopNavSections: NavSection[] = [
 export const desktopMainNavItems: NavItem[] = desktopNavSections.flatMap((s) => s.items);
 
 export const mobileMainNavItems: NavItem[] = [
-  { title: 'Gap Analysis', href: '/assessments', icon: ShieldCheck },
-  { title: 'Questionnaires', href: '/questionnaires', icon: ClipboardList, workspaceRoles: ['owner', 'member'] },
-  { title: 'Ask AI', href: '/chat', icon: MessageSquare },
-  { title: 'History', href: '/conversations', icon: FolderOpen },
+  { title: 'nav.items.gapAnalysis', href: '/assessments', icon: ShieldCheck },
+  {
+    title: 'nav.items.questionnaires',
+    href: '/questionnaires',
+    icon: ClipboardList,
+    workspaceRoles: ['owner', 'member'],
+  },
+  { title: 'nav.items.askAi', href: '/chat', icon: MessageSquare },
+  { title: 'nav.items.history', href: '/conversations', icon: FolderOpen },
 ];
 
 export const bottomNavItems: NavItem[] = [
-  { title: 'Settings', href: '/settings', icon: Settings },
+  { title: 'nav.items.settings', href: '/settings', icon: Settings },
 ];
