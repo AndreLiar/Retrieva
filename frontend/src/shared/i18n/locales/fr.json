@@ -62,6 +62,66 @@
         "number": "Un chiffre",
         "special": "Un caractère spécial (!@#$…)"
       }
+    },
+    "verifyEmail": {
+      "verifyingTitle": "Vérification de votre e-mail…",
+      "verifyingSubtitle": "Veuillez patienter pendant la vérification de votre adresse e-mail.",
+      "successTitle": "E-mail vérifié !",
+      "successSubtitle": "Votre e-mail a été vérifié avec succès. Vous pouvez désormais accéder à toutes les fonctionnalités.",
+      "goToDashboard": "Accéder au tableau de bord",
+      "failedTitle": "Échec de la vérification",
+      "goToLogin": "Aller à la connexion",
+      "needNew": "Besoin d'un nouvel e-mail de vérification ? Connectez-vous et demandez-en un depuis les paramètres de votre compte.",
+      "invalidLink": "Lien de vérification invalide. Veuillez demander un nouvel e-mail de vérification.",
+      "loading": "Chargement…"
+    },
+    "forgot": {
+      "title": "Mot de passe oublié ?",
+      "subtitle": "Saisissez votre e-mail et nous vous enverrons un lien de réinitialisation",
+      "successTitle": "Vérifiez votre e-mail",
+      "successSubtitle": "Si un compte existe pour cet e-mail, nous avons envoyé les instructions de réinitialisation du mot de passe.",
+      "tryAnother": "Essayer un autre e-mail",
+      "backToLogin": "Retour à la connexion",
+      "sending": "Envoi…",
+      "sendLink": "Envoyer le lien de réinitialisation"
+    },
+    "reset": {
+      "title": "Réinitialiser le mot de passe",
+      "subtitle": "Saisissez votre nouveau mot de passe ci-dessous",
+      "invalidTitle": "Lien invalide",
+      "invalidSubtitle": "Ce lien de réinitialisation du mot de passe est invalide ou a expiré.",
+      "invalidLinkError": "Lien de réinitialisation invalide. Veuillez demander une nouvelle réinitialisation du mot de passe.",
+      "requestNew": "Demander un nouveau lien de réinitialisation",
+      "successTitle": "Mot de passe réinitialisé !",
+      "successSubtitle": "Votre mot de passe a été réinitialisé avec succès. Vous pouvez désormais vous connecter avec votre nouveau mot de passe.",
+      "goToLogin": "Aller à la connexion",
+      "newPassword": "Nouveau mot de passe",
+      "newPasswordPlaceholder": "Saisissez le nouveau mot de passe",
+      "confirmNewPassword": "Confirmer le nouveau mot de passe",
+      "confirmNewPasswordPlaceholder": "Confirmez le nouveau mot de passe",
+      "resetting": "Réinitialisation…",
+      "backToLogin": "Retour à la connexion"
+    },
+    "onboarding": {
+      "title": "Créez votre organisation",
+      "subtitle": "Configurez le compte de votre entreprise pour gérer la conformité DORA de tous vos prestataires",
+      "orgName": "Nom de l'organisation",
+      "orgNamePlaceholder": "HDI Global SE",
+      "industry": "Secteur",
+      "industryPlaceholder": "Sélectionnez un secteur",
+      "industries": {
+        "insurance": "Assurance",
+        "banking": "Banque",
+        "investment": "Investissement / Gestion d'actifs",
+        "payments": "Paiements",
+        "other": "Autres services financiers"
+      },
+      "country": "Pays",
+      "optional": "facultatif",
+      "countryPlaceholder": "Allemagne",
+      "creating": "Création de l'organisation…",
+      "create": "Créer l'organisation",
+      "toastSuccess": "{{name}} créée ! Bienvenue sur Retrieva."
     }
   },
   "nav": {

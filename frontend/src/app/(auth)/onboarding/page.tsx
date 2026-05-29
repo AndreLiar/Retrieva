@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useTranslation } from 'react-i18next';
 import { Loader2, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -39,6 +40,7 @@ const onboardingSchema = z.object({
 type OnboardingFormData = z.infer<typeof onboardingSchema>;
 
 export default function OnboardingPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { user, isAuthenticated, isInitialized } = useAuthStore();
   const { syncCurrentUser } = useAuthSession();
@@ -75,7 +77,7 @@ export default function OnboardingPage() {
         country: data.country || '',
       });
       await syncCurrentUser();
-      toast.success(`${data.name} created! Welcome to Retrieva.`);
+      toast.success(t('auth.onboarding.toastSuccess', { name: data.name }));
       router.push('/assessments');
     } catch (err) {
       setError(getErrorMessage(err));
@@ -90,10 +92,8 @@ export default function OnboardingPage() {
     <div className="space-y-6">
       <div className="space-y-2 text-center">
         <Building2 className="h-10 w-10 mx-auto text-primary" />
-        <h2 className="text-2xl font-semibold tracking-tight">Create your organization</h2>
-        <p className="text-sm text-muted-foreground">
-          Set up your company account to manage DORA compliance for all vendors
-        </p>
+        <h2 className="text-2xl font-semibold tracking-tight">{t('auth.onboarding.title')}</h2>
+        <p className="text-sm text-muted-foreground">{t('auth.onboarding.subtitle')}</p>
       </div>
 
       {error && (
@@ -109,10 +109,10 @@ export default function OnboardingPage() {
             name="name"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Organization name</FormLabel>
+                <FormLabel>{t('auth.onboarding.orgName')}</FormLabel>
                 <FormControl>
                   <Input
-                    placeholder="HDI Global SE"
+                    placeholder={t('auth.onboarding.orgNamePlaceholder')}
                     disabled={isSubmitting}
                     {...field}
                   />
@@ -127,7 +127,7 @@ export default function OnboardingPage() {
             name="industry"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Industry</FormLabel>
+                <FormLabel>{t('auth.onboarding.industry')}</FormLabel>
                 <Select
                   onValueChange={field.onChange}
                   defaultValue={field.value}
@@ -135,15 +135,15 @@ export default function OnboardingPage() {
                 >
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select industry" />
+                      <SelectValue placeholder={t('auth.onboarding.industryPlaceholder')} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="insurance">Insurance</SelectItem>
-                    <SelectItem value="banking">Banking</SelectItem>
-                    <SelectItem value="investment">Investment / Asset Management</SelectItem>
-                    <SelectItem value="payments">Payments</SelectItem>
-                    <SelectItem value="other">Other Financial Services</SelectItem>
+                    <SelectItem value="insurance">{t('auth.onboarding.industries.insurance')}</SelectItem>
+                    <SelectItem value="banking">{t('auth.onboarding.industries.banking')}</SelectItem>
+                    <SelectItem value="investment">{t('auth.onboarding.industries.investment')}</SelectItem>
+                    <SelectItem value="payments">{t('auth.onboarding.industries.payments')}</SelectItem>
+                    <SelectItem value="other">{t('auth.onboarding.industries.other')}</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -156,10 +156,13 @@ export default function OnboardingPage() {
             name="country"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Country <span className="text-muted-foreground">(optional)</span></FormLabel>
+                <FormLabel>
+                  {t('auth.onboarding.country')}{' '}
+                  <span className="text-muted-foreground">({t('auth.onboarding.optional')})</span>
+                </FormLabel>
                 <FormControl>
                   <Input
-                    placeholder="Germany"
+                    placeholder={t('auth.onboarding.countryPlaceholder')}
                     disabled={isSubmitting}
                     {...field}
                   />
@@ -173,10 +176,10 @@ export default function OnboardingPage() {
             {isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Creating organization...
+                {t('auth.onboarding.creating')}
               </>
             ) : (
-              'Create organization'
+              t('auth.onboarding.create')
             )}
           </Button>
         </form>
