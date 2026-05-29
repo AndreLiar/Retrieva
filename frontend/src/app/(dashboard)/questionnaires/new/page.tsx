@@ -6,6 +6,7 @@ import { useMutation } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Loader2, Send, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -34,6 +35,7 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>;
 
 export default function NewQuestionnairePage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const activeWorkspace = useActiveWorkspace();
   const [step, setStep] = useState<'form' | 'sending'>('form');
@@ -63,13 +65,13 @@ export default function NewQuestionnairePage() {
       try {
         await questionnairesApi.send(questionnaireId);
       } catch {
-        toast.warning('Questionnaire created but email could not be sent. Retry from the detail page.');
+        toast.warning(t('questionnaires.new.toastEmailFailed'));
       }
 
       return questionnaireId;
     },
     onSuccess: (id) => {
-      toast.success('Questionnaire sent to vendor');
+      toast.success(t('questionnaires.new.toastSent'));
       router.push(`/questionnaires/${id}`);
     },
     onError: (err) => {
@@ -81,7 +83,7 @@ export default function NewQuestionnairePage() {
   if (!activeWorkspace) {
     return (
       <div className="flex h-full items-center justify-center">
-        <p className="text-muted-foreground">Select a workspace first</p>
+        <p className="text-muted-foreground">{t('questionnaires.selectWorkspace')}</p>
       </div>
     );
   }
@@ -96,16 +98,15 @@ export default function NewQuestionnairePage() {
         onClick={() => router.push('/questionnaires')}
       >
         <ArrowLeft className="h-4 w-4 mr-1" />
-        Questionnaires
+        {t('questionnaires.title')}
       </Button>
 
       {/* Header */}
       <div>
-        <h1 className="font-display text-3xl font-semibold tracking-tight">Send DORA Questionnaire</h1>
-        <p className="text-muted-foreground mt-1">
-          Generate and email a tokenised DORA Art.28/30 due diligence questionnaire to a vendor.
-          No login required for the vendor.
-        </p>
+        <h1 className="font-display text-3xl font-semibold tracking-tight">
+          {t('questionnaires.new.title')}
+        </h1>
+        <p className="text-muted-foreground mt-1">{t('questionnaires.new.subtitle')}</p>
       </div>
 
       {/* Template info card */}
@@ -113,25 +114,20 @@ export default function NewQuestionnairePage() {
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-medium flex items-center gap-2">
             <FileText className="h-4 w-4 text-muted-foreground" />
-            Template
+            {t('questionnaires.new.template')}
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm font-medium">DORA Art.28/30 Due Diligence</p>
-          <p className="text-sm text-muted-foreground mt-1">
-            20 questions covering Art.9, 11–12, 17–20, 25, 28, 30 across 8 compliance categories.
-            Responses are automatically scored by AI (0–100) with gap analysis.
-          </p>
+          <p className="text-sm font-medium">{t('questionnaires.new.templateName')}</p>
+          <p className="text-sm text-muted-foreground mt-1">{t('questionnaires.new.templateDesc')}</p>
         </CardContent>
       </Card>
 
       {/* Form */}
       <Card>
         <CardHeader>
-          <CardTitle>Vendor Details</CardTitle>
-          <CardDescription>
-            The invitation email will be sent directly to the vendor contact.
-          </CardDescription>
+          <CardTitle>{t('questionnaires.new.vendorDetails')}</CardTitle>
+          <CardDescription>{t('questionnaires.new.vendorDetailsDesc')}</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -144,9 +140,9 @@ export default function NewQuestionnairePage() {
                 name="vendorName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Vendor company name</FormLabel>
+                    <FormLabel>{t('questionnaires.new.companyName')}</FormLabel>
                     <FormControl>
-                      <Input placeholder="Acme Corp Ltd" {...field} />
+                      <Input placeholder={t('questionnaires.new.companyNamePlaceholder')} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -159,15 +155,13 @@ export default function NewQuestionnairePage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      Contact name{' '}
-                      <span className="text-muted-foreground font-normal">(optional)</span>
+                      {t('questionnaires.new.contactName')}{' '}
+                      <span className="text-muted-foreground font-normal">({t('common.optional')})</span>
                     </FormLabel>
                     <FormControl>
-                      <Input placeholder="Jane Smith" {...field} />
+                      <Input placeholder={t('questionnaires.new.contactNamePlaceholder')} {...field} />
                     </FormControl>
-                    <FormDescription>
-                      Used to personalise the invitation email.
-                    </FormDescription>
+                    <FormDescription>{t('questionnaires.new.contactNameDesc')}</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -178,17 +172,15 @@ export default function NewQuestionnairePage() {
                 name="vendorEmail"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Vendor contact email</FormLabel>
+                    <FormLabel>{t('questionnaires.new.contactEmail')}</FormLabel>
                     <FormControl>
                       <Input
                         type="email"
-                        placeholder="compliance@vendor.com"
+                        placeholder={t('questionnaires.new.contactEmailPlaceholder')}
                         {...field}
                       />
                     </FormControl>
-                    <FormDescription>
-                      A secure link valid for 30 days will be sent to this address.
-                    </FormDescription>
+                    <FormDescription>{t('questionnaires.new.contactEmailDesc')}</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -203,12 +195,12 @@ export default function NewQuestionnairePage() {
                   {createAndSendMutation.isPending ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      {step === 'sending' ? 'Sending email…' : 'Creating…'}
+                      {step === 'sending' ? t('questionnaires.new.sendingEmail') : t('questionnaires.new.creating')}
                     </>
                   ) : (
                     <>
                       <Send className="h-4 w-4 mr-2" />
-                      Create &amp; Send
+                      {t('questionnaires.new.createSend')}
                     </>
                   )}
                 </Button>
