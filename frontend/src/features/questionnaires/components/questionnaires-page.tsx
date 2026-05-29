@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { Plus, ClipboardList, Trash2, Copy, Check, Loader2, AlertCircle, FileSpreadsheet } from 'lucide-react';
 import { toast } from 'sonner';
@@ -44,15 +45,6 @@ const STATUS_VARIANT: Record<QuestionnaireStatus, 'default' | 'secondary' | 'des
   failed: 'destructive',
 };
 
-const STATUS_LABEL: Record<QuestionnaireStatus, string> = {
-  draft: 'Draft',
-  sent: 'Sent',
-  partial: 'Responding',
-  complete: 'Complete',
-  expired: 'Expired',
-  failed: 'Failed',
-};
-
 function ScoreCell({ q }: { q: VendorQuestionnaire }) {
   if (q.status !== 'complete' || q.overallScore === undefined) {
     return <span className="text-muted-foreground">-</span>;
@@ -68,6 +60,7 @@ function ScoreCell({ q }: { q: VendorQuestionnaire }) {
 }
 
 export function QuestionnairesPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const queryClient = useQueryClient();
   const activeWorkspace = useActiveWorkspace();
@@ -83,23 +76,23 @@ export function QuestionnairesPage() {
   const deleteMutation = useMutation({
     mutationFn: (id: string) => questionnairesApi.delete(id),
     onSuccess: () => {
-      toast.success('Questionnaire deleted');
+      toast.success(t('questionnaires.toast.deleted'));
       queryClient.invalidateQueries({ queryKey: ['questionnaires'] });
     },
-    onError: () => toast.error('Failed to delete questionnaire'),
+    onError: () => toast.error(t('questionnaires.toast.deleteFailed')),
     onSettled: () => setDeletingId(null),
   });
 
   const exportMutation = useMutation({
     mutationFn: () => workspacesApi.exportRoi(),
-    onError: () => toast.error('Export failed', {
-      description: 'Could not generate the RoI workbook.',
+    onError: () => toast.error(t('questionnaires.toast.exportFailed'), {
+      description: t('questionnaires.toast.exportFailedDesc'),
     }),
   });
 
   const copyVendorLink = (questionnaire: VendorQuestionnaire) => {
     if (!questionnaire.token) {
-      toast.error('No link yet - send the questionnaire first');
+      toast.error(t('questionnaires.toast.noLink'));
       return;
     }
 
@@ -107,7 +100,7 @@ export function QuestionnairesPage() {
     const link = `${baseUrl}/q/${questionnaire.token}`;
     navigator.clipboard.writeText(link).then(() => {
       setCopiedId(questionnaire._id);
-      toast.success('Vendor link copied to clipboard');
+      toast.success(t('questionnaires.toast.linkCopied'));
       setTimeout(() => setCopiedId(null), 2000);
     });
   };
@@ -115,7 +108,7 @@ export function QuestionnairesPage() {
   if (!activeWorkspace) {
     return (
       <div className="flex h-full items-center justify-center">
-        <p className="text-muted-foreground">Select a workspace first</p>
+        <p className="text-muted-foreground">{t('questionnaires.selectWorkspace')}</p>
       </div>
     );
   }
@@ -126,11 +119,9 @@ export function QuestionnairesPage() {
         <div>
           <h1 className="page-title flex items-center gap-2">
             <ClipboardList className="h-6 w-6" />
-            Questionnaires
+            {t('questionnaires.title')}
           </h1>
-          <p className="text-muted-foreground mt-1">
-            DORA Art.28/30 vendor due diligence questionnaires
-          </p>
+          <p className="text-muted-foreground mt-1">{t('questionnaires.subtitle')}</p>
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -143,11 +134,11 @@ export function QuestionnairesPage() {
             ) : (
               <FileSpreadsheet className="h-4 w-4 mr-2" />
             )}
-            Export RoI (Excel)
+            {t('questionnaires.exportRoi')}
           </Button>
           <Button onClick={() => router.push('/questionnaires/new')}>
             <Plus className="h-4 w-4 mr-2" />
-            Send Questionnaire
+            {t('questionnaires.send')}
           </Button>
         </div>
       </div>
@@ -161,27 +152,27 @@ export function QuestionnairesPage() {
       ) : isError ? (
         <div className="flex items-center gap-2 text-destructive p-4">
           <AlertCircle className="h-5 w-5" />
-          <span>Failed to load questionnaires. Please refresh.</span>
+          <span>{t('questionnaires.loadError')}</span>
         </div>
       ) : !data || data.length === 0 ? (
         <EmptyState
           icon={ClipboardList}
-          heading="No questionnaires sent"
-          description="Send a structured Art. 28/30 due diligence questionnaire to a vendor. They complete it via a secure link - no Retrieva account required."
-          cta="Send a questionnaire"
+          heading={t('questionnaires.empty.heading')}
+          description={t('questionnaires.empty.description')}
+          cta={t('questionnaires.empty.cta')}
           onAction={() => router.push('/questionnaires/new')}
-          hint="Completed responses are automatically scored and feed into the Risk Register."
+          hint={t('questionnaires.empty.hint')}
         />
       ) : (
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Vendor</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Score</TableHead>
-              <TableHead>Sent</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead>{t('questionnaires.cols.vendor')}</TableHead>
+              <TableHead>{t('questionnaires.cols.email')}</TableHead>
+              <TableHead>{t('questionnaires.cols.status')}</TableHead>
+              <TableHead>{t('questionnaires.cols.score')}</TableHead>
+              <TableHead>{t('questionnaires.cols.sent')}</TableHead>
+              <TableHead className="text-right">{t('questionnaires.cols.actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -198,7 +189,7 @@ export function QuestionnairesPage() {
                     {(questionnaire.status === 'sent' || questionnaire.status === 'partial') && (
                       <Loader2 className="h-3 w-3 animate-spin" />
                     )}
-                    {STATUS_LABEL[questionnaire.status]}
+                    {t(`questionnaires.status.${questionnaire.status}`)}
                   </Badge>
                 </TableCell>
                 <TableCell>
@@ -212,7 +203,7 @@ export function QuestionnairesPage() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      title="Copy vendor link"
+                      title={t('questionnaires.copyLink')}
                       onClick={() => copyVendorLink(questionnaire)}
                     >
                       {copiedId === questionnaire._id ? (
@@ -227,7 +218,7 @@ export function QuestionnairesPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          title="Delete questionnaire"
+                          title={t('questionnaires.deleteTitle')}
                           onClick={() => setDeletingId(questionnaire._id)}
                         >
                           <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
@@ -235,16 +226,16 @@ export function QuestionnairesPage() {
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
-                          <AlertDialogTitle>Delete questionnaire?</AlertDialogTitle>
+                          <AlertDialogTitle>{t('questionnaires.deleteConfirmTitle')}</AlertDialogTitle>
                           <AlertDialogDescription>
-                            This will permanently delete the questionnaire for{' '}
-                            <strong>{questionnaire.vendorName}</strong> and all collected responses.
-                            This cannot be undone.
+                            {t('questionnaires.deleteConfirmDesc1')}
+                            <strong>{questionnaire.vendorName}</strong>
+                            {t('questionnaires.deleteConfirmDesc2')}
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel onClick={() => setDeletingId(null)}>
-                            Cancel
+                            {t('common.cancel')}
                           </AlertDialogCancel>
                           <AlertDialogAction
                             onClick={() => deleteMutation.mutate(questionnaire._id)}
@@ -253,7 +244,7 @@ export function QuestionnairesPage() {
                             {deleteMutation.isPending && deletingId === questionnaire._id ? (
                               <Loader2 className="h-4 w-4 animate-spin" />
                             ) : (
-                              'Delete'
+                              t('common.delete')
                             )}
                           </AlertDialogAction>
                         </AlertDialogFooter>
