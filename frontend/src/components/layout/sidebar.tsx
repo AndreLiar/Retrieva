@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ShieldCheck, PanelLeftClose, PanelLeft } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -14,6 +15,7 @@ import { usePermissions } from '@/lib/hooks/use-permissions';
 import { desktopNavSections, bottomNavItems, type NavItem } from '@/lib/constants/nav-items';
 
 export function Sidebar() {
+  const { t } = useTranslation();
   const pathname = usePathname();
   const sidebarCollapsed = useUIStore((state) => state.sidebarCollapsed);
   const setSidebarCollapsed = useUIStore((state) => state.setSidebarCollapsed);
@@ -100,7 +102,7 @@ export function Sidebar() {
                 {/* Section label — hidden when collapsed */}
                 {!sidebarCollapsed && (
                   <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-sidebar-foreground/25 select-none">
-                    {section.label}
+                    {t(section.label)}
                   </p>
                 )}
 
@@ -163,10 +165,11 @@ function NavLink({
   isActive: boolean;
   collapsed: boolean;
 }) {
+  const { t } = useTranslation();
   return (
     <Link
       href={item.href}
-      title={collapsed ? item.title : undefined}
+      title={collapsed ? t(item.title) : undefined}
       className={cn(
         'relative flex items-center rounded-sm text-sm transition-colors duration-150',
         collapsed ? 'justify-center p-2.5' : 'gap-3 px-3 py-2',
@@ -176,7 +179,7 @@ function NavLink({
       )}
     >
       <item.icon className="h-4 w-4 shrink-0" aria-hidden />
-      {!collapsed && <span className="truncate">{item.title}</span>}
+      {!collapsed && <span className="truncate">{t(item.title)}</span>}
     </Link>
   );
 }
