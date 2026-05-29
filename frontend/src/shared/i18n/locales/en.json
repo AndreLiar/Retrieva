@@ -155,6 +155,48 @@
       "questionnaire": "Questionnaire"
     }
   },
+  "riskRegister": {
+    "title": "Vendor Risk Register",
+    "subtitle": "DORA Art. 28(3) — portfolio-level ICT third-party risk overview",
+    "exportRoi": "Export RoI (Excel)",
+    "totalVendors": "Total vendors",
+    "highRisk": "High risk",
+    "fullyCompliant": "Fully compliant",
+    "expiringWarning_one": "{{count}} vendor with certifications expiring within 90 days",
+    "expiringWarning_other": "{{count}} vendors with certifications expiring within 90 days",
+    "empty": "No vendors yet.",
+    "addFirst": "Add your first vendor",
+    "complete": "Complete",
+    "steps": "{{n}}/5 steps",
+    "expired": "Expired",
+    "daysShort": "{{n}}d",
+    "overdue": "{{n}}d overdue",
+    "contractOk": "OK",
+    "contractGaps": "Gaps",
+    "tier": {
+      "critical": "Critical",
+      "important": "Important",
+      "standard": "Standard"
+    },
+    "risk": {
+      "High": "High",
+      "Medium": "Medium",
+      "Low": "Low"
+    },
+    "cols": {
+      "vendor": "Vendor",
+      "tier": "Tier",
+      "service": "Service",
+      "doraRisk": "DORA Risk",
+      "riskScore": "Risk Score",
+      "gaps": "Gaps",
+      "qScore": "Q Score",
+      "contract": "Contract",
+      "certs": "Certs",
+      "nextReview": "Next Review",
+      "compliance": "Compliance"
+    }
+  },
   "landing": {
     "badge": "DORA Regulation (EU) 2022/2554",
     "heroTitle": "DORA Compliance Intelligence",
