@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { Plus, ShieldCheck, Trash2, FileDown, AlertCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -49,6 +50,7 @@ const RISK_VARIANT: Record<OverallRisk, 'default' | 'secondary' | 'destructive'>
 };
 
 export function AssessmentsPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const queryClient = useQueryClient();
   const activeWorkspace = useActiveWorkspace();
@@ -63,23 +65,23 @@ export function AssessmentsPage() {
   const deleteMutation = useMutation({
     mutationFn: (id: string) => assessmentsApi.delete(id),
     onSuccess: () => {
-      toast.success('Assessment deleted');
+      toast.success(t('assessments.toast.deleted'));
       queryClient.invalidateQueries({ queryKey: ['assessments'] });
     },
-    onError: () => toast.error('Failed to delete assessment'),
+    onError: () => toast.error(t('assessments.toast.deleteFailed')),
     onSettled: () => setDeletingId(null),
   });
 
   const downloadMutation = useMutation({
     mutationFn: ({ id, vendorName, framework }: { id: string; vendorName: string; framework: Assessment['framework'] }) =>
       assessmentsApi.downloadReport(id, vendorName, framework),
-    onError: () => toast.error('Failed to download report'),
+    onError: () => toast.error(t('assessments.toast.downloadFailed')),
   });
 
   if (!activeWorkspace) {
     return (
       <div className="flex h-full items-center justify-center">
-        <p className="text-muted-foreground">Select a workspace to view assessments</p>
+        <p className="text-muted-foreground">{t('assessments.selectWorkspace')}</p>
       </div>
     );
   }
@@ -88,14 +90,14 @@ export function AssessmentsPage() {
     <div className="p-6 space-y-6">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="page-title">DORA Assessments</h1>
+          <h1 className="page-title">{t('assessments.title')}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Third-party ICT risk assessments under Regulation (EU) 2022/2554
+            {t('assessments.subtitle')}
           </p>
         </div>
         <Button onClick={() => router.push('/assessments/new')}>
           <Plus className="h-4 w-4 mr-2" />
-          New Assessment
+          {t('assessments.newButton')}
         </Button>
       </div>
 
@@ -108,28 +110,28 @@ export function AssessmentsPage() {
       ) : isError ? (
         <div className="flex items-center gap-2 text-destructive p-4 rounded-md border border-destructive/30 bg-destructive/10">
           <AlertCircle className="h-4 w-4 shrink-0" />
-          <p className="text-sm">Failed to load assessments.</p>
+          <p className="text-sm">{t('assessments.loadError')}</p>
         </div>
       ) : data?.length === 0 ? (
         <EmptyState
           icon={ShieldCheck}
-          heading="No gap analyses yet"
-          description="Upload vendor ICT documentation to identify DORA Article 28/29 compliance gaps using AI-powered analysis."
-          cta="Run your first gap analysis"
+          heading={t('assessments.empty.heading')}
+          description={t('assessments.empty.description')}
+          cta={t('assessments.empty.cta')}
           onAction={() => router.push('/assessments/new')}
-          hint="Supported formats: PDF, Word. Results include gap findings, risk level, and remediation recommendations."
+          hint={t('assessments.empty.hint')}
         />
       ) : (
         <div className="rounded-md border overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Vendor</TableHead>
-                <TableHead>Assessment</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Risk</TableHead>
-                <TableHead>Created</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>{t('assessments.cols.vendor')}</TableHead>
+                <TableHead>{t('assessments.cols.assessment')}</TableHead>
+                <TableHead>{t('assessments.cols.status')}</TableHead>
+                <TableHead>{t('assessments.cols.risk')}</TableHead>
+                <TableHead>{t('assessments.cols.created')}</TableHead>
+                <TableHead className="text-right">{t('assessments.cols.actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -143,7 +145,7 @@ export function AssessmentsPage() {
                   <TableCell className="text-muted-foreground">
                     {assessment.name}
                     {assessment.framework === 'CONTRACT_A30' && (
-                      <Badge variant="outline" className="text-xs ml-2">Art. 30</Badge>
+                      <Badge variant="outline" className="text-xs ml-2">{t('assessments.art30Badge')}</Badge>
                     )}
                   </TableCell>
                   <TableCell>
@@ -151,13 +153,13 @@ export function AssessmentsPage() {
                       {(assessment.status === 'indexing' || assessment.status === 'analyzing') ? (
                         <Loader2 className="h-3 w-3 mr-1 animate-spin" />
                       ) : null}
-                      {assessment.status}
+                      {t(`assessments.status.${assessment.status}`)}
                     </Badge>
                   </TableCell>
                   <TableCell>
                     {assessment.results?.overallRisk ? (
                       <Badge variant={RISK_VARIANT[assessment.results.overallRisk]}>
-                        {assessment.results.overallRisk}
+                        {t(`assessments.risk.${assessment.results.overallRisk}`)}
                       </Badge>
                     ) : (
                       <span className="text-muted-foreground text-sm">-</span>
@@ -176,7 +178,7 @@ export function AssessmentsPage() {
                           variant="ghost"
                           size="icon"
                           className="h-7 w-7"
-                          title="Download report"
+                          title={t('assessments.downloadReportTitle')}
                           onClick={() => downloadMutation.mutate({
                             id: assessment._id,
                             vendorName: assessment.vendorName,
@@ -193,7 +195,7 @@ export function AssessmentsPage() {
                             variant="ghost"
                             size="icon"
                             className="h-7 w-7 text-destructive hover:text-destructive"
-                            title="Delete assessment"
+                            title={t('assessments.deleteTitle')}
                             onClick={() => setDeletingId(assessment._id)}
                           >
                             <Trash2 className="h-4 w-4" />
@@ -201,15 +203,16 @@ export function AssessmentsPage() {
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
-                            <AlertDialogTitle>Delete assessment?</AlertDialogTitle>
+                            <AlertDialogTitle>{t('assessments.deleteConfirmTitle')}</AlertDialogTitle>
                             <AlertDialogDescription>
-                              This will permanently remove the assessment for{' '}
-                              <strong>{assessment.vendorName}</strong> and all indexed documents. This action cannot be undone.
+                              {t('assessments.deleteConfirmDesc1')}
+                              <strong>{assessment.vendorName}</strong>
+                              {t('assessments.deleteConfirmDesc2')}
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel onClick={() => setDeletingId(null)}>
-                              Cancel
+                              {t('common.cancel')}
                             </AlertDialogCancel>
                             <AlertDialogAction
                               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
@@ -219,7 +222,7 @@ export function AssessmentsPage() {
                               {deleteMutation.isPending && deletingId === assessment._id ? (
                                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
                               ) : null}
-                              Delete
+                              {t('common.delete')}
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>

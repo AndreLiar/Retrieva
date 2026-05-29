@@ -418,5 +418,76 @@
         "desc": "Générez des livrables prêts pour le régulateur, dont le Registre d'information et les artefacts de remédiation des écarts."
       }
     }
+  },
+  "assessments": {
+    "selectWorkspace": "Sélectionnez un espace de travail pour voir les évaluations",
+    "title": "Évaluations DORA",
+    "subtitle": "Évaluations des risques liés aux TIC de tiers au titre du règlement (UE) 2022/2554",
+    "newButton": "Nouvelle évaluation",
+    "loadError": "Échec du chargement des évaluations.",
+    "empty": {
+      "heading": "Aucune analyse d'écart pour le moment",
+      "description": "Importez la documentation TIC du fournisseur pour identifier les écarts de conformité aux articles 28/29 de DORA grâce à l'analyse assistée par IA.",
+      "cta": "Lancez votre première analyse d'écart",
+      "hint": "Formats pris en charge : PDF, Word. Les résultats incluent les écarts détectés, le niveau de risque et des recommandations de remédiation."
+    },
+    "cols": {
+      "vendor": "Fournisseur",
+      "assessment": "Évaluation",
+      "status": "Statut",
+      "risk": "Risque",
+      "created": "Créée le",
+      "actions": "Actions"
+    },
+    "status": {
+      "pending": "en attente",
+      "indexing": "indexation",
+      "analyzing": "analyse",
+      "complete": "terminée",
+      "failed": "échouée"
+    },
+    "risk": {
+      "Low": "Faible",
+      "Medium": "Moyen",
+      "High": "Élevé"
+    },
+    "art30Badge": "Art. 30",
+    "downloadReportTitle": "Télécharger le rapport",
+    "deleteTitle": "Supprimer l'évaluation",
+    "deleteConfirmTitle": "Supprimer l'évaluation ?",
+    "deleteConfirmDesc1": "Cette action supprimera définitivement l'évaluation pour ",
+    "deleteConfirmDesc2": " ainsi que tous les documents indexés. Cette action est irréversible.",
+    "toast": {
+      "deleted": "Évaluation supprimée",
+      "deleteFailed": "Échec de la suppression de l'évaluation",
+      "downloadFailed": "Échec du téléchargement du rapport"
+    },
+    "form": {
+      "selectWorkspace": "Sélectionnez d'abord un espace de travail",
+      "back": "Évaluations",
+      "titleDora": "Nouvelle évaluation DORA",
+      "titleA30": "Nouvelle revue de contrat (art. 30)",
+      "subtitleDora": "Importez la documentation TIC du fournisseur pour lancer une analyse d'écart au regard du règlement (UE) 2022/2554.",
+      "subtitleA30": "Importez le contrat TIC pour vérifier les 12 clauses obligatoires de l'article 30 de DORA.",
+      "type": "Type d'évaluation",
+      "typeDora": "Analyse d'écart (art. 28/29)",
+      "typeA30": "Revue de contrat (art. 30)",
+      "vendorName": "Nom du fournisseur",
+      "vendorNamePlaceholder": "ex. Acme Cloud Services",
+      "vendorNameDesc": "Pré-rempli depuis votre espace de travail. Modifiez si nécessaire.",
+      "name": "Nom de l'évaluation",
+      "resetAuto": "Réinitialiser en auto",
+      "nameDescAuto": "Généré automatiquement à partir du nom du fournisseur et du type d'évaluation.",
+      "nameDescCustom": "Libellé personnalisé — modifiez librement ou réinitialisez en auto.",
+      "nameTypeDora": "Analyse d'écart DORA",
+      "nameTypeA30": "Revue de contrat art. 30",
+      "vendorFallback": "Fournisseur",
+      "docsDora": "Documents du fournisseur",
+      "docsA30": "Document contractuel",
+      "uploadAtLeastOne": "Veuillez importer au moins un document.",
+      "start": "Lancer l'évaluation",
+      "uploading": "Téléversement…",
+      "toastCreated": "Évaluation créée — indexation des documents…"
+    }
   }
 }
