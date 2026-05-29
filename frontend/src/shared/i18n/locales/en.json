@@ -934,5 +934,77 @@
       "toastMemberRemoved": "Member removed",
       "toastRemoveFailed": "Failed to remove member"
     }
+  },
+  "workspaces": {
+    "title": "Vendors",
+    "subtitle": "Manage your third-party ICT vendors and DORA compliance",
+    "newVendor": "New Vendor",
+    "team": "Team",
+    "empty": {
+      "heading": "No vendors yet",
+      "description": "Add your first ICT vendor to begin the DORA Article 28 compliance workflow - classification, due diligence, gap analysis, and monitoring.",
+      "cta": "Add your first vendor",
+      "hint": "Each vendor gets its own workspace with a 5-step compliance checklist."
+    },
+    "tier": {
+      "critical": "Critical",
+      "important": "Important",
+      "standard": "Standard"
+    },
+    "status": {
+      "active": "Active",
+      "underReview": "Under Review",
+      "exited": "Exited"
+    },
+    "sync": {
+      "syncing": "Syncing",
+      "error": "Sync Error",
+      "synced": "Synced"
+    },
+    "toast": {
+      "connected": "Workspace \"{{name}}\" connected successfully!",
+      "reconnected": "Workspace \"{{name}}\" reconnected",
+      "reconnectedDesc": "Credentials have been updated.",
+      "connectFailed": "Failed to connect workspace"
+    },
+    "header": {
+      "settings": "Settings"
+    },
+    "overview": {
+      "back": "Vendors",
+      "loading": "Loading workspace...",
+      "profile": "Profile",
+      "noProfile1": "No vendor profile data — ",
+      "addInSettings": "add details in Settings",
+      "contactOwner": "contact the workspace owner",
+      "contract": "Contract",
+      "start": "Start: {{date}}",
+      "end": "End: {{date}}",
+      "nextReview": "Next review: {{date}}",
+      "noDates": "No contract dates set",
+      "daysOverdue": "({{days}}d overdue)",
+      "daysLeft": "(+{{days}}d)"
+    },
+    "contractBar": {
+      "expiredAgo": "Contract expired {{days}}d ago",
+      "expiresIn": "Contract expires in {{days}} days"
+    },
+    "score": {
+      "title": "Portfolio Compliance Score",
+      "good": "Good",
+      "needsAttention": "Needs attention",
+      "atRisk": "At risk",
+      "trendUp": "+{{pts}} pts",
+      "trendDown": "{{pts}} pts",
+      "noChange": "No change",
+      "vs30": "vs 30 days ago",
+      "assessmentCount_one": "{{count}} completed assessment",
+      "assessmentCount_other": "{{count}} completed assessments"
+    },
+    "assessmentsCard": {
+      "title": "DORA Gap Assessments",
+      "date": "Date",
+      "noneYet": "No assessments yet for this vendor"
+    }
   }
 }
