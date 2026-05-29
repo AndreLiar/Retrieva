@@ -12,6 +12,7 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { CheckCircle2, XCircle, AlertTriangle, MinusCircle, ChevronDown, ChevronUp } from 'lucide-react';
 
@@ -23,27 +24,41 @@ import type { Assessment, Gap, ClauseSignoff, ClauseSignoffStatus } from '@/lib/
 
 // ── Art. 30 clauses constant (must match gapAnalysisAgent.js) ─────────────────
 
+// `category` stays in English: it drives the gap-matching heuristic below.
+// `textId`/`category` map to i18n keys for display only.
 export const ART30_CLAUSES = [
-  { ref: 'Art.30(2)(a)', category: 'Service Description',   text: 'Clear and complete description of all ICT services and functions to be provided' },
-  { ref: 'Art.30(2)(b)', category: 'Data Governance',       text: 'Locations (countries/regions) where data will be processed and stored' },
-  { ref: 'Art.30(2)(c)', category: 'Security & Resilience', text: 'Provisions on availability, authenticity, integrity and confidentiality of data' },
-  { ref: 'Art.30(2)(d)', category: 'Data Governance',       text: 'Provisions for accessibility, return, recovery and secure deletion of data on exit' },
-  { ref: 'Art.30(2)(e)', category: 'Subcontracting',        text: 'Full description of all subcontractors and their data processing locations' },
-  { ref: 'Art.30(2)(f)', category: 'Business Continuity',   text: 'ICT service continuity conditions including service level objective amendments' },
-  { ref: 'Art.30(2)(g)', category: 'Business Continuity',   text: "Business continuity plan provisions relevant to the financial entity's services" },
-  { ref: 'Art.30(2)(h)', category: 'Termination & Exit',    text: 'Termination rights of the financial entity including adequate notice periods' },
-  { ref: 'Art.30(3)(a)', category: 'Service Description',   text: 'Full service level descriptions with quantitative and qualitative performance targets' },
-  { ref: 'Art.30(3)(b)', category: 'Regulatory Compliance', text: 'Advance notification obligations for material changes to ICT services' },
-  { ref: 'Art.30(3)(c)', category: 'Audit & Inspection',    text: 'Right to carry out full audits and on-site inspections of the ICT provider' },
-  { ref: 'Art.30(3)(d)', category: 'Security & Resilience', text: 'Obligation to assist the financial entity in ICT-related incident management' },
+  { ref: 'Art.30(2)(a)', textId: '2a', category: 'Service Description',   text: 'Clear and complete description of all ICT services and functions to be provided' },
+  { ref: 'Art.30(2)(b)', textId: '2b', category: 'Data Governance',       text: 'Locations (countries/regions) where data will be processed and stored' },
+  { ref: 'Art.30(2)(c)', textId: '2c', category: 'Security & Resilience', text: 'Provisions on availability, authenticity, integrity and confidentiality of data' },
+  { ref: 'Art.30(2)(d)', textId: '2d', category: 'Data Governance',       text: 'Provisions for accessibility, return, recovery and secure deletion of data on exit' },
+  { ref: 'Art.30(2)(e)', textId: '2e', category: 'Subcontracting',        text: 'Full description of all subcontractors and their data processing locations' },
+  { ref: 'Art.30(2)(f)', textId: '2f', category: 'Business Continuity',   text: 'ICT service continuity conditions including service level objective amendments' },
+  { ref: 'Art.30(2)(g)', textId: '2g', category: 'Business Continuity',   text: "Business continuity plan provisions relevant to the financial entity's services" },
+  { ref: 'Art.30(2)(h)', textId: '2h', category: 'Termination & Exit',    text: 'Termination rights of the financial entity including adequate notice periods' },
+  { ref: 'Art.30(3)(a)', textId: '3a', category: 'Service Description',   text: 'Full service level descriptions with quantitative and qualitative performance targets' },
+  { ref: 'Art.30(3)(b)', textId: '3b', category: 'Regulatory Compliance', text: 'Advance notification obligations for material changes to ICT services' },
+  { ref: 'Art.30(3)(c)', textId: '3c', category: 'Audit & Inspection',    text: 'Right to carry out full audits and on-site inspections of the ICT provider' },
+  { ref: 'Art.30(3)(d)', textId: '3d', category: 'Security & Resilience', text: 'Obligation to assist the financial entity in ICT-related incident management' },
 ] as const;
+
+// English category → i18n key slug (display only)
+const CATEGORY_KEY: Record<string, string> = {
+  'Service Description': 'serviceDescription',
+  'Data Governance': 'dataGovernance',
+  'Security & Resilience': 'securityResilience',
+  'Subcontracting': 'subcontracting',
+  'Business Continuity': 'businessContinuity',
+  'Termination & Exit': 'terminationExit',
+  'Regulatory Compliance': 'regulatoryCompliance',
+  'Audit & Inspection': 'auditInspection',
+};
 
 // ── Sign-off config ────────────────────────────────────────────────────────────
 
-const SIGNOFF_CONFIG: Record<ClauseSignoffStatus, { label: string; icon: React.ElementType; badgeClass: string; variant: 'default' | 'destructive' | 'outline' }> = {
-  accepted: { label: 'Accepted',  icon: CheckCircle2,  badgeClass: 'bg-green-100 text-green-800 border-green-200 hover:bg-green-100', variant: 'default' },
-  rejected: { label: 'Rejected',  icon: XCircle,       badgeClass: '', variant: 'destructive' },
-  waived:   { label: 'Waived',    icon: MinusCircle,   badgeClass: 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-100', variant: 'outline' },
+const SIGNOFF_CONFIG: Record<ClauseSignoffStatus, { labelKey: string; icon: React.ElementType; badgeClass: string; variant: 'default' | 'destructive' | 'outline' }> = {
+  accepted: { labelKey: 'assessments.signoff.accepted',  icon: CheckCircle2,  badgeClass: 'bg-green-100 text-green-800 border-green-200 hover:bg-green-100', variant: 'default' },
+  rejected: { labelKey: 'assessments.signoff.rejected',  icon: XCircle,       badgeClass: '', variant: 'destructive' },
+  waived:   { labelKey: 'assessments.signoff.waived',    icon: MinusCircle,   badgeClass: 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-100', variant: 'outline' },
 };
 
 // ── Negotiation round indicator ───────────────────────────────────────────────
@@ -55,6 +70,7 @@ export function NegotiationRoundBadge({
   assessments: Assessment[];
   currentId: string;
 }) {
+  const { t } = useTranslation();
   const sorted = [...assessments].sort(
     (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
   );
@@ -64,7 +80,7 @@ export function NegotiationRoundBadge({
 
   return (
     <Badge variant="outline" className="text-xs font-medium">
-      Round {roundN} of {total}
+      {t('assessments.round', { n: roundN, total })}
     </Badge>
   );
 }
@@ -82,6 +98,7 @@ function ClauseSignoffRow({
   signoff: ClauseSignoff | undefined;
   assessmentId: string;
 }) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [expanded, setExpanded] = useState(false);
   const [note, setNote]         = useState('');
@@ -91,11 +108,15 @@ function ClauseSignoffRow({
       assessmentsApi.setClauseSignoff(assessmentId, clause.ref, status, note),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['assessment', assessmentId] });
-      toast.success(`Clause ${clause.ref} ${note ? 'noted and ' : ''}signed off`);
+      toast.success(
+        note
+          ? t('assessments.signoff.toastNotedAnd', { ref: clause.ref })
+          : t('assessments.signoff.toastSignedOff', { ref: clause.ref })
+      );
       setExpanded(false);
       setNote('');
     },
-    onError: () => toast.error('Sign-off failed'),
+    onError: () => toast.error(t('assessments.signoff.toastFailed')),
   });
 
   const gapLevel = gap?.gapLevel ?? 'covered';
@@ -119,23 +140,23 @@ function ClauseSignoffRow({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-mono text-xs font-semibold text-muted-foreground">{clause.ref}</span>
-            <Badge variant="outline" className="text-xs">{clause.category}</Badge>
+            <Badge variant="outline" className="text-xs">{t(`assessments.clauses.categories.${CATEGORY_KEY[clause.category]}`)}</Badge>
             <Badge
               variant={gapLevel === 'covered' ? 'default' : gapLevel === 'partial' ? 'secondary' : 'destructive'}
-              className="text-xs capitalize"
+              className="text-xs"
             >
-              {gapLevel}
+              {t(`assessments.gapTable.level.${gapLevel}`)}
             </Badge>
             {signoff && (
               <Badge
                 variant={SIGNOFF_CONFIG[signoff.status].variant}
                 className={`text-xs ml-auto ${SIGNOFF_CONFIG[signoff.status].badgeClass}`}
               >
-                {SIGNOFF_CONFIG[signoff.status].label}
+                {t(SIGNOFF_CONFIG[signoff.status].labelKey)}
               </Badge>
             )}
           </div>
-          <p className="text-sm mt-1">{clause.text}</p>
+          <p className="text-sm mt-1">{t(`assessments.clauses.text.${clause.textId}`, { defaultValue: clause.text })}</p>
           {gap?.recommendation && gapLevel !== 'covered' && (
             <p className={`text-xs mt-1 ${gapLevel === 'missing' ? 'text-destructive' : 'text-amber-600 dark:text-amber-400'}`}>
               → {gap.recommendation}
@@ -143,8 +164,12 @@ function ClauseSignoffRow({
           )}
           {signoff && (
             <p className="text-xs text-muted-foreground mt-1">
-              {SIGNOFF_CONFIG[signoff.status].label} by {signoff.signedByName || 'compliance officer'}{' '}
-              · {format(new Date(signoff.signedAt), 'dd MMM yyyy')}{signoff.note ? ` — "${signoff.note}"` : ''}
+              {t('assessments.signoff.signedBy', {
+                label: t(SIGNOFF_CONFIG[signoff.status].labelKey),
+                name: signoff.signedByName || t('assessments.decision.complianceOfficer'),
+                date: format(new Date(signoff.signedAt), 'dd MMM yyyy'),
+              })}
+              {signoff.note ? t('assessments.signoff.noteSuffix', { note: signoff.note }) : ''}
             </p>
           )}
         </div>
@@ -161,7 +186,7 @@ function ClauseSignoffRow({
       {expanded && (
         <div className="mt-3 ml-7 space-y-2">
           <Input
-            placeholder="Optional note (e.g. 'Accepted pending SLA amendment')"
+            placeholder={t('assessments.signoff.notePlaceholder')}
             value={note}
             onChange={(e) => setNote(e.target.value)}
             className="h-8 text-xs"
@@ -180,12 +205,12 @@ function ClauseSignoffRow({
                   className="h-7 px-2.5 text-xs"
                 >
                   <Icon className="h-3 w-3 mr-1" />
-                  {cfg.label}
+                  {t(cfg.labelKey)}
                 </Button>
               );
             })}
             <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setExpanded(false)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
           </div>
         </div>
@@ -201,6 +226,7 @@ export function Art30ClauseScorecardWithSignoff({
 }: {
   assessment: Assessment;
 }) {
+  const { t } = useTranslation();
   const gaps         = assessment.results?.gaps ?? [];
   const signoffs     = assessment.clauseSignoffs ?? [];
   const assessmentId = assessment._id;
@@ -225,16 +251,16 @@ export function Art30ClauseScorecardWithSignoff({
       {/* Summary row */}
       <div className="flex items-center gap-4 text-sm flex-wrap">
         <span className="flex items-center gap-1.5 text-green-600 font-medium">
-          <CheckCircle2 className="h-4 w-4" /> {covered} covered
+          <CheckCircle2 className="h-4 w-4" /> {t('assessments.signoff.summaryCovered', { count: covered })}
         </span>
         <span className="flex items-center gap-1.5 text-amber-600 font-medium">
-          <AlertTriangle className="h-4 w-4" /> {partial} partial
+          <AlertTriangle className="h-4 w-4" /> {t('assessments.signoff.summaryPartial', { count: partial })}
         </span>
         <span className="flex items-center gap-1.5 text-destructive font-medium">
-          <XCircle className="h-4 w-4" /> {missing} missing
+          <XCircle className="h-4 w-4" /> {t('assessments.signoff.summaryMissing', { count: missing })}
         </span>
         <span className="ml-auto text-xs text-muted-foreground">
-          {reviewed} / {ART30_CLAUSES.length} signed off
+          {t('assessments.signoff.reviewedCount', { reviewed, total: ART30_CLAUSES.length })}
         </span>
       </div>
 

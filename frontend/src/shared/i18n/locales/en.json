@@ -586,6 +586,94 @@
         "partial": "Partial",
         "missing": "Missing"
       }
-    }
+    },
+    "matrix": {
+      "title": "Residual Risk Matrix",
+      "ref": "DORA Art. 28(3)",
+      "inherent": "Inherent",
+      "residual": "Residual",
+      "remaining": "remaining",
+      "inputBreakdown": "Input Breakdown",
+      "tier": "Tier ({{tier}})",
+      "base": "base {{base}}/100",
+      "functions_one": "{{count}} ICT function",
+      "functions_other": "{{count}} ICT functions",
+      "inherentScore": "Inherent score",
+      "gapCoverage": "DORA gap coverage",
+      "qScore": "Questionnaire score",
+      "controlEffectiveness": "Control effectiveness",
+      "ctrlHigh": "High (>66%)",
+      "ctrlMed": "Medium (33–66%)",
+      "ctrlLow": "Low (<33%)",
+      "noData": "No questionnaire or DORA data yet — control effectiveness defaults to 0%.",
+      "riskMatrix": "Risk Matrix",
+      "ctrlColLow": "Low controls",
+      "ctrlColMed": "Med controls",
+      "ctrlColHigh": "High controls",
+      "methodology": "Inherent score = tier base + ICT function weights (DORA Art. 28). Control effectiveness = Q-score × 40% + gap coverage × 60%. Residual factor floor: 15% (risk is never fully eliminated). Formula is deterministic and auditable per Art. 28(3)."
+    },
+    "domainChart": {
+      "title": "Weighted Domain Coverage",
+      "weighted": "{{pct}}% weighted",
+      "scoreWeight": "{{score}}% · {{weight}}% weight"
+    },
+    "decision": {
+      "title": "Formal Risk Decision",
+      "proceed": "Proceed",
+      "conditional": "Proceed with Conditions",
+      "reject": "Reject",
+      "toastRecorded": "Risk decision recorded",
+      "toastFailed": "Failed to record decision",
+      "recordedBy": "Recorded by {{name}} · {{date}}",
+      "complianceOfficer": "compliance officer",
+      "changeHint": "To change this decision, record a new one below.",
+      "none": "No formal decision recorded yet. Record your compliance decision to proceed to the next step or formally reject this vendor.",
+      "recording": "Recording:",
+      "rationalePlaceholder": "Rationale (optional) — e.g. 'Acceptable subject to ISO 27001 renewal by Q3'",
+      "saving": "Saving…",
+      "confirm": "Confirm"
+    },
+    "clauses": {
+      "categories": {
+        "serviceDescription": "Service Description",
+        "dataGovernance": "Data Governance",
+        "securityResilience": "Security & Resilience",
+        "subcontracting": "Subcontracting",
+        "businessContinuity": "Business Continuity",
+        "terminationExit": "Termination & Exit",
+        "regulatoryCompliance": "Regulatory Compliance",
+        "auditInspection": "Audit & Inspection"
+      },
+      "text": {
+        "2a": "Clear and complete description of all ICT services and functions to be provided",
+        "2b": "Locations (countries/regions) where data will be processed and stored",
+        "2c": "Provisions on availability, authenticity, integrity and confidentiality of data",
+        "2d": "Provisions for accessibility, return, recovery and secure deletion of data on exit",
+        "2e": "Full description of all subcontractors and their data processing locations",
+        "2f": "ICT service continuity conditions including service level objective amendments",
+        "2g": "Business continuity plan provisions relevant to the financial entity's services",
+        "2h": "Termination rights of the financial entity including adequate notice periods",
+        "3a": "Full service level descriptions with quantitative and qualitative performance targets",
+        "3b": "Advance notification obligations for material changes to ICT services",
+        "3c": "Right to carry out full audits and on-site inspections of the ICT provider",
+        "3d": "Obligation to assist the financial entity in ICT-related incident management"
+      }
+    },
+    "signoff": {
+      "accepted": "Accepted",
+      "rejected": "Rejected",
+      "waived": "Waived",
+      "toastSignedOff": "Clause {{ref}} signed off",
+      "toastNotedAnd": "Clause {{ref}} noted and signed off",
+      "toastFailed": "Sign-off failed",
+      "signedBy": "{{label}} by {{name}} · {{date}}",
+      "noteSuffix": " — \"{{note}}\"",
+      "notePlaceholder": "Optional note (e.g. 'Accepted pending SLA amendment')",
+      "summaryCovered": "{{count}} covered",
+      "summaryPartial": "{{count}} partial",
+      "summaryMissing": "{{count}} missing",
+      "reviewedCount": "{{reviewed}} / {{total}} signed off"
+    },
+    "round": "Round {{n}} of {{total}}"
   }
 }
