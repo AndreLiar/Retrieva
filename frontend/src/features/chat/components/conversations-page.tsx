@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import {
   MessageSquare,
   Pin,
@@ -37,6 +38,7 @@ import { destructiveActionClasses } from '@/lib/styles/status-colors';
 import type { Conversation } from '@/types';
 
 export function ConversationsPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const queryClient = useQueryClient();
   const activeWorkspace = useActiveWorkspace();
@@ -59,11 +61,11 @@ export function ConversationsPage() {
     mutationFn: (id: string) => conversationsApi.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
-      toast.success('Conversation deleted');
+      toast.success(t('chat.list.toast.deleted'));
       setConversationToDelete(null);
     },
     onError: () => {
-      toast.error('Failed to delete conversation');
+      toast.error(t('chat.list.toast.deleteFailed'));
     },
   });
 
@@ -71,13 +73,13 @@ export function ConversationsPage() {
     mutationFn: (ids: string[]) => conversationsApi.bulkDelete(ids),
     onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
-      toast.success(`${response.data?.deletedCount || 0} conversations deleted`);
+      toast.success(t('chat.list.toast.bulkDeleted', { count: response.data?.deletedCount || 0 }));
       setSelectedIds(new Set());
       setIsSelectionMode(false);
       setDeleteDialogOpen(false);
     },
     onError: () => {
-      toast.error('Failed to delete conversations');
+      toast.error(t('chat.list.toast.bulkDeleteFailed'));
     },
   });
 
@@ -130,8 +132,8 @@ export function ConversationsPage() {
       <div className="flex h-full items-center justify-center">
         <p className="text-muted-foreground">
           {workspaces.length === 0
-            ? 'Create a workspace to get started'
-            : 'Select a workspace to view conversations'}
+            ? t('chat.createWorkspace')
+            : t('chat.selectWorkspaceConv')}
         </p>
       </div>
     );
@@ -141,9 +143,9 @@ export function ConversationsPage() {
     <div className="p-6 max-w-5xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="page-title">Conversations</h1>
+          <h1 className="page-title">{t('chat.list.title')}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            View and manage your chat history
+            {t('chat.list.subtitle')}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -160,19 +162,19 @@ export function ConversationsPage() {
               {isSelectionMode ? (
                 <>
                   <X className="h-4 w-4 mr-2" />
-                  Cancel
+                  {t('common.cancel')}
                 </>
               ) : (
                 <>
                   <CheckSquare className="h-4 w-4 mr-2" />
-                  Select
+                  {t('chat.list.select')}
                 </>
               )}
             </Button>
           )}
           <Button onClick={() => router.push('/chat')}>
             <Plus className="h-4 w-4 mr-2" />
-            New Chat
+            {t('chat.list.newChat')}
           </Button>
         </div>
       </div>
@@ -180,9 +182,9 @@ export function ConversationsPage() {
       {isSelectionMode && selectedIds.size > 0 && (
         <div className="mb-4 p-3 bg-muted rounded-lg flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <span className="text-sm font-medium">{selectedIds.size} selected</span>
-            <Button variant="ghost" size="sm" onClick={selectAll}>Select All</Button>
-            <Button variant="ghost" size="sm" onClick={deselectAll}>Deselect All</Button>
+            <span className="text-sm font-medium">{t('chat.list.selectedCount', { count: selectedIds.size })}</span>
+            <Button variant="ghost" size="sm" onClick={selectAll}>{t('chat.list.selectAll')}</Button>
+            <Button variant="ghost" size="sm" onClick={deselectAll}>{t('chat.list.deselectAll')}</Button>
           </div>
           <Button
             variant="destructive"
@@ -195,7 +197,7 @@ export function ConversationsPage() {
             ) : (
               <Trash2 className="h-4 w-4 mr-2" />
             )}
-            Delete Selected
+            {t('chat.list.deleteSelected')}
           </Button>
         </div>
       )}
@@ -213,16 +215,16 @@ export function ConversationsPage() {
         </div>
       ) : error ? (
         <div className="text-center py-12">
-          <p className="text-destructive">Failed to load conversations</p>
+          <p className="text-destructive">{t('chat.list.failedLoad')}</p>
         </div>
       ) : conversations.length === 0 ? (
         <EmptyState
           icon={MessageSquare}
-          heading="No conversations yet"
-          description="Ask AI questions about your vendor documents - every answer is grounded in the documents you have uploaded, with citations showing exactly where each finding came from."
-          cta="Start a conversation"
+          heading={t('chat.list.empty.heading')}
+          description={t('chat.list.empty.description')}
+          cta={t('chat.list.empty.cta')}
           onAction={() => router.push('/chat')}
-          hint={'Try: "What are the gaps in [vendor]\'s ISO 27001 policy?" or "Does the contract include Art. 30 audit rights?"'}
+          hint={t('chat.list.empty.hint')}
         />
       ) : (
         <div className="space-y-6">
@@ -230,7 +232,7 @@ export function ConversationsPage() {
             <div>
               <h2 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
                 <Pin className="h-4 w-4" />
-                Pinned ({pinnedConversations.length})
+                {t('chat.list.pinned', { count: pinnedConversations.length })}
               </h2>
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {pinnedConversations.map((conversation) => (
@@ -264,7 +266,7 @@ export function ConversationsPage() {
                           <div className="flex items-center gap-4 text-sm text-muted-foreground">
                             <span className="flex items-center gap-1">
                               <MessageCircle className="h-3.5 w-3.5" />
-                              {conversation.messageCount} messages
+                              {t('chat.messageCount', { count: conversation.messageCount })}
                             </span>
                             <span className="flex items-center gap-1">
                               <Calendar className="h-3.5 w-3.5" />
@@ -294,7 +296,7 @@ export function ConversationsPage() {
             <div>
               <h2 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
                 <MessageCircle className="h-4 w-4" />
-                Recent ({recentConversations.length})
+                {t('chat.list.recent', { count: recentConversations.length })}
               </h2>
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {recentConversations.map((conversation) => (
@@ -327,7 +329,7 @@ export function ConversationsPage() {
                           <div className="flex items-center gap-4 text-sm text-muted-foreground">
                             <span className="flex items-center gap-1">
                               <MessageCircle className="h-3.5 w-3.5" />
-                              {conversation.messageCount} messages
+                              {t('chat.messageCount', { count: conversation.messageCount })}
                             </span>
                             <span className="flex items-center gap-1">
                               <Calendar className="h-3.5 w-3.5" />
@@ -359,12 +361,12 @@ export function ConversationsPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {conversationToDelete ? 'Delete conversation?' : `Delete ${selectedIds.size} conversations?`}
+              {conversationToDelete ? t('chat.list.deleteOne') : t('chat.list.deleteMany', { count: selectedIds.size })}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {conversationToDelete
-                ? 'This conversation will be permanently deleted. This action cannot be undone.'
-                : `These ${selectedIds.size} conversations will be permanently deleted. This action cannot be undone.`}
+                ? t('chat.list.deleteOneDesc')
+                : t('chat.list.deleteManyDesc', { count: selectedIds.size })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -374,7 +376,7 @@ export function ConversationsPage() {
                 setConversationToDelete(null);
               }}
             >
-              Cancel
+              {t('common.cancel')}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDelete}
@@ -384,7 +386,7 @@ export function ConversationsPage() {
               {(deleteMutation.isPending || bulkDeleteMutation.isPending) ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                'Delete'
+                t('common.delete')
               )}
             </AlertDialogAction>
           </AlertDialogFooter>

@@ -2,6 +2,7 @@
 
 import { use } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
@@ -16,6 +17,7 @@ interface ConversationPageProps {
 }
 
 export function ConversationPage({ params }: ConversationPageProps) {
+  const { t } = useTranslation();
   const { id } = use(params);
   const activeWorkspace = useActiveWorkspace();
   const { data: workspaces = [], isLoading: workspacesLoading } = useWorkspaceListQuery();
@@ -65,11 +67,11 @@ export function ConversationPage({ params }: ConversationPageProps) {
   if (error || !data) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-4">
-        <p className="text-destructive">Failed to load conversation</p>
+        <p className="text-destructive">{t('chat.conversation.failedLoad')}</p>
         <Link href="/conversations">
           <Button variant="outline">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Conversations
+            {t('chat.conversation.back')}
           </Button>
         </Link>
       </div>
@@ -79,15 +81,15 @@ export function ConversationPage({ params }: ConversationPageProps) {
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center gap-3 border-b px-4 py-2">
-        <Link href="/conversations" aria-label="Back to conversations list">
-          <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Back to conversations">
+        <Link href="/conversations" aria-label={t('chat.conversation.backAriaList')}>
+          <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={t('chat.conversation.backAria')}>
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
           </Button>
         </Link>
         <div className="flex-1 min-w-0">
           <h1 className="text-sm font-medium truncate">{data.conversation.title}</h1>
           <p className="text-xs text-muted-foreground">
-            {data.conversation.messageCount} messages
+            {t('chat.messageCount', { count: data.conversation.messageCount })}
           </p>
         </div>
       </div>

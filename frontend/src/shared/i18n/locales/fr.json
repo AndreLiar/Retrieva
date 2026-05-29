@@ -675,5 +675,59 @@
       "reviewedCount": "{{reviewed}} / {{total}} validées"
     },
     "round": "Cycle {{n}} sur {{total}}"
+  },
+  "chat": {
+    "newConversation": "Nouvelle conversation",
+    "selectWorkspaceStart": "Sélectionnez un espace de travail pour démarrer une conversation",
+    "selectWorkspaceConv": "Sélectionnez un espace de travail pour voir les conversations",
+    "createWorkspace": "Créez un espace de travail pour commencer",
+    "messageCount_one": "{{count}} message",
+    "messageCount_other": "{{count}} messages",
+    "conversation": {
+      "failedLoad": "Échec du chargement de la conversation",
+      "back": "Retour aux conversations",
+      "backAriaList": "Retour à la liste des conversations",
+      "backAria": "Retour aux conversations"
+    },
+    "empty": {
+      "welcome": "Bienvenue dans {{name}}",
+      "start": "Démarrer une conversation",
+      "subtitle": "Posez des questions sur votre base de connaissances et obtenez des réponses assistées par IA avec citations des sources.",
+      "readOnly": "Vous disposez d'un accès en lecture seule. Contactez le propriétaire de l'espace de travail pour obtenir les droits d'interrogation.",
+      "tryAsking": "Essayez de demander :",
+      "q1": "Comment fonctionne l'authentification ?",
+      "q2": "Quelles sont les principales fonctionnalités ?",
+      "q3": "Résume la documentation",
+      "q4": "Comment démarrer ?"
+    },
+    "list": {
+      "title": "Conversations",
+      "subtitle": "Consultez et gérez votre historique de conversations",
+      "select": "Sélectionner",
+      "newChat": "Nouvelle conversation",
+      "selectedCount": "{{count}} sélectionnée(s)",
+      "selectAll": "Tout sélectionner",
+      "deselectAll": "Tout désélectionner",
+      "deleteSelected": "Supprimer la sélection",
+      "failedLoad": "Échec du chargement des conversations",
+      "pinned": "Épinglées ({{count}})",
+      "recent": "Récentes ({{count}})",
+      "empty": {
+        "heading": "Aucune conversation pour le moment",
+        "description": "Posez à l'IA des questions sur vos documents fournisseurs — chaque réponse est ancrée dans les documents que vous avez importés, avec des citations indiquant exactement d'où provient chaque constat.",
+        "cta": "Démarrer une conversation",
+        "hint": "Essayez : « Quels sont les écarts dans la politique ISO 27001 de [fournisseur] ? » ou « Le contrat inclut-il les droits d'audit de l'art. 30 ? »"
+      },
+      "deleteOne": "Supprimer la conversation ?",
+      "deleteMany": "Supprimer {{count}} conversations ?",
+      "deleteOneDesc": "Cette conversation sera définitivement supprimée. Cette action est irréversible.",
+      "deleteManyDesc": "Ces {{count}} conversations seront définitivement supprimées. Cette action est irréversible.",
+      "toast": {
+        "deleted": "Conversation supprimée",
+        "deleteFailed": "Échec de la suppression de la conversation",
+        "bulkDeleted": "{{count}} conversations supprimées",
+        "bulkDeleteFailed": "Échec de la suppression des conversations"
+      }
+    }
   }
 }
