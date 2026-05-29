@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useTranslation } from 'react-i18next';
 import { Loader2, Eye, EyeOff, Check, ArrowLeft } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -21,6 +22,7 @@ import { authApi, getErrorMessage } from '@/lib/api';
 import { resetPasswordSchema, type ResetPasswordFormData } from '@/lib/utils/validation';
 
 function ResetPasswordForm() {
+  const { t } = useTranslation();
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
 
@@ -41,7 +43,7 @@ function ResetPasswordForm() {
 
   const onSubmit = async (data: ResetPasswordFormData) => {
     if (!token) {
-      setError('Invalid reset link. Please request a new password reset.');
+      setError(t('auth.reset.invalidLinkError'));
       return;
     }
 
@@ -58,13 +60,11 @@ function ResetPasswordForm() {
     return (
       <div className="space-y-6 text-center">
         <div className="space-y-2">
-          <h2 className="text-2xl font-semibold tracking-tight">Invalid Link</h2>
-          <p className="text-sm text-muted-foreground">
-            This password reset link is invalid or has expired.
-          </p>
+          <h2 className="text-2xl font-semibold tracking-tight">{t('auth.reset.invalidTitle')}</h2>
+          <p className="text-sm text-muted-foreground">{t('auth.reset.invalidSubtitle')}</p>
         </div>
         <Link href="/forgot-password">
-          <Button className="w-full">Request new reset link</Button>
+          <Button className="w-full">{t('auth.reset.requestNew')}</Button>
         </Link>
       </div>
     );
@@ -77,13 +77,11 @@ function ResetPasswordForm() {
           <Check className="h-6 w-6 text-success" />
         </div>
         <div className="space-y-2">
-          <h2 className="text-2xl font-semibold tracking-tight">Password reset!</h2>
-          <p className="text-sm text-muted-foreground">
-            Your password has been successfully reset. You can now log in with your new password.
-          </p>
+          <h2 className="text-2xl font-semibold tracking-tight">{t('auth.reset.successTitle')}</h2>
+          <p className="text-sm text-muted-foreground">{t('auth.reset.successSubtitle')}</p>
         </div>
         <Link href="/login">
-          <Button className="w-full">Go to login</Button>
+          <Button className="w-full">{t('auth.reset.goToLogin')}</Button>
         </Link>
       </div>
     );
@@ -92,8 +90,8 @@ function ResetPasswordForm() {
   return (
     <div className="space-y-6">
       <div className="space-y-2 text-center">
-        <h2 className="text-2xl font-semibold tracking-tight">Reset password</h2>
-        <p className="text-sm text-muted-foreground">Enter your new password below</p>
+        <h2 className="text-2xl font-semibold tracking-tight">{t('auth.reset.title')}</h2>
+        <p className="text-sm text-muted-foreground">{t('auth.reset.subtitle')}</p>
       </div>
 
       {error && (
@@ -109,12 +107,12 @@ function ResetPasswordForm() {
             name="password"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>New Password</FormLabel>
+                <FormLabel>{t('auth.reset.newPassword')}</FormLabel>
                 <FormControl>
                   <div className="relative">
                     <Input
                       type={showPassword ? 'text' : 'password'}
-                      placeholder="Enter new password"
+                      placeholder={t('auth.reset.newPasswordPlaceholder')}
                       autoComplete="new-password"
                       disabled={isSubmitting}
                       {...field}
@@ -145,12 +143,12 @@ function ResetPasswordForm() {
             name="confirmPassword"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Confirm New Password</FormLabel>
+                <FormLabel>{t('auth.reset.confirmNewPassword')}</FormLabel>
                 <FormControl>
                   <div className="relative">
                     <Input
                       type={showConfirmPassword ? 'text' : 'password'}
-                      placeholder="Confirm new password"
+                      placeholder={t('auth.reset.confirmNewPasswordPlaceholder')}
                       autoComplete="new-password"
                       disabled={isSubmitting}
                       {...field}
@@ -180,10 +178,10 @@ function ResetPasswordForm() {
             {isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Resetting password...
+                {t('auth.reset.resetting')}
               </>
             ) : (
-              'Reset password'
+              t('auth.reset.title')
             )}
           </Button>
         </form>
@@ -195,7 +193,7 @@ function ResetPasswordForm() {
           className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center"
         >
           <ArrowLeft className="mr-1 h-3 w-3" />
-          Back to login
+          {t('auth.reset.backToLogin')}
         </Link>
       </div>
     </div>

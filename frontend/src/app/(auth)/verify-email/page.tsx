@@ -3,12 +3,14 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { Loader2, Check, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { authApi, getErrorMessage } from '@/lib/api';
 
 function VerifyEmailContent() {
+  const { t } = useTranslation();
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
 
@@ -19,7 +21,7 @@ function VerifyEmailContent() {
     const verifyEmail = async () => {
       if (!token) {
         setStatus('error');
-        setError('Invalid verification link. Please request a new verification email.');
+        setError(t('auth.verifyEmail.invalidLink'));
         return;
       }
 
@@ -33,7 +35,7 @@ function VerifyEmailContent() {
     };
 
     verifyEmail();
-  }, [token]);
+  }, [token, t]);
 
   if (status === 'loading') {
     return (
@@ -42,8 +44,12 @@ function VerifyEmailContent() {
           <Loader2 className="h-6 w-6 text-primary animate-spin" />
         </div>
         <div className="space-y-2">
-          <h2 className="text-2xl font-semibold tracking-tight">Verifying your email...</h2>
-          <p className="text-sm text-muted-foreground">Please wait while we verify your email address.</p>
+          <h2 className="text-2xl font-semibold tracking-tight">
+            {t('auth.verifyEmail.verifyingTitle')}
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            {t('auth.verifyEmail.verifyingSubtitle')}
+          </p>
         </div>
       </div>
     );
@@ -56,13 +62,13 @@ function VerifyEmailContent() {
           <Check className="h-6 w-6 text-success" />
         </div>
         <div className="space-y-2">
-          <h2 className="text-2xl font-semibold tracking-tight">Email verified!</h2>
-          <p className="text-sm text-muted-foreground">
-            Your email has been successfully verified. You can now access all features.
-          </p>
+          <h2 className="text-2xl font-semibold tracking-tight">
+            {t('auth.verifyEmail.successTitle')}
+          </h2>
+          <p className="text-sm text-muted-foreground">{t('auth.verifyEmail.successSubtitle')}</p>
         </div>
         <Link href="/">
-          <Button className="w-full">Go to Dashboard</Button>
+          <Button className="w-full">{t('auth.verifyEmail.goToDashboard')}</Button>
         </Link>
       </div>
     );
@@ -74,16 +80,30 @@ function VerifyEmailContent() {
         <X className="h-6 w-6 text-destructive" />
       </div>
       <div className="space-y-2">
-        <h2 className="text-2xl font-semibold tracking-tight">Verification failed</h2>
+        <h2 className="text-2xl font-semibold tracking-tight">
+          {t('auth.verifyEmail.failedTitle')}
+        </h2>
         <p className="text-sm text-muted-foreground">{error}</p>
       </div>
       <div className="space-y-3">
         <Link href="/login">
-          <Button className="w-full">Go to Login</Button>
+          <Button className="w-full">{t('auth.verifyEmail.goToLogin')}</Button>
         </Link>
-        <p className="text-xs text-muted-foreground">
-          Need a new verification email? Log in and request one from your account settings.
-        </p>
+        <p className="text-xs text-muted-foreground">{t('auth.verifyEmail.needNew')}</p>
+      </div>
+    </div>
+  );
+}
+
+function VerifyEmailFallback() {
+  const { t } = useTranslation();
+  return (
+    <div className="space-y-6 text-center">
+      <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+        <Loader2 className="h-6 w-6 text-primary animate-spin" />
+      </div>
+      <div className="space-y-2">
+        <h2 className="text-2xl font-semibold tracking-tight">{t('auth.verifyEmail.loading')}</h2>
       </div>
     </div>
   );
@@ -91,18 +111,7 @@ function VerifyEmailContent() {
 
 export default function VerifyEmailPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="space-y-6 text-center">
-          <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-            <Loader2 className="h-6 w-6 text-primary animate-spin" />
-          </div>
-          <div className="space-y-2">
-            <h2 className="text-2xl font-semibold tracking-tight">Loading...</h2>
-          </div>
-        </div>
-      }
-    >
+    <Suspense fallback={<VerifyEmailFallback />}>
       <VerifyEmailContent />
     </Suspense>
   );
