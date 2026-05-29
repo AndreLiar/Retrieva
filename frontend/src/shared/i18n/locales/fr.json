@@ -35,6 +35,33 @@
       "signingIn": "Connexion…",
       "noAccount": "Vous n'avez pas de compte ? ",
       "signUp": "S'inscrire"
+    },
+    "register": {
+      "title": "Créer un compte",
+      "subtitle": "Saisissez vos informations pour commencer",
+      "name": "Nom",
+      "namePlaceholder": "Jean Dupont",
+      "passwordPlaceholder": "Créez un mot de passe",
+      "confirmPassword": "Confirmer le mot de passe",
+      "confirmPasswordPlaceholder": "Confirmez votre mot de passe",
+      "creating": "Création du compte…",
+      "createAccount": "Créer un compte",
+      "haveAccount": "Vous avez déjà un compte ? ",
+      "signIn": "Se connecter",
+      "toastSuccess": "Compte créé ! Vérifiez votre e-mail pour confirmer votre compte.",
+      "successTitle": "Compte créé !",
+      "successEmailSent": "Un e-mail de vérification a été envoyé dans votre boîte de réception.",
+      "redirecting": "Redirection…",
+      "met": " - rempli",
+      "notMet": " - non rempli",
+      "pwReqAria": "Exigences du mot de passe : {{met}} sur {{total}} remplies",
+      "pwReq": {
+        "min8": "Au moins 8 caractères",
+        "lower": "Une lettre minuscule",
+        "upper": "Une lettre majuscule",
+        "number": "Un chiffre",
+        "special": "Un caractère spécial (!@#$…)"
+      }
     }
   },
   "nav": {

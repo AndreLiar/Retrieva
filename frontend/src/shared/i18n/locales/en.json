@@ -35,6 +35,33 @@
       "signingIn": "Signing in...",
       "noAccount": "Don't have an account? ",
       "signUp": "Sign up"
+    },
+    "register": {
+      "title": "Create an account",
+      "subtitle": "Enter your details to get started",
+      "name": "Name",
+      "namePlaceholder": "John Doe",
+      "passwordPlaceholder": "Create a password",
+      "confirmPassword": "Confirm Password",
+      "confirmPasswordPlaceholder": "Confirm your password",
+      "creating": "Creating account...",
+      "createAccount": "Create account",
+      "haveAccount": "Already have an account? ",
+      "signIn": "Sign in",
+      "toastSuccess": "Account created! Check your email to verify your account.",
+      "successTitle": "Account created!",
+      "successEmailSent": "A verification email has been sent to your inbox.",
+      "redirecting": "Redirecting...",
+      "met": " - met",
+      "notMet": " - not met",
+      "pwReqAria": "Password requirements: {{met}} of {{total}} met",
+      "pwReq": {
+        "min8": "At least 8 characters",
+        "lower": "One lowercase letter",
+        "upper": "One uppercase letter",
+        "number": "One number",
+        "special": "One special character (!@#$...)"
+      }
     }
   },
   "nav": {
