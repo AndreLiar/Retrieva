@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useTranslation } from 'react-i18next';
 import { Loader2, ArrowLeft, Mail } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -20,6 +21,7 @@ import { authApi, getErrorMessage } from '@/lib/api';
 import { forgotPasswordSchema, type ForgotPasswordFormData } from '@/lib/utils/validation';
 
 export default function ForgotPasswordPage() {
+  const { t } = useTranslation();
   const [error, setError] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
 
@@ -49,10 +51,8 @@ export default function ForgotPasswordPage() {
           <Mail className="h-6 w-6 text-primary" />
         </div>
         <div className="space-y-2">
-          <h2 className="text-2xl font-semibold tracking-tight">Check your email</h2>
-          <p className="text-sm text-muted-foreground">
-            If an account exists with that email, we&apos;ve sent password reset instructions.
-          </p>
+          <h2 className="text-2xl font-semibold tracking-tight">{t('auth.forgot.successTitle')}</h2>
+          <p className="text-sm text-muted-foreground">{t('auth.forgot.successSubtitle')}</p>
         </div>
         <div className="space-y-3">
           <Button
@@ -63,12 +63,12 @@ export default function ForgotPasswordPage() {
               form.reset();
             }}
           >
-            Try another email
+            {t('auth.forgot.tryAnother')}
           </Button>
           <Link href="/login">
             <Button variant="ghost" className="w-full">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to login
+              {t('auth.forgot.backToLogin')}
             </Button>
           </Link>
         </div>
@@ -79,10 +79,8 @@ export default function ForgotPasswordPage() {
   return (
     <div className="space-y-6">
       <div className="space-y-2 text-center">
-        <h2 className="text-2xl font-semibold tracking-tight">Forgot password?</h2>
-        <p className="text-sm text-muted-foreground">
-          Enter your email and we&apos;ll send you a reset link
-        </p>
+        <h2 className="text-2xl font-semibold tracking-tight">{t('auth.forgot.title')}</h2>
+        <p className="text-sm text-muted-foreground">{t('auth.forgot.subtitle')}</p>
       </div>
 
       {error && (
@@ -98,11 +96,11 @@ export default function ForgotPasswordPage() {
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Email</FormLabel>
+                <FormLabel>{t('auth.common.email')}</FormLabel>
                 <FormControl>
                   <Input
                     type="email"
-                    placeholder="you@example.com"
+                    placeholder={t('auth.common.emailPlaceholder')}
                     autoComplete="email"
                     disabled={isSubmitting}
                     {...field}
@@ -117,10 +115,10 @@ export default function ForgotPasswordPage() {
             {isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Sending...
+                {t('auth.forgot.sending')}
               </>
             ) : (
-              'Send reset link'
+              t('auth.forgot.sendLink')
             )}
           </Button>
         </form>
@@ -132,7 +130,7 @@ export default function ForgotPasswordPage() {
           className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center"
         >
           <ArrowLeft className="mr-1 h-3 w-3" />
-          Back to login
+          {t('auth.forgot.backToLogin')}
         </Link>
       </div>
     </div>

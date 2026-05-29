@@ -62,6 +62,66 @@
         "number": "One number",
         "special": "One special character (!@#$...)"
       }
+    },
+    "verifyEmail": {
+      "verifyingTitle": "Verifying your email...",
+      "verifyingSubtitle": "Please wait while we verify your email address.",
+      "successTitle": "Email verified!",
+      "successSubtitle": "Your email has been successfully verified. You can now access all features.",
+      "goToDashboard": "Go to Dashboard",
+      "failedTitle": "Verification failed",
+      "goToLogin": "Go to Login",
+      "needNew": "Need a new verification email? Log in and request one from your account settings.",
+      "invalidLink": "Invalid verification link. Please request a new verification email.",
+      "loading": "Loading..."
+    },
+    "forgot": {
+      "title": "Forgot password?",
+      "subtitle": "Enter your email and we'll send you a reset link",
+      "successTitle": "Check your email",
+      "successSubtitle": "If an account exists with that email, we've sent password reset instructions.",
+      "tryAnother": "Try another email",
+      "backToLogin": "Back to login",
+      "sending": "Sending...",
+      "sendLink": "Send reset link"
+    },
+    "reset": {
+      "title": "Reset password",
+      "subtitle": "Enter your new password below",
+      "invalidTitle": "Invalid Link",
+      "invalidSubtitle": "This password reset link is invalid or has expired.",
+      "invalidLinkError": "Invalid reset link. Please request a new password reset.",
+      "requestNew": "Request new reset link",
+      "successTitle": "Password reset!",
+      "successSubtitle": "Your password has been successfully reset. You can now log in with your new password.",
+      "goToLogin": "Go to login",
+      "newPassword": "New Password",
+      "newPasswordPlaceholder": "Enter new password",
+      "confirmNewPassword": "Confirm New Password",
+      "confirmNewPasswordPlaceholder": "Confirm new password",
+      "resetting": "Resetting password...",
+      "backToLogin": "Back to login"
+    },
+    "onboarding": {
+      "title": "Create your organization",
+      "subtitle": "Set up your company account to manage DORA compliance for all vendors",
+      "orgName": "Organization name",
+      "orgNamePlaceholder": "HDI Global SE",
+      "industry": "Industry",
+      "industryPlaceholder": "Select industry",
+      "industries": {
+        "insurance": "Insurance",
+        "banking": "Banking",
+        "investment": "Investment / Asset Management",
+        "payments": "Payments",
+        "other": "Other Financial Services"
+      },
+      "country": "Country",
+      "optional": "optional",
+      "countryPlaceholder": "Germany",
+      "creating": "Creating organization...",
+      "create": "Create organization",
+      "toastSuccess": "{{name}} created! Welcome to Retrieva."
     }
   },
   "nav": {
