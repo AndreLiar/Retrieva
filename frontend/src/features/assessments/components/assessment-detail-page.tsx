@@ -3,6 +3,7 @@
 import { useEffect, use, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useMutation } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import {
   ArrowLeft,
@@ -41,19 +42,8 @@ const RISK_VARIANT: Record<OverallRisk, 'default' | 'secondary' | 'destructive'>
   High: 'destructive',
 };
 
-const RISK_DESCRIPTION: Record<OverallRisk, string> = {
-  Low: 'The vendor demonstrates broad DORA compliance with minor gaps.',
-  Medium: 'Several DORA obligations are only partially addressed.',
-  High: 'Significant compliance gaps detected - remediation required before contract renewal.',
-};
-
-const RISK_DESCRIPTION_CONTRACT: Record<OverallRisk, string> = {
-  Low: 'The contract broadly satisfies DORA Article 30 mandatory clause requirements.',
-  Medium: 'Several Article 30 clauses are only partially addressed - renegotiation recommended.',
-  High: 'Critical Article 30 clause gaps detected - contract must be renegotiated before use.',
-};
-
 function NextStepsPanel({ assessment }: { assessment: Assessment }) {
+  const { t } = useTranslation();
   const router = useRouter();
   const isDora = assessment.framework === 'DORA';
   const risk = assessment.results?.overallRisk;
@@ -71,23 +61,24 @@ function NextStepsPanel({ assessment }: { assessment: Assessment }) {
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
               <XCircle className="h-5 w-5 text-destructive" />
-              Vendor Rejected - Progression Blocked
+              {t('assessments.detail.nextSteps.rejectTitle')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              A formal <strong>Reject</strong> decision has been recorded. This vendor cannot be
-              onboarded under current controls. To reverse, record a new risk decision above.
+              {t('assessments.detail.nextSteps.rejectBody1')}
+              <strong>{t('assessments.detail.nextSteps.rejectWord')}</strong>
+              {t('assessments.detail.nextSteps.rejectBody2')}
             </p>
             {assessment.riskDecision.rationale && (
               <p className="text-sm text-muted-foreground italic">
-                Reason: &quot;{assessment.riskDecision.rationale}&quot;
+                {t('assessments.detail.nextSteps.rejectReason', { rationale: assessment.riskDecision.rationale })}
               </p>
             )}
             {wsId && (
               <Button size="sm" variant="outline" onClick={() => router.push(`/workspaces/${wsId}`)}>
                 <Building2 className="h-4 w-4 mr-1.5" />
-                Back to Vendor
+                {t('assessments.detail.nextSteps.backToVendor')}
               </Button>
             )}
           </CardContent>
@@ -105,24 +96,24 @@ function NextStepsPanel({ assessment }: { assessment: Assessment }) {
             ) : (
               <CheckCircle2 className="h-5 w-5 text-success" />
             )}
-            Next Step - Contract Review (Art. 30)
+            {t('assessments.detail.nextSteps.contractReviewTitle')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           {isHighRisk ? (
             <p className="text-sm text-muted-foreground">
-              <strong>{missingN} critical gap(s)</strong> were found. Request a vendor remediation
-              plan before proceeding to contract review, or record a Conditional decision above.
+              <strong>{t('assessments.detail.nextSteps.highRiskCount', { count: missingN })}</strong>
+              {t('assessments.detail.nextSteps.highRiskTail')}
             </p>
           ) : (
             <p className="text-sm text-muted-foreground">
-              Gap analysis complete.
+              {t('assessments.detail.nextSteps.lowRiskComplete')}
               {' '}
               {partialN > 0
-                ? `${partialN} partial gap(s) should be addressed in the contract clauses.`
-                : 'No critical gaps found.'}
+                ? t('assessments.detail.nextSteps.lowRiskPartial', { count: partialN })
+                : t('assessments.detail.nextSteps.lowRiskNoCritical')}
               {' '}
-              Proceed to upload the ICT contract and verify all 12 mandatory DORA Article 30 clauses.
+              {t('assessments.detail.nextSteps.lowRiskTail')}
             </p>
           )}
           <div className="flex gap-2 flex-wrap">
@@ -133,13 +124,13 @@ function NextStepsPanel({ assessment }: { assessment: Assessment }) {
               }
             >
               <FileText className="h-4 w-4 mr-1.5" />
-              Review Contract (Art. 30)
+              {t('assessments.detail.nextSteps.reviewContract')}
               <ChevronRight className="h-3.5 w-3.5 ml-1" />
             </Button>
             {wsId && (
               <Button size="sm" variant="outline" onClick={() => router.push(`/workspaces/${wsId}`)}>
                 <Building2 className="h-4 w-4 mr-1.5" />
-                Back to Vendor
+                {t('assessments.detail.nextSteps.backToVendor')}
               </Button>
             )}
           </div>
@@ -166,29 +157,29 @@ function NextStepsPanel({ assessment }: { assessment: Assessment }) {
           ) : (
             <CheckCircle2 className="h-5 w-5 text-success" />
           )}
-          Contract Review Complete
+          {t('assessments.detail.nextSteps.contractCompleteTitle')}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         <p className="text-sm text-muted-foreground">
           {contractOk
-            ? 'All 12 mandatory DORA Article 30 clauses are satisfied. This contract is ready for execution.'
+            ? t('assessments.detail.nextSteps.contractOk')
             : clausesMissing > 0
-              ? `${clausesMissing} clause(s) are missing and must be added before execution.${clausesPartial > 0 ? ` ${clausesPartial} further clause(s) need strengthening.` : ''}`
-              : `${clausesPartial} clause(s) are partially addressed - renegotiation recommended before signature.`}
+              ? `${t('assessments.detail.nextSteps.contractMissing', { count: clausesMissing })}${clausesPartial > 0 ? t('assessments.detail.nextSteps.contractMissingPartialTail', { count: clausesPartial }) : ''}`
+              : t('assessments.detail.nextSteps.contractPartial', { count: clausesPartial })}
         </p>
         <div className="flex gap-2 flex-wrap">
           {wsId && (
             <Button size="sm" onClick={() => router.push(`/workspaces/${wsId}`)}>
               <Building2 className="h-4 w-4 mr-1.5" />
-              Back to Vendor Workspace
+              {t('assessments.detail.nextSteps.backToVendorWorkspace')}
               <ChevronRight className="h-3.5 w-3.5 ml-1" />
             </Button>
           )}
           {!contractOk && (
             <Button size="sm" variant="outline" onClick={() => router.push('/assessments/new')}>
               <FileSearch className="h-4 w-4 mr-1.5" />
-              Re-run with revised contract
+              {t('assessments.detail.nextSteps.rerunRevised')}
             </Button>
           )}
         </div>
@@ -202,6 +193,7 @@ interface AssessmentDetailPageProps {
 }
 
 export function AssessmentDetailPage({ params }: AssessmentDetailPageProps) {
+  const { t } = useTranslation();
   const { id } = use(params);
   const router = useRouter();
 
@@ -271,16 +263,17 @@ export function AssessmentDetailPage({ params }: AssessmentDetailPageProps) {
 
   useEffect(() => {
     if (prevStatus === 'complete') {
-      toast.success('Analysis complete - report ready');
+      toast.success(t('assessments.detail.toast.complete'));
     } else if (prevStatus === 'failed') {
-      toast.error('Assessment failed');
+      toast.error(t('assessments.detail.toast.failed'));
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [prevStatus]);
 
   const downloadMutation = useMutation({
     mutationFn: () =>
       assessmentsApi.downloadReport(id, assessment?.vendorName ?? 'vendor', assessment?.framework),
-    onError: () => toast.error('Failed to download report'),
+    onError: () => toast.error(t('assessments.detail.toast.downloadFailed')),
   });
 
   if (isLoading) {
@@ -298,7 +291,7 @@ export function AssessmentDetailPage({ params }: AssessmentDetailPageProps) {
       <div className="p-6 max-w-4xl mx-auto">
         <div className="flex items-center gap-2 text-destructive p-4 rounded-md border border-destructive/30 bg-destructive/10">
           <AlertCircle className="h-4 w-4 shrink-0" />
-          <p className="text-sm">Assessment not found or failed to load.</p>
+          <p className="text-sm">{t('assessments.detail.notFound')}</p>
         </div>
       </div>
     );
@@ -314,7 +307,7 @@ export function AssessmentDetailPage({ params }: AssessmentDetailPageProps) {
       <div className="flex items-center gap-2">
         <Button variant="ghost" size="sm" className="-ml-2" onClick={() => router.push('/assessments')}>
           <ArrowLeft className="h-4 w-4 mr-1" />
-          Assessments
+          {t('assessments.detail.back')}
         </Button>
         {assessment.workspaceId && (
           <>
@@ -336,7 +329,7 @@ export function AssessmentDetailPage({ params }: AssessmentDetailPageProps) {
           <div className="flex items-center gap-2 flex-wrap">
             <h1 className="page-title">{assessment.vendorName}</h1>
             <Badge variant="outline" className="text-xs">
-              {isA30 ? 'Art. 30 Contract Review' : 'DORA Gap Analysis'}
+              {isA30 ? t('assessments.detail.badgeA30') : t('assessments.detail.badgeDora')}
             </Badge>
             {isA30 && siblingA30 && (
               <NegotiationRoundBadge assessments={siblingA30} currentId={id} />
@@ -344,7 +337,7 @@ export function AssessmentDetailPage({ params }: AssessmentDetailPageProps) {
           </div>
           <p className="text-muted-foreground">{assessment.name}</p>
           <p className="text-xs text-muted-foreground mt-1">
-            Created {format(new Date(assessment.createdAt), 'dd MMM yyyy HH:mm')}
+            {t('assessments.detail.createdAt', { date: format(new Date(assessment.createdAt), 'dd MMM yyyy HH:mm') })}
           </p>
         </div>
         {isComplete && (
@@ -354,7 +347,7 @@ export function AssessmentDetailPage({ params }: AssessmentDetailPageProps) {
             ) : (
               <FileDown className="h-4 w-4 mr-2" />
             )}
-            Download Report (.docx)
+            {t('assessments.detail.download')}
           </Button>
         )}
       </div>
@@ -367,7 +360,7 @@ export function AssessmentDetailPage({ params }: AssessmentDetailPageProps) {
       </div>
 
       <div className="rounded-lg border p-4 space-y-3">
-        <h2 className="text-sm font-semibold">Documents ({assessment.documents.length})</h2>
+        <h2 className="text-sm font-semibold">{t('assessments.detail.documents', { count: assessment.documents.length })}</h2>
         <ul className="space-y-2">
           {assessment.documents.map((doc, index) => (
             <li key={index} className="flex items-center gap-3 text-sm">
@@ -387,14 +380,14 @@ export function AssessmentDetailPage({ params }: AssessmentDetailPageProps) {
                 variant={doc.status === 'indexed' ? 'default' : doc.status === 'failed' ? 'destructive' : 'outline'}
                 className="text-xs"
               >
-                {doc.status}
+                {t(`assessments.detail.docStatus.${doc.status}`, { defaultValue: doc.status })}
               </Badge>
               {doc.storageKey && (
                 <Button
                   variant="ghost"
                   size="icon"
                   className="h-6 w-6 shrink-0"
-                  title="Download document"
+                  title={t('assessments.detail.downloadDocTitle')}
                   onClick={() => assessmentsApi.downloadAssessmentFile(id, index, doc.fileName)}
                 >
                   <Download className="h-3.5 w-3.5" />
@@ -408,13 +401,13 @@ export function AssessmentDetailPage({ params }: AssessmentDetailPageProps) {
       {isInProgress && (
         <div className="rounded-lg border border-dashed p-10 flex flex-col items-center text-center gap-3">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-          <p className="font-medium">Analysis in progress</p>
+          <p className="font-medium">{t('assessments.detail.inProgressTitle')}</p>
           <p className="text-sm text-muted-foreground max-w-sm">
             {assessment.status === 'indexing'
-              ? 'Parsing and embedding your documents into the vector store...'
+              ? t('assessments.detail.inProgressIndexing')
               : isA30
-                ? 'Running contract clause review against all 12 Article 30 requirements...'
-                : 'Running the DORA gap analysis against all indexed content...'}
+                ? t('assessments.detail.inProgressA30')
+                : t('assessments.detail.inProgressDora')}
           </p>
         </div>
       )}
@@ -426,20 +419,20 @@ export function AssessmentDetailPage({ params }: AssessmentDetailPageProps) {
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1 rounded-lg border p-4 space-y-1">
               <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
-                Overall Risk
+                {t('assessments.detail.overallRisk')}
               </p>
               <Badge variant={RISK_VARIANT[assessment.results.overallRisk]} className="text-sm px-3 py-1">
-                {assessment.results.overallRisk}
+                {t(`assessments.risk.${assessment.results.overallRisk}`)}
               </Badge>
               <p className="text-sm text-muted-foreground">
                 {isA30
-                  ? RISK_DESCRIPTION_CONTRACT[assessment.results.overallRisk]
-                  : RISK_DESCRIPTION[assessment.results.overallRisk]}
+                  ? t(`assessments.detail.riskDescContract.${assessment.results.overallRisk}`)
+                  : t(`assessments.detail.riskDescDora.${assessment.results.overallRisk}`)}
               </p>
             </div>
             <div className="flex-1 rounded-lg border p-4 space-y-2">
               <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
-                Summary
+                {t('assessments.detail.summary')}
               </p>
               <p className="text-sm">{assessment.results.summary}</p>
             </div>
@@ -447,9 +440,9 @@ export function AssessmentDetailPage({ params }: AssessmentDetailPageProps) {
 
           <div className="grid grid-cols-3 gap-4">
             {[
-              { label: isA30 ? 'Total clauses' : 'Total gaps', value: isA30 ? 12 : assessment.results.gaps.length },
-              { label: 'Missing', value: gapCounts.missing, className: 'text-destructive' },
-              { label: 'Partial', value: gapCounts.partial, className: 'text-warning' },
+              { label: isA30 ? t('assessments.detail.totalClauses') : t('assessments.detail.totalGaps'), value: isA30 ? 12 : assessment.results.gaps.length },
+              { label: t('assessments.detail.missing'), value: gapCounts.missing, className: 'text-destructive' },
+              { label: t('assessments.detail.partial'), value: gapCounts.partial, className: 'text-warning' },
             ].map((stat) => (
               <div key={stat.label} className="rounded-lg border p-4 text-center">
                 <p className={`text-3xl font-bold ${stat.className ?? ''}`}>{stat.value}</p>
@@ -471,7 +464,7 @@ export function AssessmentDetailPage({ params }: AssessmentDetailPageProps) {
 
           <div className="space-y-3">
             <h2 className="text-lg font-semibold">
-              {isA30 ? 'Article 30 Clause Scorecard' : 'Gap Analysis'}
+              {isA30 ? t('assessments.detail.scorecardA30') : t('assessments.detail.scorecardDora')}
             </h2>
             {isA30 ? (
               <Art30ClauseScorecardWithSignoff assessment={assessment} />
@@ -481,11 +474,10 @@ export function AssessmentDetailPage({ params }: AssessmentDetailPageProps) {
           </div>
 
           <p className="text-xs text-muted-foreground">
-            Report generated at
-            {' '}
-            {format(new Date(assessment.results.generatedAt), 'dd MMM yyyy HH:mm')}
-            {' · '}
-            Domains analyzed: {assessment.results.domainsAnalyzed.join(', ')}
+            {t('assessments.detail.generatedAt', {
+              date: format(new Date(assessment.results.generatedAt), 'dd MMM yyyy HH:mm'),
+              domains: assessment.results.domainsAnalyzed.join(', '),
+            })}
           </p>
 
           {!isA30 && (
@@ -500,7 +492,7 @@ export function AssessmentDetailPage({ params }: AssessmentDetailPageProps) {
         <div className="flex items-center gap-2 text-destructive p-4 rounded-md border border-destructive/30 bg-destructive/10">
           <AlertCircle className="h-4 w-4 shrink-0" />
           <p className="text-sm">
-            {assessment.statusMessage || 'Assessment failed. Please try again with different documents.'}
+            {assessment.statusMessage || t('assessments.detail.failedFallback')}
           </p>
         </div>
       )}
