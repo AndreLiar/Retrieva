@@ -7,7 +7,8 @@
     "contactSales": "Contacter le service commercial",
     "startFreeTrial": "Démarrer l'essai gratuit",
     "cancel": "Annuler",
-    "delete": "Supprimer"
+    "delete": "Supprimer",
+    "optional": "facultatif"
   },
   "language": {
     "label": "Langue",
@@ -240,6 +241,28 @@
       "exportFailedDesc": "Impossible de générer le classeur RoI.",
       "noLink": "Pas encore de lien — envoyez d'abord le questionnaire",
       "linkCopied": "Lien fournisseur copié dans le presse-papiers"
+    },
+    "new": {
+      "title": "Envoyer un questionnaire DORA",
+      "subtitle": "Générez et envoyez par e-mail un questionnaire de due diligence DORA (art. 28/30) tokenisé à un fournisseur. Aucune connexion requise pour le fournisseur.",
+      "template": "Modèle",
+      "templateName": "Due diligence DORA art. 28/30",
+      "templateDesc": "20 questions couvrant les art. 9, 11–12, 17–20, 25, 28, 30 sur 8 catégories de conformité. Les réponses sont notées automatiquement par IA (0–100) avec analyse d'écarts.",
+      "vendorDetails": "Coordonnées du fournisseur",
+      "vendorDetailsDesc": "L'e-mail d'invitation sera envoyé directement au contact fournisseur.",
+      "companyName": "Nom de l'entreprise du fournisseur",
+      "companyNamePlaceholder": "Acme Corp Ltd",
+      "contactName": "Nom du contact",
+      "contactNamePlaceholder": "Jean Dupont",
+      "contactNameDesc": "Utilisé pour personnaliser l'e-mail d'invitation.",
+      "contactEmail": "E-mail du contact fournisseur",
+      "contactEmailPlaceholder": "conformite@fournisseur.com",
+      "contactEmailDesc": "Un lien sécurisé valable 30 jours sera envoyé à cette adresse.",
+      "sendingEmail": "Envoi de l'e-mail…",
+      "creating": "Création…",
+      "createSend": "Créer et envoyer",
+      "toastEmailFailed": "Questionnaire créé mais l'e-mail n'a pas pu être envoyé. Réessayez depuis la page de détail.",
+      "toastSent": "Questionnaire envoyé au fournisseur"
     }
   },
   "landing": {

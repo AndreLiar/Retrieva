@@ -7,7 +7,8 @@
     "contactSales": "Contact Sales",
     "startFreeTrial": "Start free trial",
     "cancel": "Cancel",
-    "delete": "Delete"
+    "delete": "Delete",
+    "optional": "optional"
   },
   "language": {
     "label": "Language",
@@ -240,6 +241,28 @@
       "exportFailedDesc": "Could not generate the RoI workbook.",
       "noLink": "No link yet - send the questionnaire first",
       "linkCopied": "Vendor link copied to clipboard"
+    },
+    "new": {
+      "title": "Send DORA Questionnaire",
+      "subtitle": "Generate and email a tokenised DORA Art.28/30 due diligence questionnaire to a vendor. No login required for the vendor.",
+      "template": "Template",
+      "templateName": "DORA Art.28/30 Due Diligence",
+      "templateDesc": "20 questions covering Art.9, 11–12, 17–20, 25, 28, 30 across 8 compliance categories. Responses are automatically scored by AI (0–100) with gap analysis.",
+      "vendorDetails": "Vendor Details",
+      "vendorDetailsDesc": "The invitation email will be sent directly to the vendor contact.",
+      "companyName": "Vendor company name",
+      "companyNamePlaceholder": "Acme Corp Ltd",
+      "contactName": "Contact name",
+      "contactNamePlaceholder": "Jane Smith",
+      "contactNameDesc": "Used to personalise the invitation email.",
+      "contactEmail": "Vendor contact email",
+      "contactEmailPlaceholder": "compliance@vendor.com",
+      "contactEmailDesc": "A secure link valid for 30 days will be sent to this address.",
+      "sendingEmail": "Sending email…",
+      "creating": "Creating…",
+      "createSend": "Create & Send",
+      "toastEmailFailed": "Questionnaire created but email could not be sent. Retry from the detail page.",
+      "toastSent": "Questionnaire sent to vendor"
     }
   },
   "landing": {
