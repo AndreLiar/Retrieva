@@ -5,6 +5,7 @@ import { Menu } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/theme/theme-toggle';
+import { LanguageSwitcher } from '@/shared/ui/language-switcher';
 import { UserNav } from './user-nav';
 import { useUIStore } from '@/lib/stores/ui-store';
 
@@ -64,6 +65,7 @@ export function Header() {
       <div className="flex-1" />
 
       <div className="flex items-center gap-1.5">
+        <LanguageSwitcher />
         <ThemeToggle />
         <UserNav />
       </div>

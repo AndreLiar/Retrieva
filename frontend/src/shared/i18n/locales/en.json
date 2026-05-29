@@ -1,0 +1,93 @@
+{
+  "common": {
+    "signIn": "Sign In",
+    "getStarted": "Get Started",
+    "startFree": "Start Free",
+    "pricing": "Pricing",
+    "contactSales": "Contact Sales",
+    "startFreeTrial": "Start free trial"
+  },
+  "language": {
+    "label": "Language",
+    "en": "English",
+    "fr": "Français"
+  },
+  "landing": {
+    "badge": "DORA Regulation (EU) 2022/2554",
+    "heroTitle": "DORA Compliance Intelligence",
+    "heroTitleAccent": "for Financial Entities",
+    "heroSubtitle": "Automate third-party ICT risk assessments, identify compliance gaps against DORA requirements, and get instant answers from an AI copilot trained on your documentation.",
+    "featuresHeading": "Everything you need to meet DORA obligations",
+    "features": {
+      "gapAnalysis": {
+        "title": "Automated Gap Analysis",
+        "desc": "Upload vendor ICT documentation and get a structured DORA compliance gap report in minutes."
+      },
+      "questionnaires": {
+        "title": "Vendor Questionnaires",
+        "desc": "Auto-generate security questionnaires, invite vendors to respond, and get LLM-scored compliance results instantly."
+      },
+      "copilot": {
+        "title": "DORA Copilot",
+        "desc": "Ask compliance questions in natural language. The agentic copilot searches your docs and DORA articles."
+      },
+      "monitoring": {
+        "title": "Monitoring Alerts",
+        "desc": "Automated 24-hour alerts for certification expiry (90/30/7 days), contract renewal, and overdue assessments."
+      },
+      "roi": {
+        "title": "Register of Information",
+        "desc": "One-click EBA-compliant DORA Article 28(3) XLSX export — RT.01.01 to RT.04.01 sheets generated automatically."
+      },
+      "score": {
+        "title": "Live Compliance Score",
+        "desc": "A real-time DORA compliance score per workspace, with a 30-day trend and Red/Amber/Green status — board-ready at a glance."
+      },
+      "riskRegister": {
+        "title": "Risk Register",
+        "desc": "Track vendor risk decisions, criticality tiers, and gap remediation across your whole third-party estate in one register."
+      },
+      "reports": {
+        "title": "Regulator-Ready Reports",
+        "desc": "Generate a downloadable Word (.docx) DORA gap-analysis report per vendor — formatted for review and submission."
+      },
+      "security": {
+        "title": "Enterprise-Grade Security",
+        "desc": "Workspace isolation, MFA, PII detection, audit logging, and encrypted secrets — built for regulated industries."
+      }
+    },
+    "ingestionHeading": "Bring your vendor documentation",
+    "ingestionSubtitle": "Upload vendor contracts, ICT policies, and audit reports — parsed, chunked, and embedded into a high-quality RAG pipeline automatically.",
+    "ingestionCardTitle": "Document Ingestion",
+    "ingestionCardSubtitle": "Zero infrastructure required",
+    "ingestionItems": {
+      "files": "File upload — PDF, DOCX, XLSX",
+      "parsing": "Automatic parsing, chunking & embedding",
+      "selfHosted": "Self-hosted embeddings — your content stays private"
+    },
+    "ingestionFootnote": "Fill in a form — Retrieva handles the rest.",
+    "howItWorksHeading": "How It Works",
+    "steps": {
+      "index": {
+        "title": "Index Documentation",
+        "desc": "Upload vendor contracts, ICT policies, and audit reports. Retrieva parses, chunks, and embeds them automatically."
+      },
+      "assess": {
+        "title": "Run DORA Assessment",
+        "desc": "AI analyses documents against each DORA article and classifies coverage as covered, partial, or missing."
+      },
+      "invite": {
+        "title": "Invite Vendors",
+        "desc": "Send tokenised due diligence questionnaires and get scored responses back without vendor logins."
+      },
+      "ask": {
+        "title": "Ask the Copilot",
+        "desc": "Query your knowledge base in natural language and get cited answers grounded in your own documentation."
+      },
+      "export": {
+        "title": "Export Evidence",
+        "desc": "Generate regulator-ready outputs including the Register of Information and gap remediation artefacts."
+      }
+    }
+  }
+}

@@ -1,0 +1,93 @@
+{
+  "common": {
+    "signIn": "Se connecter",
+    "getStarted": "Commencer",
+    "startFree": "Commencer gratuitement",
+    "pricing": "Tarifs",
+    "contactSales": "Contacter le service commercial",
+    "startFreeTrial": "Démarrer l'essai gratuit"
+  },
+  "language": {
+    "label": "Langue",
+    "en": "English",
+    "fr": "Français"
+  },
+  "landing": {
+    "badge": "Règlement DORA (UE) 2022/2554",
+    "heroTitle": "Intelligence de conformité DORA",
+    "heroTitleAccent": "pour les entités financières",
+    "heroSubtitle": "Automatisez les évaluations des risques liés aux prestataires TIC, identifiez les écarts de conformité au regard des exigences DORA, et obtenez des réponses instantanées d'un copilote IA formé sur votre documentation.",
+    "featuresHeading": "Tout ce qu'il faut pour respecter vos obligations DORA",
+    "features": {
+      "gapAnalysis": {
+        "title": "Analyse d'écarts automatisée",
+        "desc": "Téléversez la documentation TIC d'un prestataire et obtenez un rapport structuré d'écarts de conformité DORA en quelques minutes."
+      },
+      "questionnaires": {
+        "title": "Questionnaires fournisseurs",
+        "desc": "Générez automatiquement des questionnaires de sécurité, invitez les prestataires à répondre, et obtenez des résultats de conformité notés par IA instantanément."
+      },
+      "copilot": {
+        "title": "Copilote DORA",
+        "desc": "Posez vos questions de conformité en langage naturel. Le copilote agentique recherche dans vos documents et les articles DORA."
+      },
+      "monitoring": {
+        "title": "Alertes de surveillance",
+        "desc": "Alertes automatiques toutes les 24 h : expiration des certifications (90/30/7 jours), renouvellement des contrats et évaluations en retard."
+      },
+      "roi": {
+        "title": "Registre d'information",
+        "desc": "Export XLSX conforme EBA (article 28(3) de DORA) en un clic — feuilles RT.01.01 à RT.04.01 générées automatiquement."
+      },
+      "score": {
+        "title": "Score de conformité en temps réel",
+        "desc": "Un score de conformité DORA par espace de travail, avec une tendance sur 30 jours et un statut Rouge/Orange/Vert — prêt pour le conseil d'administration."
+      },
+      "riskRegister": {
+        "title": "Registre des risques",
+        "desc": "Suivez les décisions de risque fournisseurs, les niveaux de criticité et la remédiation des écarts sur l'ensemble de votre parc de tiers, dans un seul registre."
+      },
+      "reports": {
+        "title": "Rapports prêts pour le régulateur",
+        "desc": "Générez par prestataire un rapport d'analyse d'écarts DORA téléchargeable au format Word (.docx) — mis en forme pour la revue et la soumission."
+      },
+      "security": {
+        "title": "Sécurité de niveau entreprise",
+        "desc": "Isolation des espaces de travail, MFA, détection des données personnelles, journalisation d'audit et secrets chiffrés — conçu pour les secteurs réglementés."
+      }
+    },
+    "ingestionHeading": "Apportez votre documentation fournisseurs",
+    "ingestionSubtitle": "Téléversez les contrats fournisseurs, les politiques TIC et les rapports d'audit — analysés, découpés et indexés automatiquement dans un pipeline RAG de haute qualité.",
+    "ingestionCardTitle": "Ingestion de documents",
+    "ingestionCardSubtitle": "Aucune infrastructure requise",
+    "ingestionItems": {
+      "files": "Téléversement de fichiers — PDF, DOCX, XLSX",
+      "parsing": "Analyse, découpage et indexation automatiques",
+      "selfHosted": "Embeddings auto-hébergés — votre contenu reste privé"
+    },
+    "ingestionFootnote": "Remplissez un formulaire — Retrieva s'occupe du reste.",
+    "howItWorksHeading": "Comment ça marche",
+    "steps": {
+      "index": {
+        "title": "Indexer la documentation",
+        "desc": "Téléversez les contrats fournisseurs, les politiques TIC et les rapports d'audit. Retrieva les analyse, les découpe et les indexe automatiquement."
+      },
+      "assess": {
+        "title": "Lancer l'évaluation DORA",
+        "desc": "L'IA analyse les documents au regard de chaque article DORA et classe la couverture en : couverte, partielle ou manquante."
+      },
+      "invite": {
+        "title": "Inviter les fournisseurs",
+        "desc": "Envoyez des questionnaires de due diligence tokenisés et recevez des réponses notées, sans connexion fournisseur."
+      },
+      "ask": {
+        "title": "Interroger le copilote",
+        "desc": "Interrogez votre base de connaissances en langage naturel et obtenez des réponses sourcées, ancrées dans votre propre documentation."
+      },
+      "export": {
+        "title": "Exporter les preuves",
+        "desc": "Générez des livrables prêts pour le régulateur, dont le Registre d'information et les artefacts de remédiation des écarts."
+      }
+    }
+  }
+}
