@@ -265,6 +265,82 @@
       "toastSent": "Questionnaire envoyé au fournisseur"
     }
   },
+  "questionnaireDetail": {
+    "steps": {
+      "draft": "Brouillon",
+      "sent": "Envoyé",
+      "responding": "Réponse du fournisseur",
+      "scoring": "Notation",
+      "complete": "Terminé"
+    },
+    "risk": {
+      "low": "Risque faible",
+      "medium": "Risque moyen",
+      "high": "Risque élevé"
+    },
+    "gap": {
+      "covered": "couvert",
+      "partial": "partiel",
+      "missing": "manquant"
+    },
+    "showMore": "Afficher plus",
+    "showLess": "Afficher moins",
+    "noAnswer": "Aucune réponse",
+    "sentOn": "Envoyé le {{date}}",
+    "expiresSuffix": " · Expire le {{date}}",
+    "waitingForVendor": "En attente du fournisseur…",
+    "resendEmail": "Renvoyer l'e-mail",
+    "copyVendorLink": "Copier le lien fournisseur",
+    "assessmentResult": "Résultat de l'évaluation",
+    "generatedOn": "Généré le {{date}}",
+    "scoringTitle": "Notation en cours",
+    "scoringDesc": "Le fournisseur a soumis ses réponses. La notation par IA est en cours — cette page se mettra à jour automatiquement.",
+    "expiredMsg": "Le lien fournisseur a expiré. Créez un nouveau questionnaire pour réessayer.",
+    "failedMsg": "Une erreur est survenue lors de la notation. Veuillez contacter le support.",
+    "byCategory": "Par catégorie",
+    "vendorResponses": "Réponses du fournisseur",
+    "cols": {
+      "article": "Article",
+      "category": "Catégorie",
+      "answer": "Réponse",
+      "score": "Score",
+      "gap": "Écart",
+      "reasoning": "Justification"
+    },
+    "toast": {
+      "resent": "E-mail d'invitation renvoyé",
+      "resendFailed": "Échec du renvoi de l'e-mail",
+      "noLink": "Pas encore de lien fournisseur — le questionnaire n'a pas été envoyé",
+      "linkCopied": "Lien fournisseur copié",
+      "loadError": "Échec du chargement du questionnaire. Veuillez revenir en arrière et réessayer."
+    },
+    "decision": {
+      "title": "Décision de contractualisation",
+      "criticalGaps": "Écarts critiques nécessitant une action",
+      "nextStep": "Étape suivante",
+      "actions": {
+        "reviewContract": "Examiner le contrat (art. 30)",
+        "runGapAnalysis": "Lancer l'analyse d'écarts"
+      },
+      "proceed": {
+        "label": "Procéder à la contractualisation",
+        "headline": "Le fournisseur satisfait aux exigences DORA de base.",
+        "detailBase": "Un score de {{score}}/100 indique une posture de risque TIC acceptable. ",
+        "detailGaps": "{{count}} écart(s) partiel(s) à traiter via des clauses contractuelles.",
+        "detailNoGaps": "Aucun écart critique identifié."
+      },
+      "conditional": {
+        "label": "Procéder sous conditions",
+        "headline": "Le fournisseur peut procéder à la contractualisation sous conditions de remédiation.",
+        "detail": "Score de {{score}}/100. {{missing}} écart(s) critique(s) doivent être traités dans le contrat ou via un plan de remédiation fournisseur avant signature."
+      },
+      "reject": {
+        "label": "Ne pas procéder",
+        "headline": "Écarts de risque TIC importants — contractualisation non recommandée.",
+        "detail": "Score de {{score}}/100. {{missing}} écart(s) critique(s) identifié(s). Demandez un plan de remédiation fournisseur et réévaluez avant de contractualiser."
+      }
+    }
+  },
   "landing": {
     "badge": "Règlement DORA (UE) 2022/2554",
     "heroTitle": "Intelligence de conformité DORA",
