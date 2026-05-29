@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useTranslation } from 'react-i18next';
 import { Loader2, Eye, EyeOff, Check, X, CheckCircle2, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -26,12 +27,16 @@ import { getErrorMessage } from '@/lib/api';
 // Password requirement checker
 // A11Y FIX: Added role="status" and aria-live for screen reader announcements
 function PasswordRequirements({ password }: { password: string }) {
+  const { t } = useTranslation();
   const requirements = [
-    { label: 'At least 8 characters', met: password.length >= 8 },
-    { label: 'One lowercase letter', met: /[a-z]/.test(password) },
-    { label: 'One uppercase letter', met: /[A-Z]/.test(password) },
-    { label: 'One number', met: /[0-9]/.test(password) },
-    { label: 'One special character (!@#$...)', met: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password) },
+    { label: 'auth.register.pwReq.min8', met: password.length >= 8 },
+    { label: 'auth.register.pwReq.lower', met: /[a-z]/.test(password) },
+    { label: 'auth.register.pwReq.upper', met: /[A-Z]/.test(password) },
+    { label: 'auth.register.pwReq.number', met: /[0-9]/.test(password) },
+    {
+      label: 'auth.register.pwReq.special',
+      met: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password),
+    },
   ];
 
   const metCount = requirements.filter((r) => r.met).length;
@@ -43,7 +48,7 @@ function PasswordRequirements({ password }: { password: string }) {
       className="mt-2 space-y-1"
       role="status"
       aria-live="polite"
-      aria-label={`Password requirements: ${metCount} of ${requirements.length} met`}
+      aria-label={t('auth.register.pwReqAria', { met: metCount, total: requirements.length })}
     >
       <ul className="list-none p-0 m-0 space-y-1">
         {requirements.map((req) => (
@@ -59,8 +64,10 @@ function PasswordRequirements({ password }: { password: string }) {
               <X className="h-3 w-3 mr-1.5" aria-hidden="true" />
             )}
             <span>
-              {req.label}
-              <span className="sr-only">{req.met ? ' - met' : ' - not met'}</span>
+              {t(req.label)}
+              <span className="sr-only">
+                {req.met ? t('auth.register.met') : t('auth.register.notMet')}
+              </span>
             </span>
           </li>
         ))}
@@ -70,6 +77,7 @@ function PasswordRequirements({ password }: { password: string }) {
 }
 
 function RegisterForm() {
+  const { t } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
   const setUser = useAuthStore((state) => state.setUser);
@@ -115,7 +123,7 @@ function RegisterForm() {
         setUser(response.data.user);
       }
       setIsSuccess(true);
-      toast.success('Account created! Check your email to verify your account.');
+      toast.success(t('auth.register.toastSuccess'));
       setTimeout(() => {
         if (response.data?.needsOrganization ?? true) {
           router.push('/onboarding');
@@ -133,15 +141,17 @@ function RegisterForm() {
       <div className="space-y-6 text-center py-4">
         <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto" />
         <div className="space-y-2">
-          <h2 className="text-2xl font-semibold tracking-tight">Account created!</h2>
+          <h2 className="text-2xl font-semibold tracking-tight">
+            {t('auth.register.successTitle')}
+          </h2>
           <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
             <Mail className="h-4 w-4" />
-            <p>A verification email has been sent to your inbox.</p>
+            <p>{t('auth.register.successEmailSent')}</p>
           </div>
         </div>
         <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
-          <p>Redirecting...</p>
+          <p>{t('auth.register.redirecting')}</p>
         </div>
       </div>
     );
@@ -150,10 +160,8 @@ function RegisterForm() {
   return (
     <div className="space-y-6">
       <div className="space-y-2 text-center">
-        <h2 className="text-2xl font-semibold tracking-tight">Create an account</h2>
-        <p className="text-sm text-muted-foreground">
-          Enter your details to get started
-        </p>
+        <h2 className="text-2xl font-semibold tracking-tight">{t('auth.register.title')}</h2>
+        <p className="text-sm text-muted-foreground">{t('auth.register.subtitle')}</p>
       </div>
 
       {error && (
@@ -169,11 +177,11 @@ function RegisterForm() {
             name="name"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Name</FormLabel>
+                <FormLabel>{t('auth.register.name')}</FormLabel>
                 <FormControl>
                   <Input
                     type="text"
-                    placeholder="John Doe"
+                    placeholder={t('auth.register.namePlaceholder')}
                     autoComplete="name"
                     disabled={isSubmitting}
                     {...field}
@@ -189,11 +197,11 @@ function RegisterForm() {
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Email</FormLabel>
+                <FormLabel>{t('auth.common.email')}</FormLabel>
                 <FormControl>
                   <Input
                     type="email"
-                    placeholder="you@example.com"
+                    placeholder={t('auth.common.emailPlaceholder')}
                     autoComplete="email"
                     disabled={isSubmitting}
                     {...field}
@@ -209,12 +217,12 @@ function RegisterForm() {
             name="password"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Password</FormLabel>
+                <FormLabel>{t('auth.common.password')}</FormLabel>
                 <div className="relative">
                   <FormControl>
                     <Input
                       type={showPassword ? 'text' : 'password'}
-                      placeholder="Create a password"
+                      placeholder={t('auth.register.passwordPlaceholder')}
                       autoComplete="new-password"
                       disabled={isSubmitting}
                       className="pr-10"
@@ -247,12 +255,12 @@ function RegisterForm() {
             name="confirmPassword"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Confirm Password</FormLabel>
+                <FormLabel>{t('auth.register.confirmPassword')}</FormLabel>
                 <div className="relative">
                   <FormControl>
                     <Input
                       type={showConfirmPassword ? 'text' : 'password'}
-                      placeholder="Confirm your password"
+                      placeholder={t('auth.register.confirmPasswordPlaceholder')}
                       autoComplete="new-password"
                       disabled={isSubmitting}
                       className="pr-10"
@@ -288,19 +296,19 @@ function RegisterForm() {
             {isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Creating account...
+                {t('auth.register.creating')}
               </>
             ) : (
-              'Create account'
+              t('auth.register.createAccount')
             )}
           </Button>
         </form>
       </Form>
 
       <div className="text-center text-sm">
-        <span className="text-muted-foreground">Already have an account? </span>
+        <span className="text-muted-foreground">{t('auth.register.haveAccount')}</span>
         <Link href="/login" className="text-primary hover:underline font-medium">
-          Sign in
+          {t('auth.register.signIn')}
         </Link>
       </div>
     </div>
