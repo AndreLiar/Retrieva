@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import {
@@ -64,20 +65,20 @@ import { organizationsApi, type OrgMember } from '@/lib/api/organizations';
 
 const ROLE_CONFIG = {
   org_admin: {
-    label: 'Admin',
-    description: 'Full access — manage team, create vendors, run assessments',
+    labelKey: 'settings.team.roles.adminLabel',
+    descKey: 'settings.team.roles.adminDesc',
     icon: Crown,
     badgeClass: 'bg-primary/10 text-primary border-primary/20',
   },
   analyst: {
-    label: 'Compliance Analyst',
-    description: 'Create and run assessments, send questionnaires, view all vendors',
+    labelKey: 'settings.team.roles.analystLabel',
+    descKey: 'settings.team.roles.analystDesc',
     icon: BarChart2,
     badgeClass: 'bg-info-muted text-info border-info-muted',
   },
   viewer: {
-    label: 'Read-only',
-    description: 'View assessments and results only — no create or edit access',
+    labelKey: 'settings.team.roles.viewerLabel',
+    descKey: 'settings.team.roles.viewerDesc',
     icon: Eye,
     badgeClass: 'bg-muted text-muted-foreground border-border',
   },
@@ -86,10 +87,11 @@ const ROLE_CONFIG = {
 type RoleKey = keyof typeof ROLE_CONFIG;
 
 function RoleBadge({ role }: { role: RoleKey }) {
+  const { t } = useTranslation();
   const cfg = ROLE_CONFIG[role] ?? ROLE_CONFIG.viewer;
   return (
     <Badge variant="outline" className={`text-xs ${cfg.badgeClass}`}>
-      {cfg.label}
+      {t(cfg.labelKey)}
     </Badge>
   );
 }
@@ -118,6 +120,7 @@ type InviteFormData = z.infer<typeof inviteSchema>;
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export function TeamSettingsPage() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const user = useAuthStore((state) => state.user);
   const [removingId, setRemovingId] = useState<string | null>(null);
@@ -155,13 +158,13 @@ export function TeamSettingsPage() {
     mutationFn: (data: InviteFormData) => organizationsApi.invite(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['org-members'] });
-      toast.success('Invitation sent');
+      toast.success(t('settings.team.toastInviteSent'));
       form.reset();
     },
     onError: (err: unknown) => {
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        'Failed to send invitation';
+        t('settings.team.toastInviteFailed');
       toast.error(msg);
     },
   });
@@ -170,17 +173,17 @@ export function TeamSettingsPage() {
     mutationFn: (memberId: string) => organizationsApi.removeMember(memberId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['org-members'] });
-      toast.success('Member removed');
+      toast.success(t('settings.team.toastMemberRemoved'));
       setRemovingId(null);
     },
-    onError: () => toast.error('Failed to remove member'),
+    onError: () => toast.error(t('settings.team.toastRemoveFailed')),
   });
 
   if (isLoading) {
     return (
       <div className="p-6 max-w-3xl mx-auto flex items-center gap-2 text-muted-foreground">
         <Loader2 className="h-4 w-4 animate-spin" />
-        Loading team…
+        {t('settings.team.loading')}
       </div>
     );
   }
@@ -189,7 +192,7 @@ export function TeamSettingsPage() {
     return (
       <div className="p-6 max-w-3xl mx-auto">
         <p className="text-muted-foreground text-sm">
-          You are not part of an organisation yet. Create one from the onboarding page or ask your admin to invite you.
+          {t('settings.team.noOrg')}
         </p>
       </div>
     );
@@ -199,10 +202,10 @@ export function TeamSettingsPage() {
     <div className="page-container max-w-3xl mx-auto">
       {/* Header */}
       <div>
-        <h1 className="page-title">Team Management</h1>
+        <h1 className="page-title">{t('settings.team.title')}</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          {org.name} · {activeMembers.length} active member{activeMembers.length !== 1 ? 's' : ''}
-          {pendingMembers.length > 0 && ` · ${pendingMembers.length} pending`}
+          {org.name} · {t('settings.team.subActiveMembers', { count: activeMembers.length })}
+          {pendingMembers.length > 0 && ` · ${t('settings.team.subPending', { count: pendingMembers.length })}`}
         </p>
       </div>
 
@@ -211,9 +214,9 @@ export function TeamSettingsPage() {
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-medium flex items-center gap-2">
             <Users className="h-4 w-4" />
-            Access Roles
+            {t('settings.team.roles.title')}
           </CardTitle>
-          <CardDescription>What each role can do on the platform</CardDescription>
+          <CardDescription>{t('settings.team.roles.desc')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           {(Object.entries(ROLE_CONFIG) as [RoleKey, typeof ROLE_CONFIG[RoleKey]][]).map(
@@ -223,8 +226,8 @@ export function TeamSettingsPage() {
                 <div key={key} className="flex items-start gap-3">
                   <Icon className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
                   <div>
-                    <p className="text-sm font-medium">{cfg.label}</p>
-                    <p className="text-xs text-muted-foreground">{cfg.description}</p>
+                    <p className="text-sm font-medium">{t(cfg.labelKey)}</p>
+                    <p className="text-xs text-muted-foreground">{t(cfg.descKey)}</p>
                   </div>
                 </div>
               );
@@ -236,11 +239,11 @@ export function TeamSettingsPage() {
       {/* Active members */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-medium">Active Members</CardTitle>
+          <CardTitle className="text-sm font-medium">{t('settings.team.activeMembers')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-0">
           {activeMembers.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No active members yet.</p>
+            <p className="text-sm text-muted-foreground">{t('settings.team.noActiveMembers')}</p>
           ) : (
             activeMembers.map((member, idx) => {
               const isSelf = user?.email === member.email;
@@ -255,7 +258,7 @@ export function TeamSettingsPage() {
                       <p className="text-sm font-medium truncate">
                         {member.user?.name ?? member.email}
                         {isSelf && (
-                          <span className="ml-1.5 text-xs text-muted-foreground">(you)</span>
+                          <span className="ml-1.5 text-xs text-muted-foreground">{t('settings.team.you')}</span>
                         )}
                       </p>
                       {member.user?.name && (
@@ -265,7 +268,7 @@ export function TeamSettingsPage() {
                     <RoleBadge role={member.role as RoleKey} />
                     {member.joinedAt && (
                       <span className="text-xs text-muted-foreground shrink-0 hidden sm:block">
-                        Joined {format(new Date(member.joinedAt), 'dd MMM yyyy')}
+                        {t('settings.team.joined', { date: format(new Date(member.joinedAt), 'dd MMM yyyy') })}
                       </span>
                     )}
                     {isAdmin && !isSelf && (
@@ -282,16 +285,16 @@ export function TeamSettingsPage() {
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
-                            <AlertDialogTitle>Remove team member?</AlertDialogTitle>
+                            <AlertDialogTitle>{t('settings.team.removeTitle')}</AlertDialogTitle>
                             <AlertDialogDescription>
-                              {member.user?.name ?? member.email} will lose access to{' '}
-                              <strong>{org.name}</strong> and all vendor workspaces. This cannot be
-                              undone — you would need to re-invite them.
+                              {t('settings.team.removeDesc1', { name: member.user?.name ?? member.email })}
+                              <strong>{org.name}</strong>
+                              {t('settings.team.removeDesc2')}
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel onClick={() => setRemovingId(null)}>
-                              Cancel
+                              {t('common.cancel')}
                             </AlertDialogCancel>
                             <AlertDialogAction
                               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
@@ -301,7 +304,7 @@ export function TeamSettingsPage() {
                               {removeMutation.isPending && removingId === member.id ? (
                                 <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
                               ) : null}
-                              Remove
+                              {t('settings.team.remove')}
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
@@ -321,10 +324,10 @@ export function TeamSettingsPage() {
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Clock className="h-4 w-4" />
-              Pending Invitations
+              {t('settings.team.pendingInvites')}
             </CardTitle>
             <CardDescription>
-              These users have been invited but have not yet accepted.
+              {t('settings.team.pendingDesc')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-0">
@@ -342,7 +345,7 @@ export function TeamSettingsPage() {
                   </div>
                   <RoleBadge role={member.role as RoleKey} />
                   <Badge variant="outline" className="text-xs text-amber-600 border-amber-200">
-                    Pending
+                    {t('settings.team.pendingBadge')}
                   </Badge>
                   {isAdmin && (
                     <AlertDialog>
@@ -358,22 +361,21 @@ export function TeamSettingsPage() {
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
-                          <AlertDialogTitle>Cancel invitation?</AlertDialogTitle>
+                          <AlertDialogTitle>{t('settings.team.cancelInviteTitle')}</AlertDialogTitle>
                           <AlertDialogDescription>
-                            The invitation link sent to <strong>{member.email}</strong> will be
-                            revoked. They will not be able to join.
+                            {t('settings.team.cancelInviteDesc1')}<strong>{member.email}</strong>{t('settings.team.cancelInviteDesc2')}
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel onClick={() => setRemovingId(null)}>
-                            Keep
+                            {t('settings.team.keep')}
                           </AlertDialogCancel>
                           <AlertDialogAction
                             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                             onClick={() => removeMutation.mutate(member.id)}
                             disabled={removeMutation.isPending && removingId === member.id}
                           >
-                            Cancel invitation
+                            {t('settings.team.cancelInvite')}
                           </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
@@ -392,10 +394,10 @@ export function TeamSettingsPage() {
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <UserPlus className="h-4 w-4" />
-              Invite Team Member
+              {t('settings.team.inviteTitle')}
             </CardTitle>
             <CardDescription>
-              They will receive an email with a secure link to join {org.name}.
+              {t('settings.team.inviteDesc', { org: org.name })}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -409,11 +411,11 @@ export function TeamSettingsPage() {
                   name="email"
                   render={({ field }) => (
                     <FormItem className="flex-1">
-                      <FormLabel className="sr-only">Email</FormLabel>
+                      <FormLabel className="sr-only">{t('settings.profile.email')}</FormLabel>
                       <FormControl>
                         <Input
                           type="email"
-                          placeholder="colleague@company.com"
+                          placeholder={t('settings.team.emailPlaceholder')}
                           {...field}
                         />
                       </FormControl>
@@ -426,17 +428,17 @@ export function TeamSettingsPage() {
                   name="role"
                   render={({ field }) => (
                     <FormItem className="w-full sm:w-48">
-                      <FormLabel className="sr-only">Role</FormLabel>
+                      <FormLabel className="sr-only">{t('settings.team.roleLabel')}</FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Role" />
+                            <SelectValue placeholder={t('settings.team.rolePlaceholder')} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="org_admin">Admin</SelectItem>
-                          <SelectItem value="analyst">Compliance Analyst</SelectItem>
-                          <SelectItem value="viewer">Read-only</SelectItem>
+                          <SelectItem value="org_admin">{t('settings.team.roles.adminLabel')}</SelectItem>
+                          <SelectItem value="analyst">{t('settings.team.roles.analystLabel')}</SelectItem>
+                          <SelectItem value="viewer">{t('settings.team.roles.viewerLabel')}</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -449,7 +451,7 @@ export function TeamSettingsPage() {
                   ) : (
                     <Mail className="h-4 w-4 mr-2" />
                   )}
-                  Send invite
+                  {t('settings.team.sendInvite')}
                 </Button>
               </form>
             </Form>
