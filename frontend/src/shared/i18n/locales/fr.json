@@ -586,6 +586,94 @@
         "partial": "Partiel",
         "missing": "Manquant"
       }
-    }
+    },
+    "matrix": {
+      "title": "Matrice de risque résiduel",
+      "ref": "DORA art. 28(3)",
+      "inherent": "Inhérent",
+      "residual": "Résiduel",
+      "remaining": "restant",
+      "inputBreakdown": "Détail des entrées",
+      "tier": "Catégorie ({{tier}})",
+      "base": "base {{base}}/100",
+      "functions_one": "{{count}} fonction TIC",
+      "functions_other": "{{count}} fonctions TIC",
+      "inherentScore": "Score inhérent",
+      "gapCoverage": "Couverture des écarts DORA",
+      "qScore": "Score du questionnaire",
+      "controlEffectiveness": "Efficacité des contrôles",
+      "ctrlHigh": "Élevée (>66 %)",
+      "ctrlMed": "Moyenne (33–66 %)",
+      "ctrlLow": "Faible (<33 %)",
+      "noData": "Aucune donnée questionnaire ou DORA pour l'instant — l'efficacité des contrôles est fixée à 0 % par défaut.",
+      "riskMatrix": "Matrice de risque",
+      "ctrlColLow": "Contrôles faibles",
+      "ctrlColMed": "Contrôles moyens",
+      "ctrlColHigh": "Contrôles élevés",
+      "methodology": "Score inhérent = base de catégorie + pondérations des fonctions TIC (DORA art. 28). Efficacité des contrôles = score Q × 40 % + couverture des écarts × 60 %. Plancher du facteur résiduel : 15 % (le risque n'est jamais totalement éliminé). La formule est déterministe et auditable selon l'art. 28(3)."
+    },
+    "domainChart": {
+      "title": "Couverture pondérée par domaine",
+      "weighted": "{{pct}} % pondéré",
+      "scoreWeight": "{{score}} % · poids {{weight}} %"
+    },
+    "decision": {
+      "title": "Décision de risque formelle",
+      "proceed": "Poursuivre",
+      "conditional": "Poursuivre sous conditions",
+      "reject": "Rejeter",
+      "toastRecorded": "Décision de risque enregistrée",
+      "toastFailed": "Échec de l'enregistrement de la décision",
+      "recordedBy": "Enregistrée par {{name}} · {{date}}",
+      "complianceOfficer": "responsable conformité",
+      "changeHint": "Pour modifier cette décision, enregistrez-en une nouvelle ci-dessous.",
+      "none": "Aucune décision formelle enregistrée pour l'instant. Enregistrez votre décision de conformité pour passer à l'étape suivante ou rejeter formellement ce fournisseur.",
+      "recording": "Enregistrement :",
+      "rationalePlaceholder": "Justification (facultatif) — ex. « Acceptable sous réserve du renouvellement ISO 27001 d'ici le T3 »",
+      "saving": "Enregistrement…",
+      "confirm": "Confirmer"
+    },
+    "clauses": {
+      "categories": {
+        "serviceDescription": "Description du service",
+        "dataGovernance": "Gouvernance des données",
+        "securityResilience": "Sécurité et résilience",
+        "subcontracting": "Sous-traitance",
+        "businessContinuity": "Continuité d'activité",
+        "terminationExit": "Résiliation et sortie",
+        "regulatoryCompliance": "Conformité réglementaire",
+        "auditInspection": "Audit et inspection"
+      },
+      "text": {
+        "2a": "Description claire et complète de tous les services et fonctions TIC à fournir",
+        "2b": "Lieux (pays/régions) où les données seront traitées et stockées",
+        "2c": "Dispositions relatives à la disponibilité, l'authenticité, l'intégrité et la confidentialité des données",
+        "2d": "Dispositions pour l'accessibilité, la restitution, la récupération et la suppression sécurisée des données à la sortie",
+        "2e": "Description complète de tous les sous-traitants et de leurs lieux de traitement des données",
+        "2f": "Conditions de continuité des services TIC, y compris les modifications des objectifs de niveau de service",
+        "2g": "Dispositions du plan de continuité d'activité pertinentes pour les services de l'entité financière",
+        "2h": "Droits de résiliation de l'entité financière, y compris des délais de préavis adéquats",
+        "3a": "Descriptions complètes des niveaux de service avec des objectifs de performance quantitatifs et qualitatifs",
+        "3b": "Obligations de notification préalable des modifications substantielles des services TIC",
+        "3c": "Droit de réaliser des audits complets et des inspections sur site du prestataire TIC",
+        "3d": "Obligation d'assister l'entité financière dans la gestion des incidents liés aux TIC"
+      }
+    },
+    "signoff": {
+      "accepted": "Acceptée",
+      "rejected": "Rejetée",
+      "waived": "Dérogée",
+      "toastSignedOff": "Clause {{ref}} validée",
+      "toastNotedAnd": "Clause {{ref}} annotée et validée",
+      "toastFailed": "Échec de la validation",
+      "signedBy": "{{label}} par {{name}} · {{date}}",
+      "noteSuffix": " — « {{note}} »",
+      "notePlaceholder": "Note facultative (ex. « Acceptée sous réserve d'un avenant SLA »)",
+      "summaryCovered": "{{count}} couvertes",
+      "summaryPartial": "{{count}} partielles",
+      "summaryMissing": "{{count}} manquantes",
+      "reviewedCount": "{{reviewed}} / {{total}} validées"
+    },
+    "round": "Cycle {{n}} sur {{total}}"
   }
 }

@@ -12,6 +12,7 @@
 import { Fragment, useState } from 'react';
 import { format } from 'date-fns';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import {
   CheckCircle2,
@@ -59,6 +60,7 @@ export function ResidualRiskMatrix({
   workspace: WorkspaceWithMembership | null;
   qScore?: number | null;
 }) {
+  const { t } = useTranslation();
   const gaps = assessment.results?.gaps ?? null;
   const m = buildRiskMatrix(
     workspace?.vendorTier,
@@ -86,17 +88,17 @@ export function ResidualRiskMatrix({
   const fnSum     = activeFns.reduce((s, fn) => s + (FUNCTION_WEIGHT[fn] ?? 0), 0);
 
   const ctrlLabel =
-    m.controlEffectiveness >= 67 ? 'High (>66%)' :
-    m.controlEffectiveness >= 33 ? 'Medium (33–66%)' :
-    'Low (<33%)';
+    m.controlEffectiveness >= 67 ? t('assessments.matrix.ctrlHigh') :
+    m.controlEffectiveness >= 33 ? t('assessments.matrix.ctrlMed') :
+    t('assessments.matrix.ctrlLow');
 
   return (
     <Card>
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
           <ShieldCheck className="h-4 w-4" />
-          Residual Risk Matrix
-          <span className="ml-auto text-xs font-normal normal-case">DORA Art. 28(3)</span>
+          {t('assessments.matrix.title')}
+          <span className="ml-auto text-xs font-normal normal-case">{t('assessments.matrix.ref')}</span>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -105,60 +107,60 @@ export function ResidualRiskMatrix({
         <div className="grid grid-cols-3 items-center gap-3">
           {/* Inherent */}
           <div className={`rounded-lg border p-3 text-center ${RISK_BG[m.inherentRisk]}`}>
-            <p className="text-xs text-muted-foreground mb-1">Inherent</p>
+            <p className="text-xs text-muted-foreground mb-1">{t('assessments.matrix.inherent')}</p>
             <p className={`text-2xl font-bold tabular-nums ${RISK_COLOR[m.inherentRisk]}`}>
               {m.inherentScore}
               <span className="text-sm font-normal text-muted-foreground">/100</span>
             </p>
-            <p className={`text-xs font-semibold mt-0.5 ${RISK_COLOR[m.inherentRisk]}`}>{m.inherentRisk}</p>
+            <p className={`text-xs font-semibold mt-0.5 ${RISK_COLOR[m.inherentRisk]}`}>{t(`assessments.risk.${m.inherentRisk}`)}</p>
           </div>
 
           {/* Operator */}
           <div className="flex flex-col items-center gap-1 text-muted-foreground">
             <span className="text-lg">×</span>
             <span className="text-xs text-center leading-tight">
-              {Math.round(m.residualFactor * 100)}%<br />remaining
+              {Math.round(m.residualFactor * 100)}%<br />{t('assessments.matrix.remaining')}
             </span>
           </div>
 
           {/* Residual */}
           <div className={`rounded-lg border p-3 text-center ${RISK_BG[doraRisk]}`}>
-            <p className="text-xs text-muted-foreground mb-1">Residual</p>
+            <p className="text-xs text-muted-foreground mb-1">{t('assessments.matrix.residual')}</p>
             <p className={`text-2xl font-bold tabular-nums ${RISK_COLOR[doraRisk]}`}>
               {m.residualScore}
               <span className="text-sm font-normal text-muted-foreground">/100</span>
             </p>
-            <p className={`text-xs font-semibold mt-0.5 ${RISK_COLOR[doraRisk]}`}>{doraRisk}</p>
+            <p className={`text-xs font-semibold mt-0.5 ${RISK_COLOR[doraRisk]}`}>{t(`assessments.risk.${doraRisk}`)}</p>
           </div>
         </div>
 
         {/* ── Input breakdown ── */}
         <div className="rounded-md bg-muted/40 border px-3 py-2.5 text-xs space-y-1.5">
-          <p className="font-medium text-muted-foreground uppercase tracking-wide text-[10px]">Input Breakdown</p>
+          <p className="font-medium text-muted-foreground uppercase tracking-wide text-[10px]">{t('assessments.matrix.inputBreakdown')}</p>
 
           {/* Tier row */}
           <div className="flex justify-between">
-            <span>Tier ({workspace?.vendorTier ?? 'standard'})</span>
-            <span className="font-mono text-muted-foreground">base {TIER_BASE[workspace?.vendorTier ?? 'standard']}/100</span>
+            <span>{t('assessments.matrix.tier', { tier: workspace?.vendorTier ?? 'standard' })}</span>
+            <span className="font-mono text-muted-foreground">{t('assessments.matrix.base', { base: TIER_BASE[workspace?.vendorTier ?? 'standard'] })}</span>
           </div>
 
           {/* Functions */}
           {activeFns.length > 0 && (
             <div className="flex justify-between">
-              <span>{activeFns.length} ICT function{activeFns.length !== 1 ? 's' : ''}</span>
+              <span>{t('assessments.matrix.functions', { count: activeFns.length })}</span>
               <span className="font-mono text-muted-foreground">+{fnSum}</span>
             </div>
           )}
 
           <div className="border-t pt-1 flex justify-between font-medium">
-            <span>Inherent score</span>
+            <span>{t('assessments.matrix.inherentScore')}</span>
             <span className={`font-mono ${RISK_COLOR[m.inherentRisk]}`}>{m.inherentScore}/100</span>
           </div>
 
           {/* Domain coverage */}
           {m.domainCoverage !== null && (
             <div className="flex justify-between">
-              <span>DORA gap coverage</span>
+              <span>{t('assessments.matrix.gapCoverage')}</span>
               <span className="font-mono text-muted-foreground">{m.domainCoverage}%</span>
             </div>
           )}
@@ -166,13 +168,13 @@ export function ResidualRiskMatrix({
           {/* Q score */}
           {m.qScore !== null && (
             <div className="flex justify-between">
-              <span>Questionnaire score</span>
+              <span>{t('assessments.matrix.qScore')}</span>
               <span className="font-mono text-muted-foreground">{m.qScore}/100</span>
             </div>
           )}
 
           <div className="border-t pt-1 flex justify-between font-medium">
-            <span>Control effectiveness</span>
+            <span>{t('assessments.matrix.controlEffectiveness')}</span>
             <span className={`font-mono ${m.controlEffectiveness >= 67 ? 'text-green-600' : m.controlEffectiveness >= 33 ? 'text-amber-600' : 'text-destructive'}`}>
               {m.controlEffectiveness}% · {ctrlLabel}
             </span>
@@ -180,24 +182,28 @@ export function ResidualRiskMatrix({
 
           {!m.hasData && (
             <p className="text-muted-foreground italic">
-              No questionnaire or DORA data yet — control effectiveness defaults to 0%.
+              {t('assessments.matrix.noData')}
             </p>
           )}
         </div>
 
         {/* ── 3×3 Heat map ── */}
         <div>
-          <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-1.5">Risk Matrix</p>
+          <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-1.5">{t('assessments.matrix.riskMatrix')}</p>
           <div className="grid grid-cols-4 gap-1 text-[10px] text-center">
             {/* Header row */}
             <div />
-            {(['Low controls', 'Med controls', 'High controls'] as const).map((h) => (
-              <div key={h} className="text-muted-foreground font-medium py-0.5">{h}</div>
+            {([
+              ['ctrlColLow', 'assessments.matrix.ctrlColLow'],
+              ['ctrlColMed', 'assessments.matrix.ctrlColMed'],
+              ['ctrlColHigh', 'assessments.matrix.ctrlColHigh'],
+            ] as const).map(([id, key]) => (
+              <div key={id} className="text-muted-foreground font-medium py-0.5">{t(key)}</div>
             ))}
             {/* Data rows */}
             {(['High', 'Medium', 'Low'] as const).map((inhRisk, rIdx) => (
               <Fragment key={inhRisk}>
-                <div className="text-muted-foreground font-medium flex items-center justify-end pr-1">{inhRisk}</div>
+                <div className="text-muted-foreground font-medium flex items-center justify-end pr-1">{t(`assessments.risk.${inhRisk}`)}</div>
                 {[0, 1, 2].map((cIdx) => {
                   const cell = HEAT[rIdx][cIdx];
                   const isActive = rIdx === inherentRow && cIdx === ctrlCol;
@@ -211,7 +217,7 @@ export function ResidualRiskMatrix({
                         ${isActive ? 'ring-2 ring-primary scale-105 shadow-sm' : 'opacity-60'}
                       `}
                     >
-                      {cell}
+                      {t(`assessments.risk.${cell}`)}
                     </div>
                   );
                 })}
@@ -222,9 +228,7 @@ export function ResidualRiskMatrix({
 
         {/* ── Methodology footnote ── */}
         <p className="text-[10px] text-muted-foreground leading-relaxed">
-          Inherent score = tier base + ICT function weights (DORA Art. 28). Control effectiveness
-          = Q-score × 40% + gap coverage × 60%. Residual factor floor: 15% (risk is never fully
-          eliminated). Formula is deterministic and auditable per Art. 28(3).
+          {t('assessments.matrix.methodology')}
         </p>
       </CardContent>
     </Card>
@@ -239,6 +243,7 @@ export const InherentResidualPanel = ResidualRiskMatrix;
 // ── 2. Weighted domain breakdown ──────────────────────────────────────────────
 
 export function WeightedDomainChart({ assessment }: { assessment: Assessment }) {
+  const { t } = useTranslation();
   const gaps = assessment.results?.gaps ?? [];
   if (gaps.length === 0) return null;
 
@@ -270,10 +275,10 @@ export function WeightedDomainChart({ assessment }: { assessment: Assessment }) 
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-            Weighted Domain Coverage
+            {t('assessments.domainChart.title')}
           </CardTitle>
           <span className={`text-sm font-bold ${overallScore >= 70 ? 'text-green-600' : overallScore >= 40 ? 'text-amber-600' : 'text-destructive'}`}>
-            {overallScore}% weighted
+            {t('assessments.domainChart.weighted', { pct: overallScore })}
           </span>
         </div>
       </CardHeader>
@@ -283,7 +288,7 @@ export function WeightedDomainChart({ assessment }: { assessment: Assessment }) 
             <div className="flex items-center justify-between text-xs mb-1">
               <span className="font-medium truncate">{domain}</span>
               <span className="text-muted-foreground ml-2 shrink-0">
-                {Math.round(score)}% · {Math.round(weight * 100)}% weight
+                {t('assessments.domainChart.scoreWeight', { score: Math.round(score), weight: Math.round(weight * 100) })}
               </span>
             </div>
             <div className="h-2 bg-muted rounded-full overflow-hidden">
@@ -308,22 +313,19 @@ export function WeightedDomainChart({ assessment }: { assessment: Assessment }) 
 
 const DECISION_CONFIG = {
   proceed: {
-    label: 'Proceed',
-    description: 'Vendor risk is acceptable. Proceed to contract review.',
+    labelKey: 'assessments.decision.proceed',
     icon: CheckCircle2,
     color: 'text-green-600',
     badgeClass: 'bg-green-100 text-green-800 border-green-200 hover:bg-green-100',
   },
   conditional: {
-    label: 'Proceed with Conditions',
-    description: 'Acceptable with conditions. Remediation plan required before contract execution.',
+    labelKey: 'assessments.decision.conditional',
     icon: AlertTriangle,
     color: 'text-amber-600',
     badgeClass: 'bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-100',
   },
   reject: {
-    label: 'Reject',
-    description: 'Residual risk too high. Vendor cannot be onboarded under current controls.',
+    labelKey: 'assessments.decision.reject',
     icon: XCircle,
     color: 'text-destructive',
     badgeClass: '',
@@ -337,6 +339,7 @@ export function FormalRiskDecision({
   assessment: Assessment;
   assessmentId: string;
 }) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [rationale, setRationale]         = useState('');
   const [pendingDecision, setPending]     = useState<RiskDecisionValue | null>(null);
@@ -346,11 +349,11 @@ export function FormalRiskDecision({
       assessmentsApi.setRiskDecision(assessmentId, decision, rat),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['assessment', assessmentId] });
-      toast.success('Risk decision recorded');
+      toast.success(t('assessments.decision.toastRecorded'));
       setPending(null);
       setRationale('');
     },
-    onError: () => toast.error('Failed to record decision'),
+    onError: () => toast.error(t('assessments.decision.toastFailed')),
   });
 
   const existing: RiskDecision | null | undefined = assessment.riskDecision;
@@ -359,7 +362,7 @@ export function FormalRiskDecision({
     <Card>
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-          Formal Risk Decision
+          {t('assessments.decision.title')}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -375,13 +378,13 @@ export function FormalRiskDecision({
                     <Icon className={`h-5 w-5 shrink-0 ${cfg.color}`} />
                     <div className="flex-1">
                       <Badge className={`text-xs ${cfg.badgeClass}`} variant={existing.decision === 'reject' ? 'destructive' : 'outline'}>
-                        {cfg.label}
+                        {t(cfg.labelKey)}
                       </Badge>
                       {existing.rationale && (
                         <p className="text-sm text-muted-foreground mt-1">&quot;{existing.rationale}&quot;</p>
                       )}
                       <p className="text-xs text-muted-foreground mt-1">
-                        Recorded by {existing.setByName || 'compliance officer'} · {format(new Date(existing.setAt), 'dd MMM yyyy HH:mm')}
+                        {t('assessments.decision.recordedBy', { name: existing.setByName || t('assessments.decision.complianceOfficer'), date: format(new Date(existing.setAt), 'dd MMM yyyy HH:mm') })}
                       </p>
                     </div>
                   </>
@@ -389,13 +392,12 @@ export function FormalRiskDecision({
               })()}
             </div>
             <p className="text-xs text-muted-foreground">
-              To change this decision, record a new one below.
+              {t('assessments.decision.changeHint')}
             </p>
           </>
         ) : (
           <p className="text-sm text-muted-foreground">
-            No formal decision recorded yet. Record your compliance decision to proceed to the next
-            step or formally reject this vendor.
+            {t('assessments.decision.none')}
           </p>
         )}
 
@@ -413,7 +415,7 @@ export function FormalRiskDecision({
                   onClick={() => setPending(d)}
                 >
                   <Icon className="h-3.5 w-3.5 mr-1.5" />
-                  {cfg.label}
+                  {t(cfg.labelKey)}
                 </Button>
               );
             })}
@@ -421,10 +423,11 @@ export function FormalRiskDecision({
         ) : (
           <div className="space-y-2">
             <p className="text-sm font-medium">
-              Recording: <span className={DECISION_CONFIG[pendingDecision].color}>{DECISION_CONFIG[pendingDecision].label}</span>
+              {t('assessments.decision.recording')}{' '}
+              <span className={DECISION_CONFIG[pendingDecision].color}>{t(DECISION_CONFIG[pendingDecision].labelKey)}</span>
             </p>
             <Textarea
-              placeholder="Rationale (optional) — e.g. 'Acceptable subject to ISO 27001 renewal by Q3'"
+              placeholder={t('assessments.decision.rationalePlaceholder')}
               value={rationale}
               onChange={(e) => setRationale(e.target.value)}
               className="text-sm h-20 resize-none"
@@ -436,10 +439,10 @@ export function FormalRiskDecision({
                 disabled={mutation.isPending}
                 onClick={() => mutation.mutate({ decision: pendingDecision, rat: rationale })}
               >
-                {mutation.isPending ? 'Saving…' : 'Confirm'}
+                {mutation.isPending ? t('assessments.decision.saving') : t('assessments.decision.confirm')}
               </Button>
               <Button size="sm" variant="ghost" onClick={() => { setPending(null); setRationale(''); }}>
-                Cancel
+                {t('common.cancel')}
               </Button>
             </div>
           </div>
