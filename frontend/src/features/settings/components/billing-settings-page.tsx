@@ -1,6 +1,7 @@
 'use client';
 
 import { useMutation, useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import {
   ArrowLeft,
   AlertTriangle,
@@ -34,6 +35,7 @@ function getDaysLeft(trialEndsAt: string | null | undefined): number | null {
 }
 
 export function BillingSettingsPage() {
+  const { t } = useTranslation();
   const { data: orgData } = useQuery({
     queryKey: ['org'],
     queryFn: organizationsApi.getMe,
@@ -53,7 +55,7 @@ export function BillingSettingsPage() {
       }
     },
     onError: () => {
-      toast.error('Could not open billing portal. Please try again.');
+      toast.error(t('settings.billing.toastPortalFailed'));
     },
   });
 
@@ -63,7 +65,7 @@ export function BillingSettingsPage() {
   const isCanceled = planStatus === 'canceled';
 
   const portalButtonLabel =
-    isActive ? 'Manage billing' : 'Add payment method';
+    isActive ? t('settings.billingLink.manage') : t('settings.billing.addPayment');
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
@@ -71,7 +73,7 @@ export function BillingSettingsPage() {
       <Link href="/settings">
         <Button variant="ghost" size="sm" className="mb-4">
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Settings
+          {t('settings.security.back')}
         </Button>
       </Link>
 
@@ -79,10 +81,10 @@ export function BillingSettingsPage() {
       <div className="mb-6">
         <h1 className="page-title flex items-center gap-2">
           <CreditCard className="h-6 w-6" />
-          Billing
+          {t('settings.billingLink.title')}
         </h1>
         <p className="text-muted-foreground">
-          Manage your subscription and payment methods
+          {t('settings.billingLink.desc')}
         </p>
       </div>
 
@@ -90,26 +92,26 @@ export function BillingSettingsPage() {
       <Card className="mb-6">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            Plan Status
+            {t('settings.billing.planStatus')}
             {isTrialing && (
               <Badge variant="outline" className="border-blue-500 text-blue-600">
-                Trialing
+                {t('settings.billing.trialing')}
               </Badge>
             )}
             {isActive && (
-              <Badge className="bg-green-600 text-white">Active</Badge>
+              <Badge className="bg-green-600 text-white">{t('settings.billing.active')}</Badge>
             )}
             {isPastDue && (
               <Badge variant="outline" className="border-yellow-500 text-yellow-600">
-                {planStatus === 'paused' ? 'Paused' : 'Past Due'}
+                {planStatus === 'paused' ? t('settings.billing.paused') : t('settings.billing.pastDue')}
               </Badge>
             )}
             {isCanceled && (
-              <Badge variant="destructive">Canceled</Badge>
+              <Badge variant="destructive">{t('settings.billing.canceled')}</Badge>
             )}
           </CardTitle>
           <CardDescription>
-            {org?.plan ? `Plan: ${org.plan.charAt(0).toUpperCase() + org.plan.slice(1)}` : 'Starter plan'}
+            {org?.plan ? t('settings.billing.planLabel', { plan: org.plan.charAt(0).toUpperCase() + org.plan.slice(1) }) : t('settings.billing.starterPlan')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -117,29 +119,29 @@ export function BillingSettingsPage() {
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Clock className="h-4 w-4" />
               <span>
-                <strong>{daysLeft} {daysLeft === 1 ? 'day' : 'days'}</strong> left in your free trial
+                <strong>{t('settings.billing.daysCount', { count: daysLeft })}</strong> {t('settings.billing.trialSuffix')}
               </span>
             </div>
           )}
           {isTrialing && (daysLeft === null || daysLeft === 0) && (
-            <p className="text-sm text-muted-foreground">Your trial has ended.</p>
+            <p className="text-sm text-muted-foreground">{t('settings.billing.trialEnded')}</p>
           )}
           {isActive && (
             <div className="flex items-center gap-2 text-sm text-green-600">
               <CheckCircle2 className="h-4 w-4" />
-              <span>Your subscription is active</span>
+              <span>{t('settings.billing.subActive')}</span>
             </div>
           )}
           {isPastDue && (
             <Alert className="border-yellow-500/30">
               <AlertTriangle className="h-4 w-4 text-yellow-600" />
               <AlertDescription>
-                Add a payment method to restore access
+                {t('settings.billing.pastDueAlert')}
               </AlertDescription>
             </Alert>
           )}
           {isCanceled && (
-            <p className="text-sm text-muted-foreground">Your subscription has been canceled.</p>
+            <p className="text-sm text-muted-foreground">{t('settings.billing.subCanceled')}</p>
           )}
         </CardContent>
       </Card>
@@ -149,12 +151,12 @@ export function BillingSettingsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <CreditCard className="h-5 w-5" />
-            Payment Method
+            {t('settings.billing.paymentMethod')}
           </CardTitle>
           <CardDescription>
             {isActive
-              ? 'View and manage your billing details in the Stripe portal'
-              : 'Add a payment method to continue using Retrieva after your trial'}
+              ? t('settings.billing.paymentDescActive')
+              : t('settings.billing.paymentDescInactive')}
           </CardDescription>
         </CardHeader>
         <CardContent>
