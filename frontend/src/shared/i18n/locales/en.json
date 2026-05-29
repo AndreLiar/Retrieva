@@ -675,5 +675,59 @@
       "reviewedCount": "{{reviewed}} / {{total}} signed off"
     },
     "round": "Round {{n}} of {{total}}"
+  },
+  "chat": {
+    "newConversation": "New Conversation",
+    "selectWorkspaceStart": "Select a workspace to start a conversation",
+    "selectWorkspaceConv": "Select a workspace to view conversations",
+    "createWorkspace": "Create a workspace to get started",
+    "messageCount_one": "{{count}} message",
+    "messageCount_other": "{{count}} messages",
+    "conversation": {
+      "failedLoad": "Failed to load conversation",
+      "back": "Back to Conversations",
+      "backAriaList": "Back to conversations list",
+      "backAria": "Back to conversations"
+    },
+    "empty": {
+      "welcome": "Welcome to {{name}}",
+      "start": "Start a Conversation",
+      "subtitle": "Ask questions about your knowledge base and get AI-powered answers with source citations.",
+      "readOnly": "You have read-only access. Contact the workspace owner for query permissions.",
+      "tryAsking": "Try asking:",
+      "q1": "How does authentication work?",
+      "q2": "What are the main features?",
+      "q3": "Summarize the documentation",
+      "q4": "How do I get started?"
+    },
+    "list": {
+      "title": "Conversations",
+      "subtitle": "View and manage your chat history",
+      "select": "Select",
+      "newChat": "New Chat",
+      "selectedCount": "{{count}} selected",
+      "selectAll": "Select All",
+      "deselectAll": "Deselect All",
+      "deleteSelected": "Delete Selected",
+      "failedLoad": "Failed to load conversations",
+      "pinned": "Pinned ({{count}})",
+      "recent": "Recent ({{count}})",
+      "empty": {
+        "heading": "No conversations yet",
+        "description": "Ask AI questions about your vendor documents - every answer is grounded in the documents you have uploaded, with citations showing exactly where each finding came from.",
+        "cta": "Start a conversation",
+        "hint": "Try: \"What are the gaps in [vendor]'s ISO 27001 policy?\" or \"Does the contract include Art. 30 audit rights?\""
+      },
+      "deleteOne": "Delete conversation?",
+      "deleteMany": "Delete {{count}} conversations?",
+      "deleteOneDesc": "This conversation will be permanently deleted. This action cannot be undone.",
+      "deleteManyDesc": "These {{count}} conversations will be permanently deleted. This action cannot be undone.",
+      "toast": {
+        "deleted": "Conversation deleted",
+        "deleteFailed": "Failed to delete conversation",
+        "bulkDeleted": "{{count}} conversations deleted",
+        "bulkDeleteFailed": "Failed to delete conversations"
+      }
+    }
   }
 }
