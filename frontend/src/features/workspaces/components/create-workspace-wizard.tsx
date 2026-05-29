@@ -14,6 +14,7 @@ import {
   Settings2,
 } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import { Button } from '@/shared/ui/button';
@@ -39,45 +40,38 @@ const IMPORTANT_FUNCTIONS: VendorFunction[] = [
 ];
 
 const ICT_CARDS = [
-  { icon: Cloud, label: 'Cloud / IaaS / SaaS', value: 'cloud' as VendorServiceType },
-  { icon: Monitor, label: 'Software / On-Premise', value: 'software' as VendorServiceType },
-  { icon: BarChart2, label: 'Data & Analytics', value: 'data' as VendorServiceType },
-  { icon: Network, label: 'Network & Connectivity', value: 'network' as VendorServiceType },
-  { icon: Settings2, label: 'Other ICT Service', value: 'other' as VendorServiceType },
-  { icon: Building, label: 'Not an ICT service', value: null },
+  { icon: Cloud, labelKey: 'workspaces.wizard.ictCards.cloud', value: 'cloud' as VendorServiceType },
+  { icon: Monitor, labelKey: 'workspaces.wizard.ictCards.software', value: 'software' as VendorServiceType },
+  { icon: BarChart2, labelKey: 'workspaces.wizard.ictCards.data', value: 'data' as VendorServiceType },
+  { icon: Network, labelKey: 'workspaces.wizard.ictCards.network', value: 'network' as VendorServiceType },
+  { icon: Settings2, labelKey: 'workspaces.wizard.ictCards.other', value: 'other' as VendorServiceType },
+  { icon: Building, labelKey: 'workspaces.wizard.ictCards.notIct', value: null },
 ] as const;
 
 const FUNCTION_GROUPS = [
   {
-    label: 'Critical ICT Functions',
+    labelKey: 'workspaces.wizard.groupCritical',
     colorClass: 'bg-destructive/10 text-destructive border-destructive/20',
     activeClass: 'bg-destructive/15 border-destructive text-destructive',
-    items: [
-      { value: 'payment_processing' as VendorFunction, label: 'Payment processing' },
-      { value: 'settlement_clearing' as VendorFunction, label: 'Settlement & clearing' },
-      { value: 'core_banking' as VendorFunction, label: 'Core banking' },
-    ],
+    items: ['payment_processing', 'settlement_clearing', 'core_banking'] as VendorFunction[],
   },
   {
-    label: 'Important ICT Functions',
+    labelKey: 'workspaces.wizard.groupImportant',
     colorClass: 'bg-warning-muted text-warning border-warning-muted',
     activeClass: 'bg-warning-muted border-warning text-warning',
     items: [
-      { value: 'risk_management' as VendorFunction, label: 'Risk management' },
-      { value: 'regulatory_reporting' as VendorFunction, label: 'Regulatory reporting' },
-      { value: 'fraud_detection' as VendorFunction, label: 'Fraud detection' },
-      { value: 'identity_access_management' as VendorFunction, label: 'Identity & access mgmt' },
-      { value: 'network_infrastructure' as VendorFunction, label: 'Network infrastructure' },
-    ],
+      'risk_management',
+      'regulatory_reporting',
+      'fraud_detection',
+      'identity_access_management',
+      'network_infrastructure',
+    ] as VendorFunction[],
   },
   {
-    label: 'Supporting Functions',
+    labelKey: 'workspaces.wizard.groupSupporting',
     colorClass: 'bg-info-muted text-info border-info-muted',
     activeClass: 'bg-info-muted border-info text-info',
-    items: [
-      { value: 'data_storage' as VendorFunction, label: 'Data storage' },
-      { value: 'business_continuity' as VendorFunction, label: 'Business continuity' },
-    ],
+    items: ['data_storage', 'business_continuity'] as VendorFunction[],
   },
 ] as const;
 
@@ -85,33 +79,6 @@ const TIER_COLORS: Record<VendorTier, string> = {
   critical: 'bg-destructive/10 text-destructive border-destructive/20',
   important: 'bg-warning-muted text-warning border-warning-muted',
   standard: 'bg-info-muted text-info border-info-muted',
-};
-
-const TIER_TOOLTIP: Record<VendorTier, string> = {
-  critical: 'Strictest DORA controls — Art. 28(8) obligations and TLPT in scope.',
-  important: 'Standard DORA due diligence and contractual requirements apply.',
-  standard: 'Lighter-touch monitoring; DORA Art. 28 may still apply partially.',
-};
-
-const SERVICE_TYPE_LABEL: Record<VendorServiceType, string> = {
-  cloud: 'Cloud (IaaS / PaaS / SaaS)',
-  software: 'Software / On-Premise',
-  data: 'Data & Analytics',
-  network: 'Network & Connectivity',
-  other: 'Other ICT',
-};
-
-const FUNCTION_LABEL: Record<VendorFunction, string> = {
-  payment_processing: 'Payment processing',
-  settlement_clearing: 'Settlement & clearing',
-  core_banking: 'Core banking',
-  risk_management: 'Risk management',
-  regulatory_reporting: 'Regulatory reporting',
-  fraud_detection: 'Fraud detection',
-  data_storage: 'Data storage',
-  network_infrastructure: 'Network infrastructure',
-  identity_access_management: 'Identity & access mgmt',
-  business_continuity: 'Business continuity',
 };
 
 function inferTier(functions: VendorFunction[]): VendorTier | null {
@@ -122,6 +89,7 @@ function inferTier(functions: VendorFunction[]): VendorTier | null {
 }
 
 function StepDots({ step }: { step: 1 | 2 | 3 | 4 }) {
+  const { t } = useTranslation();
   return (
     <div className="flex items-center gap-1.5 mb-1">
       {([1, 2, 3, 4] as const).map((value) => (
@@ -132,28 +100,24 @@ function StepDots({ step }: { step: 1 | 2 | 3 | 4 }) {
           }`}
         />
       ))}
-      <span className="text-xs text-muted-foreground ml-1">{step} of 4</span>
+      <span className="text-xs text-muted-foreground ml-1">{t('workspaces.wizard.stepsOf', { step })}</span>
     </div>
   );
 }
 
 function TierBadge({ tier }: { tier: VendorTier }) {
-  const labels: Record<VendorTier, string> = {
-    critical: 'Critical',
-    important: 'Important',
-    standard: 'Standard',
-  };
-
+  const { t } = useTranslation();
   return (
     <span
       className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${TIER_COLORS[tier]}`}
     >
-      {labels[tier]}
+      {t(`workspaces.tier.${tier}`)}
     </span>
   );
 }
 
 export function CreateWorkspaceWizard() {
+  const { t } = useTranslation();
   const activeModal = useUIStore((state) => state.activeModal);
   const closeModal = useUIStore((state) => state.closeModal);
   const queryClient = useQueryClient();
@@ -206,22 +170,22 @@ export function CreateWorkspaceWizard() {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['workspaces'] });
-      toast.success('Vendor workspace created');
+      toast.success(t('workspaces.wizard.toastCreated'));
       reset();
       closeModal();
     },
     onError: () => {
-      toast.error('Failed to create workspace');
+      toast.error(t('workspaces.wizard.toastFailed'));
     },
   });
 
   const goToStep2 = () => {
     if (!name.trim()) {
-      setNameError('Vendor name is required');
+      setNameError(t('workspaces.wizard.nameRequired'));
       return;
     }
     if (name.trim().length < 2) {
-      setNameError('Must be at least 2 characters');
+      setNameError(t('workspaces.wizard.nameMin'));
       return;
     }
     setNameError('');
@@ -238,17 +202,17 @@ export function CreateWorkspaceWizard() {
   };
 
   const stepTitles: Record<1 | 2 | 3 | 4, string> = {
-    1: 'New Vendor Workspace',
-    2: 'ICT Service Classification',
-    3: 'Function & Tier Determination',
-    4: 'Review & Contract Details',
+    1: t('workspaces.wizard.titleS1'),
+    2: t('workspaces.wizard.titleS2'),
+    3: t('workspaces.wizard.titleS3'),
+    4: t('workspaces.wizard.titleS4'),
   };
 
   const stepDescriptions: Record<1 | 2 | 3 | 4, string> = {
-    1: 'Enter the vendor name to get started.',
-    2: 'Is this an ICT service, and what type?',
-    3: 'Which business functions does this vendor support? (DORA Art. 28)',
-    4: 'Review the classification and add contract details.',
+    1: t('workspaces.wizard.descS1'),
+    2: t('workspaces.wizard.descS2'),
+    3: t('workspaces.wizard.descS3'),
+    4: t('workspaces.wizard.descS4'),
   };
 
   return (
@@ -264,11 +228,11 @@ export function CreateWorkspaceWizard() {
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
               <Label htmlFor="ws-name">
-                Vendor name <span className="text-destructive">*</span>
+                {t('workspaces.wizard.vendorName')} <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="ws-name"
-                placeholder="e.g. Amazon Web Services"
+                placeholder={t('workspaces.wizard.vendorNamePlaceholder')}
                 value={name}
                 autoFocus
                 onChange={(event) => {
@@ -287,9 +251,9 @@ export function CreateWorkspaceWizard() {
         {step === 2 && (
           <div className="space-y-3 py-2">
             <div className="grid grid-cols-2 gap-2">
-              {ICT_CARDS.map(({ icon: Icon, label, value }) => (
+              {ICT_CARDS.map(({ icon: Icon, labelKey, value }) => (
                 <button
-                  key={label}
+                  key={labelKey}
                   type="button"
                   onClick={() => {
                     if (value === null) {
@@ -307,12 +271,12 @@ export function CreateWorkspaceWizard() {
                   }`}
                 >
                   <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
-                  <span className="font-medium leading-snug">{label}</span>
+                  <span className="font-medium leading-snug">{t(labelKey)}</span>
                 </button>
               ))}
             </div>
             <p className="text-xs text-muted-foreground border rounded-md px-3 py-2 bg-muted/40">
-              Non-ICT suppliers fall outside DORA Art. 28 scope — lighter monitoring applies.
+              {t('workspaces.wizard.nonIctNote')}
             </p>
           </div>
         )}
@@ -320,14 +284,14 @@ export function CreateWorkspaceWizard() {
         {step === 3 && (
           <div className="space-y-4 py-2">
             {FUNCTION_GROUPS.map((group) => (
-              <div key={group.label} className="space-y-1.5">
+              <div key={group.labelKey} className="space-y-1.5">
                 <span
                   className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${group.colorClass}`}
                 >
-                  {group.label}
+                  {t(group.labelKey)}
                 </span>
                 <div className="flex flex-wrap gap-1.5">
-                  {group.items.map(({ value, label }) => {
+                  {group.items.map((value) => {
                     const active = vendorFunctions.includes(value);
                     return (
                       <button
@@ -338,7 +302,7 @@ export function CreateWorkspaceWizard() {
                           active ? group.activeClass : 'border-border bg-background hover:bg-accent'
                         }`}
                       >
-                        {label}
+                        {t(`workspaces.wizard.functions.${value}`)}
                       </button>
                     );
                   })}
@@ -348,9 +312,9 @@ export function CreateWorkspaceWizard() {
 
             <div className="rounded-md border bg-muted/30 px-3 py-2.5 space-y-2">
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-sm font-medium">Vendor tier</span>
+                <span className="text-sm font-medium">{t('workspaces.wizard.vendorTier')}</span>
                 {suggestedTier && tierOverride === '' && (
-                  <span className="text-xs text-muted-foreground">(auto-suggested from functions)</span>
+                  <span className="text-xs text-muted-foreground">{t('workspaces.wizard.autoSuggested')}</span>
                 )}
               </div>
               <Select
@@ -358,16 +322,16 @@ export function CreateWorkspaceWizard() {
                 onValueChange={(value) => setTierOverride(value === 'none' ? '' : (value as VendorTier))}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select vendor tier" />
+                  <SelectValue placeholder={t('workspaces.wizard.selectTier')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">— Not set —</SelectItem>
-                  <SelectItem value="critical">Critical</SelectItem>
-                  <SelectItem value="important">Important</SelectItem>
-                  <SelectItem value="standard">Standard</SelectItem>
+                  <SelectItem value="none">{t('workspaces.wizard.tierNotSet')}</SelectItem>
+                  <SelectItem value="critical">{t('workspaces.tier.critical')}</SelectItem>
+                  <SelectItem value="important">{t('workspaces.tier.important')}</SelectItem>
+                  <SelectItem value="standard">{t('workspaces.tier.standard')}</SelectItem>
                 </SelectContent>
               </Select>
-              {effectiveTier && <p className="text-xs text-muted-foreground">{TIER_TOOLTIP[effectiveTier]}</p>}
+              {effectiveTier && <p className="text-xs text-muted-foreground">{t(`workspaces.wizard.tierTooltip.${effectiveTier}`)}</p>}
             </div>
 
             <button
@@ -375,7 +339,7 @@ export function CreateWorkspaceWizard() {
               onClick={() => setStep(4)}
               className="text-xs text-muted-foreground underline-offset-2 hover:underline"
             >
-              No specific functions — skip
+              {t('workspaces.wizard.skipFunctions')}
             </button>
           </div>
         )}
@@ -388,12 +352,12 @@ export function CreateWorkspaceWizard() {
                 {effectiveTier && <TierBadge tier={effectiveTier} />}
                 {serviceType && (
                   <span className="text-xs text-muted-foreground border rounded px-1.5 py-0.5 bg-background">
-                    {SERVICE_TYPE_LABEL[serviceType]}
+                    {t(`workspaces.wizard.serviceTypeLabel.${serviceType}`)}
                   </span>
                 )}
                 {isIctService === false && (
                   <span className="text-xs text-muted-foreground border rounded px-1.5 py-0.5 bg-background">
-                    Non-ICT
+                    {t('workspaces.wizard.nonIct')}
                   </span>
                 )}
               </div>
@@ -404,7 +368,7 @@ export function CreateWorkspaceWizard() {
                       key={value}
                       className="text-xs bg-background border rounded px-1.5 py-0.5 text-muted-foreground"
                     >
-                      {FUNCTION_LABEL[value]}
+                      {t(`workspaces.wizard.functions.${value}`)}
                     </span>
                   ))}
                 </div>
@@ -412,10 +376,10 @@ export function CreateWorkspaceWizard() {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="ws-country">Vendor country</Label>
+              <Label htmlFor="ws-country">{t('workspaces.wizard.country')}</Label>
               <Input
                 id="ws-country"
-                placeholder="e.g. United States"
+                placeholder={t('workspaces.wizard.countryPlaceholder')}
                 value={country}
                 autoFocus
                 onChange={(event) => setCountry(event.target.value)}
@@ -423,7 +387,7 @@ export function CreateWorkspaceWizard() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label htmlFor="ws-start">Contract start</Label>
+                <Label htmlFor="ws-start">{t('workspaces.wizard.contractStart')}</Label>
                 <Input
                   id="ws-start"
                   type="date"
@@ -432,7 +396,7 @@ export function CreateWorkspaceWizard() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="ws-end">Contract end</Label>
+                <Label htmlFor="ws-end">{t('workspaces.wizard.contractEnd')}</Label>
                 <Input
                   id="ws-end"
                   type="date"
@@ -443,8 +407,8 @@ export function CreateWorkspaceWizard() {
             </div>
 
             <p className="text-xs text-muted-foreground border rounded-md px-3 py-2 bg-muted/40">
-              Certifications, next review date, and exit strategy can be added in
-              <strong> Workspace → Settings</strong> after creation.
+              {t('workspaces.wizard.settingsNote1')}
+              <strong>{t('workspaces.wizard.settingsNoteStrong')}</strong>{t('workspaces.wizard.settingsNote2')}
             </p>
           </div>
         )}
@@ -453,37 +417,37 @@ export function CreateWorkspaceWizard() {
           {step === 1 && (
             <>
               <Button variant="outline" onClick={() => handleOpenChange(false)}>
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button onClick={goToStep2}>
-                Next <ChevronRight className="h-4 w-4 ml-1" />
+                {t('workspaces.wizard.next')} <ChevronRight className="h-4 w-4 ml-1" />
               </Button>
             </>
           )}
           {step === 2 && (
             <>
               <Button variant="outline" onClick={() => setStep(1)}>
-                <ChevronLeft className="h-4 w-4 mr-1" /> Back
+                <ChevronLeft className="h-4 w-4 mr-1" /> {t('workspaces.wizard.back')}
               </Button>
               <Button onClick={() => setStep(isIctService === false ? 4 : 3)} disabled={isIctService === null}>
-                Next <ChevronRight className="h-4 w-4 ml-1" />
+                {t('workspaces.wizard.next')} <ChevronRight className="h-4 w-4 ml-1" />
               </Button>
             </>
           )}
           {step === 3 && (
             <>
               <Button variant="outline" onClick={() => setStep(2)}>
-                <ChevronLeft className="h-4 w-4 mr-1" /> Back
+                <ChevronLeft className="h-4 w-4 mr-1" /> {t('workspaces.wizard.back')}
               </Button>
               <Button onClick={() => setStep(4)}>
-                Next <ChevronRight className="h-4 w-4 ml-1" />
+                {t('workspaces.wizard.next')} <ChevronRight className="h-4 w-4 ml-1" />
               </Button>
             </>
           )}
           {step === 4 && (
             <>
               <Button variant="outline" onClick={() => setStep(isIctService === false ? 2 : 3)}>
-                <ChevronLeft className="h-4 w-4 mr-1" /> Back
+                <ChevronLeft className="h-4 w-4 mr-1" /> {t('workspaces.wizard.back')}
               </Button>
               <Button
                 onClick={() => mutation.mutate()}
@@ -494,7 +458,7 @@ export function CreateWorkspaceWizard() {
                 ) : (
                   <Building2 className="h-4 w-4 mr-2" />
                 )}
-                Create workspace
+                {t('workspaces.wizard.create')}
               </Button>
             </>
           )}
