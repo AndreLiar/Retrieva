@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { ClipboardList, ExternalLink, Loader2, Plus, Trash2, X } from 'lucide-react';
 import { format } from 'date-fns';
 import type { UseFieldArrayReturn, UseFormReturn } from 'react-hook-form';
@@ -64,17 +65,18 @@ export function WorkspaceSettingsForm({
   latestQuestionnaire,
   isQuestionnaireLoading,
 }: WorkspaceSettingsFormProps) {
+  const { t } = useTranslation();
   const { fields, append, remove } = certificationsFieldArray;
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
       <Link href={`/workspaces/${workspaceId}`}>
         <Button variant="ghost" size="sm" className="mb-4">
-          Back to Workspace
+          {t('workspaces.members.back')}
         </Button>
       </Link>
 
-      <h1 className="page-title mb-6">Workspace Settings</h1>
+      <h1 className="page-title mb-6">{t('workspaces.settingsForm.title')}</h1>
 
       <Form {...form}>
         <form
@@ -83,8 +85,8 @@ export function WorkspaceSettingsForm({
         >
           <Card>
             <CardHeader>
-              <CardTitle>General</CardTitle>
-              <CardDescription>Update your workspace name and description</CardDescription>
+              <CardTitle>{t('workspaces.settingsForm.general')}</CardTitle>
+              <CardDescription>{t('workspaces.settingsForm.generalDesc')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <FormField
@@ -92,7 +94,7 @@ export function WorkspaceSettingsForm({
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Name</FormLabel>
+                    <FormLabel>{t('workspaces.settingsForm.name')}</FormLabel>
                     <FormControl>
                       <Input {...field} />
                     </FormControl>
@@ -105,12 +107,12 @@ export function WorkspaceSettingsForm({
                 name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Description</FormLabel>
+                    <FormLabel>{t('workspaces.settingsForm.description')}</FormLabel>
                     <FormControl>
-                      <Textarea placeholder="What is this workspace for?" {...field} />
+                      <Textarea placeholder={t('workspaces.settingsForm.descPlaceholder')} {...field} />
                     </FormControl>
                     <FormDescription>
-                      A brief description of what this workspace is used for
+                      {t('workspaces.settingsForm.descHelp')}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -121,9 +123,9 @@ export function WorkspaceSettingsForm({
 
           <Card>
             <CardHeader>
-              <CardTitle>Vendor Profile</CardTitle>
+              <CardTitle>{t('workspaces.settingsForm.vendorProfile')}</CardTitle>
               <CardDescription>
-                DORA Article 28 — vendor classification, contract tracking, and certification monitoring
+                {t('workspaces.settingsForm.vendorProfileDesc')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -133,21 +135,21 @@ export function WorkspaceSettingsForm({
                   name="vendorTier"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Vendor Tier</FormLabel>
+                      <FormLabel>{t('workspaces.settingsForm.vendorTier')}</FormLabel>
                       <Select
                         onValueChange={(value) => field.onChange(value === 'none' ? null : value)}
                         value={field.value ?? 'none'}
                       >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select tier" />
+                            <SelectValue placeholder={t('workspaces.settingsForm.selectTier')} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="none">— Not set —</SelectItem>
-                          <SelectItem value="critical">Critical</SelectItem>
-                          <SelectItem value="important">Important</SelectItem>
-                          <SelectItem value="standard">Standard</SelectItem>
+                          <SelectItem value="none">{t('workspaces.wizard.tierNotSet')}</SelectItem>
+                          <SelectItem value="critical">{t('workspaces.tier.critical')}</SelectItem>
+                          <SelectItem value="important">{t('workspaces.tier.important')}</SelectItem>
+                          <SelectItem value="standard">{t('workspaces.tier.standard')}</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -160,23 +162,23 @@ export function WorkspaceSettingsForm({
                   name="serviceType"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Service Type</FormLabel>
+                      <FormLabel>{t('workspaces.settingsForm.serviceType')}</FormLabel>
                       <Select
                         onValueChange={(value) => field.onChange(value === 'none' ? null : value)}
                         value={field.value ?? 'none'}
                       >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select type" />
+                            <SelectValue placeholder={t('workspaces.settingsForm.selectType')} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="none">— Not set —</SelectItem>
-                          <SelectItem value="cloud">Cloud</SelectItem>
-                          <SelectItem value="software">Software</SelectItem>
-                          <SelectItem value="data">Data</SelectItem>
-                          <SelectItem value="network">Network</SelectItem>
-                          <SelectItem value="other">Other</SelectItem>
+                          <SelectItem value="none">{t('workspaces.wizard.tierNotSet')}</SelectItem>
+                          <SelectItem value="cloud">{t('workspaces.settingsForm.serviceCloud')}</SelectItem>
+                          <SelectItem value="software">{t('workspaces.settingsForm.serviceSoftware')}</SelectItem>
+                          <SelectItem value="data">{t('workspaces.settingsForm.serviceData')}</SelectItem>
+                          <SelectItem value="network">{t('workspaces.settingsForm.serviceNetwork')}</SelectItem>
+                          <SelectItem value="other">{t('workspaces.settingsForm.serviceOther')}</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -191,9 +193,9 @@ export function WorkspaceSettingsForm({
                   name="country"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Country</FormLabel>
+                      <FormLabel>{t('workspaces.settingsForm.country')}</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g. Germany" {...field} />
+                        <Input placeholder={t('workspaces.settingsForm.countryPlaceholder')} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -205,17 +207,17 @@ export function WorkspaceSettingsForm({
                   name="vendorStatus"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Vendor Status</FormLabel>
+                      <FormLabel>{t('workspaces.settingsForm.vendorStatus')}</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select status" />
+                            <SelectValue placeholder={t('workspaces.settingsForm.selectStatus')} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="active">Active</SelectItem>
-                          <SelectItem value="under-review">Under Review</SelectItem>
-                          <SelectItem value="exited">Exited</SelectItem>
+                          <SelectItem value="active">{t('workspaces.status.active')}</SelectItem>
+                          <SelectItem value="under-review">{t('workspaces.status.underReview')}</SelectItem>
+                          <SelectItem value="exited">{t('workspaces.status.exited')}</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -230,7 +232,7 @@ export function WorkspaceSettingsForm({
                   name="contractStart"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Contract Start</FormLabel>
+                      <FormLabel>{t('workspaces.settingsForm.contractStart')}</FormLabel>
                       <FormControl>
                         <Input type="date" {...field} />
                       </FormControl>
@@ -243,7 +245,7 @@ export function WorkspaceSettingsForm({
                   name="contractEnd"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Contract End</FormLabel>
+                      <FormLabel>{t('workspaces.settingsForm.contractEnd')}</FormLabel>
                       <FormControl>
                         <Input type="date" {...field} />
                       </FormControl>
@@ -256,7 +258,7 @@ export function WorkspaceSettingsForm({
                   name="nextReviewDate"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Next Review</FormLabel>
+                      <FormLabel>{t('workspaces.settingsForm.nextReview')}</FormLabel>
                       <FormControl>
                         <Input type="date" {...field} />
                       </FormControl>
@@ -267,7 +269,7 @@ export function WorkspaceSettingsForm({
               </div>
 
               <div>
-                <FormLabel className="block mb-2">Certifications</FormLabel>
+                <FormLabel className="block mb-2">{t('workspaces.settingsForm.certifications')}</FormLabel>
                 <div className="space-y-2">
                   {fields.map((certField, index) => (
                     <div key={certField.id} className="flex items-start gap-2">
@@ -279,7 +281,7 @@ export function WorkspaceSettingsForm({
                             <Select onValueChange={field.onChange} value={field.value}>
                               <FormControl>
                                 <SelectTrigger>
-                                  <SelectValue placeholder="Cert type" />
+                                  <SelectValue placeholder={t('workspaces.settingsForm.certType')} />
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
@@ -299,7 +301,7 @@ export function WorkspaceSettingsForm({
                         render={({ field }) => (
                           <FormItem className="flex-1">
                             <FormControl>
-                              <Input type="date" placeholder="Valid until" {...field} />
+                              <Input type="date" placeholder={t('workspaces.settingsForm.validUntil')} {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -325,17 +327,17 @@ export function WorkspaceSettingsForm({
                   onClick={() => append({ type: 'ISO27001', validUntil: '' })}
                 >
                   <Plus className="h-3.5 w-3.5 mr-1.5" />
-                  Add Certification
+                  {t('workspaces.settingsForm.addCert')}
                 </Button>
               </div>
 
               <div>
-                <FormLabel className="block mb-1">ICT Function Categories</FormLabel>
+                <FormLabel className="block mb-1">{t('workspaces.settingsForm.ictFunctions')}</FormLabel>
                 <p className="text-xs text-muted-foreground mb-3">
-                  DORA Art. 28(3)(a) — Select all ICT capabilities this vendor supports for your entity.
+                  {t('workspaces.settingsForm.ictFunctionsDesc')}
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  {ICT_FUNCTIONS.map(({ value, label }) => {
+                  {ICT_FUNCTIONS.map(({ value }) => {
                     const selected = (vendorFunctions as string[]).includes(value);
                     return (
                       <Button
@@ -354,7 +356,7 @@ export function WorkspaceSettingsForm({
                           );
                         }}
                       >
-                        {label}
+                        {t(`workspaces.wizard.functions.${value}`)}
                       </Button>
                     );
                   })}
@@ -366,7 +368,7 @@ export function WorkspaceSettingsForm({
           <div className="flex justify-end">
             <Button type="submit" disabled={updateMutation.isPending}>
               {updateMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Save Changes
+              {t('settings.profile.save')}
             </Button>
           </div>
         </form>
@@ -376,9 +378,9 @@ export function WorkspaceSettingsForm({
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <ClipboardList className="h-4 w-4" />
-            Questionnaire Score
+            {t('workspaces.settingsForm.qScore')}
           </CardTitle>
-          <CardDescription>Latest DORA Art.28/30 due diligence result</CardDescription>
+          <CardDescription>{t('workspaces.settingsForm.qScoreDesc')}</CardDescription>
         </CardHeader>
         <CardContent>
           {isQuestionnaireLoading ? (
@@ -413,16 +415,16 @@ export function WorkspaceSettingsForm({
                       }
                     >
                       {(latestQuestionnaire.overallScore ?? 0) >= 70
-                        ? 'Low Risk'
+                        ? t('workspaces.settingsForm.lowRisk')
                         : (latestQuestionnaire.overallScore ?? 0) >= 40
-                          ? 'Medium Risk'
-                          : 'High Risk'}
+                          ? t('workspaces.settingsForm.mediumRisk')
+                          : t('workspaces.settingsForm.highRisk')}
                     </Badge>
                   </div>
                 </div>
                 {latestQuestionnaire.respondedAt && (
                   <span className="text-xs text-muted-foreground ml-2">
-                    Submitted {format(new Date(latestQuestionnaire.respondedAt), 'dd MMM yyyy')}
+                    {t('workspaces.settingsForm.submitted', { date: format(new Date(latestQuestionnaire.respondedAt), 'dd MMM yyyy') })}
                   </span>
                 )}
               </div>
@@ -430,13 +432,13 @@ export function WorkspaceSettingsForm({
                 <Button variant="outline" size="sm" asChild>
                   <Link href={`/questionnaires/${latestQuestionnaire._id}`}>
                     <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
-                    View Full Results
+                    {t('workspaces.settingsForm.viewFullResults')}
                   </Link>
                 </Button>
                 <Button variant="outline" size="sm" asChild>
                   <Link href="/questionnaires/new">
                     <ClipboardList className="h-3.5 w-3.5 mr-1.5" />
-                    Send New Questionnaire
+                    {t('workspaces.settingsForm.sendNew')}
                   </Link>
                 </Button>
               </div>
@@ -444,12 +446,12 @@ export function WorkspaceSettingsForm({
           ) : (
             <div className="text-center py-4">
               <p className="text-sm text-muted-foreground mb-3">
-                No completed questionnaire yet. Send a DORA due diligence questionnaire to this vendor to start tracking their compliance score.
+                {t('workspaces.settingsForm.noQ')}
               </p>
               <Button variant="outline" size="sm" asChild>
                 <Link href="/questionnaires/new">
                   <ClipboardList className="h-3.5 w-3.5 mr-1.5" />
-                  Send Questionnaire
+                  {t('workspaces.settingsForm.sendQ')}
                 </Link>
               </Button>
             </div>
@@ -459,35 +461,33 @@ export function WorkspaceSettingsForm({
 
       <Card className="border-destructive/50 mt-6">
         <CardHeader>
-          <CardTitle className="text-destructive">Danger Zone</CardTitle>
-          <CardDescription>Irreversible and destructive actions</CardDescription>
+          <CardTitle className="text-destructive">{t('workspaces.settingsForm.dangerZone')}</CardTitle>
+          <CardDescription>{t('workspaces.settingsForm.dangerDesc')}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-medium">Delete Workspace</p>
+              <p className="font-medium">{t('workspaces.settingsForm.deleteWs')}</p>
               <p className="text-sm text-muted-foreground">
-                Permanently delete this workspace and all its data
+                {t('workspaces.settingsForm.deleteWsDesc')}
               </p>
             </div>
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="destructive">
                   <Trash2 className="h-4 w-4 mr-2" />
-                  Delete
+                  {t('common.delete')}
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Delete Workspace?</AlertDialogTitle>
+                  <AlertDialogTitle>{t('workspaces.settingsForm.deleteConfirmTitle')}</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This action cannot be undone. This will permanently delete the workspace
-                    &quot;{workspace.name}&quot; and all associated data including conversations,
-                    documents, and member access.
+                    {t('workspaces.settingsForm.deleteConfirmDesc', { name: workspace.name })}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
                   <AlertDialogAction
                     onClick={() => deleteMutation.mutate()}
                     className={destructiveActionClasses}
@@ -495,7 +495,7 @@ export function WorkspaceSettingsForm({
                     {deleteMutation.isPending ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      'Delete Workspace'
+                      t('workspaces.settingsForm.deleteWsAction')
                     )}
                   </AlertDialogAction>
                 </AlertDialogFooter>

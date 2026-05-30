@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import {
   Bell,
@@ -42,23 +43,24 @@ function StatusIcon({ status }: { status: StepStatus }) {
 }
 
 function StatusBadge({ status }: { status: StepStatus }) {
+  const { t } = useTranslation();
   if (status === 'done') {
     return (
       <Badge className="bg-success-muted text-success border-success-muted hover:bg-success-muted text-xs">
-        Done
+        {t('workspaces.checklist.statusDone')}
       </Badge>
     );
   }
   if (status === 'in-progress') {
     return (
       <Badge className="bg-warning-muted text-warning border-warning-muted hover:bg-warning-muted text-xs">
-        In progress
+        {t('workspaces.checklist.statusInProgress')}
       </Badge>
     );
   }
   return (
     <Badge variant="outline" className="text-xs text-muted-foreground">
-      Pending
+      {t('workspaces.checklist.statusPending')}
     </Badge>
   );
 }
@@ -74,6 +76,7 @@ export function ComplianceChecklistCard({
   assessments,
   questionnaires,
 }: ComplianceChecklistCardProps) {
+  const { t } = useTranslation();
   const router = useRouter();
   const workspaceId = workspace.id;
   const classifyDone = !!(workspace.vendorTier && workspace.serviceType);
@@ -111,69 +114,69 @@ export function ComplianceChecklistCard({
     {
       n: 1,
       Icon: Building2,
-      title: 'Classify vendor',
+      title: t('workspaces.checklist.s1Title'),
       status: classifyDone ? 'done' : 'pending',
       detail: classifyDone
-        ? `${workspace.vendorTier} · ${workspace.serviceType}`
-        : 'Set vendor tier and service type',
+        ? t('workspaces.checklist.s1DetailDone', { tier: workspace.vendorTier, service: workspace.serviceType })
+        : t('workspaces.checklist.s1DetailPending'),
       href: classifyDone ? undefined : `/workspaces/${workspaceId}/settings`,
-      actionLabel: classifyDone ? undefined : 'Complete in Settings',
+      actionLabel: classifyDone ? undefined : t('workspaces.checklist.s1Action'),
     },
     {
       n: 2,
       Icon: ClipboardList,
-      title: 'Due diligence questionnaire',
+      title: t('workspaces.checklist.s2Title'),
       status: qStatus,
       detail:
         qStatus === 'done'
-          ? `Score ${latestQ?.overallScore ?? '—'}/100 · submitted ${latestQ?.respondedAt ? format(new Date(latestQ.respondedAt), 'dd MMM yyyy') : '—'}`
+          ? t('workspaces.checklist.s2DetailDone', { score: latestQ?.overallScore ?? t('workspaces.checklist.emDash'), date: latestQ?.respondedAt ? format(new Date(latestQ.respondedAt), 'dd MMM yyyy') : t('workspaces.checklist.emDash') })
           : qStatus === 'in-progress'
-            ? `Sent to ${latestQ?.vendorEmail ?? 'vendor'} · awaiting response`
-            : 'Send Art. 28 due diligence form to vendor',
+            ? t('workspaces.checklist.s2DetailProgress', { email: latestQ?.vendorEmail ?? t('workspaces.checklist.vendorFallback') })
+            : t('workspaces.checklist.s2DetailPending'),
       href: qStatus === 'pending' ? '/questionnaires/new' : `/questionnaires/${latestQ?._id}`,
-      actionLabel: qStatus === 'pending' ? 'Send questionnaire' : 'View results',
+      actionLabel: qStatus === 'pending' ? t('workspaces.checklist.s2ActionPending') : t('workspaces.checklist.s2ActionView'),
     },
     {
       n: 3,
       Icon: FileSearch,
-      title: 'Gap analysis (Art. 28/29)',
+      title: t('workspaces.checklist.s3Title'),
       status: doraStatus,
       detail:
         doraStatus === 'done'
-          ? `Risk: ${latestDora?.results?.overallRisk ?? '—'} · ${format(new Date(latestDora!.createdAt), 'dd MMM yyyy')}`
+          ? t('workspaces.checklist.s3DetailDone', { risk: latestDora?.results?.overallRisk ?? t('workspaces.checklist.emDash'), date: format(new Date(latestDora!.createdAt), 'dd MMM yyyy') })
           : doraStatus === 'in-progress'
-            ? 'Indexing documents…'
-            : 'Upload vendor ICT docs and run AI gap analysis',
+            ? t('workspaces.checklist.s3DetailProgress')
+            : t('workspaces.checklist.s3DetailPending'),
       href: doraStatus === 'pending' ? '/assessments/new' : `/assessments/${latestDora?._id}`,
-      actionLabel: doraStatus === 'pending' ? 'Run analysis' : 'View report',
+      actionLabel: doraStatus === 'pending' ? t('workspaces.checklist.s3ActionPending') : t('workspaces.checklist.s3ActionView'),
     },
     {
       n: 4,
       Icon: FileText,
-      title: 'Contract review (Art. 30)',
+      title: t('workspaces.checklist.s4Title'),
       status: a30Status,
       detail:
         a30Status === 'done'
-          ? `All 12 Art.30 clauses checked · ${format(new Date(latestA30!.createdAt), 'dd MMM yyyy')}`
+          ? t('workspaces.checklist.s4DetailDone', { date: format(new Date(latestA30!.createdAt), 'dd MMM yyyy') })
           : a30Status === 'in-progress'
-            ? 'Reviewing contract clauses…'
-            : 'Upload the ICT contract to verify all 12 mandatory clauses',
+            ? t('workspaces.checklist.s4DetailProgress')
+            : t('workspaces.checklist.s4DetailPending'),
       href: a30Status === 'pending' ? '/assessments/new' : `/assessments/${latestA30?._id}`,
-      actionLabel: a30Status === 'pending' ? 'Review contract' : 'View report',
+      actionLabel: a30Status === 'pending' ? t('workspaces.checklist.s4ActionPending') : t('workspaces.checklist.s4ActionView'),
     },
     {
       n: 5,
       Icon: Bell,
-      title: 'Set up monitoring',
+      title: t('workspaces.checklist.s5Title'),
       status: monitorStatus,
       detail:
         monitorStatus === 'done'
-          ? `${workspace.certifications?.length} cert(s) tracked · next review ${format(new Date(workspace.nextReviewDate!), 'dd MMM yyyy')}`
+          ? t('workspaces.checklist.s5DetailDone', { count: workspace.certifications?.length, date: format(new Date(workspace.nextReviewDate!), 'dd MMM yyyy') })
           : monitorStatus === 'in-progress'
-            ? `${hasCerts ? 'Certifications added' : 'Next review date set'} · add the other field`
-            : 'Add certifications and next review date for automated alerts',
+            ? t('workspaces.checklist.s5DetailProgress', { which: hasCerts ? t('workspaces.checklist.certsAdded') : t('workspaces.checklist.reviewSet') })
+            : t('workspaces.checklist.s5DetailPending'),
       href: `/workspaces/${workspaceId}/settings`,
-      actionLabel: monitorStatus === 'done' ? 'Manage in Settings' : 'Set up in Settings',
+      actionLabel: monitorStatus === 'done' ? t('workspaces.checklist.s5ActionDone') : t('workspaces.checklist.s5ActionSetup'),
     },
   ];
 
@@ -184,10 +187,10 @@ export function ComplianceChecklistCard({
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-            DORA Compliance Checklist
+            {t('workspaces.checklist.title')}
           </CardTitle>
           <span className="text-xs text-muted-foreground">
-            {doneCount} / {steps.length} complete
+            {t('workspaces.checklist.progress', { done: doneCount, total: steps.length })}
           </span>
         </div>
         <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden mt-2">
