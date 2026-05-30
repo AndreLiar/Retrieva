@@ -62,6 +62,7 @@ const sidebars: SidebarsConfig = {
         'deployment/docker',
         'deployment/environment-variables',
         'deployment/production-checklist',
+        'deployment/database-capacity',
         'deployment/ci-cd',
         'deployment/email-service',
         'deployment/observability',
