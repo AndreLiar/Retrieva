@@ -81,8 +81,8 @@ A BullMQ repeatable job runs every 24 hours and sends email alerts to workspace 
 |-------|------------|
 | Backend | Express 5, Node.js 20+ |
 | AI Orchestration | LangChain (LCEL chains, prompts, parsers) |
-| LLM | Azure OpenAI (GPT-4o-mini) |
-| Embeddings | Azure OpenAI (text-embedding-3-small) |
+| LLM | Ollama Cloud (default, 3-key rotation via LangChain `withFallbacks`); pluggable to OpenAI / Anthropic / Groq via `LLM_<purpose>_PROVIDER` |
+| Embeddings | Self-hosted Ollama `bge-m3:latest` (1024-dim, 8192-token context); OpenAI `text-embedding-3-small` fallback |
 | Vector Store | Qdrant |
 | Database | MongoDB (Mongoose ODM) |
 | Cache / Queue | Redis, BullMQ |
