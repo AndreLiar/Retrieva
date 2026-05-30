@@ -4,6 +4,7 @@ const sidebars: SidebarsConfig = {
   docsSidebar: [
     'intro',
     'who-its-for',
+    'product-principles',
     'getting-started',
     {
       type: 'category',
