@@ -92,6 +92,35 @@ Earlier docs and `CLAUDE.md` mention "Azure OpenAI `gpt-4o-mini` + `text-embeddi
 - Why separate from chat: **Ollama Cloud serves chat/generate but *not* the embeddings API** (returns `unauthorized`). Embeddings have to run on a self-hosted instance.
 - Fallback: OpenAI `text-embedding-3-small` if Ollama is unavailable.
 
+## Scope boundaries — what Retrieva deliberately does NOT do
+
+Retrieva is a **deep specialist** on DORA Art. 28–30 third-party ICT risk and AI-augmented contract review. We deliberately **do not** cover the rest of the third-party / vendor risk management universe, and we won't drift there. The market is full of "all-in-one" TPRM tools that do everything superficially; we do one thing exceptionally and integrate cleanly with everything else.
+
+### Out of scope (and won't be added)
+
+| Pillar | Why we don't do it | How we integrate with what does |
+|---|---|---|
+| **Financial due diligence** (D&B, Dun & Bradstreet, KYC/AML, beneficial ownership) | Different persona (procurement / AML team), mature dedicated tooling exists | Webhook in: a vendor failing financial DD triggers a re-review |
+| **ESG assessment** (EcoVadis, climate, human-rights) | Different regulation (CSRD / EU Taxonomy), different buyer (CSR/ESG officer) | Webhook in: ESG score annotation on the vendor profile |
+| **Sanction / PEP screening** (Refinitiv World-Check, Dow Jones Risk Center) | AML / financial-compliance domain | Webhook in: a sanctions hit auto-creates a critical Finding |
+| **Continuous security posture rating** (BitSight, SecurityScorecard, Black Kite) | A different product surface — own crawlers, own attack-surface management | Webhook in (and out): we consume score-change signals, we emit our DORA risk decisions back so your security team sees them |
+| **Procurement / spend management** (Coupa, Ariba) | Irrelevant to compliance | n/a |
+| **Contract authoring / drafting** | We do **review** of contracts your legal team or counterparty drafts. We do not generate contracts. | n/a |
+
+### Why this is a strength, not a gap
+
+1. **Generalist TPRM platforms** treat DORA as one module among 50 — superficially. They don't sign Art. 30's 12 clauses individually with negotiation rounds, don't have the Art. 28(3) deterministic risk matrix, don't map Art. 30(2)(e) subcontractor chains, don't generate formal Art. 30(2)(d) exit plans.
+2. **Specialist beats generalist** when a regulation is this prescriptive and this new. Buyers want depth, not breadth.
+3. **Honest scope = higher trust**. Compliance directors who have been burned by "we do everything" promises respond well to *"we do this perfectly, we integrate with what you have for the rest."*
+
+### The positioning pitch
+
+> *"We don't replace your existing TPRM stack. We're the DORA-specialist + Art. 30 contract-review layer that no generalist TPRM does correctly. Keep BitSight for security posture, keep Refinitiv for sanctions, keep D&B for financial due diligence — Retrieva integrates with them all via webhooks, and together you have the complete coverage that no single tool delivers today."*
+
+### Engineering implication
+
+Our **public API + webhook subsystem** is a first-class strategic surface. Every external signal (security rating change, sanctions hit, financial-score drop, ESG event) maps to a Retrieva first-class object (`SecurityRating`, `SanctionsHit`, …) stored time-series, with a configurable trigger that creates a `Finding` — turning every external signal into an owned, SLA-tracked action item in Retrieva.
+
 ## One-sentence pitch
 
-> **DORA Art. 28–30 compliance, done in a week per vendor instead of a quarter, with an audit trail your regulator can replay.**
+> **DORA Art. 28–30 compliance, done in a week per vendor instead of a quarter, with an audit trail your regulator can replay — integrating with the rest of your TPRM stack, not replacing it.**
