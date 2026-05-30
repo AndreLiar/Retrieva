@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import {
   AlertTriangle,
@@ -26,19 +27,18 @@ function daysFrom(date: string | Date | null | undefined): number | null {
 }
 
 function DaysChip({ days, suffix = '' }: { days: number; suffix?: string }) {
+  const { t } = useTranslation();
   if (days < 0) {
-    return <span className="text-xs font-medium text-destructive">{Math.abs(days)}d overdue</span>;
+    return <span className="text-xs font-medium text-destructive">{t('workspaces.monitoring.daysOverdue', { days: Math.abs(days) })}</span>;
   }
+  const label = `${t('workspaces.monitoring.inDays', { days })}${suffix}`;
   if (days <= 7) {
-    return <span className="text-xs font-medium text-destructive">in {days}d{suffix}</span>;
-  }
-  if (days <= 30) {
-    return <span className="text-xs font-medium text-warning">in {days}d{suffix}</span>;
+    return <span className="text-xs font-medium text-destructive">{label}</span>;
   }
   if (days <= 90) {
-    return <span className="text-xs font-medium text-warning">in {days}d{suffix}</span>;
+    return <span className="text-xs font-medium text-warning">{label}</span>;
   }
-  return <span className="text-xs font-medium text-success">in {days}d{suffix}</span>;
+  return <span className="text-xs font-medium text-success">{label}</span>;
 }
 
 interface MonitoringSignal {
@@ -88,6 +88,7 @@ interface MonitoringCardProps {
 }
 
 export function MonitoringCard({ workspace, assessments }: MonitoringCardProps) {
+  const { t } = useTranslation();
   const workspaceId = workspace.id;
   const hasCerts = (workspace.certifications?.length ?? 0) > 0;
   const hasReview = !!workspace.nextReviewDate;
@@ -99,16 +100,15 @@ export function MonitoringCard({ workspace, assessments }: MonitoringCardProps) 
         <CardContent className="flex flex-col items-center justify-center gap-3 py-8 text-center">
           <BellOff className="h-9 w-9 text-muted-foreground/40" />
           <div>
-            <p className="text-sm font-medium text-muted-foreground">Monitoring not configured</p>
+            <p className="text-sm font-medium text-muted-foreground">{t('workspaces.monitoring.notConfigured')}</p>
             <p className="text-xs text-muted-foreground mt-1 max-w-xs">
-              Add certifications, contract end date, or a next review date to enable automated
-              24-hour compliance alert emails.
+              {t('workspaces.monitoring.notConfiguredDesc')}
             </p>
           </div>
           <Link href={`/workspaces/${workspaceId}/settings`}>
             <Button size="sm" variant="outline">
               <Settings className="h-4 w-4 mr-2" />
-              Configure in Settings
+              {t('workspaces.monitoring.configure')}
             </Button>
           </Link>
         </CardContent>
@@ -122,7 +122,7 @@ export function MonitoringCard({ workspace, assessments }: MonitoringCardProps) 
     const days = daysFrom(cert.validUntil);
     signals.push({
       label: cert.type,
-      value: cert.validUntil ? `expires ${format(new Date(cert.validUntil), 'dd MMM yyyy')}` : '',
+      value: cert.validUntil ? t('workspaces.monitoring.certExpires', { date: format(new Date(cert.validUntil), 'dd MMM yyyy') }) : '',
       days,
       status:
         days === null ? 'missing' : days < 0 ? 'critical' : days <= 30 ? 'critical' : days <= 90 ? 'warning' : 'ok',
@@ -132,8 +132,8 @@ export function MonitoringCard({ workspace, assessments }: MonitoringCardProps) 
   if (workspace.contractEnd) {
     const days = daysFrom(workspace.contractEnd);
     signals.push({
-      label: 'Contract renewal',
-      value: `ends ${format(new Date(workspace.contractEnd), 'dd MMM yyyy')}`,
+      label: t('workspaces.monitoring.contractRenewal'),
+      value: t('workspaces.monitoring.contractEnds', { date: format(new Date(workspace.contractEnd), 'dd MMM yyyy') }),
       days,
       status:
         days === null ? 'missing' : days < 0 ? 'critical' : days <= 30 ? 'critical' : days <= 60 ? 'warning' : 'ok',
@@ -143,8 +143,8 @@ export function MonitoringCard({ workspace, assessments }: MonitoringCardProps) 
   if (workspace.nextReviewDate) {
     const days = daysFrom(workspace.nextReviewDate);
     signals.push({
-      label: 'Annual review',
-      value: `due ${format(new Date(workspace.nextReviewDate), 'dd MMM yyyy')}`,
+      label: t('workspaces.monitoring.annualReview'),
+      value: t('workspaces.monitoring.reviewDue', { date: format(new Date(workspace.nextReviewDate), 'dd MMM yyyy') }),
       days,
       status: days === null ? 'missing' : days < 0 ? 'critical' : days <= 30 ? 'warning' : 'ok',
     });
@@ -159,10 +159,10 @@ export function MonitoringCard({ workspace, assessments }: MonitoringCardProps) 
     : null;
 
   signals.push({
-    label: 'Last DORA assessment',
+    label: t('workspaces.monitoring.lastAssessment'),
     value: lastAssessment
-      ? `run ${format(new Date(lastAssessment.createdAt), 'dd MMM yyyy')} (${assessmentDaysAgo}d ago)`
-      : 'No assessment run yet',
+      ? t('workspaces.monitoring.assessmentRun', { date: format(new Date(lastAssessment.createdAt), 'dd MMM yyyy'), days: assessmentDaysAgo })
+      : t('workspaces.monitoring.noAssessment'),
     days: lastAssessment ? -(assessmentDaysAgo ?? 0) : null,
     status: !lastAssessment ? 'missing' : (assessmentDaysAgo ?? 0) > 365 ? 'warning' : 'ok',
   });
@@ -177,7 +177,7 @@ export function MonitoringCard({ workspace, assessments }: MonitoringCardProps) 
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-              Automated Monitoring
+              {t('workspaces.monitoring.title')}
             </CardTitle>
             <Badge
               className={
@@ -190,26 +190,26 @@ export function MonitoringCard({ workspace, assessments }: MonitoringCardProps) 
               variant={overallStatus === 'critical' ? 'destructive' : 'outline'}
             >
               {overallStatus === 'ok'
-                ? '● Active'
+                ? t('workspaces.monitoring.statusActive')
                 : overallStatus === 'warning'
-                  ? '⚠ Attention'
-                  : '✕ Action required'}
+                  ? t('workspaces.monitoring.statusAttention')
+                  : t('workspaces.monitoring.statusActionRequired')}
             </Badge>
           </div>
           <div className="flex items-center gap-1 text-xs text-muted-foreground">
             <RefreshCw className="h-3 w-3" />
-            24h scan
+            {t('workspaces.monitoring.scan')}
           </div>
         </div>
         {(criticalCount > 0 || warningCount > 0) && (
           <p className="text-xs text-muted-foreground mt-1">
             {criticalCount > 0 && (
-              <span className="text-destructive font-medium">{criticalCount} critical · </span>
+              <span className="text-destructive font-medium">{t('workspaces.monitoring.criticalCount', { count: criticalCount })}</span>
             )}
             {warningCount > 0 && (
-              <span className="text-warning font-medium">{warningCount} warning · </span>
+              <span className="text-warning font-medium">{t('workspaces.monitoring.warningCount', { count: warningCount })}</span>
             )}
-            Alert emails sent to workspace owner
+            {t('workspaces.monitoring.alertEmails')}
           </p>
         )}
       </CardHeader>
@@ -221,19 +221,19 @@ export function MonitoringCard({ workspace, assessments }: MonitoringCardProps) 
           <div className="pt-3 flex items-center justify-between">
             <span className="text-xs text-muted-foreground flex items-center gap-1">
               <TrendingUp className="h-3 w-3" />
-              Last risk: <strong className="ml-1">{lastAssessment.results?.overallRisk ?? '—'}</strong>
+              {t('workspaces.monitoring.lastRisk')} <strong className="ml-1">{lastAssessment.results?.overallRisk ?? '—'}</strong>
               {lastAssessment.results?.gaps?.length != null && (
                 <span className="ml-2 text-muted-foreground">
-                  ({lastAssessment.results.gaps.filter((gap) => gap.gapLevel === 'missing').length}{' '}
-                  missing ·{' '}
-                  {lastAssessment.results.gaps.filter((gap) => gap.gapLevel === 'partial').length}{' '}
-                  partial)
+                  {t('workspaces.monitoring.gapsSummary', {
+                    missing: lastAssessment.results.gaps.filter((gap) => gap.gapLevel === 'missing').length,
+                    partial: lastAssessment.results.gaps.filter((gap) => gap.gapLevel === 'partial').length,
+                  })}
                 </span>
               )}
             </span>
             <Link href={`/assessments/${lastAssessment._id}`}>
               <Button size="sm" variant="ghost" className="h-7 px-2 text-xs">
-                View report
+                {t('workspaces.monitoring.viewReport')}
                 <ChevronRight className="h-3 w-3 ml-1" />
               </Button>
             </Link>
