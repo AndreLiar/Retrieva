@@ -1,14 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import pkg from 'otplib';
+import { generateSync } from 'otplib';
 import { mfaService } from '../../services/mfaService.js';
-
-const { authenticator } = pkg;
 
 describe('mfaService (A1)', () => {
   it('generates a usable TOTP secret and verifies its current code', () => {
     const secret = mfaService.generateSecret();
     expect(typeof secret).toBe('string');
-    const code = authenticator.generate(secret);
+    const code = generateSync({ secret });
     expect(mfaService.verifyTotp(secret, code)).toBe(true);
   });
 
