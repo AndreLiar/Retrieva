@@ -1,19 +1,19 @@
 /**
  * MFA (TOTP) service — audit gap A1.
  *
- * Thin wrapper around otplib's authenticator (RFC 6238 TOTP) plus recovery-code
+ * Thin wrapper around otplib's TOTP functions (RFC 6238) plus recovery-code
  * generation. Keeps all crypto/format choices in one place so AuthService and
  * tests depend on a small, stable surface.
  */
 
 import crypto from 'crypto';
-import pkg from 'otplib';
+import { generateSecret, generateURI, verifySync } from 'otplib';
 import { sha256 } from '../utils/security/crypto.js';
 
-const { authenticator } = pkg;
-
 // Allow ±1 step (±30s) of clock drift between server and authenticator app.
-authenticator.options = { window: 1 };
+// otplib v13 expresses drift as a time tolerance in seconds (the period is 30s),
+// replacing v12's step-based `window: 1`.
+const EPOCH_TOLERANCE_SECONDS = 30;
 
 const ISSUER = process.env.MFA_ISSUER || 'Retrieva';
 const RECOVERY_CODE_COUNT = 10;
@@ -21,7 +21,7 @@ const RECOVERY_CODE_COUNT = 10;
 export const mfaService = {
   /** Generate a new base32 TOTP secret. */
   generateSecret() {
-    return authenticator.generateSecret();
+    return generateSecret();
   },
 
   /**
@@ -29,14 +29,18 @@ export const mfaService = {
    * renders as a QR code).
    */
   keyUri(accountName, secret) {
-    return authenticator.keyuri(accountName, ISSUER, secret);
+    return generateURI({ issuer: ISSUER, label: accountName, secret });
   },
 
   /** Verify a 6-digit TOTP code against a secret. */
   verifyTotp(secret, token) {
     if (!secret || !token) return false;
     try {
-      return authenticator.verify({ token: String(token).trim(), secret });
+      return verifySync({
+        token: String(token).trim(),
+        secret,
+        epochTolerance: EPOCH_TOLERANCE_SECONDS,
+      }).valid;
     } catch {
       return false;
     }
