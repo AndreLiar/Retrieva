@@ -42,11 +42,9 @@ export default defineConfig({
 
     // Use forks pool - each file runs in separate process
     pool: 'forks',
-    poolOptions: {
-      forks: {
-        isolate: true, // Each file gets isolated process
-      },
-    },
+    // Each file gets an isolated process. In Vitest 4 the old
+    // `poolOptions.forks.isolate` was flattened to this top-level option.
+    isolate: true,
 
     // Global setup - set env vars for tests
     env: {

@@ -39,9 +39,11 @@ vi.mock('../../config/langsmith.js', () => ({
 }));
 
 vi.mock('@qdrant/js-client-rest', () => ({
-  QdrantClient: vi.fn().mockImplementation(() => ({
-    search: vi.fn().mockResolvedValue([]),
-  })),
+  // Regular function (not arrow) so the mock is constructable: Vitest 4 invokes
+  // a mock's implementation via `new` when the mock is called with `new`.
+  QdrantClient: vi.fn().mockImplementation(function () {
+    return { search: vi.fn().mockResolvedValue([]) };
+  }),
 }));
 
 vi.mock('@langchain/langgraph/prebuilt', () => ({
@@ -155,17 +157,19 @@ describe('runGapAnalysis', () => {
     embeddings.embedQuery.mockResolvedValue([0.1, 0.2]);
 
     const { QdrantClient } = await import('@qdrant/js-client-rest');
-    QdrantClient.mockImplementation(() => ({
-      search: vi.fn().mockResolvedValue([
-        {
-          payload: {
-            pageContent: 'Some content about security policies...',
-            metadata: { fileName: 'policy.pdf' },
+    QdrantClient.mockImplementation(function () {
+      return {
+        search: vi.fn().mockResolvedValue([
+          {
+            payload: {
+              pageContent: 'Some content about security policies...',
+              metadata: { fileName: 'policy.pdf' },
+            },
+            score: 0.9,
           },
-          score: 0.9,
-        },
-      ]),
-    }));
+        ]),
+      };
+    });
 
     const result = await runGapAnalysis({ assessmentId: 'assessment-123', job: null });
 
@@ -202,7 +206,9 @@ describe('Gap normalization (via runGapAnalysis fallback)', () => {
     createLLM.mockResolvedValue(mockLLM);
 
     const { QdrantClient } = await import('@qdrant/js-client-rest');
-    QdrantClient.mockImplementation(() => ({ search: vi.fn().mockResolvedValue([]) }));
+    QdrantClient.mockImplementation(function () {
+      return { search: vi.fn().mockResolvedValue([]) };
+    });
 
     await runGapAnalysis({ assessmentId: 'assessment-123', job: null });
 
@@ -220,7 +226,9 @@ describe('Gap normalization (via runGapAnalysis fallback)', () => {
     createLLM.mockResolvedValue(mockLLM);
 
     const { QdrantClient } = await import('@qdrant/js-client-rest');
-    QdrantClient.mockImplementation(() => ({ search: vi.fn().mockResolvedValue([]) }));
+    QdrantClient.mockImplementation(function () {
+      return { search: vi.fn().mockResolvedValue([]) };
+    });
 
     await runGapAnalysis({ assessmentId: 'assessment-123', job: null });
 
@@ -241,7 +249,9 @@ describe('Gap normalization (via runGapAnalysis fallback)', () => {
     createLLM.mockResolvedValue(mockLLM);
 
     const { QdrantClient } = await import('@qdrant/js-client-rest');
-    QdrantClient.mockImplementation(() => ({ search: vi.fn().mockResolvedValue([]) }));
+    QdrantClient.mockImplementation(function () {
+      return { search: vi.fn().mockResolvedValue([]) };
+    });
 
     await runGapAnalysis({ assessmentId: 'assessment-123', job: null });
 
@@ -257,7 +267,9 @@ describe('Gap normalization (via runGapAnalysis fallback)', () => {
     createLLM.mockResolvedValue(mockLLM);
 
     const { QdrantClient } = await import('@qdrant/js-client-rest');
-    QdrantClient.mockImplementation(() => ({ search: vi.fn().mockResolvedValue([]) }));
+    QdrantClient.mockImplementation(function () {
+      return { search: vi.fn().mockResolvedValue([]) };
+    });
 
     const result = await runGapAnalysis({ assessmentId: 'assessment-123', job: null });
 
@@ -275,7 +287,9 @@ describe('Gap normalization (via runGapAnalysis fallback)', () => {
     createLLM.mockResolvedValue(mockLLM);
 
     const { QdrantClient } = await import('@qdrant/js-client-rest');
-    QdrantClient.mockImplementation(() => ({ search: vi.fn().mockResolvedValue([]) }));
+    QdrantClient.mockImplementation(function () {
+      return { search: vi.fn().mockResolvedValue([]) };
+    });
 
     await runGapAnalysis({ assessmentId: 'assessment-123', job: null });
 
@@ -302,7 +316,9 @@ describe('Job progress updates', () => {
     createLLM.mockResolvedValue(mockLLM);
 
     const { QdrantClient } = await import('@qdrant/js-client-rest');
-    QdrantClient.mockImplementation(() => ({ search: vi.fn().mockResolvedValue([]) }));
+    QdrantClient.mockImplementation(function () {
+      return { search: vi.fn().mockResolvedValue([]) };
+    });
 
     await runGapAnalysis({ assessmentId: 'assessment-123', job: mockJob });
 
@@ -322,7 +338,9 @@ describe('Job progress updates', () => {
     createLLM.mockResolvedValue(mockLLM);
 
     const { QdrantClient } = await import('@qdrant/js-client-rest');
-    QdrantClient.mockImplementation(() => ({ search: vi.fn().mockResolvedValue([]) }));
+    QdrantClient.mockImplementation(function () {
+      return { search: vi.fn().mockResolvedValue([]) };
+    });
 
     await expect(
       runGapAnalysis({ assessmentId: 'assessment-123', job: null })
