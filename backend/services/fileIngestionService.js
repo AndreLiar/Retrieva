@@ -212,6 +212,7 @@ export async function ingestFile({
   fileType,
   fileName,
   assessmentId,
+  workspaceId,
   vendorName,
   onProgress,
 }) {
@@ -294,6 +295,39 @@ export async function ingestFile({
     upserted += batchChunks.length;
 
     if (onProgress) onProgress({ indexed: upserted, total: chunks.length, phase: 'indexing' });
+  }
+
+  // 5. Dual-write (issue #394): also index the same chunks into the shared
+  // workspace collection so the chat (tenant-filtered on metadata.workspaceId)
+  // can retrieve this vendor's documents. Reuses the vectors — no re-embedding.
+  // Best-effort: a failure here must not fail the assessment (gap analysis uses
+  // the per-assessment collection regardless).
+  if (workspaceId) {
+    try {
+      // Lazy import: keep the heavy vectorStore (and its module-load side effects)
+      // out of the app's eager import graph; only needed when actually ingesting.
+      const { upsertChunksToWorkspaceCollection } = await import('../config/vectorStore.js');
+      await upsertChunksToWorkspaceCollection({
+        chunks,
+        vectors,
+        metadata: {
+          workspaceId,
+          assessmentId,
+          vendorName,
+          fileName,
+          fileType,
+          source: 'assessment',
+        },
+      });
+    } catch (err) {
+      logger.warn('Dual-write to workspace collection failed (chat may miss this doc)', {
+        service: 'file-ingestion',
+        assessmentId,
+        workspaceId,
+        fileName,
+        error: err.message,
+      });
+    }
   }
 
   logger.info('File ingestion complete', {
