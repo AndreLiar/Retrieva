@@ -67,8 +67,10 @@ test.describe('New Assessment page — with workspace', () => {
 
   test('assessment name is auto-generated and contains vendor name', async ({ page }) => {
     const nameInput = page.getByLabel('Assessment name');
-    const value = await nameInput.inputValue();
-    expect(value).toContain('Acme Corp');
+    // Web-first assertion: the assessment name is generated reactively once the
+    // vendor name (loaded async from the active workspace) propagates, so wait
+    // for it instead of reading inputValue() once (which races the update).
+    await expect(nameInput).toHaveValue(/Acme Corp/);
   });
 
   test('changing vendor name updates auto-generated assessment name', async ({ page }) => {
