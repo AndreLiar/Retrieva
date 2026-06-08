@@ -73,6 +73,7 @@ async function processFileIndex(job) {
       fileType,
       fileName,
       assessmentId,
+      workspaceId: existing?.workspaceId?.toString(),
       vendorName,
       onProgress: async ({ indexed, total }) => {
         const pct = Math.round(10 + (indexed / total) * 70);
