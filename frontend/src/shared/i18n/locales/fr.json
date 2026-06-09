@@ -487,7 +487,27 @@
       "uploadAtLeastOne": "Veuillez importer au moins un document.",
       "start": "Lancer l'évaluation",
       "uploading": "Téléversement…",
-      "toastCreated": "Évaluation créée — indexation des documents…"
+      "toastCreated": "Évaluation créée — indexation des documents…",
+      "recommendedDocs": {
+        "title": "Documents recommandés",
+        "note": "Recommandés pour une analyse complète. Vous pouvez continuer avec moins — la confiance de l'analyse sera réduite.",
+        "uploaded": "{{count}} téléversé(s)",
+        "warning": "Vous démarrez avec très peu de documents. Une analyse complète en nécessite généralement plusieurs — le résultat peut être incomplet. Pensez à ajouter les documents recommandés ci-dessus.",
+        "dora": {
+          "iso27001": "Certificat ISO 27001",
+          "soc2": "Rapport SOC 2 / SOC 3",
+          "securityPolicy": "Politique / livre blanc de sécurité",
+          "bcp": "Plan de continuité / reprise (PCA/PRA)",
+          "dpa": "Accord de traitement des données (RGPD)"
+        },
+        "a30": {
+          "contract": "Contrat de services ICT / MSA",
+          "sla": "Annexe SLA",
+          "subprocessors": "Liste des sous-traitants",
+          "exit": "Annexe sortie / résiliation",
+          "security": "Annexe sécurité"
+        }
+      }
     },
     "detail": {
       "back": "Évaluations",
