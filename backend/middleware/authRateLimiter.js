@@ -14,10 +14,19 @@
  * without inflating counters or hitting limits.
  */
 
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import logger from '../config/logger.js';
 
 const DISABLED = process.env.AUTH_RATE_LIMIT_DISABLED === 'true';
+
+/**
+ * Build the per-IP rate-limit key. ipKeyGenerator normalizes IPv6 to its subnet
+ * so a single /64 allocation can't rotate through addresses to bypass the cap
+ * (issue #381). Exported for testing.
+ */
+export function buildRateLimitKey(name, ip) {
+  return `auth:${name}:${ipKeyGenerator(ip || 'unknown')}`;
+}
 
 function makeLimiter({ name, windowMs, max, message }) {
   return rateLimit({
@@ -28,7 +37,7 @@ function makeLimiter({ name, windowMs, max, message }) {
     skip: () => DISABLED,
     // Key by IP. We deliberately do NOT key by user — the point is to
     // protect endpoints that establish identity, before a user is known.
-    keyGenerator: (req) => `auth:${name}:${req.ip || 'unknown'}`,
+    keyGenerator: (req) => buildRateLimitKey(name, req.ip),
     validate: { ip: false, trustProxy: false },
     message: { status: 'fail', message },
     handler: (req, res, _next, options) => {
