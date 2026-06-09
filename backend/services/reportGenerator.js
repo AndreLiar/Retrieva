@@ -234,10 +234,58 @@ function buildCoverPage(assessment) {
   ];
 }
 
+// Recommended document types per framework — surfaced in the report when the
+// assessment was run on a thin evidence base (issue #395). English labels, as
+// the report is generated in English.
+const RECOMMENDED_REPORT_DOCS = {
+  DORA: [
+    'an ISO 27001 certificate',
+    'a SOC 2 / SOC 3 report',
+    'a security policy',
+    'a business continuity / DR plan',
+    'a data processing agreement (GDPR)',
+  ],
+  CONTRACT_A30: [
+    'the ICT services contract / MSA',
+    'an SLA annex',
+    'a subcontractor list',
+    'an exit / termination annex',
+    'a security annex',
+  ],
+};
+
+// Below this many documents the evidence base is considered partial.
+const MIN_THOROUGH_DOCS = 2;
+
+/**
+ * Returns a "reduced confidence" caveat string when an assessment was run on a
+ * partial document set, or null otherwise. Pure + exported for testing.
+ * (Phase 2c of #395 — count-based; upgrades to precise missing-category listing
+ * once per-file tagging lands.)
+ */
+export function partialEvidenceCaveat(assessment) {
+  const docCount = assessment?.documents?.length || 0;
+  if (docCount === 0 || docCount >= MIN_THOROUGH_DOCS) return null;
+
+  const isContract = assessment.framework === 'CONTRACT_A30';
+  const recommended = isContract
+    ? RECOMMENDED_REPORT_DOCS.CONTRACT_A30
+    : RECOMMENDED_REPORT_DOCS.DORA;
+  const reviewLabel = isContract ? 'Article 30 contract review' : 'DORA gap analysis';
+
+  return (
+    `This ${reviewLabel} is based on a single uploaded document. A thorough review typically ` +
+    `draws on several document types — e.g. ${recommended.join(', ')}. Conclusions may understate ` +
+    `gaps where supporting evidence was not provided; treat the coverage findings below as a floor, ` +
+    `not a ceiling.`
+  );
+}
+
 function buildExecutiveSummary(assessment) {
   const gaps = assessment.results?.gaps || [];
   const risk = assessment.results?.overallRisk || 'N/A';
   const summary = assessment.results?.summary || '';
+  const caveat = partialEvidenceCaveat(assessment);
 
   const covered = gaps.filter((g) => g.gapLevel === 'covered').length;
   const partial = gaps.filter((g) => g.gapLevel === 'partial').length;
@@ -250,6 +298,12 @@ function buildExecutiveSummary(assessment) {
       summary ||
         `This report presents the results of a DORA compliance gap analysis for ${assessment.vendorName}.`
     ),
+    ...(caveat
+      ? [
+          heading2('Confidence Note — Partial Document Set'),
+          para(caveat, { color: GAP_COLOUR.partial, italics: true }),
+        ]
+      : []),
     new Paragraph({ spacing: { before: 200, after: 100 } }),
     heading2('Assessment Statistics'),
     new Table({
