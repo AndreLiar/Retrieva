@@ -8,6 +8,10 @@ import { conversationsApi } from '@/features/chat/api/conversations';
 import { useActiveWorkspace } from '@/features/workspaces/queries/use-workspace-queries';
 import { usePermissions } from '@/shared/hooks/use-permissions';
 import { useStreaming } from '@/features/chat/hooks/use-streaming';
+import {
+  setPendingFirstMessage,
+  takePendingFirstMessage,
+} from '@/features/chat/lib/pending-first-message';
 import type { Conversation, Message } from '@/types';
 
 const EMPTY_MESSAGES: Message[] = [];
@@ -112,6 +116,19 @@ export function useChatSession({
     [startStreaming]
   );
 
+  // First-message handoff (issue #397): when this conversation page mounts right
+  // after being created on /chat, send the stashed question once. takePending…
+  // clears it, so StrictMode's double-invoke can't double-send.
+  useEffect(() => {
+    if (!conversation?.id) return;
+    const handoff = takePendingFirstMessage(conversation.id);
+    if (handoff) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      handleSendWithConversation(handoff.question, conversation.id, handoff.workspaceId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversation?.id]);
+
   const createConversationMutation = useMutation({
     mutationFn: async (question: string) => {
       if (!activeWorkspace) {
@@ -127,11 +144,18 @@ export function useChatSession({
     onSuccess: (newConversation) => {
       if (!newConversation) return;
 
-      onConversationCreated?.(newConversation);
+      // Stash the question BEFORE navigating: onConversationCreated unmounts this
+      // page, so sending here would abort the stream. The destination conversation
+      // page picks it up on mount and sends it (issue #397).
       if (pendingQuestion) {
-        handleSendWithConversation(pendingQuestion, newConversation.id, activeWorkspace?.id ?? null);
+        setPendingFirstMessage({
+          conversationId: newConversation.id,
+          question: pendingQuestion,
+          workspaceId: activeWorkspace?.id ?? null,
+        });
         setPendingQuestion(null);
       }
+      onConversationCreated?.(newConversation);
     },
     onError: () => {
       toast.error('Failed to create conversation');

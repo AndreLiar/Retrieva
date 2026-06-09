@@ -1,6 +1,6 @@
 import { QdrantVectorStore } from '@langchain/qdrant';
 import { QdrantClient } from '@qdrant/js-client-rest';
-import { randomUUID } from 'crypto';
+import { randomUUID, createHash } from 'crypto';
 import {
   embeddings,
   BATCH_CONFIG,
@@ -341,5 +341,103 @@ export async function getIndexStats() {
   } catch (error) {
     logger.error('Failed to get index stats', { error: error.message });
     return null;
+  }
+}
+
+// Remove lone Unicode surrogates that break JSON encoding (shared by upserts).
+function sanitizeText(text) {
+  if (typeof text !== 'string') return text;
+  return text.replace(
+    /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g,
+    '�'
+  );
+}
+
+// Deterministic UUID from a stable key → re-indexing the same chunk overwrites
+// instead of duplicating.
+function deterministicPointId(key) {
+  const h = createHash('sha256').update(key).digest('hex');
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20, 32)}`;
+}
+
+/**
+ * Dual-write (issue #394): upsert already-embedded assessment chunks into the
+ * SHARED workspace collection so the chat — which is tenant-filtered on
+ * `metadata.workspaceId` — can retrieve documents indexed during an assessment.
+ * Reuses the vectors (no re-embedding); deterministic IDs make it idempotent.
+ *
+ * @param {object} params
+ * @param {string[]} params.chunks  - Chunk texts (same order as vectors)
+ * @param {number[][]} params.vectors - Embeddings for each chunk
+ * @param {object} params.metadata - Must include workspaceId, assessmentId, fileName
+ * @returns {Promise<{ upserted: number }>}
+ */
+/**
+ * Pure helper: build the Qdrant points for the workspace collection. Exported so
+ * the payload shape + deterministic ids can be unit-tested without a live client.
+ * Returns [] when nothing should be written (missing chunks/vectors/workspaceId).
+ */
+export function buildWorkspacePoints({ chunks, vectors, metadata }) {
+  if (!chunks?.length || !vectors?.length || !metadata?.workspaceId) return [];
+  return chunks.map((chunk, i) => ({
+    id: deterministicPointId(
+      `${metadata.workspaceId}:${metadata.assessmentId}:${metadata.fileName}:${i}`
+    ),
+    vector: vectors[i],
+    payload: {
+      pageContent: sanitizeText(chunk),
+      metadata: { ...metadata, chunkIndex: i },
+    },
+  }));
+}
+
+export async function upsertChunksToWorkspaceCollection({ chunks, vectors, metadata }) {
+  const points = buildWorkspacePoints({ chunks, vectors, metadata });
+  if (points.length === 0) {
+    return { upserted: 0 };
+  }
+
+  const client = getQdrantClient();
+  await ensureCollection(client, points[0].vector.length);
+
+  const BATCH_SIZE = 100;
+  for (let i = 0; i < points.length; i += BATCH_SIZE) {
+    await client.upsert(COLLECTION_NAME, {
+      wait: true,
+      points: points.slice(i, i + BATCH_SIZE),
+    });
+  }
+
+  logger.info('Dual-write to workspace collection complete', {
+    service: 'vector-store',
+    workspaceId: metadata.workspaceId,
+    assessmentId: metadata.assessmentId,
+    upserted: points.length,
+  });
+
+  return { upserted: points.length };
+}
+
+/**
+ * Remove an assessment's chunks from the shared workspace collection — called on
+ * assessment deletion so the chat doesn't keep retrieving deleted documents.
+ * Best-effort; never throws into the delete flow.
+ */
+export async function deleteAssessmentChunksFromWorkspace(assessmentId) {
+  if (!assessmentId) return;
+  try {
+    const client = getQdrantClient();
+    await client.delete(COLLECTION_NAME, {
+      wait: true,
+      filter: {
+        must: [{ key: 'metadata.assessmentId', match: { value: assessmentId } }],
+      },
+    });
+  } catch (error) {
+    logger.warn('Failed to delete assessment chunks from workspace collection', {
+      service: 'vector-store',
+      assessmentId,
+      error: error.message,
+    });
   }
 }

@@ -17,6 +17,7 @@ export function AuthProvider({
   authResolved = false,
 }: AuthProviderProps) {
   const isInitialized = useAuthStore((state) => state.isInitialized);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const setUser = useAuthStore((state) => state.setUser);
   const clearSession = useAuthStore((state) => state.clearSession);
   const setLoading = useAuthStore((state) => state.setLoading);
@@ -71,6 +72,24 @@ export function AuthProvider({
     setLoading,
     setInitialized,
   ]);
+
+  // Proactive silent refresh: while authenticated, renew the 15-min access token
+  // a couple of minutes before it expires so the session never breaks mid-use.
+  // The httpOnly cookies are renewed server-side; on failure (e.g. refresh token
+  // expired) the next request's 401 handler clears the session.
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const REFRESH_INTERVAL_MS = 13 * 60 * 1000; // < 15-min access-token TTL
+
+    const intervalId = setInterval(() => {
+      void authApi.refreshToken().catch(() => {
+        // Swallow: the axios 401 interceptor / AuthProvider handles real expiry.
+      });
+    }, REFRESH_INTERVAL_MS);
+
+    return () => clearInterval(intervalId);
+  }, [isAuthenticated]);
 
   return <>{children}</>;
 }

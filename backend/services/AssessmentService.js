@@ -20,6 +20,14 @@ class AssessmentService {
     this.storage = deps.storage || storageModule;
     this.generateReport = deps.generateReport || generateReport;
     this.deleteAssessmentCollection = deps.deleteAssessmentCollection || deleteAssessmentCollection;
+    // Lazy default: only pull in the heavy vectorStore module when actually
+    // deleting (keeps it out of the app's eager import graph).
+    this.deleteAssessmentChunksFromWorkspace =
+      deps.deleteAssessmentChunksFromWorkspace ||
+      (async (assessmentId) => {
+        const { deleteAssessmentChunksFromWorkspace } = await import('../config/vectorStore.js');
+        return deleteAssessmentChunksFromWorkspace(assessmentId);
+      });
     this.logger = deps.logger || logger;
   }
 
@@ -335,6 +343,15 @@ class AssessmentService {
 
     Promise.resolve(this.deleteAssessmentCollection(id)).catch((err) =>
       this.logger.warn('Failed to delete assessment Qdrant collection', {
+        assessmentId: id,
+        error: err?.message,
+      })
+    );
+
+    // Also purge this assessment's chunks from the shared workspace collection
+    // (issue #394 dual-write) so the chat no longer retrieves deleted documents.
+    Promise.resolve(this.deleteAssessmentChunksFromWorkspace(id)).catch((err) =>
+      this.logger.warn('Failed to delete assessment chunks from workspace collection', {
         assessmentId: id,
         error: err?.message,
       })

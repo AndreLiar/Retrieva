@@ -33,8 +33,12 @@ function decodeJWTPayload(token: string): { role?: string; exp?: number } | null
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Get access token from cookie
+  // Get tokens from cookies. The access token cookie lives 15 min; the refresh
+  // token cookie lives 7 days. A present refresh token means the client can
+  // silently mint a new access token — so an expired access token must NOT bounce
+  // the user to login.
   const accessToken = request.cookies.get('accessToken')?.value;
+  const refreshToken = request.cookies.get('refreshToken')?.value;
 
   // Check if path is public (exact match for '/', startsWith for others)
   const isPublicPath = pathname === '/' || publicPaths.some((path) => pathname.startsWith(path));
@@ -55,8 +59,11 @@ export function proxy(request: NextRequest) {
     }
   }
 
-  // If protected path and user is not authenticated, redirect to login
-  if (!isPublicPath && !accessToken) {
+  // If protected path and the user has NO way to authenticate (neither a valid
+  // access token nor a refresh token), redirect to login. When only the access
+  // token is gone but a refresh token survives, let the request through — the
+  // client's AuthProvider / axios interceptor will refresh transparently.
+  if (!isPublicPath && !accessToken && !refreshToken) {
     const loginUrl = new URL('/login', request.url);
     // Store the original URL to redirect back after login
     loginUrl.searchParams.set('callbackUrl', pathname);
