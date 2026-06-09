@@ -93,6 +93,57 @@ test.describe('Chat page — with workspace', () => {
     // After conversation creation, should redirect to /conversations/<id>
     await expect(page).toHaveURL(/\/conversations\//);
   });
+
+  test('sends the first message after creating the conversation (#397)', async ({ page }) => {
+    await page.route('**/api/v1/conversations', async (route) => {
+      if (route.request().method() === 'POST') {
+        await route.fulfill({
+          status: 201,
+          contentType: 'application/json',
+          body: JSON.stringify({ status: 'success', data: { conversation: MOCK_CONVERSATION } }),
+        });
+      } else {
+        await route.continue();
+      }
+    });
+
+    // The destination conversation page loads the (empty) new conversation.
+    await page.route(`**/api/v1/conversations/${MOCK_CONVERSATION.id}`, (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          status: 'success',
+          data: { conversation: MOCK_CONVERSATION, messages: [] },
+        }),
+      })
+    );
+
+    // Capture the question + the page that fired the stream request.
+    let streamedBody: string | null = null;
+    let streamedFromUrl: string | null = null;
+    await page.route('**/api/v1/rag/stream', async (route) => {
+      streamedBody = route.request().postData();
+      streamedFromUrl = route.request().frame().url();
+      await route.fulfill({
+        status: 200,
+        contentType: 'text/event-stream',
+        body: 'data: {"type":"done"}\n\n',
+      });
+    });
+
+    await page.goto('/chat');
+    const chatInput = page.getByRole('textbox').first();
+    await chatInput.fill('What are the DORA requirements?');
+    await chatInput.press('Enter');
+
+    await expect(page).toHaveURL(/\/conversations\//);
+    // The bug (#397): the first message was sent from the blank /chat page, which
+    // then unmounted on navigation and aborted the stream — so it was lost. With
+    // the fix the message is sent from the mounted /conversations/<id> page.
+    await expect.poll(() => streamedBody).toContain('DORA requirements');
+    await expect.poll(() => streamedFromUrl).toContain('/conversations/');
+  });
 });
 
 test.describe('Conversations list page', () => {
