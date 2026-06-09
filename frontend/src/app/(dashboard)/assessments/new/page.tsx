@@ -7,7 +7,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Loader2, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Loader2, RotateCcw, FileText, AlertTriangle, Circle } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -36,6 +36,17 @@ type FormValues = z.infer<typeof schema>;
 interface FileWithId extends File {
   id: string;
 }
+
+// Document categories recommended per framework (i18n label keys live under
+// assessments.form.recommendedDocs.<dora|a30>.<key>). Guidance only — the gate
+// is soft: the user can proceed with fewer.
+const RECOMMENDED_DOC_KEYS: Record<'DORA' | 'CONTRACT_A30', string[]> = {
+  DORA: ['iso27001', 'soc2', 'securityPolicy', 'bcp', 'dpa'],
+  CONTRACT_A30: ['contract', 'sla', 'subprocessors', 'exit', 'security'],
+};
+
+// Below this many uploaded documents, the analysis is likely incomplete.
+const MIN_RECOMMENDED_DOCS = 2;
 
 function buildAssessmentName(
   vendor: string,
@@ -242,6 +253,38 @@ export default function NewAssessmentPage() {
               <p className="text-xs text-destructive">
                 {t('assessments.form.uploadAtLeastOne')}
               </p>
+            )}
+          </div>
+
+          {/* Recommended documents checklist (soft guidance — does not block) */}
+          <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="flex items-center gap-2 text-sm font-medium">
+                <FileText className="h-4 w-4" />
+                {t('assessments.form.recommendedDocs.title')}
+              </p>
+              <span className="text-xs text-muted-foreground">
+                {t('assessments.form.recommendedDocs.uploaded', { count: files.length })}
+              </span>
+            </div>
+            <ul className="grid gap-1.5 text-sm text-muted-foreground sm:grid-cols-2">
+              {RECOMMENDED_DOC_KEYS[framework].map((key) => (
+                <li key={key} className="flex items-center gap-2">
+                  <Circle className="h-2.5 w-2.5 shrink-0" />
+                  {t(
+                    `assessments.form.recommendedDocs.${framework === 'CONTRACT_A30' ? 'a30' : 'dora'}.${key}`,
+                  )}
+                </li>
+              ))}
+            </ul>
+            <p className="text-xs text-muted-foreground">
+              {t('assessments.form.recommendedDocs.note')}
+            </p>
+            {files.length >= 1 && files.length < MIN_RECOMMENDED_DOCS && (
+              <div className="flex gap-2 rounded-md border border-warning/30 bg-warning/10 p-3 text-xs text-warning">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                <span>{t('assessments.form.recommendedDocs.warning')}</span>
+              </div>
             )}
           </div>
 

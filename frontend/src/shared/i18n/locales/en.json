@@ -487,7 +487,27 @@
       "uploadAtLeastOne": "Please upload at least one document.",
       "start": "Start Assessment",
       "uploading": "Uploading…",
-      "toastCreated": "Assessment created — indexing documents…"
+      "toastCreated": "Assessment created — indexing documents…",
+      "recommendedDocs": {
+        "title": "Recommended documents",
+        "note": "Recommended for a thorough analysis. You can proceed with fewer — the analysis confidence will be lower.",
+        "uploaded": "{{count}} uploaded",
+        "warning": "You're starting with very few documents. A thorough analysis usually needs several — the result may be incomplete. Consider adding the recommended documents above.",
+        "dora": {
+          "iso27001": "ISO 27001 certificate",
+          "soc2": "SOC 2 / SOC 3 report",
+          "securityPolicy": "Security policy / whitepaper",
+          "bcp": "Business continuity / DR plan",
+          "dpa": "Data processing agreement (GDPR)"
+        },
+        "a30": {
+          "contract": "ICT services contract / MSA",
+          "sla": "SLA annex",
+          "subprocessors": "Subcontractor list",
+          "exit": "Exit / termination annex",
+          "security": "Security annex"
+        }
+      }
     },
     "detail": {
       "back": "Assessments",
