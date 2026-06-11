@@ -34,10 +34,23 @@ class AssessmentService {
   async createAssessment(userId, organizationId, data, files) {
     const { name, vendorName, framework = 'DORA', workspaceId } = data;
 
-    const documents = files.map((f) => ({
+    // Categories the uploader tagged, one per file in order (#395). Best-effort:
+    // bad/absent JSON just leaves documents untagged.
+    let categories = [];
+    if (data.categories) {
+      try {
+        const parsed = JSON.parse(data.categories);
+        if (Array.isArray(parsed)) categories = parsed;
+      } catch {
+        categories = [];
+      }
+    }
+
+    const documents = files.map((f, i) => ({
       fileName: f.originalname,
       fileType: path.extname(f.originalname).replace('.', '').toLowerCase(),
       fileSize: f.size,
+      category: typeof categories[i] === 'string' ? categories[i] : null,
       status: 'uploading',
     }));
 

@@ -493,6 +493,11 @@
         "note": "Recommandés pour une analyse complète. Vous pouvez continuer avec moins — la confiance de l'analyse sera réduite.",
         "uploaded": "{{count}} téléversé(s)",
         "warning": "Vous démarrez avec très peu de documents. Une analyse complète en nécessite généralement plusieurs — le résultat peut être incomplet. Pensez à ajouter les documents recommandés ci-dessus.",
+        "tagPrompt": "Taguez chaque document pour suivre la couverture.",
+        "categoryPlaceholder": "Type de document…",
+        "other": "Autre / non listé",
+        "coverage": "{{covered}} sur {{total}} types recommandés tagués",
+        "missingWarning": "Pas encore fournis : {{list}}. Vous pouvez quand même démarrer — le rapport signalera une confiance réduite.",
         "dora": {
           "iso27001": "Certificat ISO 27001",
           "soc2": "Rapport SOC 2 / SOC 3",

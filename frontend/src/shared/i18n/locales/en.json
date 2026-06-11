@@ -493,6 +493,11 @@
         "note": "Recommended for a thorough analysis. You can proceed with fewer — the analysis confidence will be lower.",
         "uploaded": "{{count}} uploaded",
         "warning": "You're starting with very few documents. A thorough analysis usually needs several — the result may be incomplete. Consider adding the recommended documents above.",
+        "tagPrompt": "Tag each document so coverage can be tracked.",
+        "categoryPlaceholder": "Document type…",
+        "other": "Other / not listed",
+        "coverage": "{{covered}} of {{total}} recommended types tagged",
+        "missingWarning": "Not yet provided: {{list}}. You can still start — the report will flag reduced confidence.",
         "dora": {
           "iso27001": "ISO 27001 certificate",
           "soc2": "SOC 2 / SOC 3 report",
