@@ -49,6 +49,9 @@ const documentSchema = new mongoose.Schema(
     fileName: { type: String, required: true },
     fileType: { type: String, enum: ['pdf', 'xlsx', 'docx', 'xls'], required: true },
     fileSize: { type: Number }, // bytes
+    // Document category the uploader tagged (issue #395): drives completeness +
+    // the "missing evidence" report caveat. Free-form; null when untagged.
+    category: { type: String, default: null },
     qdrantCollectionId: { type: String }, // per-assessment collection
     uploadedAt: { type: Date, default: Date.now },
     status: {

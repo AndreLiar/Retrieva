@@ -397,6 +397,8 @@ export const createAssessmentSchema = z
       .trim(),
     framework: z.enum(['DORA', 'CONTRACT_A30']).default('DORA'),
     workspaceId: mongoIdSchema,
+    // JSON-encoded array of category keys, one per uploaded file in order (#395).
+    categories: z.string().optional(),
   })
   .strict();
 
