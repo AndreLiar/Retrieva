@@ -7,7 +7,15 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Loader2, RotateCcw, FileText, AlertTriangle, Circle } from 'lucide-react';
+import {
+  ArrowLeft,
+  Loader2,
+  RotateCcw,
+  FileText,
+  AlertTriangle,
+  Circle,
+  CheckCircle2,
+} from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -35,18 +43,16 @@ type FormValues = z.infer<typeof schema>;
 
 interface FileWithId extends File {
   id: string;
+  category?: string;
 }
 
 // Document categories recommended per framework (i18n label keys live under
-// assessments.form.recommendedDocs.<dora|a30>.<key>). Guidance only — the gate
-// is soft: the user can proceed with fewer.
+// assessments.form.recommendedDocs.<dora|a30>.<key>). Drives the coverage tracker
+// + the report's "missing evidence" caveat. Gate stays soft.
 const RECOMMENDED_DOC_KEYS: Record<'DORA' | 'CONTRACT_A30', string[]> = {
   DORA: ['iso27001', 'soc2', 'securityPolicy', 'bcp', 'dpa'],
   CONTRACT_A30: ['contract', 'sla', 'subprocessors', 'exit', 'security'],
 };
-
-// Below this many uploaded documents, the analysis is likely incomplete.
-const MIN_RECOMMENDED_DOCS = 2;
 
 function buildAssessmentName(
   vendor: string,
@@ -108,6 +114,8 @@ export default function NewAssessmentPage() {
       formData.append('framework', framework);
       if (activeWorkspace?.id) formData.append('workspaceId', activeWorkspace.id);
       files.forEach((file) => formData.append('files', file));
+      // Categories aligned to files by order (issue #395).
+      formData.append('categories', JSON.stringify(files.map((f) => f.category ?? 'other')));
       return assessmentsApi.create(formData);
     },
     onSuccess: (res) => {
@@ -127,6 +135,22 @@ export default function NewAssessmentPage() {
       </div>
     );
   }
+
+  // Category tagging + coverage (issue #395).
+  const fwKey = framework === 'CONTRACT_A30' ? 'a30' : 'dora';
+  const recommendedKeys = RECOMMENDED_DOC_KEYS[framework];
+  const categoryOptions = [
+    ...recommendedKeys.map((key) => ({
+      value: key,
+      label: t(`assessments.form.recommendedDocs.${fwKey}.${key}`),
+    })),
+    { value: 'other', label: t('assessments.form.recommendedDocs.other') },
+  ];
+  const taggedCategories = new Set(
+    files.map((f) => f.category).filter((c): c is string => !!c && c !== 'other')
+  );
+  const missingKeys = recommendedKeys.filter((k) => !taggedCategories.has(k));
+  const coveredCount = recommendedKeys.length - missingKeys.length;
 
   return (
     <div className="p-6 max-w-2xl mx-auto space-y-6">
@@ -248,7 +272,7 @@ export default function NewAssessmentPage() {
                 ? t('assessments.form.docsA30')
                 : t('assessments.form.docsDora')}
             </p>
-            <FileUploadZone files={files} onChange={setFiles} />
+            <FileUploadZone files={files} onChange={setFiles} categories={categoryOptions} />
             {files.length === 0 && createMutation.isError && (
               <p className="text-xs text-destructive">
                 {t('assessments.form.uploadAtLeastOne')}
@@ -256,7 +280,7 @@ export default function NewAssessmentPage() {
             )}
           </div>
 
-          {/* Recommended documents checklist (soft guidance — does not block) */}
+          {/* Recommended documents coverage (soft guidance — does not block) */}
           <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
             <div className="flex items-center justify-between">
               <p className="flex items-center gap-2 text-sm font-medium">
@@ -264,26 +288,43 @@ export default function NewAssessmentPage() {
                 {t('assessments.form.recommendedDocs.title')}
               </p>
               <span className="text-xs text-muted-foreground">
-                {t('assessments.form.recommendedDocs.uploaded', { count: files.length })}
+                {t('assessments.form.recommendedDocs.coverage', {
+                  covered: coveredCount,
+                  total: recommendedKeys.length,
+                })}
               </span>
             </div>
-            <ul className="grid gap-1.5 text-sm text-muted-foreground sm:grid-cols-2">
-              {RECOMMENDED_DOC_KEYS[framework].map((key) => (
-                <li key={key} className="flex items-center gap-2">
-                  <Circle className="h-2.5 w-2.5 shrink-0" />
-                  {t(
-                    `assessments.form.recommendedDocs.${framework === 'CONTRACT_A30' ? 'a30' : 'dora'}.${key}`,
-                  )}
-                </li>
-              ))}
+            <ul className="grid gap-1.5 text-sm sm:grid-cols-2">
+              {recommendedKeys.map((key) => {
+                const covered = taggedCategories.has(key);
+                return (
+                  <li
+                    key={key}
+                    className={`flex items-center gap-2 ${covered ? 'text-foreground' : 'text-muted-foreground'}`}
+                  >
+                    {covered ? (
+                      <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-success" />
+                    ) : (
+                      <Circle className="h-2.5 w-2.5 shrink-0" />
+                    )}
+                    {t(`assessments.form.recommendedDocs.${fwKey}.${key}`)}
+                  </li>
+                );
+              })}
             </ul>
             <p className="text-xs text-muted-foreground">
-              {t('assessments.form.recommendedDocs.note')}
+              {t('assessments.form.recommendedDocs.tagPrompt')}
             </p>
-            {files.length >= 1 && files.length < MIN_RECOMMENDED_DOCS && (
+            {files.length >= 1 && missingKeys.length > 0 && (
               <div className="flex gap-2 rounded-md border border-warning/30 bg-warning/10 p-3 text-xs text-warning">
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-                <span>{t('assessments.form.recommendedDocs.warning')}</span>
+                <span>
+                  {t('assessments.form.recommendedDocs.missingWarning', {
+                    list: missingKeys
+                      .map((k) => t(`assessments.form.recommendedDocs.${fwKey}.${k}`))
+                      .join(', '),
+                  })}
+                </span>
               </div>
             )}
           </div>

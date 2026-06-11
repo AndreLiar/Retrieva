@@ -19,11 +19,19 @@ const MAX_FILES = 5;
 
 interface FileWithPreview extends File {
   id: string;
+  category?: string;
+}
+
+interface CategoryOption {
+  value: string;
+  label: string;
 }
 
 interface FileUploadZoneProps {
   files: FileWithPreview[];
   onChange: (files: FileWithPreview[]) => void;
+  // When provided, each file row shows a category dropdown (issue #395 tagging).
+  categories?: CategoryOption[];
 }
 
 function FileIcon({ name }: { name: string }) {
@@ -39,8 +47,12 @@ function formatSize(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export function FileUploadZone({ files, onChange }: FileUploadZoneProps) {
+export function FileUploadZone({ files, onChange, categories }: FileUploadZoneProps) {
   const { t } = useTranslation();
+
+  const setCategory = (id: string, category: string) => {
+    onChange(files.map((f) => (f.id === id ? Object.assign(f, { category }) : f)));
+  };
   const onDrop = useCallback(
     (accepted: File[]) => {
       const withId = accepted.map((f) =>
@@ -115,6 +127,23 @@ export function FileUploadZone({ files, onChange }: FileUploadZoneProps) {
                 <p className="truncate font-medium">{file.name}</p>
                 <p className="text-xs text-muted-foreground">{formatSize(file.size)}</p>
               </div>
+              {categories && categories.length > 0 && (
+                <select
+                  value={file.category ?? ''}
+                  onChange={(e) => setCategory(file.id, e.target.value)}
+                  aria-label={t('assessments.form.recommendedDocs.categoryPlaceholder')}
+                  className="shrink-0 max-w-[45%] rounded-md border bg-background px-2 py-1 text-xs"
+                >
+                  <option value="">
+                    {t('assessments.form.recommendedDocs.categoryPlaceholder')}
+                  </option>
+                  {categories.map((c) => (
+                    <option key={c.value} value={c.value}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
+              )}
               <Button
                 type="button"
                 variant="ghost"
