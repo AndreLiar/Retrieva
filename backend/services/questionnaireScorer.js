@@ -1,8 +1,10 @@
 /**
  * Questionnaire Scorer Service
  *
- * Uses gpt-4o-mini (via createLLM) to score each vendor answer independently
- * in parallel, then generates an executive summary across all Q&A pairs.
+ * Scores each vendor answer independently in parallel via createLLM (the
+ * configured provider/model — see config/llmProvider.js; no purpose is set, so
+ * it uses the global default), then generates an executive summary across all
+ * Q&A pairs.
  */
 
 import { createLLM } from '../config/llmProvider.js';

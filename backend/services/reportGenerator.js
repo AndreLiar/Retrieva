@@ -500,8 +500,8 @@ function buildMethodology(assessment) {
     heading2('Assessment Methodology'),
     para(
       assessment.framework === 'CONTRACT_A30'
-        ? 'The uploaded contract was parsed and semantically indexed. Relevant clauses were extracted using vector similarity search across 12 targeted Article 30 compliance queries. Gap assessment was performed using Azure OpenAI (gpt-4o-mini) to produce a structured, auditable clause-by-clause review.'
-        : 'Vendor documentation was parsed and semantically indexed. Relevant content was extracted using vector similarity search across multiple compliance-focused query prompts. DORA obligations were retrieved from a pre-loaded regulatory knowledge base containing verbatim article texts. Gap assessment was performed using Azure OpenAI (gpt-4o-mini) function calling to produce structured, auditable output.',
+        ? 'The uploaded contract was parsed and semantically indexed. Relevant clauses were extracted using vector similarity search across targeted Article 30 compliance queries. Gap assessment was performed by a large language model to produce a structured, auditable clause-by-clause review.'
+        : 'Vendor documentation was parsed and semantically indexed. Relevant content was extracted using vector similarity search across multiple compliance-focused query prompts. DORA obligations were retrieved from a pre-loaded regulatory knowledge base containing verbatim article texts. Gap assessment was performed by a large language model to produce structured, auditable output.',
       { color: COLOUR.text }
     ),
     heading2('Source Documents Analysed'),
