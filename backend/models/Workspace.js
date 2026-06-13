@@ -47,7 +47,13 @@ const workspaceSchema = new mongoose.Schema(
     contractStart: { type: Date, default: null },
     contractEnd: { type: Date, default: null },
     nextReviewDate: { type: Date, default: null },
-    vendorStatus: { type: String, enum: ['active', 'under-review', 'exited'], default: 'active' },
+    // New vendors start under review (due-diligence / pre-signature) and move to
+    // 'active' once their contract is signed (issue #409).
+    vendorStatus: {
+      type: String,
+      enum: ['active', 'under-review', 'exited'],
+      default: 'under-review',
+    },
     certifications: [certificationSchema],
     vendorFunctions: {
       type: [
