@@ -236,6 +236,9 @@ export function WorkspaceSettingsForm({
                       <FormControl>
                         <Input type="date" {...field} />
                       </FormControl>
+                      <FormDescription>
+                        {t('workspaces.settingsForm.contractDatesHelp')}
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
