@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   buildWorkspacePoints,
   deleteAssessmentChunksFromWorkspace,
+  deleteWorkspaceChunks,
 } from '../../config/vectorStore.js';
 
 /**
@@ -75,5 +76,10 @@ describe('vectorStore dual-write (#394)', () => {
   it('deleteAssessmentChunksFromWorkspace is best-effort (never throws)', async () => {
     // No Qdrant in unit tests → the internal client call fails and is swallowed.
     await expect(deleteAssessmentChunksFromWorkspace('a1')).resolves.toBeUndefined();
+  });
+
+  it('deleteWorkspaceChunks is best-effort (never throws) and no-ops without id (#417)', async () => {
+    await expect(deleteWorkspaceChunks('ws1')).resolves.toBeUndefined();
+    await expect(deleteWorkspaceChunks(undefined)).resolves.toBeUndefined();
   });
 });
