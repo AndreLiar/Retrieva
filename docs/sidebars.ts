@@ -16,6 +16,7 @@ const sidebars: SidebarsConfig = {
         'architecture/semantic-chunking',
         'architecture/multi-tenancy',
         'architecture/llm-model-selection',
+        'architecture/ai-infrastructure',
       ],
     },
     {
