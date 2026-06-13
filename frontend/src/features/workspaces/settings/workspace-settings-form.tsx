@@ -34,6 +34,7 @@ import { Input } from '@/shared/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select';
 import { Skeleton } from '@/shared/ui/skeleton';
 import { Textarea } from '@/shared/ui/textarea';
+import { COUNTRIES } from '@/shared/constants/countries';
 import { destructiveActionClasses } from '@/shared/styles/status-colors';
 import type { VendorQuestionnaire } from '@/features/questionnaires/api/questionnaires';
 import type { WorkspaceWithMembership } from '@/types';
@@ -194,9 +195,22 @@ export function WorkspaceSettingsForm({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>{t('workspaces.settingsForm.country')}</FormLabel>
-                      <FormControl>
-                        <Input placeholder={t('workspaces.settingsForm.countryPlaceholder')} {...field} />
-                      </FormControl>
+                      <Select onValueChange={field.onChange} value={field.value || ''}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue
+                              placeholder={t('workspaces.settingsForm.countryPlaceholder')}
+                            />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {COUNTRIES.map((c) => (
+                            <SelectItem key={c} value={c}>
+                              {c}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}

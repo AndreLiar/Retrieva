@@ -22,6 +22,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/shared/ui/input';
 import { Label } from '@/shared/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select';
+import { COUNTRIES } from '@/shared/constants/countries';
 import { workspacesApi } from '@/features/workspaces/api/workspaces';
 import { MODAL_IDS, useUIStore } from '@/state/ui-store';
 import type { VendorFunction, VendorServiceType, VendorTier } from '@/types';
@@ -377,13 +378,18 @@ export function CreateWorkspaceWizard() {
 
             <div className="space-y-1.5">
               <Label htmlFor="ws-country">{t('workspaces.wizard.country')}</Label>
-              <Input
-                id="ws-country"
-                placeholder={t('workspaces.wizard.countryPlaceholder')}
-                value={country}
-                autoFocus
-                onChange={(event) => setCountry(event.target.value)}
-              />
+              <Select value={country} onValueChange={setCountry}>
+                <SelectTrigger id="ws-country">
+                  <SelectValue placeholder={t('workspaces.wizard.countryPlaceholder')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {COUNTRIES.map((c) => (
+                    <SelectItem key={c} value={c}>
+                      {c}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
