@@ -441,3 +441,27 @@ export async function deleteAssessmentChunksFromWorkspace(assessmentId) {
     });
   }
 }
+
+/**
+ * Purge ALL chunks of a workspace from the shared collection — called when a
+ * vendor workspace is deleted so its indexed documents don't linger (#417,
+ * GDPR erasure / clean offboarding). Best-effort; never throws into the caller.
+ */
+export async function deleteWorkspaceChunks(workspaceId) {
+  if (!workspaceId) return;
+  try {
+    const client = getQdrantClient();
+    await client.delete(COLLECTION_NAME, {
+      wait: true,
+      filter: {
+        must: [{ key: 'metadata.workspaceId', match: { value: String(workspaceId) } }],
+      },
+    });
+  } catch (error) {
+    logger.warn('Failed to delete workspace chunks from collection', {
+      service: 'vector-store',
+      workspaceId,
+      error: error.message,
+    });
+  }
+}

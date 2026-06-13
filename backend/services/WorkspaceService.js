@@ -3,6 +3,12 @@ import { Workspace } from '../models/Workspace.js';
 import { WorkspaceMember } from '../models/WorkspaceMember.js';
 import { OrganizationMember } from '../models/OrganizationMember.js';
 import { User } from '../models/User.js';
+import { Assessment } from '../models/Assessment.js';
+import { Conversation } from '../models/Conversation.js';
+import { Message } from '../models/Message.js';
+import { VendorQuestionnaire } from '../models/VendorQuestionnaire.js';
+import { deleteAssessmentCollection } from './fileIngestionService.js';
+import * as storageModule from '../config/storage.js';
 import logger from '../config/logger.js';
 import { emailService } from './emailService.js';
 
@@ -34,6 +40,12 @@ class WorkspaceService {
     this.WorkspaceMember = deps.WorkspaceMember || WorkspaceMember;
     this.OrganizationMember = deps.OrganizationMember || OrganizationMember;
     this.User = deps.User || User;
+    this.Assessment = deps.Assessment || Assessment;
+    this.Conversation = deps.Conversation || Conversation;
+    this.Message = deps.Message || Message;
+    this.VendorQuestionnaire = deps.VendorQuestionnaire || VendorQuestionnaire;
+    this.deleteAssessmentCollection = deps.deleteAssessmentCollection || deleteAssessmentCollection;
+    this.storage = deps.storage || storageModule;
     this.logger = deps.logger || logger;
     this.emailService = deps.emailService || emailService;
   }
@@ -155,10 +167,93 @@ class WorkspaceService {
     });
     if (!membership) throw new AppError('Only workspace owners can delete a workspace', 403);
 
+    // Cascade-purge the vendor's data BEFORE removing the workspace (#417):
+    // indexed vectors, per-assessment collections, files, and Mongo records.
+    await this._purgeWorkspaceData(workspaceId);
+
     await this.WorkspaceMember.deleteMany({ workspaceId });
     await this.Workspace.findByIdAndDelete(workspaceId);
 
     this.logger.info('Workspace deleted', { service: 'workspace', workspaceId });
+  }
+
+  /**
+   * Erase all data tied to a workspace (#417 — GDPR erasure / clean offboarding).
+   * Best-effort: each step is isolated so a single store being unavailable never
+   * blocks the workspace deletion. Runs without tenant context (deleteMany is not
+   * tenant-hooked; explicit workspaceId filters are authoritative).
+   */
+  async _purgeWorkspaceData(workspaceId) {
+    const wid = String(workspaceId);
+
+    // Gather assessments first — we need their ids (per-assessment Qdrant
+    // collections) and file keys before deleting the Mongo records.
+    let assessments = [];
+    try {
+      assessments = await this.Assessment.find({ workspaceId })
+        .select('_id documents.storageKey')
+        .lean();
+    } catch (err) {
+      this.logger.warn('Purge: failed to list assessments', {
+        workspaceId: wid,
+        error: err.message,
+      });
+    }
+
+    // 1. Qdrant: purge all of the workspace's chunks from the shared collection.
+    try {
+      const { deleteWorkspaceChunks } = await import('../config/vectorStore.js');
+      await deleteWorkspaceChunks(wid);
+    } catch (err) {
+      this.logger.warn('Purge: failed to delete workspace vectors', {
+        workspaceId: wid,
+        error: err.message,
+      });
+    }
+
+    // 2. Qdrant per-assessment collections + 3. stored files.
+    for (const a of assessments) {
+      try {
+        await this.deleteAssessmentCollection(String(a._id));
+      } catch (err) {
+        this.logger.warn('Purge: failed to delete assessment collection', {
+          assessmentId: String(a._id),
+          error: err.message,
+        });
+      }
+      for (const doc of a.documents || []) {
+        if (!doc?.storageKey) continue;
+        try {
+          await this.storage.deleteFile(doc.storageKey);
+        } catch (err) {
+          this.logger.warn('Purge: failed to delete file', {
+            key: doc.storageKey,
+            error: err.message,
+          });
+        }
+      }
+    }
+
+    // 4. Mongo cascade: messages (by conversation), conversations, questionnaires,
+    // assessments.
+    try {
+      const convs = await this.Conversation.find({ workspaceId }).select('_id').lean();
+      const convIds = convs.map((c) => c._id);
+      if (convIds.length) {
+        await this.Message.deleteMany({ conversationId: { $in: convIds } });
+      }
+      await this.Conversation.deleteMany({ workspaceId });
+      await this.VendorQuestionnaire.deleteMany({ workspaceId });
+      await this.Assessment.deleteMany({ workspaceId });
+    } catch (err) {
+      this.logger.warn('Purge: Mongo cascade failed', { workspaceId: wid, error: err.message });
+    }
+
+    this.logger.info('Workspace data purged', {
+      service: 'workspace',
+      workspaceId: wid,
+      assessments: assessments.length,
+    });
   }
 
   async getMyWorkspaces(userId) {

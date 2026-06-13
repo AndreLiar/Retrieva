@@ -15,6 +15,10 @@ vi.mock('../../config/logger.js', () => ({
 vi.mock('../../services/emailService.js', () => ({
   emailService: { sendWorkspaceInvitation: vi.fn().mockResolvedValue(undefined) },
 }));
+// Lazy-imported inside _purgeWorkspaceData (#417) — mock so it doesn't hit Qdrant.
+vi.mock('../../config/vectorStore.js', () => ({
+  deleteWorkspaceChunks: vi.fn().mockResolvedValue(undefined),
+}));
 
 // ---------------------------------------------------------------------------
 // Shared fixtures
@@ -83,11 +87,37 @@ function makeDeps(overrides = {}) {
     updateOne: vi.fn().mockReturnValue({ catch: vi.fn() }),
   };
 
+  // Cascade-purge deps (#417). find() is chainable: .select().lean() → result.
+  const chain = (result) => ({
+    select: vi.fn(() => ({ lean: vi.fn().mockResolvedValue(result) })),
+  });
+  const Assessment = {
+    find: vi.fn(() => chain([])),
+    deleteMany: vi.fn().mockResolvedValue(undefined),
+  };
+  const Conversation = {
+    find: vi.fn(() => chain([])),
+    deleteMany: vi.fn().mockResolvedValue(undefined),
+  };
+  const Message = { deleteMany: vi.fn().mockResolvedValue(undefined) };
+  const VendorQuestionnaire = { deleteMany: vi.fn().mockResolvedValue(undefined) };
+  const deleteAssessmentCollection = vi.fn().mockResolvedValue(undefined);
+  const storage = {
+    deleteFile: vi.fn().mockResolvedValue(undefined),
+    isStorageConfigured: vi.fn(() => false),
+  };
+
   return {
     Workspace,
     WorkspaceMember,
     OrganizationMember,
     User,
+    Assessment,
+    Conversation,
+    Message,
+    VendorQuestionnaire,
+    deleteAssessmentCollection,
+    storage,
     logger,
     emailService,
     ...overrides,
@@ -257,6 +287,42 @@ describe('WorkspaceService.deleteWorkspace', () => {
     await svc.deleteWorkspace(WS_ID, USER_ID);
 
     expect(deps.WorkspaceMember.deleteMany).toHaveBeenCalledWith({ workspaceId: WS_ID });
+    expect(deps.Workspace.findByIdAndDelete).toHaveBeenCalledWith(WS_ID);
+  });
+
+  it('cascade-purges all vendor data before deleting the workspace (#417)', async () => {
+    deps.WorkspaceMember.findOne.mockResolvedValue(makeOwnerMembership());
+    deps.Assessment.find.mockReturnValue({
+      select: () => ({
+        lean: () => Promise.resolve([{ _id: 'a1', documents: [{ storageKey: 'k1' }] }]),
+      }),
+    });
+    deps.Conversation.find.mockReturnValue({
+      select: () => ({ lean: () => Promise.resolve([{ _id: 'c1' }]) }),
+    });
+
+    await svc.deleteWorkspace(WS_ID, USER_ID);
+
+    // per-assessment Qdrant collection + stored file
+    expect(deps.deleteAssessmentCollection).toHaveBeenCalledWith('a1');
+    expect(deps.storage.deleteFile).toHaveBeenCalledWith('k1');
+    // Mongo cascade
+    expect(deps.Message.deleteMany).toHaveBeenCalledWith({ conversationId: { $in: ['c1'] } });
+    expect(deps.Conversation.deleteMany).toHaveBeenCalledWith({ workspaceId: WS_ID });
+    expect(deps.VendorQuestionnaire.deleteMany).toHaveBeenCalledWith({ workspaceId: WS_ID });
+    expect(deps.Assessment.deleteMany).toHaveBeenCalledWith({ workspaceId: WS_ID });
+    // workspace removed last
+    expect(deps.Workspace.findByIdAndDelete).toHaveBeenCalledWith(WS_ID);
+  });
+
+  it('still deletes the workspace if a purge step fails (best-effort)', async () => {
+    deps.WorkspaceMember.findOne.mockResolvedValue(makeOwnerMembership());
+    deps.Assessment.find.mockReturnValue({
+      select: () => ({ lean: () => Promise.reject(new Error('db down')) }),
+    });
+
+    await svc.deleteWorkspace(WS_ID, USER_ID);
+
     expect(deps.Workspace.findByIdAndDelete).toHaveBeenCalledWith(WS_ID);
   });
 });
