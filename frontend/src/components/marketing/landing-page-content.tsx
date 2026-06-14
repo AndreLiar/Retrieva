@@ -4,10 +4,12 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import {
+  AlertTriangle,
   ArrowRight,
   Bell,
   Bot,
   CheckCircle2,
+  ChevronDown,
   ClipboardCheck,
   Database,
   FileSearch,
@@ -16,7 +18,10 @@ import {
   Gauge,
   ListChecks,
   Lock,
+  ScrollText,
+  Server,
   ShieldCheck,
+  Sparkles,
   Upload,
 } from 'lucide-react';
 
@@ -87,6 +92,24 @@ export function LandingPageContent() {
 
       <VideoHero />
 
+      {/* Problem */}
+      <section className="bg-muted/50 py-24">
+        <div className="container mx-auto px-4 max-w-4xl text-center">
+          <h2 className="text-3xl font-bold mb-4">{t('landing.problem.heading')}</h2>
+          <p className="text-muted-foreground mb-12 text-lg">{t('landing.problem.subtitle')}</p>
+          <div className="grid sm:grid-cols-2 gap-6 text-left">
+            {['manual', 'slow', 'endless', 'accountable'].map((k) => (
+              <div key={k} className="flex gap-3 rounded-xl border bg-card p-5">
+                <AlertTriangle className="h-5 w-5 shrink-0 text-warning" />
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {t(`landing.problem.points.${k}`)}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section className="container mx-auto px-4 py-24">
         <h2 className="text-3xl font-bold text-center mb-12">{t('landing.featuresHeading')}</h2>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -135,6 +158,32 @@ export function LandingPageContent() {
             title={t('landing.features.security.title')}
             description={t('landing.features.security.desc')}
           />
+        </div>
+      </section>
+
+      {/* Differentiation */}
+      <section className="container mx-auto px-4 py-24">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl font-bold mb-4">{t('landing.differentiation.heading')}</h2>
+          <p className="text-muted-foreground text-lg">{t('landing.differentiation.subtitle')}</p>
+        </div>
+        <div className="grid md:grid-cols-3 gap-6">
+          {[
+            { k: 'grc', icon: <Database className="h-6 w-6" />, highlight: false },
+            { k: 'chatgpt', icon: <Bot className="h-6 w-6" />, highlight: false },
+            { k: 'retrieva', icon: <Sparkles className="h-6 w-6" />, highlight: true },
+          ].map(({ k, icon, highlight }) => (
+            <div
+              key={k}
+              className={`rounded-xl border p-6 ${highlight ? 'border-primary bg-primary/5' : 'bg-card'}`}
+            >
+              <div className={`mb-4 ${highlight ? 'text-primary' : 'text-muted-foreground'}`}>{icon}</div>
+              <h3 className="text-lg font-semibold mb-2">{t(`landing.differentiation.${k}.title`)}</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                {t(`landing.differentiation.${k}.desc`)}
+              </p>
+            </div>
+          ))}
         </div>
       </section>
 
@@ -228,7 +277,151 @@ export function LandingPageContent() {
         </div>
       </section>
 
+      {/* Regulatory credibility */}
+      <section className="container mx-auto px-4 py-24 max-w-3xl text-center">
+        <ScrollText className="mx-auto h-10 w-10 text-primary mb-4" />
+        <h2 className="text-3xl font-bold mb-4">{t('landing.credibility.heading')}</h2>
+        <p className="text-muted-foreground mb-10 text-lg">{t('landing.credibility.subtitle')}</p>
+        <ul className="space-y-4 text-left">
+          {['grounded', 'cited', 'signoff'].map((k) => (
+            <li key={k} className="flex gap-3 rounded-xl border bg-card p-5">
+              <CheckCircle2 className="h-5 w-5 shrink-0 text-success" />
+              <span className="text-sm text-muted-foreground leading-relaxed">
+                {t(`landing.credibility.points.${k}`)}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      {/* Security & data */}
+      <section className="bg-muted/50 py-24">
+        <div className="container mx-auto px-4 max-w-5xl">
+          <div className="text-center mb-12">
+            <ShieldCheck className="mx-auto h-10 w-10 text-primary mb-4" />
+            <h2 className="text-3xl font-bold mb-4">{t('landing.security.heading')}</h2>
+            <p className="text-muted-foreground text-lg">{t('landing.security.subtitle')}</p>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-6">
+            {[
+              { k: 'isolation', icon: <Lock className="h-5 w-5" /> },
+              { k: 'selfHosted', icon: <Server className="h-5 w-5" /> },
+              { k: 'encryption', icon: <ShieldCheck className="h-5 w-5" /> },
+              { k: 'erasure', icon: <Database className="h-5 w-5" /> },
+            ].map(({ k, icon }) => (
+              <div key={k} className="flex gap-3 rounded-xl border bg-card p-5">
+                <span className="text-primary shrink-0">{icon}</span>
+                <div>
+                  <h3 className="font-semibold text-sm mb-1">
+                    {t(`landing.security.points.${k}.title`)}
+                  </h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {t(`landing.security.points.${k}.desc`)}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <PricingSection />
+
+      {/* FAQ */}
+      <section className="container mx-auto px-4 py-24 max-w-3xl">
+        <h2 className="text-3xl font-bold text-center mb-12">{t('landing.faq.heading')}</h2>
+        <div className="space-y-3">
+          {['data', 'replace', 'frameworks', 'language', 'speed'].map((k) => (
+            <details key={k} className="group rounded-xl border bg-card p-5">
+              <summary className="flex cursor-pointer list-none items-center justify-between font-medium">
+                {t(`landing.faq.items.${k}.q`)}
+                <ChevronDown className="h-4 w-4 shrink-0 transition-transform group-open:rotate-180" />
+              </summary>
+              <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
+                {t(`landing.faq.items.${k}.a`)}
+              </p>
+            </details>
+          ))}
+        </div>
+      </section>
+
+      {/* Final CTA */}
+      <section className="container mx-auto px-4 pb-24">
+        <div className="rounded-2xl border bg-primary/5 p-12 text-center">
+          <h2 className="text-3xl font-bold mb-4">{t('landing.finalCta.heading')}</h2>
+          <p className="text-muted-foreground mb-8 text-lg max-w-2xl mx-auto">
+            {t('landing.finalCta.subtitle')}
+          </p>
+          <div className="flex flex-wrap justify-center gap-4">
+            <Link href="/register">
+              <Button size="lg">
+                {t('landing.finalCta.primary')}
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
+            <Link href="/login">
+              <Button size="lg" variant="outline">
+                {t('landing.finalCta.secondary')}
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t bg-muted/30">
+        <div className="container mx-auto px-4 py-12">
+          <div className="grid gap-8 md:grid-cols-4">
+            <div>
+              <div className="text-lg font-bold mb-2">Retrieva</div>
+              <p className="text-sm text-muted-foreground">{t('landing.footer.tagline')}</p>
+            </div>
+            <div>
+              <div className="font-semibold text-sm mb-3">{t('landing.footer.product')}</div>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li>
+                  <Link href="/register" className="hover:text-foreground">
+                    {t('landing.footer.getStarted')}
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/login" className="hover:text-foreground">
+                    {t('landing.footer.signin')}
+                  </Link>
+                </li>
+              </ul>
+            </div>
+            <div>
+              <div className="font-semibold text-sm mb-3">{t('landing.footer.resources')}</div>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li>
+                  <a
+                    href="https://andreliar.github.io/Retrieva/"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="hover:text-foreground"
+                  >
+                    {t('landing.footer.docs')}
+                  </a>
+                </li>
+              </ul>
+            </div>
+            <div>
+              <div className="font-semibold text-sm mb-3">{t('landing.footer.company')}</div>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li>
+                  <a href="mailto:contact@retrieva.online" className="hover:text-foreground">
+                    {t('landing.footer.contact')}
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div className="mt-10 border-t pt-6 text-center text-xs text-muted-foreground">
+            © {new Date().getFullYear()} Retrieva — {t('landing.footer.rights')}
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
