@@ -138,6 +138,7 @@ describe('Context Formatter', () => {
         title: 'Test Doc',
         content: 'Content',
         url: 'https://example.com/doc',
+        official: true,
         pageId: 'doc-123',
         score: 0.8567,
         // Extended metadata
@@ -185,6 +186,7 @@ describe('Context Formatter', () => {
         title: 'Untitled',
         content: 'Content',
         url: '',
+        official: true,
         pageId: null,
         score: null,
         // Extended metadata
@@ -231,6 +233,41 @@ describe('Context Formatter', () => {
     it('should handle empty array', () => {
       const result = formatSources([]);
       expect(result).toEqual([]);
+    });
+
+    // #424 — regulation chunks carry an explicit EUR-Lex `metadata.url` plus a
+    // category tag `metadata.source = 'regulation'`. The real link must win.
+    it('prefers metadata.url over the source category tag', () => {
+      const docs = [
+        {
+          pageContent: 'Regulation text',
+          metadata: {
+            documentTitle: 'DORA Article 28',
+            source: 'regulation',
+            url: 'https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32022R2554',
+          },
+        },
+      ];
+
+      const result = formatSources(docs);
+
+      expect(result[0].url).toBe(
+        'https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32022R2554'
+      );
+    });
+
+    // #424 — working French translation chunks are flagged official: false so
+    // the UI can label them; everything else stays official by default.
+    it('passes through official: false and defaults to true', () => {
+      const docs = [
+        { pageContent: 'fr', metadata: { documentTitle: 'DORA Art. 28', official: false } },
+        { pageContent: 'en', metadata: { documentTitle: 'DORA Art. 28' } },
+      ];
+
+      const result = formatSources(docs);
+
+      expect(result[0].official).toBe(false);
+      expect(result[1].official).toBe(true);
     });
   });
 

@@ -1,0 +1,1014 @@
+{
+  "version": "3.0",
+  "lang": "fr",
+  "official": false,
+  "translatedFrom": "en",
+  "translatedWith": "llm-working-translation",
+  "disclaimer": "Traduction de travail non-officielle générée automatiquement. Le texte officiel et faisant foi est la version française publiée sur EUR-Lex.",
+  "sourceUrl": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32022R2554",
+  "lastVerified": "2026-03-01",
+  "sources": [
+    "Regulation (EU) 2022/2554 (DORA) — EUR-Lex, entered into force 17 January 2025",
+    "Commission Delegated Regulation (EU) 2024/1774 — RTS on ICT Risk Management Framework (Art.15)",
+    "Commission Delegated Regulation (EU) 2024/1772 — RTS on Classification of Major ICT Incidents (Art.18)",
+    "EBA/ESMA/EIOPA ITS on Major Incident Reporting Templates and Timelines (Art.20)",
+    "Joint Committee Final Report JC 2023 86 — RTS on Threat-Led Penetration Testing (Art.26-27)",
+    "EBA Final Report EBA/RTS/2024/05 — RTS on ICT Third-Party Risk Management (Art.28-30)",
+    "EBA ITS on Register of Information (Art.28(3)) — EBA Master Template"
+  ],
+  "articles": [
+    {
+      "regulation": "DORA",
+      "article": "Article 1",
+      "title": "Objet",
+      "domain": "Dispositions générales",
+      "text": "Le présent règlement établit des exigences uniformes relatives à la sécurité des systèmes d'information et de réseau soutenant les processus métier des entités financières comme suit :\n\n(a) exigences applicables aux entités financières en relation avec :\n(i) la gestion des risques liés aux technologies de l'information et de la communication (TIC) ;\n(ii) la notification des incidents majeurs liés aux TIC et la notification, sur une base volontaire, des menaces cybernétiques significatives aux autorités compétentes ;\n(iii) la notification des incidents majeurs opérationnels ou de sécurité liés aux paiements aux autorités compétentes ;\n(iv) les tests de résilience opérationnelle numérique ;\n(v) le partage d'informations et d'intelligence en relation avec les menaces et les vulnérabilités cybernétiques ;\n(vi) les mesures pour une gestion saine du risque lié aux tiers prestataires de services TIC ;\n\n(b) exigences relatives aux arrangements contractuels entre les prestataires de services TIC tiers et les entités financières ;\n\n(c) règles relatives à l'établissement et à la conduite du cadre de surveillance des prestataires de services TIC tiers critiques lorsqu'ils fournissent des services aux entités financières ;\n\n(d) règles relatives à la coopération entre les autorités compétentes, ainsi que les règles relatives à la surveillance et à l'exécution par les autorités compétentes en relation avec tous les sujets couverts par le présent règlement.",
+      "obligations": [
+        "Se conformer aux exigences de gestion des risques TIC",
+        "Notifier les incidents majeurs liés aux TIC aux autorités compétentes",
+        "Notifier de manière volontaire les menaces cybernétiques significatives aux autorités compétentes",
+        "Notifier les incidents majeurs opérationnels ou de sécurité liés aux paiements",
+        "Réaliser des tests de résilience opérationnelle numérique",
+        "Participer au partage d'informations et d'intelligence sur les menaces cybernétiques",
+        "Gérer le risque lié aux tiers prestataires de services TIC conformément aux exigences prescrites",
+        "Garantir que les arrangements contractuels avec les prestataires de services TIC tiers sont conformes aux exigences réglementaires"
+      ]
+    },
+    {
+      "regulation": "DORA",
+      "article": "Article 2",
+      "title": "Champ d'application",
+      "domain": "Dispositions générales",
+      "text": "1. Le présent règlement s'applique aux entités suivantes :\n(a) les établissements de crédit ;\n(b) les établissements de paiement, y compris les établissements de paiement exemptés en vertu de la directive (UE) 2015/2366 ;\n(c) les prestataires de services d'information sur les comptes ;\n(d) les établissements de monnaie électronique ;\n(e) les entreprises d'investissement ;\n(f) les prestataires de services sur actifs numériques et les émetteurs de jetons de référence à des actifs ;\n(g) les dépositaires centraux de titres ;\n(h) les contreparties centrales ;\n(i) les lieux de négociation ;\n(j) les référentiels de négociation ;\n(k) les gestionnaires de fonds d'investissement alternatifs ;\n(l) les sociétés de gestion ;\n(m) les prestataires de services de déclaration de données ;\n(n) les entreprises d'assurance et de réassurance ;\n(o) les intermédiaires d'assurance, les intermédiaires de réassurance et les intermédiaires d'assurance auxiliaires ;\n(p) les institutions de retraite professionnelle ;\n(q) les agences de notation de crédit ;\n(r) les administrateurs de références de benchmarks critiques ;\n(s) les prestataires de services de financement participatif ;\n(t) les référentiels de titrisation ;\n(u) les fournisseurs de services TIC tiers.\n\n2. Aux fins du présent règlement, les entités visées au paragraphe 1, points (a) à (t), sont appelées 'entités financières'.\n\n3. Le présent règlement ne s'applique pas :\n(a) aux gestionnaires de fonds d'investissement alternatifs visés à l'article 3, paragraphe 2, de la directive 2011/61/UE ;\n(b) aux entreprises d'assurance et de réassurance visées à l'article 4 de la directive 2009/138/CE ;\n(c) aux institutions de retraite professionnelle qui gèrent des régimes de retraite dont le nombre total de membres est inférieur à 15 ;\n(d) aux personnes physiques ou morales exemptées en vertu des articles 2 et 3 de la directive 2014/65/UE ;\n(e) aux intermédiaires d'assurance, aux intermédiaires de réassurance et aux intermédiaires d'assurance auxiliaires qui sont des microentreprises ou des petites et moyennes entreprises ;\n(f) aux institutions de la poste giro.",
+      "obligations": [
+        "Identifier si l'entité relève du champ d'application de DORA",
+        "Appliquer les exigences de DORA à l'ensemble des établissements de crédit, des établissements de paiement, des entreprises d'investissement, des entreprises d'assurance et des autres entités financières",
+        "Les fournisseurs de services TIC tiers sont soumis aux dispositions du cadre de surveillance",
+        "Vérifier l'applicabilité des exemptions pour les microentreprises et les catégories spécifiques"
+      ]
+    },
+    {
+      "regulation": "DORA",
+      "article": "Article 3",
+      "title": "Définitions",
+      "domain": "Dispositions générales",
+      "text": "Aux fins du présent règlement, les définitions suivantes s'appliquent :\n\n'résilience opérationnelle numérique' signifie la capacité d'une entité financière à établir, assurer et examiner son intégrité et sa fiabilité opérationnelles en garantissant, directement ou indirectement par l'utilisation de services fournis par des fournisseurs de services TIC tiers, l'ensemble des capacités liées aux TIC nécessaires pour répondre à la sécurité des réseaux et des systèmes d'information que l'entité financière utilise, et qui soutiennent la fourniture continue de services financiers et leur qualité.\n\n'risque TIC' signifie toute circonstance raisonnablement identifiable liée à l'utilisation des réseaux et des systèmes d'information, qui, si elle se matérialise, peut compromettre la sécurité des réseaux et des systèmes d'information, de tout outil ou processus dépendant de la technologie, des opérations et des processus, ou de la fourniture de services, en produisant des effets négatifs dans l'environnement numérique ou physique.\n\n'incident lié aux TIC' signifie un événement non planifié ou une série d'événements liés qui compromettent la sécurité des réseaux et des systèmes d'information, et ont un impact négatif, ou sont susceptibles d'avoir un impact négatif, sur la disponibilité, l'authenticité, l'intégrité ou la confidentialité des données.\n\n'incident majeur lié aux TIC' signifie un incident lié aux TIC qui a un impact négatif élevé sur les réseaux et les systèmes d'information qui soutiennent les fonctions critiques ou importantes de l'entité financière.\n\n'menace cybernétique significative' signifie une menace cybernétique ayant les caractéristiques techniques d'une menace cybernétique susceptible d'avoir des impacts graves sur les réseaux et les systèmes d'information d'une entité financière.\n\n'fonction critique ou importante' signifie une fonction dont la perturbation compromettrait de manière significative la performance financière de l'entité financière, ou la solidité ou la continuité de ses services et activités.\n\n'fournisseur de services TIC tiers' signifie une entreprise fournissant des services numériques et de données à une ou plusieurs entités financières, y compris les fournisseurs de services de cloud computing, les logiciels, les services d'analyse de données, les centres de données, et toute autre entreprise fournissant un service numérique.\n\n'fournisseur de services TIC tiers critique' signifie un fournisseur de services TIC tiers qui a été désigné comme critique conformément à l'article 31.\n\n'services TIC' signifie des services numériques et de données fournis par des systèmes TIC à un ou plusieurs utilisateurs internes ou externes de manière continue.\n\n'cadre de gestion des risques TIC' signifie le système d'outils, de méthodes, de processus et de politiques traitant les risques TIC.\n\n'test de pénétration guidé par les menaces' (TLPT) signifie un cadre qui imite les tactiques, les techniques et les procédures des acteurs de menaces réels perçus comme posant une menace cybernétique réelle, et fournit un test de pénétration contrôlé, personnalisé et guidé par l'intelligence sur les systèmes de production en direct de l'entité financière.\n\n'risque de concentration' signifie l'exposition à un ou plusieurs fournisseurs de services TIC tiers créant un degré de dépendance à l'égard de ces fournisseurs, de sorte que la non-disponibilité, la défaillance ou tout autre défaut de ce fournisseur peut mettre en danger la capacité de l'entité financière à fournir des fonctions critiques ou importantes.",
+      "obligations": [
+        "Appliquer les définitions réglementaires de manière cohérente dans toutes les activités de conformité à la DORA",
+        "Identifier les fonctions critiques ou importantes soumises à des exigences renforcées",
+        "Classer les incidents liés aux TIC en utilisant les définitions réglementaires",
+        "Faire la distinction entre les incidents liés aux TIC, les incidents majeurs liés aux TIC et les menaces cybernétiques significatives",
+        "Appliquer la définition du risque de concentration lors de l'évaluation des dépendances tierces",
+        "Identifier les fournisseurs de services TIC tiers dans le périmètre des exigences de gestion des risques tiers"
+      ]
+    },
+    {
+      "regulation": "DORA",
+      "article": "Article 4",
+      "title": "Principe de proportionnalité",
+      "domain": "Dispositions générales",
+      "text": "1. Les entités financières mettent en œuvre les règles énoncées au chapitre II conformément au principe de proportionnalité, en tenant compte de leur taille et de leur profil de risque global, ainsi que de la nature, de l'ampleur et de la complexité de leurs services, activités et opérations.\n\n2. En outre, l'application par les entités financières des chapitres III, IV et V est proportionnée à leur taille et à leur profil de risque global, ainsi qu'à la nature, à l'ampleur et à la complexité de leurs services, activités et opérations, comme spécifiquement exigé par les dispositions pertinentes de ces chapitres.\n\n3. Les autorités compétentes tiennent compte du principe de proportionnalité lors de l'évaluation du cadre de gestion des risques TIC des entités financières sur la base des rapports soumis conformément à l'article 19, paragraphe 1.\n\n4. Les AES élaboreront, par l'intermédiaire du Comité conjoint, des projets de normes techniques de réglementation pour préciser davantage les éléments, les critères et, le cas échéant, les seuils visés dans le présent règlement, en tenant dûment compte de la taille et du profil de risque global des entités financières, ainsi que de la nature, de l'ampleur et de la complexité de leurs activités.",
+      "obligations": [
+        "Appliquer la gestion des risques TIC de manière proportionnée à la taille et au profil de risque de l'entité",
+        "Appliquer la déclaration d'incidents de manière proportionnée en fonction de la nature, de l'ampleur et de la complexité des activités",
+        "Appliquer les tests de résilience de manière proportionnée en fonction des caractéristiques de l'entité",
+        "Appliquer la gestion des risques liés aux tiers de manière proportionnée",
+        "Les microentreprises peuvent suivre les obligations simplifiées spécifiées dans les articles pertinents",
+        "Documenter les raisonnements de proportionnalité lors de l'application des approches simplifiées"
+      ]
+    },
+    {
+      "regulation": "DORA",
+      "article": "Article 5",
+      "title": "Gouvernance et Organisation",
+      "domain": "Gestion des Risques TIC",
+      "text": "1. Les entités financières doivent établir des cadres de gouvernance et de contrôle garantissant une gestion efficace des risques TIC pour atteindre un niveau élevé de résilience opérationnelle numérique.\n\n2. L'organe de direction doit définir, approuver, superviser et être responsable de la mise en œuvre des dispositions de gestion des risques TIC. À cette fin, ils doivent :\n\n(a) assumer la responsabilité ultime de la gestion des risques TIC ;\n(b) établir des politiques garantissant des normes élevées de disponibilité, d'authenticité, d'intégrité et de confidentialité des données ;\n(c) définir des rôles et des responsabilités clairs pour les fonctions TIC avec des dispositions de gouvernance efficaces ;\n(d) définir et approuver la stratégie de résilience opérationnelle numérique, y compris les niveaux de tolérance aux risques TIC ;\n(e) approuver et examiner la politique de continuité des activités TIC et les plans de réponse et de rétablissement ;\n(f) approuver et examiner les plans d'audit interne TIC et les modifications substantielles ;\n(g) allouer des budgets appropriés pour les besoins de résilience numérique, y compris la sensibilisation à la sécurité et la formation du personnel ;\n(h) approuver et examiner la politique relative aux dispositions de services TIC fournis par des tiers ;\n(i) établir des canaux de reporting concernant : les dispositions de services fournis par des tiers, les changements substantiels planifiés, les évaluations d'impact et les incidents TIC.\n\n3. Les non-microentreprises doivent établir un rôle dédié ou désigner un membre de la direction générale pour surveiller les dispositions de services TIC fournis par des tiers.\n\n4. Les membres de l'organe de direction doivent se tenir régulièrement informés avec des connaissances et des compétences suffisantes en matière de risques TIC grâce à une formation régulière.",
+      "obligations": [
+        "Établir des cadres de gouvernance et de contrôle pour une gestion efficace des risques TIC",
+        "L'organe de direction assume la responsabilité ultime de la gestion des risques TIC",
+        "Établir des politiques garantissant des normes élevées de disponibilité, d'authenticité, d'intégrité et de confidentialité des données",
+        "Définir des rôles et des responsabilités clairs pour les fonctions TIC",
+        "Définir et approuver la stratégie de résilience opérationnelle numérique, y compris les niveaux de tolérance aux risques TIC",
+        "Allouer des budgets appropriés pour les besoins de résilience numérique, la sensibilisation à la sécurité et la formation du personnel",
+        "Approuver et examiner les politiques de services TIC fournis par des tiers",
+        "Établir des canaux de reporting pour les dispositions de services fournis par des tiers, les changements substantiels, les évaluations d'impact et les incidents",
+        "Désigner un rôle de direction générale dédié pour surveiller les fournisseurs de services TIC tiers",
+        "L'organe de direction maintient des connaissances et des compétences suffisantes en matière de risques TIC grâce à une formation régulière"
+      ]
+    },
+    {
+      "regulation": "DORA",
+      "article": "Article 6",
+      "title": "ICT Risk Management Framework",
+      "domain": "ICT Risk Management",
+      "text": "1. Financial entities shall have a sound, comprehensive and well-documented ICT risk management framework as part of their overall risk management system.\n\n2. The framework must include strategies, policies, procedures, ICT protocols and tools protecting information assets, computer software, hardware, servers, physical components, premises, data centres and sensitive areas from risks including damage and unauthorized access.\n\n3. Entities shall minimize ICT risk impact through appropriate strategies, policies, procedures, ICT protocols and tools, providing complete and updated information to competent authorities upon request.\n\n4. Non-microenterprise entities must assign ICT risk management responsibility to a control function with appropriate independence, ensuring proper segregation across the three lines of defence model.\n\n5. The framework requires documented annual reviews (periodic for microenterprises), triggered by major incidents, supervisory instructions, or testing processes, with improvement based on implementation lessons and competent authority reporting.\n\n6. Non-microenterprise frameworks undergo regular internal audits by auditors possessing sufficient knowledge, skills and expertise in ICT risk with appropriate independence, with audit frequency matching the entity's ICT risk level.\n\n7. Entities must establish formal follow-up processes including timely verification and remediation of critical ICT audit findings.\n\n8. The digital operational resilience strategy addresses ICT risk through eight specific points: (a) business alignment; (b) risk tolerance and impact analysis; (c) security objectives with key performance indicators; (d) ICT reference architecture; (e) incident detection mechanisms; (f) resilience documentation; (g) compliance testing; (h) incident communication strategy.\n\n9. Entities may define holistic multi-vendor ICT strategies showing dependencies on third-party service providers.\n\n10. Entities may outsource compliance verification to intra-group or external undertakings while retaining full responsibility for ICT risk management compliance.",
+      "obligations": [
+        "Establish sound, comprehensive and well-documented ICT risk management framework",
+        "Framework must protect information assets from damage and unauthorized access",
+        "Minimize ICT risk impact through appropriate strategies, policies, procedures and tools",
+        "Provide complete and updated information to competent authorities upon request",
+        "Assign ICT risk management to control function with appropriate independence",
+        "Conduct documented annual framework reviews",
+        "Establish regular internal audits by qualified auditors",
+        "Establish formal follow-up processes for critical audit findings",
+        "Digital operational resilience strategy must address business alignment, risk tolerance, security objectives, ICT architecture, incident detection, documentation, testing and communication",
+        "Retain full responsibility for ICT risk management even when outsourcing compliance verification"
+      ]
+    },
+    {
+      "regulation": "DORA",
+      "article": "Article 7",
+      "title": "Systèmes, protocoles et outils TIC",
+      "domain": "Gestion des risques TIC",
+      "text": "Afin de faire face aux risques TIC et de les gérer, les entités financières doivent utiliser et maintenir des systèmes, protocoles et outils TIC à jour qui sont :\n\n(a) appropriés à l'ampleur des opérations soutenant la conduite de leurs activités, conformément au principe de proportionnalité visé à l'article 4 ;\n(b) fiables ;\n(c) dotés d'une capacité suffisante pour traiter avec précision les données nécessaires à l'exécution des activités et à la fourniture en temps opportun de services, ainsi que pour faire face aux volumes de commandes, de messages ou de transactions de pointe, selon les besoins, y compris lorsque de nouvelles technologies sont introduites ;\n(d) techniquement résilients afin de répondre de manière appropriée aux besoins supplémentaires de traitement de l'information exigés dans des conditions de marché tendues ou d'autres situations défavorables.\n\nLes entités financières doivent surveiller en continu les performances des systèmes et outils TIC, identifier et traiter sans délai toutes les différences entre la capacité TIC attendue et la capacité TIC réelle, et établir des mécanismes de surveillance pour évaluer la qualité des services TIC fournis par des fournisseurs tiers. La surveillance doit au minimum porter sur les indicateurs de performance clés liés à la disponibilité, à l'authenticité, à l'intégrité et à la confidentialité, ainsi qu'à la latence des services TIC.",
+      "obligations": [
+        "Utiliser et maintenir des systèmes, protocoles et outils TIC à jour appropriés à l'ampleur des opérations",
+        "Garantir la fiabilité des systèmes TIC",
+        "Garantir que les systèmes TIC ont une capacité suffisante pour traiter les données et gérer les volumes de pointe",
+        "Garantir que les systèmes TIC sont techniquement résilients pour les conditions défavorables",
+        "Surveiller en continu les performances des systèmes et outils TIC",
+        "Traiter sans délai les différences entre la capacité TIC attendue et la capacité TIC réelle",
+        "Établir des mécanismes de surveillance pour la qualité des services TIC fournis par des fournisseurs tiers",
+        "Surveiller les indicateurs de performance clés : disponibilité, authenticité, intégrité, confidentialité et latence"
+      ]
+    },
+    {
+      "regulation": "DORA",
+      "article": "Article 8",
+      "title": "Identification",
+      "domain": "Gestion des risques liés aux TIC",
+      "text": "1. Dans le cadre du cadre de gestion des risques liés aux TIC visé à l'article 6, paragraphe 1, les entités financières doivent identifier, classer et documenter de manière appropriée toutes les fonctions métier, les rôles et les responsabilités supportés par les TIC, les actifs informationnels et les actifs TIC, y compris ceux situés à distance, les ressources réseau et les équipements matériels, et cartographier ceux considérés comme critiques.\n\n2. Les entités financières doivent identifier toutes les sources de risques liés aux TIC, en particulier l'exposition au risque et en provenance d'autres entités financières, et évaluer les menaces cybernétiques et les vulnérabilités TIC à l'égard des fonctions métier, des actifs informationnels et des actifs TIC. Les entités financières doivent examiner régulièrement, et au moins une fois par an, les scénarios de risque les affectant.\n\n3. Les entités financières, autres que les microentreprises, doivent effectuer une évaluation des risques lors de chaque changement majeur de l'infrastructure du système d'information et de réseau, des processus ou des procédures affectant leurs fonctions métier, leurs actifs informationnels ou leurs actifs TIC.\n\n4. Les entités financières doivent identifier tous les actifs informationnels et les actifs TIC, y compris ceux détenus par des fournisseurs de services tiers, et cartographier les actifs informationnels considérés comme critiques. Elles doivent mettre à jour régulièrement cette cartographie et lors de tout changement majeur de l'infrastructure.\n\n5. Les entités financières doivent maintenir et mettre à jour régulièrement un inventaire de tous les actifs TIC et examiner les risques TIC associés à chaque actif TIC identifié dans l'inventaire.",
+      "obligations": [
+        "Identifier, classer et documenter toutes les fonctions métier supportées par les TIC, les rôles et les responsabilités",
+        "Identifier et documenter les actifs informationnels et les actifs TIC, y compris ceux détenus à distance",
+        "Cartographier les actifs TIC et les ressources considérés comme critiques",
+        "Identifier toutes les sources de risques liés aux TIC, y compris en provenance d'autres entités financières",
+        "Évaluer les menaces cybernétiques et les vulnérabilités TIC à l'égard des fonctions métier et des actifs",
+        "Examiner les scénarios de risque au moins une fois par an",
+        "Effectuer une évaluation des risques lors de tout changement majeur de l'infrastructure du système d'information et de réseau",
+        "Maintenir et mettre à jour régulièrement un inventaire de tous les actifs TIC",
+        "Examiner les risques TIC associés à chaque actif dans l'inventaire",
+        "Mettre à jour la cartographie des actifs lors de tout changement majeur de l'infrastructure"
+      ]
+    },
+    {
+      "regulation": "DORA",
+      "article": "Article 9",
+      "title": "Protection et prévention",
+      "domain": "Gestion des risques liés aux TIC",
+      "text": "1. Les entités financières doivent surveiller et contrôler en permanence la sécurité et le fonctionnement des systèmes TIC et minimiser l'impact des risques liés aux TIC grâce à des outils et des procédures de sécurité appropriés.\n\n2. Les entités doivent concevoir, acquérir et mettre en œuvre des politiques, des procédures, des protocoles et des outils de sécurité TIC garantissant la résilience, la continuité et la disponibilité des systèmes TIC, en maintenant des normes élevées en matière de disponibilité, d'authenticité, d'intégrité et de confidentialité des données.\n\n3. Les solutions TIC doivent :\n(a) assurer la sécurité des moyens de transfert des données ;\n(b) minimiser la corruption, la perte, l'accès non autorisé et les failles techniques ;\n(c) prévenir le manque de disponibilité, l'altération de l'authenticité et de l'intégrité ;\n(d) protéger les données contre les risques de gestion et les erreurs humaines.\n\n4. Dans le cadre de la gestion des risques liés aux TIC, les entités doivent :\n(a) élaborer et documenter une politique de sécurité de l'information ;\n(b) établir une gestion de réseau en utilisant des techniques appropriées et des mécanismes d'isolement automatisés ;\n(c) mettre en œuvre des politiques de limitation d'accès qui traitent des droits d'accès et en assurer une administration saine ;\n(d) mettre en œuvre une authentification forte et des clés cryptographiques qui chiffrent les données sur la base de normes cryptographiques approuvées ;\n(e) mettre en œuvre des politiques de gestion des changements TIC documentées, y compris les changements de logiciels et de micrologiciels ;\n(f) maintenir des politiques documentées appropriées et exhaustives pour les correctifs et les mises à jour.\n\nL'infrastructure réseau doit être coupée ou segmentée instantanément pour minimiser la contagion en cas de cyberattaque. La gestion des changements nécessite une approbation de gestion appropriée et des protocoles spécifiques.",
+      "obligations": [
+        "Surveiller et contrôler en permanence la sécurité et le fonctionnement des systèmes TIC",
+        "Concevoir, acquérir et mettre en œuvre des politiques, des procédures, des protocoles et des outils de sécurité TIC",
+        "Assurer la sécurité des moyens de transfert des données",
+        "Minimiser la corruption, la perte, l'accès non autorisé et les failles techniques",
+        "Prévenir le manque de disponibilité et l'altération de l'authenticité et de l'intégrité",
+        "Protéger les données contre les risques de gestion et les erreurs humaines",
+        "Élaborer et documenter une politique de sécurité de l'information",
+        "Établir une gestion de réseau avec des techniques appropriées et des mécanismes d'isolement automatisés",
+        "Mettre en œuvre des politiques de limitation d'accès avec une administration saine",
+        "Mettre en œuvre une authentification forte et un chiffrement cryptographique des données",
+        "Mettre en œuvre des politiques de gestion des changements TIC documentées",
+        "Maintenir des politiques documentées pour les correctifs et les mises à jour",
+        "Assurer que l'infrastructure réseau peut être coupée ou segmentée instantanément"
+      ]
+    },
+    {
+      "regulation": "DORA",
+      "article": "Article 10",
+      "title": "Détection",
+      "domain": "Gestion des risques liés aux TIC",
+      "text": "1. Les entités financières doivent disposer de mécanismes permettant de détecter rapidement les activités anormales, conformément à l'article 17, y compris les problèmes de performances du réseau TIC et les incidents liés aux TIC, ainsi que d'identifier les points de défaillance uniques potentiels ayant une incidence significative. Les mécanismes de détection doivent être testés régulièrement conformément à l'article 25.\n\n2. Les mécanismes de détection doivent permettre plusieurs niveaux de contrôle, définir des seuils d'alerte et des critères pour déclencher et initier les processus de réponse aux incidents liés aux TIC, y compris des mécanismes d'alerte automatique pour le personnel concerné chargé de la réponse aux incidents liés aux TIC.\n\n3. Les entités financières doivent consacrer des ressources et des capacités suffisantes pour surveiller l'activité des utilisateurs, la survenance d'anomalies TIC et d'incidents liés aux TIC, en particulier les cyberattaques.\n\n4. Les prestataires de services de déclaration de données doivent, en outre, disposer de systèmes capables de vérifier efficacement les déclarations de transactions pour leur exhaustivité, d'identifier les omissions et les erreurs évidentes, et de demander la retransmission de ces déclarations.",
+      "obligations": [
+        "Mettre en place des mécanismes pour détecter rapidement les activités anormales et les incidents liés aux TIC",
+        "Identifier les points de défaillance uniques potentiels ayant une incidence significative",
+        "Tester régulièrement les mécanismes de détection",
+        "Permettre plusieurs niveaux de contrôle dans les systèmes de détection",
+        "Définir des seuils d'alerte et des critères pour déclencher les processus de réponse aux incidents",
+        "Mettre en place des mécanismes d'alerte automatique pour le personnel concerné chargé de la réponse aux incidents TIC",
+        "Consacrer des ressources et des capacités suffisantes pour surveiller l'activité des utilisateurs et les anomalies TIC",
+        "Surveiller les incidents liés aux TIC, en particulier les cyberattaques"
+      ]
+    },
+    {
+      "regulation": "DORA",
+      "article": "Article 11",
+      "title": "Réponse et Récupération",
+      "domain": "Gestion des Risques TIC",
+      "text": "1. Les entités financières doivent mettre en place une politique de continuité d'activité TIC globale.\n\n2. Les entités doivent mettre en œuvre des politiques qui abordent :\n(a) l'assurance de la continuité des fonctions critiques ou importantes de l'entité financière ;\n(b) la réponse aux incidents liés aux TIC et leur résolution de manière à limiter les dommages ;\n(c) l'activation, sans retard, de plans dédiés permettant des mesures de confinement ;\n(d) l'estimation des impacts, dommages et pertes préliminaires ;\n(e) la communication garantissant la transmission d'informations mises à jour à tout le personnel interne concerné.\n\n3. Les entités financières doivent mettre en œuvre des plans de réponse et de récupération TIC associés.\n\n4. Les entités doivent maintenir et tester périodiquement des plans de continuité d'activité TIC appropriés, ainsi que des plans de réponse et de récupération TIC.\n\n5. Réaliser une analyse d'impact commercial évaluant l'impact potentiel de graves perturbations commerciales au moyen de critères quantitatifs et qualitatifs, y compris par le biais d'analyses de scénarios.\n\n6. Tester les plans de résilience opérationnelle numérique au moins une fois par an pour les non-microentreprises, et en cas de modifications substantielles des systèmes TIC soutenant les fonctions critiques ou importantes.\n\n7. Les non-microentreprises doivent disposer d'une fonction de gestion de crise, établissant des procédures de communication et de gestion de crise.\n\n8. Conserver des registres facilement accessibles des activités avant et pendant les événements de perturbation.\n\n9-11. Les AES doivent élaborer des lignes directrices sur la politique de continuité d'activité TIC combinée et les plans de réponse et de récupération pour les incidents liés aux TIC.",
+      "obligations": [
+        "Mettre en place une politique de continuité d'activité TIC globale",
+        "Assurer la continuité des fonctions critiques ou importantes",
+        "Répondre aux incidents liés aux TIC et les résoudre pour limiter les dommages",
+        "Activer des plans dédiés de confinement sans retard",
+        "Estimer les impacts, dommages et pertes préliminaires",
+        "Assurer la communication d'informations mises à jour à tout le personnel interne concerné",
+        "Mettre en œuvre des plans de réponse et de récupération TIC associés",
+        "Maintenir et tester périodiquement des plans de continuité d'activité TIC",
+        "Réaliser une analyse d'impact commercial avec des critères quantitatifs et qualitatifs, y compris des analyses de scénarios",
+        "Tester les plans de résilience opérationnelle numérique au moins une fois par an",
+        "Tester les plans en cas de modifications substantielles des systèmes TIC",
+        "Établir une fonction de gestion de crise avec des procédures de communication",
+        "Conserver des registres facilement accessibles des activités avant et pendant les perturbations"
+      ]
+    },
+    {
+      "regulation": "DORA",
+      "article": "Article 12",
+      "title": "Politiques et procédures de sauvegarde, procédures et méthodes de restauration et de récupération",
+      "domain": "Gestion des risques liés aux TIC",
+      "text": "1. Aux fins de garantir la restauration des systèmes et des données TIC avec un temps d'arrêt minimal, une perturbation limitée et des pertes minimales, dans le cadre de leur cadre de gestion des risques liés aux TIC, les entités financières doivent élaborer et documenter :\n\n(a) des politiques et des procédures de sauvegarde précisant la portée des données soumises à la sauvegarde et la fréquence minimale de la sauvegarde, en fonction de la criticité de l'information ou du degré de confidentialité des données ;\n(b) des procédures et des méthodes de restauration et de récupération.\n\n2. Les entités financières doivent mettre en place des systèmes de sauvegarde qui peuvent être activés conformément aux politiques et procédures de sauvegarde et aux procédures et méthodes de restauration et de récupération. L'activation des systèmes de sauvegarde ne doit pas mettre en danger la sécurité des réseaux et des systèmes d'information ou la disponibilité, l'authenticité, l'intégrité ou la confidentialité des données. Les tests des procédures de sauvegarde et des procédures et méthodes de restauration et de récupération doivent être effectués périodiquement.\n\n3. Lors de la restauration des données de sauvegarde à l'aide de leurs propres systèmes, les entités financières doivent utiliser des systèmes TIC qui sont physiquement et logiquement séparés du système TIC source. Les systèmes TIC doivent être protégés de manière sécurisée contre tout accès non autorisé ou corruption TIC et permettre une restauration rapide des services en utilisant les sauvegardes de données et de systèmes si nécessaire.\n\n4. Les entités financières doivent disposer de configurations de ressources multi-sites avec une capacité et des capacités suffisantes pour garantir les exigences commerciales. En cas d'indisponibilité de l'infrastructure TIC principale, les installations TIC alternatives, y compris les sites secondaires, doivent fournir des services avec un niveau de service conforme aux objectifs de temps de récupération et aux objectifs de point de récupération de l'entité financière.\n\n5. Les entités financières doivent établir des objectifs de temps de récupération et des objectifs de point de récupération pour chaque fonction commerciale et déterminer le niveau de ressources et le temps de récupération total alloué à chaque fonction commerciale, en tenant compte des analyses d'impact commercial et de la tolérance et de l'appétit pour le risque globale de l'entité financière.\n\n6. Les entités financières, autres que les microentreprises, doivent signaler aux autorités compétentes concernées, à leur demande, une estimation des coûts et des pertes annuels globaux causés par des incidents TIC majeurs.",
+      "obligations": [
+        "Élaborer et documenter des politiques de sauvegarde précisant la portée et la fréquence minimale des sauvegardes",
+        "Documenter les procédures et méthodes de restauration et de récupération",
+        "Mettre en place des systèmes de sauvegarde qui peuvent être activés sans mettre en danger la sécurité",
+        "Effectuer périodiquement des tests des procédures de sauvegarde et des procédures et méthodes de restauration et de récupération",
+        "Utiliser des systèmes TIC physiquement et logiquement séparés de la source pour la restauration des sauvegardes",
+        "Protéger les systèmes TIC de restauration contre les accès non autorisés et les corruptions TIC",
+        "Établir des configurations de ressources multi-sites avec une capacité suffisante",
+        "Garantir que les installations TIC alternatives fournissent des niveaux de service cohérents sur les sites secondaires",
+        "Établir des objectifs de temps de récupération (OTR) et des objectifs de point de récupération (OPR) pour chaque fonction commerciale",
+        "Déterminer les ressources et le temps de récupération total alloués par fonction commerciale en fonction de l'analyse d'impact commercial",
+        "Signaler les coûts et les pertes annuels globaux des incidents TIC majeurs aux autorités compétentes à leur demande"
+      ]
+    },
+    {
+      "regulation": "DORA",
+      "article": "Article 13",
+      "title": "Apprentissage et évolution",
+      "domain": "Gestion des risques liés aux TIC",
+      "text": "1. Les entités financières doivent disposer de capacités et de personnel pour recueillir des informations sur les vulnérabilités et les menaces cybernétiques, les incidents liés aux TIC, en particulier les cyberattaques, et analyser l'impact qu'ils sont susceptibles d'avoir sur leur résilience opérationnelle numérique.\n\n2. Les entités financières doivent mettre en place des examens postérieurs aux incidents liés aux TIC après qu'un incident majeur lié aux TIC ait perturbé leurs activités principales. Ces examens doivent analyser les causes de la perturbation et identifier les améliorations nécessaires aux opérations TIC ou dans la politique de continuité des activités TIC visée à l'article 11.\n\n3. Les entités financières, autres que les microentreprises, doivent surveiller la mise en œuvre effective des mesures d'amélioration visées au paragraphe 2 et doivent également surveiller, de manière continue, les développements technologiques pertinents pour leurs activités et opérations.\n\n4. Les entités financières doivent mettre en place des programmes de sensibilisation à la sécurité des TIC et des formations à la résilience opérationnelle numérique dans le cadre des programmes de formation du personnel. Ces programmes et formations doivent être applicables à l'ensemble du personnel et à la direction et doivent avoir un niveau de complexité proportionné à l'étendue de leurs fonctions.\n\n5. Les entités financières, autres que les microentreprises, doivent surveiller les dépendances TIC de tiers pertinentes, suivre l'évolution des menaces pour leurs accords avec les fournisseurs de services TIC de tiers et examiner régulièrement leur exposition au risque opérationnel lié aux fournisseurs de services TIC de tiers.\n\n6. Les entités financières, autres que les microentreprises, doivent communiquer aux autorités compétentes concernées, sur demande, des informations sur le nombre d'incidents majeurs liés aux TIC signalés par les fournisseurs de services TIC de tiers dans le cadre des accords contractuels.",
+      "obligations": [
+        "Établir des capacités et du personnel pour recueillir des informations sur les vulnérabilités et les menaces cybernétiques",
+        "Analyser l'impact probable des incidents liés aux TIC sur la résilience opérationnelle numérique",
+        "Réaliser des examens postérieurs aux incidents liés aux TIC après des incidents majeurs perturbant les activités principales",
+        "Analyser les causes de la perturbation et identifier les améliorations opérationnelles nécessaires",
+        "Surveiller la mise en œuvre effective des mesures d'amélioration",
+        "Surveiller les développements technologiques pertinents pour les activités et les opérations",
+        "Mettre en place des programmes de sensibilisation à la sécurité des TIC pour l'ensemble du personnel et la direction",
+        "Établir des formations à la résilience opérationnelle numérique dans le cadre des programmes de formation du personnel",
+        "Surveiller les dépendances TIC de tiers pertinentes",
+        "Suivre l'évolution des menaces dans les accords avec les fournisseurs de services TIC de tiers",
+        "Examiner régulièrement l'exposition au risque opérationnel lié aux fournisseurs de services TIC de tiers"
+      ]
+    },
+    {
+      "regulation": "DORA",
+      "article": "Article 14",
+      "title": "Communication",
+      "domain": "Gestion des risques liés aux TIC",
+      "text": "1. Dans le cadre du cadre de gestion des risques liés aux TIC visé à l'article 6, paragraphe 1, les entités financières doivent disposer de plans de communication de crise permettant une divulgation responsable, d'au moins, des incidents liés aux TIC de grande ampleur ou des menaces cybernétiques significatives aux clients et aux contreparties, ainsi qu'au public, le cas échéant.\n\n2. Dans le cadre du cadre de gestion des risques liés aux TIC, les entités financières doivent mettre en œuvre des politiques de communication pour le personnel interne et pour les parties prenantes externes. Les politiques de communication pour le personnel doivent sensibiliser tout le personnel concerné, y compris l'organe de direction, à au moins tous les incidents liés aux TIC de grande ampleur, les menaces cybernétiques et les contre-mesures adoptées, ainsi que les exigences du cadre de gestion des risques liés aux TIC.\n\n3. Au moins une personne doit être chargée de mettre en œuvre la stratégie de communication pour les incidents liés aux TIC et d'assumer la fonction de relations publiques et médiatiques à cette fin.\n\n4. Les obligations de communication énoncées dans le présent article ne doivent pas entraîner la divulgation d'informations confidentielles ou classifiées ou la violation de toute loi applicable.",
+      "obligations": [
+        "Établir des plans de communication de crise pour les incidents liés aux TIC de grande ampleur et les menaces cybernétiques significatives",
+        "Permettre une divulgation responsable aux clients, aux contreparties et au public, le cas échéant",
+        "Mettre en œuvre des politiques de communication pour le personnel interne et les parties prenantes externes",
+        "Sensibiliser tout le personnel concerné aux incidents liés aux TIC de grande ampleur, aux menaces et aux contre-mesures",
+        "Sensibiliser l'organe de direction aux exigences du cadre de gestion des risques liés aux TIC",
+        "Désigner au moins une personne responsable de la stratégie de communication pour les incidents liés aux TIC",
+        "Désigner une fonction de relations publiques et médiatiques pour les incidents liés aux TIC",
+        "S'assurer que les communications ne divulguent pas d'informations confidentielles ou classifiées"
+      ]
+    },
+    {
+      "regulation": "DORA",
+      "article": "Article 15",
+      "title": "Harmonisation supplémentaire des outils, méthodes, processus et politiques de gestion des risques liés aux TIC",
+      "domain": "Gestion des risques liés aux TIC",
+      "text": "Les AES devraient, par l'intermédiaire du Comité mixte, en consultation avec l'Agence de l'Union européenne pour la cybersécurité (ENISA), élaborer des normes techniques de réglementation communes afin de :\n\n(a) spécifier davantage les éléments à inclure dans la politique, les procédures, les protocoles et les outils de sécurité des TIC visés à l'article 9, paragraphe 2, en vue de garantir la sécurité des réseaux, de permettre des garanties appropriées contre les intrusions et les abus de données, de préserver la disponibilité, l'authenticité, l'intégrité et la confidentialité des données ;\n\n(b) développer davantage les composants des contrôles des droits d'accès visés à l'article 9, paragraphe 4, point c), et la politique des ressources humaines associée, spécifiant les droits d'accès, les procédures de concession et de révocation des droits, la surveillance du comportement anormal ;\n\n(c) développer davantage les mécanismes de détection des activités anormales visés à l'article 10, paragraphe 1, et les critères pour déclencher et initier les processus de réponse aux incidents liés aux TIC ;\n\n(d) spécifier davantage les tests visés à l'article 25, y compris leur champ d'application, les méthodologies de test, les résultats et les activités de remédiation ;\n\n(e) spécifier davantage tout élément de la politique de continuité des activités des TIC visée à l'article 11 ;\n\n(f) spécifier davantage les règles relatives aux systèmes de sauvegarde et aux procédures de restauration visées à l'article 12 ;\n\n(g) spécifier davantage les éléments de l'examen post-incident visé à l'article 13, paragraphe 2 ;\n\n(h) spécifier davantage les éléments et le format de la déclaration visée à l'article 19.\n\nLes entités financières doivent se conformer aux normes techniques de réglementation applicables élaborées en vertu du présent article dès leur publication au Journal officiel.",
+      "obligations": [
+        "Se conformer aux normes techniques de réglementation élaborées par les AES pour les politiques de sécurité des TIC",
+        "Se conformer aux spécifications des RTS pour les contrôles d'accès",
+        "Se conformer aux spécifications des RTS pour les mécanismes de détection des activités anormales",
+        "Se conformer aux spécifications des RTS pour les tests et les méthodologies",
+        "Se conformer aux spécifications des RTS pour les éléments de la politique de continuité des activités des TIC",
+        "Se conformer aux spécifications des RTS pour les systèmes de sauvegarde et les procédures de restauration",
+        "Se conformer aux spécifications des RTS pour les examens post-incident",
+        "Se conformer aux spécifications des RTS pour le format et le contenu de la déclaration d'incident"
+      ]
+    },
+    {
+      "regulation": "DORA",
+      "article": "Article 16",
+      "title": "Cadre simplifié de gestion des risques liés aux TIC",
+      "domain": "Gestion des risques liés aux TIC",
+      "text": "1. Les articles 5 à 15 ne s’appliquent pas aux microentreprises.\n\n2. Les microentreprises appliquent un cadre simplifié de gestion des risques liés aux TIC comprenant :\n\n(a) un résumé des politiques et procédures relatives à la résilience opérationnelle numérique, comme l’exige l’article 6, paragraphe 1 ;\n(b) au moins une politique de tolérance aux risques liés aux TIC ;\n(c) des plans de continuité des activités liées aux TIC qui abordent la continuité des fonctions critiques ou importantes, y compris les systèmes de sauvegarde ;\n(d) des lignes directrices pour la catégorisation des incidents liés aux TIC ;\n(e) des mécanismes de surveillance ;\n(f) des politiques relatives à la documentation de sécurité liée aux TIC ;\n(g) des politiques de gestion des changements et des correctifs ;\n(h) une évaluation des risques liés aux tiers dans le domaine des TIC ;\n(i) un programme de formation et de sensibilisation à la sécurité des TIC ;\n(j) des audits internes sur les risques liés aux TIC.\n\n3. Les microentreprises doivent également satisfaire aux exigences énoncées aux articles 17, 18, 19, 24, 25, 28, 29 et 30.\n\n4. En cas de changements dans leur taille ou leur profil de risque qui les ferait sortir de la définition d’une microentreprise, l’entité doit examiner son cadre de gestion des risques liés aux TIC et le mettre à jour en conséquence dans un délai raisonnable.",
+      "obligations": [
+        "Les microentreprises appliquent un cadre simplifié de gestion des risques liés aux TIC",
+        "Établir un résumé des politiques et procédures de résilience opérationnelle numérique",
+        "Établir une politique de tolérance aux risques liés aux TIC",
+        "Élaborer des plans de continuité des activités liées aux TIC, y compris les systèmes de sauvegarde",
+        "Établir des lignes directrices pour la catégorisation des incidents liés aux TIC",
+        "Établir des mécanismes de surveillance",
+        "Maintenir des politiques de documentation de sécurité liée aux TIC",
+        "Maintenir des politiques de gestion des changements et des correctifs",
+        "Évaluer les risques liés aux tiers dans le domaine des TIC",
+        "Établir un programme de formation et de sensibilisation à la sécurité des TIC",
+        "Réaliser des audits internes sur les risques liés aux TIC",
+        "Les microentreprises doivent également se conformer aux exigences de déclaration d’incidents, de tests et de risques liés aux tiers",
+        "Mettre à jour le cadre de gestion des risques liés aux TIC lorsque l’entité dépasse le seuil de microentreprise"
+      ]
+    },
+    {
+      "regulation": "DORA",
+      "article": "Article 17",
+      "title": "Processus de gestion des incidents liés aux TIC",
+      "domain": "Déclaration d'incidents",
+      "text": "1. Les entités financières doivent définir, établir et mettre en œuvre un processus de gestion des incidents liés aux TIC pour détecter, gérer et notifier les incidents liés aux TIC.\n\n2. Les entités doivent documenter tous les incidents et menaces cybernétiques liés aux TIC, en établissant des procédures de surveillance, de gestion et de suivi intégrés pour identifier les causes profondes et prévenir les récidives.\n\n3. Le processus de gestion nécessite :\n\n(a) la mise en place d'indicateurs d'alerte précoce ;\n(b) des procédures pour identifier, suivre, enregistrer, catégoriser et classer les incidents par priorité, gravité et criticité des services conformément à l'article 18, paragraphe 1 ;\n(c) l'attribution de rôles et de responsabilités qui doivent être activés pour différents types et scénarios d'incidents liés aux TIC ;\n(d) des plans de communication pour le personnel, les parties prenantes, les médias conformément à l'article 14, la notification des clients, les procédures d'escalade et le partage d'informations avec les entités contreparties ;\n(e) la notification des incidents majeurs à la direction générale et à l'organe de direction, en détaillant l'impact, la réponse et les contrôles supplémentaires ;\n(f) l'établissement de procédures de réponse aux incidents liés aux TIC pour atténuer les impacts et garantir que les services redeviennent opérationnels et sécurisés dans les délais.",
+      "obligations": [
+        "Définir, établir et mettre en œuvre un processus de gestion des incidents liés aux TIC",
+        "Détecter, gérer et notifier les incidents liés aux TIC",
+        "Documenter tous les incidents et menaces cybernétiques liés aux TIC",
+        "Établir des procédures de surveillance, de gestion et de suivi intégrés",
+        "Identifier les causes profondes et prévenir les récidives d'incidents",
+        "Mettre en place des indicateurs d'alerte précoce",
+        "Identifier, suivre, enregistrer, catégoriser et classer les incidents par priorité, gravité et criticité des services",
+        "Attribuer des rôles et des responsabilités pour différents types et scénarios d'incidents",
+        "Établir des plans de communication pour le personnel, les parties prenantes, les médias et les clients",
+        "Établir des procédures d'escalade et de partage d'informations avec les entités contreparties",
+        "Notifier les incidents majeurs à la direction générale et à l'organe de direction",
+        "Établir des procédures de réponse aux incidents pour atténuer les impacts et garantir une restauration rapide des services"
+      ]
+    },
+    {
+      "regulation": "DORA",
+      "article": "Article 18",
+      "title": "Classification des incidents et des menaces cybernétiques liés aux TIC",
+      "domain": "Déclaration d'incidents",
+      "text": "1. Les entités financières classifient les incidents liés aux TIC et déterminent leur impact sur la base des critères suivants : le nombre de clients ou de contreparties financières affectés et, le cas échéant, le montant ou le nombre de transactions affectées par l'incident majeur lié aux TIC ; la durée de l'incident majeur lié aux TIC, y compris le temps d'indisponibilité du service ; la répartition géographique des zones affectées par l'incident majeur lié aux TIC, en particulier si celui-ci affecte plus de deux États membres ; les pertes de données que l'incident majeur lié aux TIC entraîne, en relation avec la disponibilité, l'authenticité, l'intégrité ou la confidentialité des données ; la criticité des services affectés, y compris les transactions et les opérations de l'entité financière ; l'impact économique, en particulier les coûts et les pertes directs et indirects, de l'incident majeur lié aux TIC, en termes absolus et relatifs.\n\n2. Les entités classifient les menaces cybernétiques comme significatives sur la base de la criticité des services à risque, y compris les transactions et les opérations de l'entité financière, du nombre et/ou de la pertinence des clients ou des contreparties financières ciblés et de la répartition géographique des zones à risque.\n\n3. Les AES élaboreront des normes techniques de réglementation précisant les seuils et les critères de matérialité pour la classification. Les AES doivent soumettre ces normes à la Commission au plus tard le 17 janvier 2024.",
+      "obligations": [
+        "Classer les incidents liés aux TIC sur la base de critères d'impact définis",
+        "Évaluer le nombre de clients ou de contreparties affectés",
+        "Évaluer le montant ou le nombre de transactions affectées",
+        "Évaluer la durée de l'incident, y compris le temps d'indisponibilité du service",
+        "Évaluer la répartition géographique de l'incident au sein des États membres",
+        "Évaluer les pertes de données en relation avec la disponibilité, l'authenticité, l'intégrité et la confidentialité",
+        "Évaluer la criticité des services affectés, y compris les transactions et les opérations",
+        "Évaluer l'impact économique en termes absolus et relatifs",
+        "Classer les menaces cybernétiques comme significatives sur la base de la criticité des services à risque",
+        "Prendre en compte le nombre et la pertinence des clients ou des contreparties ciblés",
+        "Prendre en compte la répartition géographique dans la classification des menaces cybernétiques"
+      ]
+    },
+    {
+      "regulation": "DORA",
+      "article": "Article 19",
+      "title": "Déclaration d'incidents majeurs liés aux TIC et notification volontaire de menaces cybernétiques significatives",
+      "domain": "Déclaration d'incidents",
+      "text": "1. Les entités financières déclarent les incidents majeurs liés aux TIC à l'autorité compétente pertinente visée à l'article 46 conformément au paragraphe 4 du présent article. Lorsqu'une entité financière est soumise à la surveillance de plus d'une autorité nationale compétente, les États membres désignent une seule autorité compétente en tant qu'autorité compétente pertinente. Les établissements de crédit classés comme significatifs déclarent à l'autorité nationale compétente pertinente, qui transmet immédiatement le rapport à la BCE.\n\n2. Les entités financières peuvent, sur une base volontaire, notifier les menaces cybernétiques significatives à l'autorité compétente pertinente lorsqu'elles estiment que la menace est pertinente pour le système financier, les utilisateurs de services ou les clients.\n\n3. Lorsqu'un incident majeur lié aux TIC se produit et a un impact sur les intérêts financiers des clients, les entités financières informent, sans retard indu, leurs clients de l'incident majeur lié aux TIC et des mesures prises pour atténuer les effets négatifs de cet incident. En cas de menace cybernétique significative, les entités financières informent, le cas échéant, les clients qui sont potentiellement affectés de toute mesure de protection appropriée qu'ils pourraient envisager de prendre.\n\n4. Les entités financières soumettent les éléments suivants à l'autorité compétente pertinente :\n(a) une notification initiale ;\n(b) un rapport intermédiaire après la notification initiale, dès que le statut de l'incident initial a changé de manière significative, suivi de notifications mises à jour chaque fois qu'une mise à jour pertinente du statut est disponible ;\n(c) un rapport final, lorsque l'analyse de la cause profonde est terminée et que les chiffres réels d'impact sont disponibles pour remplacer les estimations.\n\n5. Les entités financières peuvent externaliser les obligations de déclaration prévues dans le présent article à un fournisseur de services tiers. En cas de telle externalisation, l'entité financière reste entièrement responsable de l'exécution des exigences de déclaration d'incidents.",
+      "obligations": [
+        "Déclarer les incidents majeurs liés aux TIC à l'autorité compétente pertinente",
+        "Les établissements de crédit significatifs déclarent à la BCE via l'autorité nationale compétente",
+        "Notifier volontairement les menaces cybernétiques significatives à l'autorité compétente lorsque cela est pertinent",
+        "Informer les clients sans retard indu des incidents majeurs ayant un impact sur leurs intérêts financiers",
+        "Informer les clients des mesures prises pour atténuer les effets négatifs",
+        "Informer les clients potentiellement affectés des mesures de protection pour les menaces cybernétiques significatives",
+        "Soumettre une notification initiale à l'autorité compétente dans les délais spécifiés",
+        "Soumettre des rapports intermédiaires lorsque le statut de l'incident change de manière significative",
+        "Fournir des notifications mises à jour avec chaque mise à jour pertinente du statut",
+        "Soumettre un rapport final après l'achèvement de l'analyse de la cause profonde avec les chiffres réels d'impact",
+        "Rester entièrement responsable des obligations de déclaration même en cas d'externalisation"
+      ]
+    },
+    {
+      "regulation": "DORA",
+      "article": "Article 20",
+      "title": "Harmonisation du contenu et des modèles de déclaration",
+      "domain": "Déclaration d'incidents",
+      "text": "Les AES devraient, par l'intermédiaire du Comité conjoint et en consultation avec l'ENISA et la BCE, élaborer :\n\n(a) des normes techniques réglementaires communes afin de :\n(i) déterminer le contenu des rapports pour les incidents majeurs liés aux TIC conformément à l'article 19, paragraphe 1 et 4, sur la base des critères énoncés à l'article 18 et en tenant compte des normes et spécifications techniques de cybersécurité internationales ;\n(ii) déterminer le délai et le contenu de la notification aux clients conformément à l'article 19, paragraphe 3 ;\n(iii) déterminer les critères applicables aux entités financières pour la sous-traitance de l'obligation de déclaration conformément à l'article 19, paragraphe 5 ;\n\n(b) des normes techniques d'exécution communes pour établir les formulaires, modèles et procédures types pour que les entités financières déclarent un incident majeur lié aux TIC.\n\nLes entités financières devraient utiliser les modèles, formulaires et procédures communs établis dans les normes techniques d'exécution lorsqu'elles font des déclarations en vertu de l'article 19.\n\nLes AES devraient soumettre ces projets de normes techniques réglementaires et de normes techniques d'exécution à la Commission au plus tard le 17 juillet 2024.",
+      "obligations": [
+        "Utiliser des modèles et formulaires de déclaration communs prescrits par les normes techniques de l'AES pour les rapports d'incidents majeurs liés aux TIC",
+        "Suivre des procédures standardisées pour la déclaration d'incidents aux autorités compétentes",
+        "Appliquer les délais prescrits pour les notifications aux clients comme spécifié dans les normes techniques",
+        "Respecter les critères de l'AES lors de la sous-traitance des obligations de déclaration",
+        "Garantir que le contenu des rapports répond aux exigences des normes techniques réglementaires, y compris les normes de cybersécurité internationales"
+      ]
+    },
+    {
+      "regulation": "DORA",
+      "article": "Article 21",
+      "title": "Déclaration centralisée",
+      "domain": "Déclaration d'incidents",
+      "text": "1. Les AES devraient, par l'intermédiaire du Comité mixte, préparer un rapport conjoint évaluant la faisabilité d'une centralisation supplémentaire de la déclaration d'incidents par l'intermédiaire d'un seul guichet UE pour la déclaration d'incidents majeurs liés aux TIC par les entités financières. Le rapport conjoint devrait examiner les moyens de faciliter le flux de déclarations d'incidents majeurs liés aux TIC, de réduire les doubles exigences de déclaration et d'examiner les synergies avec le cadre de déclaration de la directive NIS 2.\n\n2. Sur la base de ce rapport conjoint, la Commission devrait soumettre un rapport au Parlement européen et au Conseil, accompagné, le cas échéant, d'une proposition législative.\n\n3. Lorsqu'une telle proposition législative est adoptée, toutes les entités financières devraient soumettre des déclarations d'incidents majeurs liés aux TIC à un guichet UE unique désigné. Le guichet UE unique devrait transmettre les déclarations aux autorités nationales compétentes concernées, à l'ENISA, au Centre européen de lutte contre la cybercriminalité d'Europol et à toute autre entité en fonction des compétences de l'autorité qui a reçu la déclaration.\n\nLes entités financières devraient surveiller et être préparées à adapter leurs processus de déclaration d'incidents si un guichet UE centralisé est établi, car le point d'entrée unique remplacerait la déclaration directe aux autorités nationales compétentes pour les incidents majeurs liés aux TIC.",
+      "obligations": [
+        "Surveiller l'évolution réglementaire concernant le guichet centralisé de déclaration d'incidents UE",
+        "Être prêt à adapter les processus de déclaration d'incidents si le guichet UE unique est établi",
+        "Garantir que les systèmes de déclaration d'incidents puissent répondre aux exigences de déclaration centralisée potentielles à venir",
+        "Se conformer à tout changement législatif établissant des obligations de déclaration centralisée"
+      ]
+    },
+    {
+      "regulation": "DORA",
+      "article": "Article 22",
+      "title": "Rétroaction de surveillance",
+      "domain": "Déclaration d'incidents",
+      "text": "1. Sans préjudice des apports techniques, des orientations ou des remèdes et de l'assistance ultérieure que l'ENISA peut fournir conformément à la Directive (UE) 2022/2555, à la demande de l'entité financière, l'autorité compétente concernée devra, après réception de la notification initiale complète et de tout rapport ultérieur visé à l'article 19, paragraphe 4, fournir dans les délais appropriés des rétroactions ou des orientations appropriées à l'entité financière, en particulier en ce qui concerne les remèdes disponibles au niveau national, les rétroactions techniques confidentielles, une vue d'ensemble des menaces cybernétiques pertinentes pour l'entité financière et son secteur, ainsi que des orientations sur la conduite ultérieure de la réponse aux incidents.\n\n2. Les entités financières devraient, le cas échéant, après réception de la rétroaction de surveillance :\n(a) informer l'autorité compétente concernée de l'état d'avancement des mesures prises ;\n(b) tenir compte des orientations lors de l'enquête sur l'incident ;\n(c) intégrer les orientations dans leurs procédures futures de réponse aux incidents.",
+      "obligations": [
+        "Demander une rétroaction de surveillance à l'autorité compétente après les rapports d'incidents majeurs de TIC lorsque cela est approprié",
+        "Informer l'autorité compétente de l'état d'avancement des mesures correctives après la rétroaction de surveillance",
+        "Tenir compte des orientations de l'autorité compétente lors de l'enquête sur l'incident",
+        "Intégrer les orientations de surveillance dans les procédures futures de réponse aux incidents",
+        "S'engager avec les apports techniques et les orientations de l'ENISA lorsqu'ils sont disponibles"
+      ]
+    },
+    {
+      "regulation": "DORA",
+      "article": "Article 23",
+      "title": "Incidents opérationnels ou de sécurité liés aux paiements",
+      "domain": "Déclaration d'incidents",
+      "text": "1. Les exigences relatives à la déclaration d'incidents majeurs liés aux TIC énoncées aux articles 19 et 20 s'appliquent également aux incidents majeurs opérationnels ou de sécurité liés aux paiements lorsque une entité financière, autre que celles visées au point (c) de l'article 2, paragraphe 1, est soumise aux exigences de la directive (UE) 2015/2366.\n\n2. Les autorités compétentes informent l'ABE des rapports d'incidents de paiement reçus en vertu de la directive (UE) 2015/2366 et transmettent ces rapports à l'ABE dans les délais, à moins que ces rapports ne soient considérés comme majeurs en vertu de l'article 19.\n\n3. Dans la mesure où le contenu des rapports d'incidents de paiement répond aux exigences des obligations de déclaration prévues dans le présent article, les entités financières peuvent satisfaire aux exigences du présent article en soumettant leurs rapports d'incidents de paiement. Il n'est pas nécessaire de dupliquer les rapports lorsque les incidents majeurs opérationnels ou de sécurité liés aux paiements répondent aux critères d'incidents majeurs liés aux TIC.\n\n4. Les entités financières soumises aux règlements sur les services de paiement doivent aligner leur déclaration d'incidents opérationnels ou de sécurité sur les exigences de la DORA pour éviter les obligations de déclaration redondantes. Un rapport unique satisfaisant aux exigences de la DORA et de la directive sur les services de paiement est acceptable lorsque les critères sont remplis.",
+      "obligations": [
+        "Appliquer les exigences de déclaration d'incidents majeurs liés aux TIC aux incidents majeurs opérationnels ou de sécurité liés aux paiements",
+        "Déclarer les incidents majeurs opérationnels ou de sécurité liés aux paiements aux autorités compétentes concernées",
+        "Aligner la déclaration d'incidents de paiement sur les exigences de déclaration d'incidents de la DORA",
+        "Éviter les obligations de déclaration redondantes lorsque un rapport unique satisfait aux exigences de la DORA et de la directive sur les services de paiement",
+        "Garantir que les rapports d'incidents liés aux paiements répondent aux exigences de contenu et de format de la DORA"
+      ]
+    },
+    {
+      "regulation": "DORA",
+      "article": "Article 24",
+      "title": "Tests de résilience opérationnelle numérique",
+      "domain": "Tests de résilience",
+      "text": "1. Les entités financières, à l’exclusion des microentreprises, doivent maintenir un programme complet et solide de tests de résilience opérationnelle numérique intégré à leur cadre de gestion des risques liés aux TIC.\n\n2. Le programme de tests doit englober une gamme d’évaluations, de tests, de méthodologies, de pratiques et d’outils telles que précisées aux Articles 25 et 26.\n\n3. Le programme doit appliquer une approche fondée sur les risques en tenant compte de l’évolution du paysage des risques liés aux TIC et de toute exposition spécifique de l’entité financière.\n\n4. Les tests doivent être réalisés par des parties indépendantes, qu’elles soient internes ou externes. Lorsque des testeurs internes réalisent des tests, les entités financières doivent allouer des ressources suffisantes et veiller à ce que les conflits d’intérêts soient évités tout au long des phases de conception et de réalisation des tests.\n\n5. Les entités financières doivent établir des procédures et des politiques pour donner la priorité, classer et remédier à tous les problèmes révélés par la réalisation des tests et doivent établir des méthodologies de validation internes pour vérifier que toutes les faiblesses, déficiences ou lacunes identifiées sont entièrement corrigées.\n\n6. Les entités financières doivent veiller à ce que, au moins une fois par an, des tests appropriés soient réalisés sur tous les systèmes et applications TIC soutenant des fonctions critiques ou importantes.",
+      "obligations": [
+        "Maintenir un programme complet et solide de tests de résilience opérationnelle numérique",
+        "Intégrer le programme de tests dans le cadre de gestion des risques liés aux TIC",
+        "Appliquer une approche fondée sur les risques en tenant compte de l’évolution du paysage des risques liés aux TIC",
+        "Garantir que les tests soient réalisés par des parties indépendantes (internes ou externes)",
+        "Garantir que les testeurs internes aient des ressources dédiées et ne présentent pas de conflits d’intérêts",
+        "Établir des procédures pour donner la priorité, classer et remédier aux problèmes révélés par les tests",
+        "Établir des méthodologies de validation internes pour confirmer que les faiblesses sont entièrement corrigées",
+        "Réaliser des tests appropriés au moins une fois par an sur tous les systèmes TIC soutenant des fonctions critiques ou importantes"
+      ]
+    },
+    {
+      "regulation": "DORA",
+      "article": "Article 25",
+      "title": "Tests des outils et systèmes TIC",
+      "domain": "Tests de résilience",
+      "text": "1. Le programme de tests de résilience opérationnelle numérique visé à l'article 24 prévoit l'exécution de tests appropriés, tels que des évaluations de vulnérabilités et des analyses de scans, des analyses de sources ouvertes, des évaluations de sécurité réseau, des analyses de lacunes, des examens de sécurité physique, des questionnaires et des solutions de logiciels de scan, des examens de code source lorsque cela est réalisable, des tests basés sur des scénarios, des tests de compatibilité, des tests de performance, des tests de bout en bout et des tests de pénétration.\n\n2. Les dépositaires centraux de titres et les contreparties centrales effectuent des évaluations de vulnérabilités avant tout déploiement ou redéploiement de nouvelles applications ou de composants d'infrastructure existants, ainsi que des services TIC soutenant des fonctions critiques ou importantes de l'entité financière.\n\n3. Les microentreprises effectuent les tests visés au paragraphe 1 en combinant une approche fondée sur le risque avec une planification stratégique des tests TIC, en tenant dûment compte de la nécessité de maintenir une approche équilibrée entre l'ampleur des ressources et le temps à allouer aux tests TIC, d'une part, et l'urgence, le type de risque, la criticité des actifs d'information et des services fournis, ainsi que tout autre facteur pertinent, d'autre part.",
+      "obligations": [
+        "Exécuter des évaluations de vulnérabilités et des analyses de scans",
+        "Réaliser des analyses de sources ouvertes",
+        "Effectuer des évaluations de sécurité réseau",
+        "Réaliser des analyses de lacunes",
+        "Effectuer des examens de sécurité physique",
+        "Utiliser des questionnaires et des solutions de logiciels de scan",
+        "Réaliser des examens de code source lorsque cela est réalisable",
+        "Effectuer des tests basés sur des scénarios",
+        "Réaliser des tests de compatibilité",
+        "Effectuer des tests de performance",
+        "Réaliser des tests de bout en bout",
+        "Effectuer des tests de pénétration",
+        "Réaliser des évaluations de vulnérabilités avant le déploiement de nouvelles applications et d'infrastructure"
+      ]
+    },
+    {
+      "regulation": "DORA",
+      "article": "Article 26",
+      "title": "Tests avancés des outils, systèmes et processus TIC fondés sur des tests de pénétration basés sur les menaces",
+      "domain": "Tests de résilience",
+      "text": "1. Les entités financières, autres que les microentreprises, identifiées par les autorités compétentes comme devant effectuer des tests de pénétration basés sur les menaces (TLPT) doivent effectuer de tels tests au moins tous les 3 ans. Sur la base du profil de risque de l'entité financière et en tenant compte des circonstances opérationnelles, l'autorité compétente peut, si nécessaire, demander à l'entité financière de réduire ou d'augmenter cette fréquence.\n\n2. Chaque test de pénétration basé sur les menaces doit couvrir plusieurs ou toutes les fonctions critiques ou importantes d'une entité financière et doit être effectué sur des systèmes de production en direct qui supportent ces fonctions.\n\n3. Les entités financières doivent identifier tous les systèmes, processus et technologies TIC sous-jacents pertinents qui supportent les fonctions critiques ou importantes et les services TIC, y compris ceux qui sont externalisés ou contractés à des fournisseurs de services TIC tiers, et, en tenant compte du fait que l'entité financière reste entièrement responsable de garantir le respect de cet Article, doivent coordonner avec les fournisseurs de services TIC tiers pour assurer leur participation.\n\n4. Les tests de pénétration basés sur les menaces doivent couvrir au minimum les périmètres réseau suivants : les flux de données à l'intérieur et à l'extérieur des périmètres réseau ; la segmentation du réseau ; et la sécurité des services tiers.\n\n5. Les entités financières doivent utiliser les renseignements sur les menaces pour :\n(a) déterminer les acteurs de menaces et leurs scénarios d'attaque spécifiques ;\n(b) définir la portée du TLPT ;\n(c) tester contre des scénarios d'attaque réalistes et crédibles.\n\n6. Des tests groupés peuvent être effectués par plusieurs entités financières lorsque un fournisseur de services TIC tiers fournit des services TIC importants à plusieurs entités financières, sous réserve d'un accord réglementaire et d'une coordination par le superviseur principal.\n\n7. À la fin du TLPT, l'entité financière et tout fournisseur de services TIC tiers impliqué doivent traiter tous les risques identifiés et remédier aux vulnérabilités découvertes grâce au TLPT. L'entité financière doit partager les résultats du TLPT avec l'autorité compétente concernée.\n\n8. Les entités financières doivent assurer la participation des fournisseurs de services TIC tiers aux activités de TLPT dans les arrangements contractuels avec ces fournisseurs.",
+      "obligations": [
+        "Effectuer des tests de pénétration basés sur les menaces (TLPT) au moins tous les 3 ans lorsque requis par l'autorité compétente",
+        "Couvrir plusieurs ou toutes les fonctions critiques ou importantes dans chaque TLPT",
+        "Effectuer le TLPT sur des systèmes de production en direct",
+        "Identifier tous les systèmes, processus et technologies TIC sous-jacents pertinents qui supportent les fonctions critiques ou importantes",
+        "Coordonner avec les fournisseurs de services TIC tiers pour assurer leur participation au TLPT",
+        "Couvrir les périmètres réseau minimum : flux de données, segmentation du réseau, sécurité des services tiers",
+        "Utiliser les renseignements sur les menaces pour déterminer les acteurs de menaces, les scénarios d'attaque et la portée du TLPT",
+        "Tester contre des scénarios d'attaque réalistes et crédibles",
+        "Traiter tous les risques identifiés et remédier aux vulnérabilités après la fin du TLPT",
+        "Partager les résultats du TLPT avec l'autorité compétente concernée",
+        "Assurer la participation des fournisseurs de services TIC tiers au TLPT dans les arrangements contractuels"
+      ]
+    },
+    {
+      "regulation": "DORA",
+      "article": "Article 27",
+      "title": "Exigences pour les testeurs chargés de la réalisation de tests de pénétration menés par les menaces",
+      "domain": "Tests de résilience",
+      "text": "1. Les entités financières ne doivent utiliser des testeurs pour la réalisation des TLPT que si ceux-ci :\n\n(a) sont de la plus haute convenance et réputation ;\n(b) possèdent des capacités techniques et organisationnelles et démontrent une expertise spécifique dans le renseignement menacé, les tests de pénétration et les opérations d'équipe rouge ;\n(c) sont certifiés par un organisme d'accréditation dans un État membre ou adhèrent à des codes de conduite formels ou à des cadres éthiques ;\n(d) fournissent une assurance indépendante, ou sont audités, en ce qui concerne une gestion saine des risques associés à la réalisation des TLPT ;\n(e) sont dûment couverts par des assurances d'indemnisation professionnelle pertinentes, y compris contre les risques de faute professionnelle et de négligence.\n\n2. Lorsqu'elles utilisent des testeurs internes, les entités financières doivent s'assurer que :\n(a) une telle utilisation a été approuvée par l'autorité compétente concernée ;\n(b) l'autorité compétente concernée a vérifié que l'entité financière dispose de ressources dédiées suffisantes et a veillé à ce que les conflits d'intérêts soient évités tout au long des phases de conception et d'exécution du test ;\n(c) le fournisseur de renseignement menacé est extérieur à l'entité financière.\n\n3. Les entités financières doivent s'assurer que les testeurs contractés pour réaliser les TLPT se conforment, tout au long de la durée des TLPT, aux exigences énoncées au paragraphe 1. Les entités financières doivent effectuer une diligence raisonnable lors de la sélection des testeurs.\n\n4. Les TLPT réalisés conformément au présent article et au cadre TIBER-UE mis en œuvre dans le droit national ou appliqué par les autorités compétentes seront mutuellement reconnus dans tous les États membres.",
+      "obligations": [
+        "Utiliser uniquement des testeurs de la plus haute convenance et réputation pour les TLPT",
+        "S'assurer que les testeurs possèdent des capacités techniques dans le renseignement menacé, les tests de pénétration et les opérations d'équipe rouge",
+        "Utiliser des testeurs certifiés ou accrédités formellement adhérant à des codes de conduite reconnus",
+        "S'assurer que les testeurs fournissent une assurance indépendante sur la gestion saine des risques des TLPT",
+        "S'assurer que les testeurs sont couverts par des assurances d'indemnisation professionnelle pertinentes",
+        "Obtenir l'approbation de l'autorité compétente lors de l'utilisation de testeurs internes pour les TLPT",
+        "Vérifier que les testeurs internes ont des ressources dédiées et pas de conflits d'intérêts",
+        "S'assurer que le fournisseur de renseignement menacé est extérieur lors de l'utilisation de testeurs internes",
+        "Vérifier la conformité des testeurs aux exigences tout au long de la durée des TLPT",
+        "Effectuer une diligence raisonnable lors de la sélection des testeurs de TLPT"
+      ]
+    },
+    {
+      "regulation": "DORA",
+      "article": "Article 28",
+      "title": "Principes généraux — Gestion des risques liés aux tiers dans les TIC",
+      "domain": "Risque lié aux tiers",
+      "text": "1. Les entités financières gèrent les risques liés aux tiers dans les TIC comme un élément intégral du risque lié aux TIC dans le cadre de leur gestion des risques liés aux TIC, conformément aux principes suivants :\n\n(a) les entités financières qui ont des arrangements contractuels pour l'utilisation de services de TIC pour faire fonctionner leurs activités commerciales restent, à tout moment, entièrement responsables du respect et de l'exécution de toutes les obligations prévues par le présent règlement et par le droit applicable en matière de services financiers ;\n(b) la gestion par les entités financières des risques liés aux tiers dans les TIC est mise en œuvre à la lumière du principe de proportionnalité, en tenant compte :\n(i) de la nature, de l'ampleur, de la complexité et de l'importance des dépendances liées aux TIC ;\n(ii) des risques découlant des arrangements contractuels relatifs à l'utilisation de services de TIC.\n\n2. Les entités adoptent et réexaminent régulièrement une stratégie en matière de risques liés aux tiers dans les TIC, y compris des politiques relatives à l'utilisation de services de TIC soutenant des fonctions critiques ou importantes, appliquées individuellement et sur des bases sous-consolidées et consolidées.\n\n3. Les entités financières maintiennent et mettent à jour, au niveau de l'entité, ainsi qu'aux niveaux sous-consolidé et consolidé, un registre d'informations relatives à tous les arrangements contractuels relatifs à l'utilisation de services de TIC fournis par des fournisseurs de services de TIC tiers. Le registre est transmis chaque année aux autorités compétentes.\n\n4. Avant de conclure un arrangement contractuel relatif à l'utilisation de services de TIC, les entités financières :\n(a) évaluent si l'arrangement contractuel couvre l'utilisation de services de TIC soutenant une fonction critique ou importante ;\n(b) évaluent si les conditions de surveillance pour la conclusion d'un contrat sont remplies ;\n(c) identifient et évaluent tous les risques pertinents liés à l'arrangement contractuel, y compris le risque de concentration ;\n(d) effectuent toutes les diligences nécessaires auprès des futurs fournisseurs de services de TIC tiers ;\n(e) identifient et évaluent les conflits d'intérêts que l'arrangement contractuel peut causer.\n\n5. Les fournisseurs de services de TIC tiers respectent des normes de sécurité de l'information appropriées. Lorsque les arrangements contractuels concernent des fonctions critiques ou importantes, les entités financières, avant de conclure les arrangements, prennent dûment en considération l'utilisation des normes de sécurité de l'information les plus récentes et de la plus haute qualité.\n\n6. Lorsqu'elles exercent leurs droits d'accès et d'audit sur les fournisseurs de services de TIC tiers, les entités financières déterminent la fréquence des audits et des inspections sur la base d'une approche fondée sur les risques et de normes d'audit communément acceptées.\n\n7. Les entités financières ont le droit de résilier les arrangements contractuels dans les cas suivants :\n(a) violation significative des lois, réglementations ou termes contractuels applicables ;\n(b) circonstances modifiant l'exécution des fonctions au titre de l'arrangement contractuel ;\n(c) preuve de faiblesses dans la gestion globale des risques liés aux TIC du fournisseur de services de TIC tiers ;\n(d) circonstances dans lesquelles l'autorité compétente ne peut plus surveiller efficacement l'entité financière.\n\n8. Pour les fonctions critiques ou importantes, les entités financières mettent en place des stratégies de sortie pour la résiliation ordonnée de l'arrangement contractuel.",
+      "obligations": [
+        "Gérer les risques liés aux tiers dans les TIC dans le cadre de la gestion des risques liés aux TIC",
+        "Rester entièrement responsable du respect de la DORA malgré les arrangements avec des tiers",
+        "Mettre en œuvre la gestion des risques liés aux tiers avec le principe de proportionnalité",
+        "Adopter et réexaminer régulièrement la stratégie en matière de risques liés aux tiers dans les TIC",
+        "Établir une politique relative aux services de TIC soutenant des fonctions critiques ou importantes",
+        "Maintenir un registre de tous les arrangements contractuels aux niveaux de l'entité, sous-consolidé et consolidé",
+        "Transmettre le registre chaque année aux autorités compétentes",
+        "Évaluer si les services soutiennent des fonctions critiques ou importantes avant de conclure un contrat",
+        "Vérifier si les conditions de surveillance sont remplies avant de conclure un contrat",
+        "Identifier et évaluer tous les risques pertinents, y compris le risque de concentration",
+        "Effectuer des diligences auprès des futurs fournisseurs de services de TIC tiers",
+        "Identifier et évaluer les conflits d'intérêts",
+        "Exiger que les fournisseurs de services de TIC tiers respectent des normes de sécurité de l'information appropriées",
+        "Prendre en considération les normes de sécurité de l'information les plus récentes pour les fournisseurs de fonctions critiques ou importantes",
+        "Déterminer la fréquence des audits sur la base d'une approche fondée sur les risques",
+        "Utiliser des normes d'audit communément acceptées pour les évaluations de tiers",
+        "Établir des droits de résiliation pour les violations significatives",
+        "Établir des droits de résiliation pour les circonstances modifiant l'exécution des fonctions",
+        "Établir des droits de résiliation pour les faiblesses dans la gestion des risques liés aux TIC",
+        "Établir des droits de résiliation pour les obstacles à la surveillance",
+        "Développer des stratégies de sortie pour la résiliation ordonnée des fonctions critiques ou importantes"
+      ]
+    },
+    {
+      "regulation": "DORA",
+      "article": "Article 29",
+      "title": "Évaluation préalable du risque de concentration des TIC",
+      "domain": "Risque lié aux tiers",
+      "text": "1. Lors de l'identification et de l'évaluation des risques visés à l'article 28, paragraphe 4, point c), les entités financières déterminent également si la conclusion d'un accord contractuel pour des services de TIC soutenant des fonctions critiques ou importantes entraînerait :\n\n(a) la conclusion d'un contrat avec un fournisseur de services de TIC tiers qui n'est pas facilement substituable ;\n\n(b) la mise en place de multiples accords contractuels relatifs à la prestation de services de TIC soutenant des fonctions critiques ou importantes avec le même fournisseur de services de TIC tiers ou avec des fournisseurs de services de TIC tiers étroitement liés.\n\nLes entités financières évaluent les avantages et les coûts des solutions alternatives, telles que l'utilisation de différents fournisseurs de services de TIC tiers, en tenant compte du fait que les solutions envisagées correspondent aux besoins et aux objectifs commerciaux énoncés dans la stratégie de résilience opérationnelle numérique.\n\n2. Lorsque les accords contractuels relatifs à l'utilisation de services de TIC incluent la possibilité qu'un fournisseur de services de TIC tiers sous-traite des services de TIC soutenant une fonction critique ou importante à d'autres fournisseurs de services de TIC tiers, les entités financières évaluent les avantages et les risques qui peuvent découler d'une telle sous-traitance, en particulier en ce qui concerne un sous-traitant TIC de pays tiers.\n\nLorsque les accords contractuels concernent des services de TIC soutenant des fonctions critiques ou importantes, les entités financières tiennent dûment compte des dispositions de droit de l'insolvabilité qui s'appliqueraient en cas de faillite du fournisseur de services de TIC tiers, ainsi que de toute contrainte qui pourrait découler de la récupération urgente des données de l'entité financière.\n\nLorsque les accords contractuels relatifs à l'utilisation de services de TIC sont conclus avec un fournisseur de services de TIC tiers établi dans un pays tiers, les entités financières évaluent en outre la conformité aux règles de protection des données de l'Union et l'application effective de la loi dans ce pays tiers.\n\nLorsque la sous-traitance est autorisée, les entités financières évaluent si et comment des chaînes de sous-traitance potentiellement longues ou complexes peuvent avoir un impact sur leur capacité à surveiller pleinement les fonctions contractées et sur la capacité de l'autorité compétente à superviser efficacement l'entité financière à cet égard.",
+      "obligations": [
+        "Évaluer le risque de concentration avant de conclure des accords de services pour des fonctions critiques ou importantes",
+        "Évaluer la substituabilité du fournisseur de services tiers proposé",
+        "Évaluer le risque de multiples accords avec le même fournisseur ou des fournisseurs étroitement liés",
+        "Évaluer les avantages et les coûts des solutions alternatives",
+        "Aligner les accords avec des tiers sur la stratégie de résilience opérationnelle numérique",
+        "Évaluer les risques de sous-traitance autorisée pour des fonctions critiques ou importantes",
+        "Évaluer les risques liés à un sous-traitant de pays tiers",
+        "Considérer les dispositions de droit de l'insolvabilité applicables au fournisseur",
+        "Évaluer les contraintes affectant la récupération urgente des données",
+        "Évaluer la conformité du fournisseur de pays tiers aux règles de protection des données de l'Union",
+        "Évaluer l'application effective de la loi dans le pays tiers",
+        "Évaluer l'impact des chaînes de sous-traitance complexes sur la capacité de surveillance"
+      ]
+    },
+    {
+      "regulation": "DORA",
+      "article": "Article 30",
+      "title": "Dispositions contractuelles clés",
+      "domain": "Risque lié aux tiers",
+      "text": "1. Les droits et obligations de l'entité financière et du fournisseur de services TIC tiers doivent être clairement alloués et consignés par écrit. Le contrat complet doit inclure l'accord de niveau de service et être documenté dans un document écrit unique qui est accessible aux parties sur papier, ou dans un document avec un autre format téléchargeable, durable et accessible.\n\n2. Les dispositions contractuelles relatives à l'utilisation des services TIC doivent inclure au moins les éléments suivants :\n\n(a) une description claire et complète de toutes les fonctions et services TIC à fournir par le fournisseur de services TIC tiers, en indiquant si la sous-traitance d'un service TIC soutenant une fonction critique ou importante, ou des parties essentielles de celle-ci, est autorisée, et, si tel est le cas, les conditions applicables à une telle sous-traitance ;\n(b) les lieux, à savoir les régions ou les pays, où les fonctions et les services TIC contractés ou sous-traités doivent être fournis et où les données doivent être traitées, y compris l'emplacement de stockage, et l'obligation pour le fournisseur de services TIC tiers de notifier l'entité financière si celui-ci envisage de modifier ces lieux ;\n(c) des dispositions relatives à la disponibilité, à l'authenticité, à l'intégrité et à la confidentialité en relation avec la protection des données, y compris les données personnelles ;\n(d) des dispositions relatives à la garantie d'accès, de récupération et de restitution, dans un format facilement accessible, des données personnelles et non personnelles traitées par le fournisseur de services TIC tiers en cas d'insolvabilité, de résolution ou de cessation d'activité de celui-ci, ou en cas de résiliation des dispositions contractuelles ;\n(e) des descriptions de niveau de service, y compris les mises à jour et les révisions ;\n(f) l'obligation du fournisseur de services TIC tiers de fournir une assistance à l'entité financière sans frais supplémentaires, ou à un coût déterminé à l'avance, lorsque survient un incident TIC lié au service TIC fourni à l'entité financière ;\n(g) l'obligation du fournisseur de services TIC tiers de coopérer pleinement avec les autorités compétentes et les autorités de résolution de l'entité financière, y compris les personnes désignées par celles-ci ;\n(h) les droits de résiliation et les délais de préavis minimaux pour la résiliation des dispositions contractuelles, conformément aux attentes des autorités compétentes et des autorités de résolution ;\n(i) les conditions de participation des fournisseurs de services TIC tiers aux programmes de sensibilisation à la sécurité TIC et à la formation à la résilience opérationnelle numérique des entités financières.\n\n3. Pour les dispositions contractuelles relatives à l'utilisation des services TIC soutenant les fonctions critiques ou importantes, les éléments suivants doivent être inclus en outre :\n\n(a) des descriptions complètes de niveau de service, y compris les mises à jour et les révisions, avec des objectifs de performance quantitatifs et qualitatifs précis dans les niveaux de service convenus ;\n(b) des délais de préavis et des obligations de notification du fournisseur de services TIC tiers à l'entité financière, y compris la notification de tout développement qui pourrait avoir un impact significatif sur la capacité du fournisseur de services TIC tiers à fournir efficacement les services TIC ;\n(c) des exigences pour que le fournisseur de services TIC tiers mette en œuvre et teste des plans de continuité des activités ;\n(d) l'obligation du fournisseur de services TIC tiers de participer et de coopérer pleinement avec les tests de résistance aux perturbations (TLPT) de l'entité financière, tels que visés aux articles 26 et 27 ;\n(e) le droit de surveiller, de manière continue, les performances du fournisseur de services TIC tiers, ce qui implique :\n(i) des droits d'accès, d'inspection et d'audit non restrictifs par l'entité financière, ou un tiers désigné, et par l'autorité compétente ;\n(ii) le droit de convenir de niveaux de garantie alternatifs si les droits d'autres clients sont affectés ;\n(f) des stratégies de sortie, en particulier la mise en place d'une période de transition adéquate et obligatoire :\n(i) pendant laquelle le fournisseur de services TIC tiers continuera à fournir les fonctions ou les services TIC concernés, dans le but de réduire le risque de perturbation au sein de l'entité financière ou de permettre à l'entité financière de transitionner efficacement vers un autre fournisseur de services TIC tiers ou vers des solutions internes ;\n(ii) permettant à l'entité financière de migrer vers un autre fournisseur de services TIC tiers ou vers des solutions internes.\n\n4. Les entités financières et les fournisseurs de services TIC tiers doivent utiliser des clauses contractuelles types développées par les autorités publiques pour des services spécifiques.\n\n5. Les AES doivent élaborer des projets de normes techniques de réglementation sur les clauses contractuelles types d'ici le 17 juillet 2024.",
+      "obligations": [
+        "Allouer clairement les droits et obligations par écrit",
+        "Documenter le contrat complet, y compris l'ALS, par écrit ou dans un format durable accessible",
+        "Fournir une description claire et complète de toutes les fonctions et services TIC",
+        "Spécifier les autorisations de sous-traitance et les conditions applicables",
+        "Spécifier les lieux de prestation de services et de traitement de données",
+        "Exiger une notification en cas de changement de lieux",
+        "Inclure des dispositions relatives à la disponibilité, à l'authenticité, à l'intégrité et à la confidentialité des données",
+        "Inclure des dispositions pour l'accès, la récupération et la restitution des données en cas d'insolvabilité ou de résiliation",
+        "Inclure des descriptions de niveau de service, y compris les mises à jour et les révisions",
+        "Exiger l'assistance du fournisseur sans frais supplémentaires en cas d'incident TIC",
+        "Exiger la coopération pleine et entière avec les autorités compétentes et les autorités de résolution",
+        "Inclure les droits de résiliation et les délais de préavis minimaux",
+        "Inclure les conditions de participation aux programmes de sensibilisation à la sécurité TIC",
+        "Inclure des objectifs de performance quantitatifs et qualitatifs précis pour les fonctions critiques ou importantes",
+        "Inclure des délais de préavis et des obligations de notification pour les développements ayant un impact significatif",
+        "Exiger la mise en œuvre et la mise à l'essai de plans de continuité des activités",
+        "Exiger la participation du fournisseur aux tests de résistance aux perturbations (TLPT) conformément aux articles 26 et 27",
+        "Inclure des droits d'accès, d'inspection et d'audit non restrictifs",
+        "Inclure des stratégies de sortie avec une période de transition adéquate et obligatoire",
+        "La période de transition doit permettre la poursuite de la prestation de services pour réduire le risque de perturbation",
+        "La période de transition doit permettre la migration vers un autre fournisseur ou des solutions internes",
+        "Utiliser des clauses contractuelles types développées par les autorités publiques lorsque disponibles"
+      ]
+    },
+    {
+      "regulation": "DORA",
+      "article": "Article 31",
+      "title": "Désignation des fournisseurs de services TIC tiers critiques",
+      "domain": "Surveillance des fournisseurs de services TIC tiers",
+      "text": "1. Les AES, par l'intermédiaire du Comité conjoint, sur la base d'une recommandation de l'équipe d'examen conjointe, désignent les fournisseurs de services TIC tiers qui sont critiques pour les entités financières.\n\n2. La désignation est basée sur des critères comprenant : l'impact systémique sur la stabilité, la continuité ou la qualité de la prestation de services financiers en cas de défaillance ou de perturbation des fournisseurs de services TIC tiers ; le caractère systémique ou l'importance des entités financières qui dépendent des fournisseurs de services TIC tiers concernés ; le degré de substituabilité du fournisseur de services TIC tiers ; le nombre d'institutions financières mondiales systémiquement importantes (IFMSI) ou d'autres institutions systémiquement importantes (ISI) qui dépendent du fournisseur de services TIC tiers ; l'interdépendance entre les fournisseurs de services TIC tiers et le nombre de fournisseurs de services TIC tiers qui sont interconnectés les uns avec les autres ; ainsi que le niveau d'innovation ou le degré de sophistication des services TIC concernés.\n\n3. Une désignation en tant que fournisseur de services TIC tiers critique n'est pas effectuée lorsque le fournisseur de services TIC tiers est :\n(a) une entité financière au sens du présent règlement;\n(b) une entité financière ou un fournisseur de services TIC tiers établi dans un pays tiers où il n'existe pas de surveillance réciproque des fournisseurs de services TIC tiers;\n(c) un fournisseur de services TIC intra-groupe.\n\n4. Les AES tiennent un registre public des fournisseurs de services TIC tiers critiques désignés.\n\nLes entités financières doivent identifier lesquels de leurs fournisseurs de services TIC tiers sont ou deviennent des fournisseurs critiques, car cela affecte les exigences de surveillance et renforce l'examen de ces fournisseurs.",
+      "obligations": [
+        "Identifier lesquels des fournisseurs de services TIC tiers sont désignés comme critiques par les AES",
+        "Surveiller le registre public des AES des fournisseurs de services TIC tiers critiques désignés",
+        "Appliquer une surveillance renforcée aux arrangements contractuels avec les fournisseurs de services TIC tiers critiques",
+        "Comprendre que les fournisseurs de services TIC tiers critiques sont soumis à la supervision du superviseur principal",
+        "Coopérer avec les demandes d'information du superviseur principal concernant les relations avec les fournisseurs critiques",
+        "Notifier les autorités compétentes des changements importants apportés aux arrangements avec les fournisseurs de services TIC tiers critiques"
+      ]
+    },
+    {
+      "regulation": "DORA",
+      "article": "Article 32",
+      "title": "Structure du cadre de surveillance",
+      "domain": "Surveillance de tiers TIC",
+      "text": "1. Le Comité conjoint des AES, assisté par le Forum de surveillance, coordonne les activités du cadre de surveillance des AES concernées et assure une application cohérente.\n\n2. Chaque fournisseur de services de tiers TIC critiques sera affecté à l'une des AES en tant que surveillant principal en fonction du type d'entités financières auxquelles il fournit principalement des services. Le surveillant principal pour les fournisseurs de services de tiers TIC critiques servant principalement les établissements de crédit et les entreprises d'investissement sera l'ABE. Le surveillant principal pour les fournisseurs de services de tiers TIC critiques servant principalement les entreprises d'assurance sera l'Autorité européenne des assurances et des pensions professionnelles (AEAPP). Le surveillant principal pour les fournisseurs de services de tiers TIC critiques servant principalement les gestionnaires de fonds, les contreparties centrales, les lieux de négociation et les référentiels de négociation sera l'AEMF.\n\n3. Le Forum de surveillance sera composé des présidents des AES, de représentants de haut niveau des autorités compétentes et de la BCE. Il préparera, entre autres, des recommandations préalables pour les surveillants principaux et facilitera la coordination des autorités compétentes nationales en ce qui concerne la surveillance des fournisseurs de services de tiers TIC critiques.\n\n4. Les entités financières coopéreront avec le surveillant principal et fourniront les informations demandées par le surveillant principal concernant leur utilisation des services des fournisseurs de services de tiers TIC critiques.\n\n5. Le surveillant principal aura accès à tous les documents et informations pertinents, y compris ceux détenus par les entités financières liés aux fournisseurs de services de tiers TIC critiques.",
+      "obligations": [
+        "Coopérer avec le surveillant principal (ABE, AEAPP ou AEMF selon le type d'entité) concernant les fournisseurs de services de tiers TIC critiques",
+        "Fournir les informations demandées par le surveillant principal sur l'utilisation des services de tiers TIC critiques",
+        "Mettre les documents et informations à disposition du surveillant principal lorsqu'il en fait la demande",
+        "Comprendre que l'ABE surveille les fournisseurs critiques servant les établissements de crédit et les entreprises d'investissement",
+        "Comprendre que l'AEAPP surveille les fournisseurs critiques servant les entreprises d'assurance",
+        "Comprendre que l'AEMF surveille les fournisseurs critiques servant les gestionnaires de fonds, les contreparties centrales, les lieux de négociation et les référentiels de négociation"
+      ]
+    },
+    {
+      "regulation": "DORA",
+      "article": "Article 33",
+      "title": "Tâches du superviseur principal",
+      "domain": "Surveillance des tiers TIC",
+      "text": "1. Le superviseur principal est chargé des tâches suivantes :\n\n(a) être le point de contact principal pour le fournisseur de services TIC tiers critiques en ce qui concerne l'exercice du mandat de surveillance;\n(b) prendre, sur la base d'une recommandation du Forum de surveillance, des mesures;\n(c) établir le plan de surveillance individuel décrivant les objectifs de surveillance annuels et les principales actions de surveillance prévues pour chaque fournisseur de services TIC tiers critiques;\n(d) mener conjointement, avec les autorités compétentes concernées, toutes les activités et tâches relatives à l'exercice de leur mandat de surveillance.\n\n2. Le superviseur principal est chargé, en ce qui concerne les fournisseurs de services TIC tiers critiques soumis à sa surveillance, des tâches suivantes :\n\n(a) effectuer des enquêtes et des inspections générales;\n(b) demander des informations et des documents au fournisseur de services TIC tiers critiques;\n(c) exiger que le fournisseur de services TIC tiers critiques participe à des enquêtes et des inspections générales;\n(d) imposer des sanctions non financières conformément à l'article 35, paragraphe 6;\n(e) émettre des recommandations au fournisseur de services TIC tiers critiques;\n(f) établir le rapport de surveillance annuel.\n\n3. Les entités financières doivent soutenir le superviseur principal dans sa surveillance des fournisseurs de services TIC tiers critiques et veiller à ce que leurs arrangements contractuels avec ces fournisseurs permettent au superviseur principal d'exercer son mandat de surveillance de manière effective.",
+      "obligations": [
+        "Soutenir les tâches du superviseur principal dans la surveillance des fournisseurs de services TIC tiers critiques",
+        "Garantir que les arrangements contractuels avec les fournisseurs de services TIC critiques permettent une surveillance effective du superviseur principal",
+        "Inclure des dispositions dans les contrats permettant au superviseur principal d'accéder et d'inspecter",
+        "Coopérer avec les enquêtes et les inspections générales des fournisseurs de services TIC tiers critiques",
+        "Fournir des informations au superviseur principal sur demande concernant les relations avec les fournisseurs de services TIC critiques"
+      ]
+    },
+    {
+      "regulation": "DORA",
+      "article": "Article 34",
+      "title": "Coordination opérationnelle entre les principaux organes de surveillance",
+      "domain": "Surveillance de tiers TIC",
+      "text": "1. Les principaux organes de surveillance doivent coordonner et coopérer, en particulier par le biais du Forum de surveillance, lorsqu'ils exercent leurs mandats de surveillance respectifs.\n\n2. Les principaux organes de surveillance doivent partager les informations relatives aux fournisseurs de services de tiers TIC critiques, y compris les informations sur les incidents graves et les évaluations de surveillance.\n\n3. Les autorités compétentes nationales doivent coopérer avec le principal organe de surveillance et partager les informations avec le principal organe de surveillance lorsque ces informations sont pertinentes pour la surveillance des fournisseurs de services de tiers TIC critiques.\n\n4. Les entités financières ne doivent pas être tenues de divulguer les mêmes informations à plusieurs principaux organes de surveillance lorsque un fournisseur de services de tiers TIC critique est soumis à la surveillance de plus d'un principal organe de surveillance.\n\nLes entités financières doivent être informées des mécanismes de coordination entre les autorités de surveillance pour éviter les doublons et assurer la cohérence dans la réponse aux demandes d'information liées à leurs fournisseurs de services de tiers TIC critiques.",
+      "obligations": [
+        "Éviter les divulgations d'informations redondantes lorsque le fournisseur critique est soumis à plusieurs principaux organes de surveillance",
+        "Coopérer aux activités de surveillance coordonnées entre plusieurs principaux organes de surveillance",
+        "Conserver les documents permettant de répondre de manière efficace aux demandes d'information de surveillance coordonnée"
+      ]
+    },
+    {
+      "regulation": "DORA",
+      "article": "Article 35",
+      "title": "Pouvoirs du superviseur principal",
+      "domain": "Surveillance de tiers TIC",
+      "text": "1. Aux fins de l'exécution du mandat visé à l'article 33, paragraphe 2, le superviseur principal dispose des pouvoirs suivants à l'égard des fournisseurs de services TIC critiques tiers :\n\n(a) le pouvoir de demander toutes les informations et la documentation pertinentes conformément à l'article 37 ;\n(b) le pouvoir de mener des enquêtes et des inspections générales conformément aux articles 38 et 39 ;\n(c) le pouvoir de demander, après la fin des activités de surveillance, des rapports précisant les mesures prises ou les remèdes mis en œuvre par le fournisseur de services TIC critiques tiers en relation avec les recommandations du superviseur principal.\n\n2. Le superviseur principal peut également mener des activités de surveillance conjointement avec les autorités compétentes.\n\n3. Lorsqu'il exerce ses pouvoirs, le superviseur principal tient compte de l'ampleur et de la complexité des services fournis par le fournisseur de services TIC critiques tiers, ainsi que de la nature, de l'étendue et de la complexité des services TIC fournis aux entités financières.\n\n4. Le superviseur principal impose des astreintes périodiques pour contraindre les fournisseurs de services TIC critiques tiers à se conformer aux demandes d'information, aux enquêtes, aux inspections, aux actions de remédiation et aux recommandations.\n\n5. L'astreinte périodique pour chaque jour de non-conformité ne peut excéder 1 % du chiffre d'affaires quotidien moyen mondial du fournisseur de services TIC critiques tiers au cours de l'exercice commercial précédent.\n\n6. Le superviseur principal peut exiger, dans un délai déterminé, que les entités financières qui utilisent les services du fournisseur de services TIC critiques tiers mettent fin, en tout ou en partie, aux arrangements contractuels avec ce fournisseur.\n\nLes entités financières doivent coopérer avec le superviseur principal lorsqu'il exerce ses pouvoirs et peuvent être tenues de mettre fin aux arrangements avec les fournisseurs de services TIC critiques tiers non conformes.",
+      "obligations": [
+        "Coopérer avec les enquêtes et les demandes d'information du superviseur principal concernant les fournisseurs de services TIC critiques",
+        "Fournir la documentation demandée par le superviseur principal sur les relations avec les fournisseurs de services TIC critiques",
+        "Être prêt à mettre fin aux arrangements contractuels avec les fournisseurs de services TIC critiques sur ordre du superviseur principal",
+        "Coopérer avec les activités de surveillance conjointes menées avec les autorités compétentes",
+        "Faciliter l'accès du superviseur principal pour mener efficacement les activités de surveillance"
+      ]
+    },
+    {
+      "regulation": "DORA",
+      "article": "Article 36",
+      "title": "Exercice des pouvoirs du superviseur principal en dehors de l'Union",
+      "domain": "Surveillance de tiers TIC",
+      "text": "1. Lorsqu'un fournisseur de services TIC tiers qui a été désigné comme critique est établi dans un pays tiers, il doit établir une filiale dans l'Union dans les 12 mois suivant sa désignation en tant que fournisseur de services TIC tiers critiques.\n\n2. L'exigence visée au paragraphe 1 ne s'applique pas lorsque :\n(a) le fournisseur de services TIC tiers est établi dans un pays avec lequel l'Union a conclu un accord international sur la reconnaissance et l'équivalence mutuelles des régimes de surveillance des fournisseurs de services TIC tiers;\n(b) le fournisseur de services TIC tiers peut démontrer que les exigences de surveillance appliquées dans le pays tiers dans lequel il est établi sont équivalentes à celles du présent règlement;\n(c) après la completion des activités de surveillance, le superviseur principal a conclu que le fournisseur de services TIC tiers n'est pas soumis à des dispositions de surveillance dans un pays tiers.\n\n3. Les entités financières utilisant des services de fournisseurs de services TIC tiers de pays tiers doivent surveiller le statut des exigences de filiale de l'Union et la conformité de leurs fournisseurs.\n\nLes entités financières contractant des services TIC auprès de fournisseurs de pays tiers devraient évaluer si ces fournisseurs peuvent être désignés comme critiques et quelles sont les implications pour leurs arrangements de services et leur continuité.",
+      "obligations": [
+        "Surveiller la conformité des fournisseurs de services TIC tiers critiques de pays tiers avec les exigences d'établissement de filiales de l'Union",
+        "Évaluer les implications de la désignation d'un fournisseur de pays tiers comme critique pour la continuité des services",
+        "Considérer l'équivalence réglementaire des pays tiers lors de l'évaluation du risque lié aux fournisseurs de services TIC",
+        "Inclure des dispositions dans les contrats avec les fournisseurs de pays tiers relatives aux exigences de coopération en matière de surveillance",
+        "Prévoir des mesures de contingence en cas d'échec d'un fournisseur de services TIC critique de pays tiers à établir une filiale dans l'UE"
+      ]
+    },
+    {
+      "regulation": "DORA",
+      "article": "Article 37",
+      "title": "Demande d'informations",
+      "domain": "Supervision de tiers TIC",
+      "text": "1. Le superviseur principal peut, par simple demande ou par décision, exiger des fournisseurs de services TIC tiers critiques de fournir toutes les informations nécessaires pour que le superviseur principal puisse exercer ses fonctions en vertu du présent règlement, y compris tous les documents commerciaux ou opérationnels pertinents, contrats, politiques, documentation, rapports d'audit de sécurité TIC, rapports d'incidents liés aux TIC, ainsi que toute information relative aux parties auxquelles le fournisseur de services TIC tiers critique a sous-traité des fonctions ou des activités opérationnelles.\n\n2. Lorsqu'il envoie une simple demande d'information en vertu du paragraphe 1, le superviseur principal doit :\n(a) se référer au présent article comme base juridique de la demande;\n(b) indiquer l'objet de la demande;\n(c) spécifier les informations requises;\n(d) fixer un délai dans lequel les informations doivent être fournies;\n(e) indiquer qu'il n'y a pas d'obligation de fournir les informations, mais qu'une réponse volontaire à la demande ne doit pas être incorrecte ou trompeuse.\n\n3. Les entités financières qui utilisent des services du fournisseur de services TIC tiers critique peuvent être tenues de contribuer à la fourniture d'informations lorsque le superviseur principal estime que cela est nécessaire et lorsque les informations sont détenues au niveau de l'entité financière.\n\n4. Les entités financières doivent conserver des dossiers complets de leurs accords contractuels avec les fournisseurs de services TIC tiers critiques pour faciliter les réponses aux demandes d'information du superviseur principal.",
+      "obligations": [
+        "Assister le superviseur principal dans la fourniture d'informations sur les relations avec les fournisseurs de services TIC tiers critiques lorsque demandé",
+        "Conserver des dossiers complets des accords contractuels avec les fournisseurs de services TIC tiers critiques",
+        "Répondre promptement et avec exactitude aux demandes d'information du superviseur principal",
+        "Garantir que les dossiers comprennent tous les documents, contrats, politiques et rapports d'audit pertinents liés aux fournisseurs de services TIC critiques",
+        "Garantir que les informations fournies au superviseur principal sont exactes, complètes et non trompeuses"
+      ]
+    },
+    {
+      "regulation": "DORA",
+      "article": "Article 38",
+      "title": "Enquêtes générales",
+      "domain": "Surveillance de tiers TIC",
+      "text": "1. Afin d'accomplir ses tâches en vertu du présent règlement, et avec l'assistance des autorités compétentes des États membres dans lesquels le fournisseur de services TIC tiers critiques opère ou dans lesquels les locaux pertinents sont situés, le superviseur principal peut mener des enquêtes sur les fournisseurs de services TIC tiers critiques.\n\n2. Le superviseur principal a le pouvoir de :\n(a) examiner les documents, les données, les procédures et tout autre matériel pertinent à l'exécution de ses tâches, quelle que soit le support sur lequel ils sont stockés;\n(b) prendre ou obtenir des copies certifiées ou des extraits de tels documents, données, procédures et autre matériel;\n(c) convoquer et demander à des représentants du fournisseur de services TIC tiers critiques des explications orales ou écrites sur des faits ou des documents relatifs à l'objet et au but de l'inspection et d'enregistrer les réponses;\n(d) interroger toute autre personne physique ou morale qui consent à être interrogée aux fins de collecter des informations relatives à l'objet d'une enquête.\n\n3. Les entités financières peuvent être interrogées ou invitées à fournir des documents ou des preuves à l'appui pendant une enquête du superviseur principal sur un fournisseur de services TIC tiers critiques.\n\n4. Les entités financières doivent coopérer pleinement et promptement avec les enquêtes du superviseur principal et doivent veiller à ce que leurs arrangements contractuels avec les fournisseurs de services TIC tiers critiques comprennent des dispositions facilitant une telle coopération.",
+      "obligations": [
+        "Coopérer pleinement avec les enquêtes du superviseur principal sur les fournisseurs de services TIC tiers critiques",
+        "Fournir des explications orales ou écrites aux enquêteurs du superviseur principal lorsqu'ils en font la demande",
+        "Fournir des documents ou des preuves à l'appui pendant les enquêtes du superviseur principal",
+        "Veiller à ce que les arrangements contractuels comprennent des dispositions facilitant la coopération avec les enquêtes du superviseur principal",
+        "Mettre les documents et les données à la disposition des enquêteurs du superviseur principal sur demande"
+      ]
+    },
+    {
+      "regulation": "DORA",
+      "article": "Article 39",
+      "title": "Inspections",
+      "domain": "Surveillance de tiers TIC",
+      "text": "1. Afin d'accomplir ses missions en vertu du présent règlement, l'autorité de surveillance principale peut, avec notification préalable, effectuer des inspections sur place dans tout établissement, terrain ou propriété du fournisseur de services de tiers TIC critiques, ainsi que des inspections hors site.\n\n2. L'autorité de surveillance principale a le pouvoir de :\n(a) pénétrer dans tout établissement, terrain ou propriété;\n(b) examiner les livres, registres et données sous quelque forme que ce soit;\n(c) obtenir ou prendre des copies de documents;\n(d) effectuer des audits de la gestion des risques TIC, des politiques, des procédures, des systèmes TIC et des processus du fournisseur de services de tiers TIC critiques;\n(e) interroger le personnel.\n\n3. Les fonctionnaires et autres personnes autorisées par l'autorité de surveillance principale à effectuer une inspection sur place exercent leurs pouvoirs sur présentation d'une autorisation écrite.\n\n4. Les fonctionnaires autorisés par l'autorité de surveillance principale peuvent également sceller tout établissement et livres et registres pour la durée de, et dans la mesure nécessaire à, l'inspection.\n\n5. Les entités financières sont informées de et peuvent être tenues de participer à ou de faciliter les inspections de l'autorité de surveillance principale des fournisseurs de services de tiers TIC critiques lorsque ces inspections concernent des services fournis à l'entité financière.\n\n6. Les entités financières s'assurent que les arrangements contractuels avec les fournisseurs de services de tiers TIC critiques comprennent des dispositions permettant l'accès à l'inspection de l'autorité de surveillance principale et de l'autorité compétente.",
+      "obligations": [
+        "Faciliter les inspections sur place de l'autorité de surveillance principale des fournisseurs de services de tiers TIC critiques lorsque requis",
+        "Participer aux activités d'inspection de l'autorité de surveillance principale lorsque demandé",
+        "S'assurer que les contrats avec les fournisseurs de services TIC critiques comprennent des dispositions d'accès à l'inspection de l'autorité de surveillance principale",
+        "S'assurer que les contrats comprennent des dispositions d'accès à l'inspection de l'autorité compétente",
+        "Coopérer avec les fonctionnaires autorisés à effectuer des inspections des fournisseurs de services de tiers TIC critiques"
+      ]
+    },
+    {
+      "regulation": "DORA",
+      "article": "Article 40",
+      "title": "Surveillance continue",
+      "domain": "Surveillance de tiers TIC",
+      "text": "1. Le surveillant principal établit un plan de surveillance individuel pour chaque fournisseur de services TIC critiques couvrant :\n\n(a) les objectifs de surveillance annuels pour le fournisseur de services TIC critiques, en tenant compte du profil de risque du fournisseur de services TIC;\n(b) les principales actions prévues au cours du cycle de surveillance, y compris les enquêtes générales et les inspections sur place prévues;\n(c) toute autre tâche que le surveillant principal juge appropriée.\n\n2. À l'issue des activités de surveillance, le surveillant principal émet des recommandations au fournisseur de services TIC critiques à exécuter dans le délai spécifié. Ces recommandations abordent :\n(a) les mesures techniques et les mesures organisationnelles;\n(b) les mesures de sécurité TIC.\n\n3. Lorsque le fournisseur de services TIC critiques ne se conforme pas aux recommandations dans le délai spécifié, le surveillant principal notifie les autorités compétentes des entités financières utilisant les services de ce fournisseur.\n\n4. Les entités financières adaptent leur utilisation et leur dépendance à l'égard des fournisseurs de services TIC critiques en fonction des résultats des activités de surveillance et des recommandations du surveillant principal.\n\n5. Les entités financières surveillent les communications des autorités compétentes concernant le statut de conformité de leurs fournisseurs de services TIC critiques.",
+      "obligations": [
+        "Surveiller les résultats et les recommandations du plan de surveillance du surveillant principal pour les fournisseurs de services TIC critiques",
+        "Adapter l'utilisation des fournisseurs de services TIC critiques en fonction des résultats de la surveillance du surveillant principal",
+        "Surveiller les notifications des autorités compétentes concernant le non-respect des fournisseurs de services TIC critiques",
+        "Planifier des réponses de contingence aux notifications potentielles de non-conformité du surveillant principal concernant les fournisseurs critiques",
+        "Examiner les arrangements contractuels avec les fournisseurs de services TIC critiques à la lumière des résultats et des recommandations de la surveillance"
+      ]
+    },
+    {
+      "regulation": "DORA",
+      "article": "Article 41",
+      "title": "Harmonisation des conditions permettant la conduite d'activités de surveillance",
+      "domain": "Surveillance de tiers TIC",
+      "text": "Les AES élaboreront, par l'intermédiaire du Comité mixte, des projets de normes techniques de réglementation pour préciser :\n\n(a) les informations à fournir par les fournisseurs de services de tiers TIC dans la demande de désignation volontaire visée à l'article 31 ;\n(b) le contenu, la structure et le format des informations à soumettre, à divulguer ou à signaler par les fournisseurs de services de tiers TIC critiques conformément à l'article 35, paragraphe 1, point c), et à l'article 39 ;\n(c) les critères pour déterminer la composition de l'équipe d'examen conjointe et les modalités de coordination entre le surveillant principal et les autorités compétentes en ce qui concerne les activités de surveillance, les échanges d'informations et les tâches de coopération ;\n(d) les détails de la coopération entre les autorités compétentes et le surveillant principal, en particulier le type d'informations à échanger ;\n(e) les modalités de la façon dont les entités financières peuvent faciliter les échanges d'informations avec le surveillant principal pendant les activités de surveillance.\n\nLes entités financières doivent se conformer aux normes techniques de réglementation applicables élaborées en vertu du présent article, qui précisent la façon de faciliter les échanges d'informations de surveillance entre les entités financières et les surveillants principaux.",
+      "obligations": [
+        "Se conformer aux exigences des NTR relatives à la facilitation des échanges d'informations avec les surveillants principaux pendant les activités de surveillance",
+        "Mettre en œuvre des processus pour fournir efficacement les informations aux surveillants principaux dans le format et le contenu prescrits",
+        "Surveiller la publication des normes techniques de réglementation régissant l'harmonisation des activités de surveillance",
+        "Mettre à jour les procédures internes lorsque les exigences des NTR relatives à la coopération dans le cadre de la surveillance sont publiées"
+      ]
+    },
+    {
+      "regulation": "DORA",
+      "article": "Article 42",
+      "title": "Suivi par les autorités compétentes",
+      "domain": "Surveillance de tiers TIC",
+      "text": "1. Sans préjudice des pouvoirs des autorités compétentes en vertu du droit de l'Union sectoriel pertinent, lorsque le superviseur principal a informé une autorité compétente qu'un fournisseur de services TIC tiers critiques n'a pas respecté les recommandations qui lui ont été adressées en vertu de l'article 40, paragraphe 2, l'autorité compétente doit, lorsque le non-respect de ces recommandations est susceptible d'affecter la résilience opérationnelle numérique de l'entité financière utilisant les services TIC de ce fournisseur de services TIC tiers critiques, prendre les mesures suivantes :\n\n(a) donner instruction à l'entité financière de suspendre temporairement, en tout ou en partie, l'utilisation ou la confiance dans les services TIC concernés jusqu'à ce que les risques identifiés dans les recommandations aient été traités ;\n(b) donner instruction à l'entité financière de résilier, en tout ou en partie, les accords contractuels pertinents avec le fournisseur de services TIC tiers critiques.\n\n2. Lorsqu'une entité financière a été invitée à résilier un accord contractuel en vertu du paragraphe 1, point (b), cette résiliation prend effet conformément aux conditions et modalités applicables de l'accord contractuel et de manière à limiter la perturbation des activités de l'entité financière.\n\n3. Les entités financières doivent élaborer des plans de continuité et des stratégies de sortie pour permettre une résiliation ordonnée des relations de services TIC critiques lorsqu'elles en sont instruites par les autorités compétentes.\n\n4. Les entités financières doivent surveiller le statut de conformité de leurs fournisseurs de services TIC tiers critiques aux recommandations du superviseur principal.",
+      "obligations": [
+        "Être prêt à suspendre l'utilisation des services TIC critiques si l'autorité compétente le demande en raison du non-respect du fournisseur",
+        "Être prêt à résilier les accords contractuels de services TIC critiques si l'autorité compétente le demande",
+        "Élaborer des plans de continuité permettant une résiliation ordonnée des relations de services TIC critiques",
+        "Maintenir des stratégies de sortie pour les fournisseurs de services TIC tiers critiques",
+        "Surveiller la conformité des fournisseurs de services TIC critiques aux recommandations du superviseur principal",
+        "Garantir que la stratégie de sortie permet une résiliation sans perturbation excessive des activités"
+      ]
+    },
+    {
+      "regulation": "DORA",
+      "article": "Article 43",
+      "title": "Redevances de surveillance",
+      "domain": "Surveillance de tiers TIC",
+      "text": "1. Le surveillant principal facturera des redevances de surveillance annuelles aux fournisseurs de services TIC tiers critiques. Ces redevances couvriront tous les frais engagés par le surveillant principal au titre de la surveillance des fournisseurs de services TIC tiers critiques conformément au présent règlement.\n\n2. Le montant total des redevances de surveillance annuelles facturées à un fournisseur de services TIC tiers critiques spécifique sera proportionné à sa taille, mesurée par ses revenus nets annuels provenant de la prestation de services TIC aux entités financières de l'Union.\n\n3. Les AES élaboreront, par voie d'actes délégués, la méthodologie de calcul des redevances de surveillance et la procédure de paiement de ces redevances.\n\nLes entités financières devraient être conscientes que leurs fournisseurs de services TIC tiers critiques peuvent demander le remboursement des redevances de surveillance par le biais d'ajustements de prix dans les contrats de services. Les entités financières devraient examiner les contrats existants et nouveaux avec les fournisseurs de services TIC critiques pour les dispositions relatives au transfert de coûts réglementaires.",
+      "obligations": [
+        "Examiner les dispositions contractuelles avec les fournisseurs de services TIC critiques pour les dispositions relatives au transfert de coûts de surveillance réglementaire",
+        "Évaluer l'impact des redevances de surveillance sur le coût total des services TIC critiques",
+        "Garantir que les contrats abordent l'allocation des coûts de conformité réglementaire, y compris les redevances de surveillance",
+        "Surveiller les modifications de la méthodologie des redevances de surveillance qui peuvent affecter la tarification des services TIC critiques"
+      ]
+    },
+    {
+      "regulation": "DORA",
+      "article": "Article 44",
+      "title": "Coopération internationale",
+      "domain": "Surveillance de tiers dans le domaine des TIC",
+      "text": "1. Les AES peuvent, conformément à l'article 33 des règlements (UE) n° 1093/2010, n° 1094/2010 et n° 1095/2010, conclure des accords administratifs avec les autorités de régulation et de surveillance de pays tiers afin de favoriser la coopération internationale de surveillance.\n\n2. Les AES partagent les informations reçues des autorités de pays tiers avec leur conseil de surveillance respectif et le Forum de surveillance.\n\n3. Les entités financières soumises au DORA et utilisant des services de TIC fournis par des fournisseurs de pays tiers devraient être conscientes des accords de coopération internationale qui pourraient avoir un impact sur la surveillance de ces fournisseurs et des informations qui pourraient être partagées avec les autorités de pays tiers.\n\n4. Les entités financières devraient évaluer les implications des cadres de coopération internationale lorsqu'elles s'engagent avec des fournisseurs de services de TIC tiers établis dans des juridictions non européennes, y compris le partage potentiel d'informations sur l'utilisation par l'entité financière de services de TIC avec les autorités de régulation de pays tiers.",
+      "obligations": [
+        "Être conscient des accords de coopération internationale affectant la surveillance des fournisseurs de TIC de pays tiers",
+        "Évaluer les implications du partage d'informations lors de l'utilisation de fournisseurs de TIC dans des juridictions non européennes",
+        "Examiner les dispositions de traitement transfrontalier des données et de partage d'informations réglementaires dans les contrats de fournisseurs de TIC de pays tiers",
+        "Surveiller les développements de la coopération internationale qui pourraient avoir un impact sur la surveillance des fournisseurs de TIC tiers critiques"
+      ]
+    },
+    {
+      "regulation": "DORA",
+      "article": "Article 45",
+      "title": "Dispositions relatives au partage d'informations",
+      "domain": "Partage d'informations",
+      "text": "1. Les entités financières peuvent échanger entre elles des informations et des renseignements sur les menaces cybernétiques, y compris les indicateurs de compromission, les tactiques, techniques et procédures, les alertes de sécurité informatique et les outils de configuration, dans la mesure où ce partage d'informations et de renseignements :\n\n(a) vise à améliorer la résilience opérationnelle numérique des entités financières, en particulier par la sensibilisation aux menaces cybernétiques, la limitation ou l'entrave de la capacité de propagation des menaces cybernétiques, le soutien des capacités de défense, les techniques de détection des menaces, les stratégies d'atténuation ou les phases de réponse et de rétablissement;\n(b) a lieu au sein de communautés de confiance d'entités financières;\n(c) est mis en œuvre par des dispositions de partage d'informations qui protègent la nature potentiellement sensible des informations partagées et est régi par des règles de conduite dans le plein respect de la confidentialité des affaires, de la protection des données à caractère personnel conformément au Règlement (UE) 2016/679, et des lignes directrices en matière de politique de concurrence.\n\n2. Aux fins du paragraphe 1, les entités financières désigneront un membre de la direction générale responsable de la mise en œuvre et de la surveillance des dispositions de partage d'informations et de la présentation de rapports au conseil d'administration sur les développements pertinents.\n\n3. Les dispositions de partage d'informations visées au paragraphe 1 peuvent inclure, lorsque cela est autorisé :\n(a) l'adhésion à des communautés de partage d'informations;\n(b) le partage d'informations, y compris les indicateurs de compromission, les tactiques, techniques et procédures;\n(c) l'analyse des informations;\n(d) le renseignement sur les menaces.\n\n4. Les autorités compétentes seront informées de la participation aux dispositions de partage d'informations et peuvent demander des informations sur ces dispositions. Les entités financières coopéreront avec les autorités compétentes sur les questions liées aux dispositions de partage d'informations.",
+      "obligations": [
+        "Participer à des dispositions de partage d'informations de confiance sur les menaces cybernétiques lorsque cela est approprié",
+        "Garantir que les dispositions de partage d'informations protègent les informations sensibles et respectent la confidentialité des affaires",
+        "Respecter les exigences du RGPD lors du partage d'informations dans le cadre des dispositions de renseignement sur les menaces cybernétiques",
+        "Désigner un membre de la direction générale responsable de la mise en œuvre et de la surveillance des dispositions de partage d'informations",
+        "Présenter des rapports sur les développements des dispositions de partage d'informations au conseil d'administration",
+        "Informer les autorités compétentes de la participation aux dispositions de partage d'informations",
+        "Coopérer avec les autorités compétentes sur les questions liées aux dispositions de partage d'informations",
+        "Limite le partage d'informations aux objectifs d'amélioration de la résilience opérationnelle numérique",
+        "Garantir que le partage d'informations fonctionne au sein de communautés de confiance d'entités financières"
+      ]
+    },
+    {
+      "regulation": "DORA",
+      "article": "Article 46",
+      "title": "Désignation des autorités compétentes",
+      "domain": "Partage d'informations",
+      "text": "1. Sans préjudice de la compétence de la Banque centrale européenne en ce qui concerne les tâches de surveillance spécifiques qui lui sont conférées en vertu du règlement (UE) no 1024/2013 du Conseil, la surveillance du respect du présent règlement est assurée par les autorités compétentes désignées conformément à la législation sectorielle de l'Union applicable aux entités financières.\n\n2. Chaque État membre désigne une ou plusieurs autorités compétentes chargées de surveiller l'application du présent règlement en ce qui concerne chaque catégorie d'entités financières énumérées à l'article 2, paragraphe 1. Lorsqu'un État membre désigne plusieurs autorités compétentes, il définit clairement les tâches respectives de ces autorités et désigne un point de contact unique aux fins de la coopération internationale et de la coordination de la surveillance.\n\n3. Les entités financières identifient l'autorité compétente désignée en vertu du présent règlement et tiennent à jour des registres de toutes les autorités compétentes ayant une compétence sur leurs activités.\n\n4. Les autorités compétentes désignées en vertu du présent article disposent de tous les pouvoirs de surveillance, d'enquête et de sanction nécessaires pour s'acquitter de leurs tâches en vertu du présent règlement. Ces pouvoirs sont exercés de manière proportionnée et efficace, en tenant dûment compte de la taille, de l'importance systémique, de la nature, de l'ampleur et de la complexité de l'entité financière.",
+      "obligations": [
+        "Identifier et consigner l'autorité compétente désignée pour surveiller le respect de la DORA pour votre type d'entité et votre juridiction",
+        "Tenir à jour des registres de toutes les autorités compétentes ayant une compétence sur vos activités",
+        "Coopérer pleinement avec votre autorité compétente désignée dans le cadre de toutes les activités de surveillance liées à la DORA",
+        "Fournir des informations et une assistance au point de contact unique pour la coopération internationale lorsqu'on le demande",
+        "Répondre promptement à toutes les demandes de surveillance de votre autorité compétente désignée"
+      ]
+    },
+    {
+      "regulation": "DORA",
+      "article": "Article 47",
+      "title": "Coopération entre les autorités compétentes",
+      "domain": "Partage d'informations",
+      "text": "1. Les autorités compétentes coopèrent étroitement entre elles et, le cas échéant, avec les superviseurs principaux désignés en vertu de l'article 31, notamment en échangeant toutes les informations nécessaires à l'exercice de leurs missions en vertu du présent règlement, en utilisant leurs pouvoirs, qu'ils soient ou non visés dans le présent règlement.\n\n2. Les autorités compétentes fournissent, au moins une fois par an, aux AES compétentes des informations agrégées sur toutes les sanctions administratives et les mesures correctives imposées conformément au présent règlement, en indiquant le type d'infraction et la nature de la sanction administrative ou de la mesure corrective imposée.\n\n3. Les entités financières coopèrent avec leur autorité compétente pour faciliter la coopération de surveillance entre les autorités de différents États membres ou juridictions.\n\n4. Lorsqu'une entité financière opère dans plusieurs États membres, les autorités compétentes concernées échangent des informations et coordonnent les activités de surveillance pour assurer une application cohérente du présent règlement. Les entités financières doivent désigner un point de contact clair pour chaque autorité compétente concernée.",
+      "obligations": [
+        "Coopérer avec toutes les autorités compétentes des États membres dans lesquels vous opérez ou fournissez des services",
+        "Désigner un point de contact interne clair pour chaque autorité compétente concernée",
+        "Faciliter l'échange d'informations entre les autorités compétentes lorsqu'on le demande",
+        "Répondre aux demandes de surveillance des autorités compétentes d'autres États membres lorsqu'il y a lieu",
+        "Soutenir les activités de coordination de la surveillance transfrontalière selon les besoins"
+      ]
+    },
+    {
+      "regulation": "DORA",
+      "article": "Article 48",
+      "title": "Coopération avec l'ABE, l'AEMF et l'AEAPP",
+      "domain": "Partage d'informations",
+      "text": "1. Les autorités compétentes désignées conformément à l'article 46 coopèrent étroitement avec l'Autorité bancaire européenne (ABE), l'Autorité européenne des marchés financiers (AEMF) et l'Autorité européenne des assurances et des pensions professionnelles (AEAPP) (ci-après, les « AES ») sur toutes les questions liées à l'application du présent règlement.\n\n2. Sans retard et sur une base volontaire, les entités financières qui détectent une menace cybernétique significative notifient l'autorité compétente concernée. L'autorité compétente peut, à son tour, transmettre des informations aux AES, aux superviseurs principaux et aux autorités publiques concernées lorsque la nature systémique de la menace le justifie.\n\n3. Les entités financières fournissent aux AES toutes les informations nécessaires à l'accomplissement de leurs tâches en vertu du présent règlement sur demande.\n\n4. Les AES élaborent des normes techniques réglementaires (NTR) et des normes techniques d'exécution (NTE) communes pour donner effet pratique aux exigences de DORA. Les entités financières doivent se conformer à toutes les NTR et NTE adoptées en vertu du présent règlement.",
+      "obligations": [
+        "Notifier volontairement et sans retard aux autorités compétentes les menaces cybernétiques significatives détectées",
+        "Fournir toutes les informations demandées par les AES (ABE, AEMF, AEAPP) pour l'accomplissement de leurs tâches",
+        "Se conformer à toutes les Normes techniques réglementaires (NTR) et Normes techniques d'exécution (NTE) adoptées en vertu de DORA",
+        "Surveiller et mettre en œuvre les lignes directrices et recommandations des AES pertinentes pour votre type d'entité",
+        "Soutenir les initiatives de convergence de la supervision des AES et répondre aux exercices de collecte d'informations des AES"
+      ]
+    },
+    {
+      "regulation": "DORA",
+      "article": "Article 49",
+      "title": "Coopération avec les autorités de pays tiers",
+      "domain": "Partage d'informations",
+      "text": "1. Les autorités compétentes peuvent conclure des accords de coopération administrative avec les autorités de surveillance de pays tiers dans le domaine de la résilience opérationnelle numérique, y compris l'échange d'informations et l'assistance mutuelle dans les activités de surveillance.\n\n2. Les entités financières opérant à la fois dans les États membres et les pays tiers doivent faciliter l'échange d'informations de surveillance entre les autorités compétentes et les autorités de surveillance de pays tiers, dans la mesure où la loi applicable et les accords contractuels le permettent.\n\n3. Le cas échéant, les autorités compétentes doivent informer leurs homologues des pays tiers de incidents ICT significatifs affectant les entités financières opérant dans ces pays. Les entités financières doivent coopérer à ce flux d'informations transfrontalier.\n\n4. Les entités financières qui sont des filiales de groupes de pays tiers doivent s'assurer que les informations sur la conformité au règlement DORA au niveau du groupe sont accessibles à leurs autorités compétentes de l'Union, même si l'entité mère est établie en dehors de l'Union.",
+      "obligations": [
+        "Faciliter l'échange d'informations de surveillance entre les autorités de surveillance de l'Union et celles des pays tiers lorsqu'il est demandé",
+        "S'assurer que les informations sur la conformité au règlement DORA au niveau du groupe sont accessibles aux autorités compétentes de l'Union pour les filiales de groupes de pays tiers",
+        "Coopérer à l'échange d'informations transfrontalier sur les incidents ICT significatifs affectant les opérations multi-juridictionnelles",
+        "Conserver les registres des dépendances de services TIC transfrontaliers qui peuvent être pertinents pour la coopération de surveillance avec les pays tiers",
+        "S'assurer que les accords contractuels avec les fournisseurs de services TIC soutiennent la divulgation transfrontalière de surveillance nécessaire"
+      ]
+    },
+    {
+      "regulation": "DORA",
+      "article": "Article 50",
+      "title": "Sanctions administratives et mesures correctives",
+      "domain": "Supervision des tiers des TIC",
+      "text": "1. Les autorités compétentes disposent de tous les pouvoirs de surveillance et d'enquête nécessaires pour s'acquitter de leurs tâches en vertu du présent règlement. Ces pouvoirs comprennent :\n\n(a) l'accès à tout document, donnée, procédure ou tout autre matériel sous quelque format que ce soit, où qu'il soit stocké;\n(b) des inspections ou des enquêtes sur place dans tout établissement commercial, terrain ou propriété;\n(c) des demandes d'explications auprès des membres du conseil d'administration et du personnel;\n(d) des mesures provisoires conformément au droit national lorsque existe un risque immédiat et significatif pour la stabilité financière;\n(e) des interdictions temporaires à l'encontre de toute personne d'exercer des responsabilités de gestion;\n(f) des exigences d'adoption de mesures pour mettre le comportement en conformité avec le présent règlement, et de cesser un comportement qui est contraire au présent règlement.\n\n2. Sans préjudice du droit de fournir des explications, les entités financières coopèrent avec les enquêtes, les inspections sur place et les demandes d'information de l'autorité compétente. L'obstruction des activités de surveillance constitue une violation du présent règlement.\n\n3. Les entités financières doivent mettre en œuvre des mesures correctives dans les délais spécifiés par l'autorité compétente.",
+      "obligations": [
+        "Fournir aux autorités compétentes l'accès à tous les documents, données, procédures et matériels sous quelque format que ce soit demandé",
+        "Coopérer pleinement aux inspections et enquêtes sur place dans les établissements commerciaux",
+        "Garantir que les membres du conseil d'administration et le personnel répondent aux demandes d'explications de l'autorité compétente",
+        "Mettre en œuvre toutes les mesures correctives dans les délais spécifiés par l'autorité compétente",
+        "S'abstenir d'obstruer les activités de surveillance — l'obstruction constitue une violation de la DORA",
+        "Se conformer aux mesures provisoires ordonnées par les autorités compétentes en cas de risque significatif pour la stabilité financière",
+        "Cesser tout comportement déterminé par l'autorité compétente comme étant contraire au présent règlement"
+      ]
+    },
+    {
+      "regulation": "DORA",
+      "article": "Article 51",
+      "title": "Sanctions administratives",
+      "domain": "Surveillance de tiers dans le domaine des TIC",
+      "text": "1. Sans préjudice du droit des autorités compétentes d'imposer des mesures de surveillance, les États membres établissent des règles sur les sanctions administratives et autres mesures administratives applicables aux violations du présent règlement et prennent toutes les mesures nécessaires pour garantir leur mise en œuvre.\n\n2. Les sanctions administratives pour les entités financières qui sont des personnes morales ne dépassent pas :\n(a) 10 000 000 EUR ou, si ce montant est plus élevé, 2 % du chiffre d'affaires annuel mondial selon les derniers comptes disponibles pour les violations des exigences de gestion des risques liés aux TIC, de déclaration d'incidents, de tests de résilience et de gestion des risques liés aux tiers;\n(b) 5 000 000 EUR pour les personnes physiques.\n\n3. Lorsqu'elles déterminent la sanction administrative appropriée, les autorités compétentes tiennent compte de toutes les circonstances pertinentes, notamment :\n(a) la gravité et la durée de la violation;\n(b) le degré de responsabilité de la personne physique ou morale;\n(c) la solidité financière de la personne responsable;\n(d) l'importance des bénéfices réalisés ou des pertes évitées;\n(e) les pertes subies par des tiers en raison de la violation;\n(f) le niveau de coopération avec l'autorité compétente;\n(g) les violations antérieures;\n(h) les mesures correctives adoptées.\n\n4. Les autorités compétentes peuvent publier les sanctions administratives imposées.",
+      "obligations": [
+        "Assurer le respect intégral des exigences de gestion des risques liés aux TIC pour éviter des sanctions pouvant aller jusqu'à 10 000 000 EUR ou 2 % du chiffre d'affaires annuel mondial",
+        "Garantir que les dirigeants soient informés de leur responsabilité personnelle pouvant aller jusqu'à 5 000 000 EUR en cas de violation du règlement DORA",
+        "Démontrer une coopération avec l'autorité compétente en tant que facteur d'atténuation dans toute procédure de sanction",
+        "Adopter et documenter des mesures correctives sans délai pour réduire l'exposition aux sanctions",
+        "Conserver des documents démontrant les efforts de conformité pour étayer les arguments de proportionnalité dans les procédures d'exécution",
+        "Assurer que le conseil d'administration soit informé du régime de sanctions DORA et de l'exposition financière"
+      ]
+    },
+    {
+      "regulation": "DORA",
+      "article": "Article 52",
+      "title": "Sanctions pénales",
+      "domain": "Supervision des tiers dans le domaine des TIC",
+      "text": "1. Lorsque les États membres ont décidé, conformément à leur droit national, de prévoir des sanctions pénales pour les violations des dispositions soumises à des sanctions administratives en vertu du présent règlement, ils doivent veiller à ce que des mesures appropriées soient en place pour que les autorités compétentes disposent de tous les pouvoirs nécessaires pour collaborer avec les autorités judiciaires, de poursuite ou de justice pénale dans leur juridiction, afin de recevoir des informations spécifiques liées aux enquêtes ou aux procédures pénales engagées pour les violations du présent règlement.\n\n2. Les personnes physiques responsables des violations de la DORA au sein des entités financières peuvent être soumises à la fois à des sanctions pénales (lorsque prévues par le droit national) et à des sanctions administratives, sans préjudice du principe non bis in idem.\n\n3. Les entités financières doivent maintenir des cadres de gouvernance internes qui attribuent clairement des responsabilités individuelles pour le respect de la DORA, permettant l'identification des personnes physiques responsables dans les procédures d'exécution.\n\n4. Les autorités compétentes doivent coopérer avec les autorités de justice pénale lorsque des procédures pénales découlent de violations de la DORA. Les entités financières doivent coopérer avec les enquêtes réglementaires et les enquêtes pénales.",
+      "obligations": [
+        "Maintenir des cadres de gouvernance internes qui attribuent clairement des responsabilités individuelles pour les obligations de conformité à la DORA",
+        "S'assurer que la direction générale et les membres du conseil d'administration sont personnellement conscients de la responsabilité pénale potentielle pour les violations de la DORA en vertu du droit national",
+        "Coopérer avec les autorités de justice pénale dans toute enquête liée aux violations de la DORA",
+        "Mettre en œuvre des procédures d'escalade documentées garantissant une divulgation rapide des violations potentielles de la DORA au niveau du conseil d'administration",
+        "Conserver des documents démontrant la surveillance de la conformité personnelle par les individus responsables",
+        "S'assurer que des conseils juridiques sont engagés pour évaluer les dispositions de sanctions pénales nationales applicables aux violations de la DORA"
+      ]
+    },
+    {
+      "regulation": "DORA-RTS",
+      "article": "RTS-RM-01",
+      "title": "RTS sur la gestion des risques liés aux TIC — Gestion des actifs, contrôle des changements et cryptographie",
+      "domain": "Gestion des risques liés aux TIC",
+      "text": "Le règlement délégué de la Commission (UE) 2024/1774 (13 mars 2024) prévoit des exigences techniques détaillées mettant en œuvre les articles 5 à 16 de la DORA. Les dispositions clés sont les suivantes :\n\nI. Gestion des actifs TIC : Les entités financières doivent maintenir un inventaire complet et continuellement mis à jour de tous les actifs TIC (matériel, logiciel, référentiels de données, composants réseau, ressources cloud et appareils mobiles). Chaque actif doit enregistrer son propriétaire, sa classification, son emplacement et ses interdépendances. Les actifs soutenant des fonctions critiques ou importantes doivent être étiquetés et soumis à des contrôles renforcés.\n\nII. Gestion des changements : Tous les changements TIC (mises à niveau, correctifs, modifications de configuration) doivent suivre une procédure de gestion des changements documentée comprenant : demande de changement, évaluation des risques, approbation par du personnel autorisé, tests dans un environnement de non-production, plan de rétablissement et validation après changement. Les changements d’urgence nécessitent une documentation rétrospective.\n\nIII. Chiffrement et gestion des clés : Les données au repos et en transit soutenant des fonctions critiques ou importantes doivent être chiffrées à l’aide de normes cryptographiques actuelles. Les entités financières doivent maintenir une politique de gestion des clés documentée couvrant la génération, la distribution, le stockage, la rotation, la révocation et la destruction des clés. Les modules de sécurité matérielle (HSM) sont recommandés pour le stockage des clés à haute assurance.\n\nIV. Sécurité des points de terminaison et du réseau : Les entités doivent déployer et maintenir des solutions de détection et de réponse aux points de terminaison (EDR), un contrôle d’accès réseau, des systèmes de détection et de prévention des intrusions (IDS/IPS) et une segmentation du réseau à l’aide de pare-feu et d’architectures DMZ. Toutes les interfaces externes doivent être protégées par des pare-feu d’application web (WAF) ou des contrôles équivalents.\n\nV. Gestion des vulnérabilités : Un programme formel de gestion des vulnérabilités et des correctifs doit définir des objectifs de niveau de service (SLA) : les vulnérabilités critiques (CVSS ≥ 9,0) corrigées dans un délai d’un mois, les vulnérabilités élevées (CVSS 7,0-8,9) dans un délai de trois mois, les vulnérabilités moyennes dans un délai de six mois. Des analyses de vulnérabilités régulières (au minimum trimestrielles pour les systèmes à interface internet) et des tests de pénétration sont requis.",
+      "obligations": [
+        "Maintenir un inventaire TIC continuellement mis à jour couvrant tous les actifs matériels, logiciels, données, réseaux, cloud et mobiles",
+        "Classer tous les actifs TIC et appliquer des contrôles renforcés pour ceux soutenant des fonctions critiques ou importantes",
+        "Mettre en œuvre une procédure de gestion des changements documentée comprenant l’évaluation des risques, les tests dans un environnement de non-production, l’approbation, le plan de rétablissement et la validation après changement",
+        "Chiffrer toutes les données au repos et en transit pour les fonctions critiques ou importantes à l’aide de normes cryptographiques actuelles",
+        "Maintenir une politique de gestion des clés cryptographiques documentée couvrant la génération, la distribution, le stockage, la rotation, la révocation et la destruction",
+        "Déployer des solutions de détection et de réponse aux points de terminaison (EDR), un contrôle d’accès réseau, des systèmes de détection et de prévention des intrusions (IDS/IPS) et des contrôles de segmentation du réseau",
+        "Protéger toutes les interfaces externes avec des pare-feu d’application web (WAF) ou des contrôles équivalents",
+        "Définir et appliquer des SLA de correction : les vulnérabilités critiques (CVSS ≥ 9,0) dans un délai d’un mois, les vulnérabilités élevées dans un délai de trois mois, les vulnérabilités moyennes dans un délai de six mois",
+        "Effectuer des analyses de vulnérabilités au minimum trimestrielles sur les systèmes à interface internet",
+        "Documenter toutes les politiques de sécurité TIC et les revoir au moins une fois par an"
+      ]
+    },
+    {
+      "regulation": "DORA-RTS",
+      "article": "RTS-IR-01",
+      "title": "RTS sur la classification des incidents liés aux TIC — Seuils d'incident majeur",
+      "domain": "Déclaration d'incident",
+      "text": "Le règlement délégué de la Commission (UE) 2024/1772 précise les critères de classification pour déterminer si un incident lié aux TIC doit être signalé aux autorités compétentes en tant qu'« incident TIC majeur » en vertu de l'article 18 du DORA. Un incident est considéré comme majeur s'il répond à l'un ou plusieurs des critères de seuil suivants :\n\nI. Clients affectés : l'incident affecte directement plus de 10 % de la base de clients totale de l'entité financière, ou plus de 1 000 clients, selon la valeur la plus faible.\n\nII. Indisponibilité du service : l'incident cause une interruption de service pour les fonctions critiques ou importantes d'une durée supérieure à 4 heures consécutives, ou cause des interruptions répétées totalisant plus de 4 heures dans une période de 24 heures.\n\nIII. Impact de la violation de données : l'incident entraîne la perte, la corruption ou l'indisponibilité de données représentant plus de 0,1 % des dossiers de clients totaux de l'entité financière, ou plus de 1 000 dossiers de clients individuels, selon la valeur la plus faible.\n\nIV. Préjudice réputationnel : l'incident entraîne une couverture médiatique significative ou déclenche une enquête formelle de la part d'une autorité compétente ou d'un organisme de forces de l'ordre.\n\nV. Étendue géographique : l'incident affecte les infrastructures TIC ou les services dans plus de deux États membres simultanément.\n\nVI. Impact financier : l'incident cause des pertes financières directes supérieures à 1 000 000 EUR ou à leur équivalent dans d'autres devises.\n\nVII. Risque systémique : l'incident, même s'il est en deçà des seuils quantitatifs, a le potentiel de se propager à d'autres entités financières ou à des infrastructures de marché financières.\n\nLes entités financières doivent évaluer les incidents par rapport à tous les sept critères au moment de la détection initiale et à chaque point de révision ultérieur.",
+      "obligations": [
+        "Évaluer chaque incident lié aux TIC par rapport à tous les sept critères de classification d'incident majeur dans le délai de détection initial",
+        "Classer comme majeur si plus de 10 % des clients ou plus de 1 000 clients sont affectés",
+        "Classer comme majeur si l'interruption de service pour les fonctions critiques dépasse 4 heures consécutives",
+        "Classer comme majeur si la violation de données affecte plus de 0,1 % des dossiers de clients ou plus de 1 000 dossiers",
+        "Classer comme majeur si l'incident reçoit une couverture médiatique significative ou déclenche une enquête réglementaire",
+        "Classer comme majeur si l'incident affecte les infrastructures dans plus de deux États membres",
+        "Classer comme majeur si les pertes financières directes dépassent 1 000 000 EUR",
+        "Évaluer le potentiel de risque systémique même lorsque les seuils quantitatifs ne sont pas atteints",
+        "Réévaluer la classification de l'incident à chaque point de révision à mesure que de nouvelles informations deviennent disponibles",
+        "Documenter la raison de la classification pour chaque incident TIC, qu'il soit majeur ou non"
+      ]
+    },
+    {
+      "regulation": "DORA-RTS",
+      "article": "RTS-IR-02",
+      "title": "STS sur la déclaration d'incidents majeurs — Modèles, délais et contenu",
+      "domain": "Déclaration d'incidents",
+      "text": "Les normes techniques d'exécution sur les modèles de déclaration et les délais (adoptées en vertu de l'article 20 du DORA) établissent les obligations de déclaration suivantes pour les incidents majeurs liés aux TIC :\n\nI. Notification initiale (dans les 4 heures suivant la classification comme incident majeur) : Les entités financières doivent soumettre une notification initiale à leur autorité compétente contenant : l'identifiant de l'incident, la date et l'heure de détection et de classification, une description préliminaire de l'incident, les lignes d'activité et la portée géographique touchées, le nombre estimé de clients affectés, une évaluation préliminaire de l'impact financier, ainsi que les mesures de confinement immédiates appliquées. Le délai de 4 heures court à partir du moment où l'incident est classifié comme majeur, et non à partir de la détection initiale.\n\nII. Rapport intermédiaire (dans les 72 heures suivant la notification initiale) : Le rapport intermédiaire doit inclure : une évaluation mise à jour de la portée et de l'impact de l'incident, une analyse de la cause racine si disponible, les mesures de confinement et de récupération mises en œuvre, une estimation révisée de l'impact sur les clients et financier, les mesures de continuité des activités activées, ainsi que le statut actuel de l'incident.\n\nIII. Rapport final (dans le mois suivant la résolution de l'incident) : Le rapport final doit inclure : une analyse complète de la cause racine, une chronologie complète de la détection à la résolution, le nombre total de clients affectés, les pertes financières directes et indirectes totales, toutes les mesures correctives et préventives mises en œuvre ou prévues, les leçons tirées, ainsi qu'un plan d'amélioration de la résilience à venir.\n\nIV. Notification volontaire : Les entités financières peuvent notifier de manière volontaire les autorités compétentes de menaces cybernétiques significatives qui n'ont pas encore causé d'incident mais qui pourraient s'aggraver. Les notifications volontaires devraient suivre le format de notification initiale.\n\nV. Déclaration aux clients : Les entités financières doivent notifier les clients affectés d'incidents majeurs liés aux TIC sans retard indu et de manière claire et non technique.",
+      "obligations": [
+        "Soumettre une notification initiale à l'autorité compétente dans les 4 heures suivant la classification d'un incident comme majeur",
+        "Inclure l'identifiant d'incident, la chronologie, la description préliminaire, les lignes d'activité touchées et l'estimation de l'impact sur les clients dans la notification initiale",
+        "Soumettre un rapport intermédiaire dans les 72 heures suivant la notification initiale avec une mise à jour de la portée, l'analyse de la cause racine et les mesures de récupération",
+        "Soumettre un rapport final dans le mois suivant la résolution de l'incident, incluant l'analyse complète de la cause racine, l'impact financier et les leçons tirées",
+        "Tenir un registre d'incidents avec des identifiants uniques pour tous les incidents liés aux TIC, quel que soit leur classement",
+        "Faire rapport de manière volontaire sur les menaces cybernétiques significatives qui n'ont pas encore causé d'incident, en utilisant le format de notification initiale",
+        "Notifier les clients affectés sans retard indu et de manière claire lorsque les services sont touchés par un incident majeur lié aux TIC",
+        "Assurer que les trois types de rapports (initial, intermédiaire, final) utilisent les modèles prescrits par l'autorité compétente"
+      ]
+    },
+    {
+      "regulation": "DORA-RTS",
+      "article": "RTS-TLPT-01",
+      "title": "RTS sur les tests de pénétration menés par les menaces (TLPT) — Exigences et méthodologie",
+      "domain": "Tests de résilience",
+      "text": "Le Rapport final du Comité conjoint JC 2023 86 (RTS sur le TLPT en vertu de l'article 26 du DORA) établit les exigences pour les tests de pénétration menés par les menaces sur la base du cadre TIBER-EU. Les dispositions clés sont les suivantes :\n\nI. Champ d'application : le TLPT s'applique aux entités financières identifiées par les autorités compétentes comme étant importantes en fonction de leur importance systémique, de leur interconnectivité et de leur complexité. Les autorités compétentes identifient les entités dans le champ d'application au moins tous les 3 ans.\n\nII. Fréquence des tests : les entités financières dans le champ d'application doivent effectuer des TLPT au moins tous les 3 ans sur les systèmes, les applications et les infrastructures qui soutiennent les fonctions critiques ou importantes.\n\nIII. Méthodologie : le TLPT doit suivre une approche en trois phases : (a) phase de renseignement sur les menaces — commandée à un fournisseur de renseignement sur les menaces approuvé, produit un rapport de renseignement sur les menaces ciblées identifiant les scénarios d'attaque les plus probables ; (b) phase d'équipe rouge — un fournisseur d'équipe rouge certifié exécute des simulations d'attaque réalistes sur la base du renseignement sur les menaces, ciblant les systèmes de production en direct ; (c) phase de clôture — les résultats sont validés avec l'équipe bleue, les plans de remédiation sont documentés et un rapport de test formel est produit.\n\nIV. Exigences pour les testeurs : les fournisseurs d'équipe rouge doivent être certifiés par l'autorité compétente ou un organisme de certification reconnu. Les équipes rouges internes peuvent être utilisées si elles répondent aux exigences d'indépendance.\n\nV. Tests groupés : lorsque plusieurs entités financières partagent la même infrastructure TIC ou les mêmes fournisseurs de services, les autorités compétentes peuvent autoriser des exercices de TLPT conjoints.\n\nVI. Participation des tiers TIC : les fournisseurs de services TIC tiers qui soutiennent des fonctions critiques ou importantes peuvent être tenus de participer et de soutenir les exercices de TLPT.\n\nVII. Remédiation : les entités financières doivent produire un plan de remédiation documenté qui répond à tous les résultats du TLPT dans les 3 mois suivant la fin du test et rendre compte des progrès à l'autorité compétente.",
+      "obligations": [
+        "Déterminer si votre entité est dans le champ d'application du TLPT en fonction des critères de désignation de l'autorité compétente",
+        "Effectuer des TLPT au moins tous les 3 ans si désigné comme entité dans le champ d'application par l'autorité compétente",
+        "Commander un renseignement sur les menaces ciblées à un fournisseur approuvé avant de commencer les tests de l'équipe rouge",
+        "Faire appel à un fournisseur d'équipe rouge certifié pour effectuer des simulations d'attaque réalistes sur les systèmes de production en direct",
+        "Garantir que le TLPT couvre tous les systèmes, les applications et les infrastructures qui soutiennent les fonctions critiques ou importantes",
+        "Exiger que les fournisseurs de services TIC tiers qui soutiennent des fonctions critiques participent et soutiennent les exercices de TLPT",
+        "Produire un plan de remédiation documenté qui répond à tous les résultats du TLPT dans les 3 mois suivant la fin du test",
+        "Rendre compte des résultats du TLPT et des progrès de remédiation à l'autorité compétente dans le format prescrit",
+        "Conserver toute la documentation du TLPT (renseignement sur les menaces, rapport de l'équipe rouge, plan de remédiation) pendant au moins 5 ans",
+        "Envisager des arrangements de TLPT groupés lorsque des infrastructures TIC partagées sont utilisées entre les entités financières"
+      ]
+    },
+    {
+      "regulation": "DORA-RTS",
+      "article": "RTS-TPR-01",
+      "title": "RTS sur les risques liés aux tiers dans le domaine des TIC — Due diligence, évaluation et surveillance",
+      "domain": "Risques liés aux tiers",
+      "text": "Le rapport final de l'ABE EBA/RTS/2024/05 sur les RTS relatifs aux risques liés aux tiers dans le domaine des TIC établit des exigences détaillées pour l'évaluation, la gestion et la surveillance continue des fournisseurs de services TIC tiers en vertu des articles 28 à 30 du règlement DORA. Dispositions clés :\n\nI. Due diligence précontractuelle : avant d'entrer dans tout arrangement TIC soutenant des fonctions critiques ou importantes, les entités financières doivent effectuer une évaluation des risques documentée couvrant : la posture de sécurité TIC du fournisseur et les certifications (ISO 27001, SOC 2 Type II), les capacités de continuité des activités et de reprise en cas de sinistre (engagements RTO/RPO, résultats des tests de reprise), la chaîne de sous-traitance et les lieux de traitement des données, la stabilité financière et le dossier de résilience opérationnelle, la situation réglementaire et les mesures d'exécution au cours des 5 dernières années, ainsi que des vérifications de références auprès d'autres clients d'entités financières.\n\nII. Évaluation proportionnée : la profondeur de la due diligence doit être proportionnée à la criticité de la fonction. Les fournisseurs soutenant des fonctions critiques ou importantes nécessitent une due diligence renforcée ; les fonctions standard nécessitent une évaluation plus légère.\n\nIII. Évaluation du risque de concentration (Article 29) : avant de contracter avec un fournisseur déjà servant plusieurs entités financières, l'entité financière doit évaluer : la part de marché globale du fournisseur dans la catégorie de services pertinente, le nombre et l'importance systémique d'autres clients d'entités financières, la concentration géographique des infrastructures, ainsi que la capacité de l'entité à substituer le fournisseur dans un délai acceptable.\n\nIV. Surveillance continue : les fournisseurs de services TIC tiers soutenant des fonctions critiques ou importantes doivent faire l'objet : d'examen annuel formel des performances et de la sécurité, d'une surveillance continue des niveaux de service par rapport aux KPI contractuels, d'un suivi des résultats des audits et de la progression de la remédiation, ainsi que d'une surveillance de la notification des incidents.\n\nV. Test de sortie : les entités financières doivent tester annuellement leurs plans de sortie pour les fournisseurs de services TIC critiques à l'aide d'exercices de tableau et, au moins tous les 3 ans, des exercices de sortie opérationnels.\n\nVI. Conservation de la documentation : tous les dossiers de due diligence, les évaluations et la documentation de surveillance doivent être conservés pendant une période minimale de 5 ans.",
+      "obligations": [
+        "Réaliser une évaluation des risques documentée précontractuelle pour tous les arrangements TIC soutenant des fonctions critiques ou importantes",
+        "Évaluer la posture de sécurité TIC du fournisseur, les certifications, les capacités de continuité des activités et de reprise en cas de sinistre, la chaîne de sous-traitance, la stabilité financière et la situation réglementaire avant de contracter",
+        "Appliquer une due diligence proportionnée : renforcée pour les fonctions critiques, standard pour les arrangements non critiques",
+        "Évaluer le risque de concentration (Art. 29) avant de contracter avec des fournisseurs déjà servant plusieurs entités financières",
+        "Réaliser des examens annuels formels des performances et de la sécurité pour tous les fournisseurs soutenant des fonctions critiques ou importantes",
+        "Surveiller les niveaux de service de manière continue par rapport aux KPI contractuels et suivre la remédiation des résultats des audits",
+        "Tester les plans de sortie via des exercices de tableau annuels et des exercices de sortie opérationnels au moins tous les 3 ans",
+        "Conserver tous les dossiers de due diligence, les évaluations, les contrats et la documentation de surveillance pendant une période minimale de 5 ans",
+        "Inclure tous les fournisseurs de fonctions critiques et importantes dans le Registre d'information (Art. 28(3))",
+        "Signaler les résultats de l'évaluation du risque de concentration au management et à l'autorité compétente lorsque les seuils sont dépassés"
+      ]
+    },
+    {
+      "regulation": "DORA-RTS",
+      "article": "RTS-ROI-01",
+      "title": "RTS/ITS sur le Registre d'Information — Contenu, Format et Déclaration",
+      "domain": "Risque Tiers",
+      "text": "Les Normes Techniques d'Exécution de l'ABE sur le Registre d'Information (RoI) en vertu de l'article 28, paragraphe 3, du DORA établissent les exigences de format et de contenu obligatoires pour le registre des fournisseurs de services tiers TIC que les entités financières doivent maintenir et soumettre aux autorités compétentes. Le RoI suit la structure du Modèle Maître de l'ABE :\n\nI. RT.01.01 — Présentation Générale : Une ligne par entité financière déclarante. Contient : code LEI, nom de l'entité, autorité compétente, période de déclaration, nombre total de fournisseurs de services tiers TIC, nombre de fournisseurs supportant des fonctions critiques ou importantes.\n\nII. RT.02.01 — Fournisseurs de Services Tiers TIC : Une ligne par arrangement de fournisseur TIC. Contient : nom du fournisseur, LEI du fournisseur (le cas échéant), pays d'établissement, type de fournisseur (nuage, logiciel, données, réseau, autre), dates de début et de fin de l'arrangement, description du service, classification de criticité (critique, importante, standard), statut de fournisseur (actif, en cours d'examen, sorti), catégories de fonctions TIC prises en charge, date de prochaine révision et référence de stratégie de sortie.\n\nIII. RT.03.01 — Arrangements Contractuels : Une ligne par contrat. Contient : référence de contrat, date de signature, juridiction de la loi régissant, délais de préavis pour la résiliation, métriques SLA engagées, dispositions relatives aux droits d'audit et engagements de localisation des données.\n\nIV. RT.04.01 — Certifications : Une ligne par certification par fournisseur. Contient : type de certification (ISO 27001, SOC 2, CSA-STAR, ISO 22301), organisme délivrant la certification, date de délivrance, date d'expiration et statut actuel (valide, en voie d'expiration, expiré).\n\nV. RT.05.01 — Services de Nuage : Une ligne par arrangement de nuage. Contient : modèle de service de nuage (IaaS, PaaS, SaaS), modèle de déploiement (public, privé, hybride), régions de traitement des données et détails de la stratégie de multi-nuage.\n\nVI. Fréquence de soumission : Le RoI doit être soumis à l'autorité compétente au moins une fois par an et en cas de changements importants. Les autorités compétentes peuvent demander des soumissions ad hoc à tout moment.\n\nVII. Qualité des données : Les entités financières sont responsables de l'exactitude et de l'exhaustivité de toutes les données du RoI. Les soumissions incorrectes peuvent constituer une violation de l'article 28 du DORA.",
+      "obligations": [
+        "Maintenir un Registre d'Information complet couvrant tous les arrangements de fournisseurs de services tiers TIC",
+        "Remplir les cinq feuilles du Modèle Maître de l'ABE : RT.01.01, RT.02.01, RT.03.01, RT.04.01, RT.05.01",
+        "Inclure les codes LEI des fournisseurs, le pays d'établissement, le type de service et la classification de criticité pour chaque fournisseur",
+        "Enregistrer les détails des contrats, y compris la loi régissant, les délais de préavis, les métriques SLA et les droits d'audit",
+        "Suivre toutes les certifications des fournisseurs (ISO 27001, SOC 2, CSA-STAR, ISO 22301) avec les dates d'expiration et le statut",
+        "Documenter les services de nuage avec le modèle de service, le modèle de déploiement et les régions de traitement des données",
+        "Soumettre le Registre d'Information à l'autorité compétente au moins une fois par an",
+        "Mettre à jour et resoumettre le RoI en cas de tout changement important aux arrangements de fournisseurs de services tiers TIC",
+        "Assurer l'exactitude et l'exhaustivité de toutes les données du RoI — les soumissions incorrectes peuvent constituer une violation du DORA",
+        "Conserver le RoI et tous les documents justificatifs pendant une période minimale de 5 ans"
+      ]
+    }
+  ]
+}

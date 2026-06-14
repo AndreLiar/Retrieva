@@ -70,20 +70,36 @@ function getEmbeddings() {
 }
 
 /**
- * Load knowledge base from JSON.
- * Supports both old format (plain array) and new format ({ version, articles }).
- * Returns { articles, meta }.
+ * Load one knowledge-base file, tagging every article with its language and
+ * whether it's the official text. Returns null if the file is absent (e.g. the
+ * French translation hasn't been generated yet).
+ */
+function loadOne(fileName, defaultLang) {
+  const filePath = path.join(__dirname, '../data/compliance/', fileName);
+  let raw;
+  try {
+    raw = JSON.parse(readFileSync(filePath, 'utf-8'));
+  } catch {
+    return null;
+  }
+  const articles = Array.isArray(raw) ? raw : raw.articles;
+  const lang = (!Array.isArray(raw) && raw.lang) || defaultLang;
+  const official = Array.isArray(raw) ? true : raw.official !== false;
+  const meta = Array.isArray(raw)
+    ? { version: '1.0', lastVerified: null, sources: [] }
+    : { version: raw.version, lastVerified: raw.lastVerified, sources: raw.sources || [] };
+  return { articles: articles.map((a) => ({ ...a, lang, official })), meta };
+}
+
+/**
+ * Load the knowledge base across all available languages (English + the optional
+ * working French translation). Returns { articles, meta }.
  */
 function loadData() {
-  const filePath = path.join(__dirname, '../data/compliance/dora-articles.json');
-  const raw = JSON.parse(readFileSync(filePath, 'utf-8'));
-  if (Array.isArray(raw)) {
-    return { articles: raw, meta: { version: '1.0', lastVerified: null, sources: [] } };
-  }
-  return {
-    articles: raw.articles,
-    meta: { version: raw.version, lastVerified: raw.lastVerified, sources: raw.sources || [] },
-  };
+  const en = loadOne('dora-articles.json', 'en');
+  const fr = loadOne('dora-articles.fr.json', 'fr');
+  const articles = [...(en?.articles || []), ...(fr?.articles || [])];
+  return { articles, meta: en?.meta || { version: '1.0', lastVerified: null, sources: [] } };
 }
 
 /**
@@ -152,6 +168,8 @@ async function embedAndUpsert(client, articles) {
         domain: article.domain,
         obligations: article.obligations || [],
         fullText: article.text,
+        lang: article.lang || 'en',
+        official: article.official !== false,
       },
     },
   }));
