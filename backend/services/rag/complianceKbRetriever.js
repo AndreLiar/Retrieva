@@ -104,9 +104,18 @@ function adaptRegulationDoc(doc, lang) {
       documentTitle: documentTitle || regulation,
       heading_path: [regulation, article].filter(Boolean),
       documentType: 'regulation',
+      // false for the working French translation → the UI labels it unofficial.
+      official: meta.official !== false,
       ...(url ? { url } : {}),
     },
   };
+}
+
+// Qdrant similarity search restricted to one language of the KB.
+function searchByLang(store, query, k, lang) {
+  return store.similaritySearch(query, k, {
+    must: [{ key: 'metadata.lang', match: { value: lang } }],
+  });
 }
 
 /**
@@ -124,9 +133,23 @@ export async function retrieveRegulationDocs(query, k = 5, lang = 'en') {
   const store = await getComplianceKbStore();
   if (!store) return [];
 
+  const primaryLang = String(lang || 'en')
+    .toLowerCase()
+    .startsWith('fr')
+    ? 'fr'
+    : 'en';
+
   try {
-    const docs = await store.similaritySearch(query, k);
-    return docs.map((doc) => adaptRegulationDoc(doc, lang));
+    // Prefer the user's language; fall back to English if it has no content
+    // (French not yet seeded); last-resort unfiltered for pre-language-tag data.
+    let docs = await searchByLang(store, query, k, primaryLang);
+    if (docs.length === 0 && primaryLang !== 'en') {
+      docs = await searchByLang(store, query, k, 'en');
+    }
+    if (docs.length === 0) {
+      docs = await store.similaritySearch(query, k);
+    }
+    return docs.map((doc) => adaptRegulationDoc(doc, primaryLang));
   } catch (error) {
     logger.warn('compliance_kb similarity search failed', {
       service: 'compliance-kb-retriever',
