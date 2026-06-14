@@ -586,7 +586,7 @@ class RAGService {
     // unseeded compliance_kb) doesn't take down the other.
     const [vendorResult, regulationResult] = await Promise.allSettled([
       this.vectorStore.similaritySearch(searchQuery, 15, qdrantFilter),
-      this.retrieveRegulationDocs(searchQuery, 5),
+      this.retrieveRegulationDocs(searchQuery, 5, options.lang),
     ]);
 
     const vendorDocsRaw = vendorResult.status === 'fulfilled' ? vendorResult.value : [];

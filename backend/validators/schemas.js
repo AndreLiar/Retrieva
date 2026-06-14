@@ -34,6 +34,8 @@ export const askQuestionSchema = z
     // workspaceId may arrive in the body (requireWorkspaceAccess also reads it from
     // the X-Workspace-Id header); declare it so .strict() doesn't reject it.
     workspaceId: z.string().max(64).optional(),
+    // UI locale (e.g. 'fr', 'en-US') — drives language-aware regulation source links.
+    lang: z.string().max(10).optional(),
     filters: z
       .object({
         page: z.number().int().positive().optional(),
@@ -58,6 +60,8 @@ export const streamQuestionSchema = z
     conversationId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid conversation ID'),
     // See askQuestionSchema: workspaceId may be sent in the body.
     workspaceId: z.string().max(64).optional(),
+    // UI locale (e.g. 'fr', 'en-US') — drives language-aware regulation source links.
+    lang: z.string().max(10).optional(),
     filters: z
       .object({
         page: z.number().int().positive().optional(),

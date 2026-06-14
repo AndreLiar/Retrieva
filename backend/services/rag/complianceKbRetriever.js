@@ -59,11 +59,33 @@ async function getComplianceKbStore(embeddings = defaultEmbeddings) {
   return cachedStorePromise;
 }
 
+// EUR-Lex CELEX identifiers for the regulations in the KB. DORA-RTS spans
+// several delegated acts with no single reliable CELEX, so it gets no direct
+// link (better no link than a misleading one).
+const CELEX_BY_REGULATION = { DORA: '32022R2554' };
+
+/**
+ * Official EUR-Lex source URL for a regulation, in the user's language (#424).
+ * EUR-Lex serves the verbatim text in all EU languages, so a French user gets a
+ * link to the official French DORA text. Returns undefined when we have no
+ * reliable CELEX for that regulation.
+ */
+export function eurLexUrl(regulation, lang) {
+  const celex = CELEX_BY_REGULATION[regulation];
+  if (!celex) return undefined;
+  const langCode = String(lang || 'en')
+    .toLowerCase()
+    .startsWith('fr')
+    ? 'FR'
+    : 'EN';
+  return `https://eur-lex.europa.eu/legal-content/${langCode}/TXT/?uri=CELEX:${celex}`;
+}
+
 /**
  * Map a raw compliance_kb document to the shape the RAG context formatter
  * expects, so citations render as the article number rather than "Untitled".
  */
-function adaptRegulationDoc(doc) {
+function adaptRegulationDoc(doc, lang) {
   const meta = doc.metadata || {};
   const regulation = meta.regulation || 'Regulation';
   const article = meta.article || '';
@@ -71,6 +93,8 @@ function adaptRegulationDoc(doc) {
 
   const documentTitle =
     [regulation, article].filter(Boolean).join(' ') + (title ? `: ${title}` : '');
+
+  const url = eurLexUrl(regulation, lang);
 
   return {
     pageContent: doc.pageContent,
@@ -80,6 +104,7 @@ function adaptRegulationDoc(doc) {
       documentTitle: documentTitle || regulation,
       heading_path: [regulation, article].filter(Boolean),
       documentType: 'regulation',
+      ...(url ? { url } : {}),
     },
   };
 }
@@ -93,7 +118,7 @@ function adaptRegulationDoc(doc) {
  * @param {number} [k=5]
  * @returns {Promise<Array<{pageContent: string, metadata: object}>>}
  */
-export async function retrieveRegulationDocs(query, k = 5) {
+export async function retrieveRegulationDocs(query, k = 5, lang = 'en') {
   if (!query || typeof query !== 'string') return [];
 
   const store = await getComplianceKbStore();
@@ -101,7 +126,7 @@ export async function retrieveRegulationDocs(query, k = 5) {
 
   try {
     const docs = await store.similaritySearch(query, k);
-    return docs.map(adaptRegulationDoc);
+    return docs.map((doc) => adaptRegulationDoc(doc, lang));
   } catch (error) {
     logger.warn('compliance_kb similarity search failed', {
       service: 'compliance-kb-retriever',
