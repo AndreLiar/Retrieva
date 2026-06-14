@@ -417,6 +417,105 @@
         "title": "Export Evidence",
         "desc": "Generate regulator-ready outputs including the Register of Information and gap remediation artefacts."
       }
+    },
+    "problem": {
+      "heading": "DORA vendor reviews are slow, manual, and never finished",
+      "subtitle": "Every ICT third party (Articles 28–30) has to be assessed — and re-assessed — continuously. By hand, that doesn't scale.",
+      "points": {
+        "manual": "An analyst reads a 50-page contract against a checklist — for every single vendor.",
+        "slow": "Weeks per assessment, inconsistent between analysts, and expensive when you outsource it.",
+        "endless": "New vendors, renewals, annual reviews — the work never stops.",
+        "accountable": "DORA has applied since January 2025, and the financial entity stays accountable for every provider."
+      }
+    },
+    "differentiation": {
+      "heading": "Not another GRC suite. Not ChatGPT.",
+      "subtitle": "Most tools make you fill in registers by hand, or give you an answer you can't defend.",
+      "grc": {
+        "title": "GRC suites",
+        "desc": "Powerful but heavy, expensive, and months to deploy — and you still fill the registers and read the documents yourself."
+      },
+      "chatgpt": {
+        "title": "ChatGPT & spreadsheets",
+        "desc": "Fast, but a throwaway answer: no citations, no audit trail, no sign-off, no view of your whole portfolio."
+      },
+      "retrieva": {
+        "title": "Retrieva",
+        "desc": "Reads the actual evidence — the contract, SOC 2, ISO — cites every finding, and lets your expert review-and-sign, across your entire vendor portfolio."
+      }
+    },
+    "credibility": {
+      "heading": "Grounded in the regulation — not the model's memory",
+      "subtitle": "Every finding is traceable back to the source text. Built to be audited, not to impress.",
+      "points": {
+        "grounded": "Built on the verbatim DORA articles plus the RTS/ITS (EUR-Lex), versioned and dated so you know exactly which text was used.",
+        "cited": "Every gap and every answer is cited back to its source — auditable evidence, not a confident guess.",
+        "signoff": "Article 30 contract review checks the mandatory clauses, and your expert signs off clause by clause."
+      }
+    },
+    "security": {
+      "heading": "Built for regulated data",
+      "subtitle": "Your vendors' documents are sensitive. They're treated that way.",
+      "points": {
+        "isolation": {
+          "title": "Strict tenant isolation",
+          "desc": "Each vendor's documents are walled off — enforced at both the database and the vector layers, so nothing leaks across workspaces."
+        },
+        "selfHosted": {
+          "title": "Self-hosted embeddings",
+          "desc": "Your documents are vectorised in-house — they are not sent to a third-party embedding API."
+        },
+        "encryption": {
+          "title": "Encrypted & hardened",
+          "desc": "Field-level AES-256 encryption at rest, httpOnly session cookies, and per-IP rate limiting on credential surfaces."
+        },
+        "erasure": {
+          "title": "Real erasure",
+          "desc": "Delete a vendor and its data goes with it — documents, vectors, assessments and files are purged."
+        }
+      }
+    },
+    "faq": {
+      "heading": "Questions",
+      "items": {
+        "data": {
+          "q": "Is my data safe?",
+          "a": "Vendor documents are isolated per workspace, encrypted at rest, and embedded in-house (never sent to a third-party embedding API). Deleting a vendor erases its data."
+        },
+        "replace": {
+          "q": "Do I have to replace my GRC tool?",
+          "a": "No. Retrieva does the evidence-heavy part — reading documents and producing cited DORA gap reports — and complements your existing registry or GRC."
+        },
+        "frameworks": {
+          "q": "What does it cover?",
+          "a": "DORA ICT third-party risk: gap analysis against Articles 28–30, Article 30 contract review with clause sign-off, due diligence questionnaires, and a Register of Information export."
+        },
+        "language": {
+          "q": "Does it work in French?",
+          "a": "Yes. The interface is bilingual (FR/EN) and the assistant answers in the language of your question."
+        },
+        "speed": {
+          "q": "How fast do I get value?",
+          "a": "Upload a contract or a vendor's security documents and get a cited DORA gap report in minutes — not days."
+        }
+      }
+    },
+    "finalCta": {
+      "heading": "Turn a stack of vendor documents into a defensible DORA file.",
+      "subtitle": "Upload the evidence, get a cited gap report, review and sign. Start free — no credit card.",
+      "primary": "Get started",
+      "secondary": "Sign in"
+    },
+    "footer": {
+      "tagline": "DORA compliance intelligence — read the evidence, cite the gaps, sign off.",
+      "product": "Product",
+      "resources": "Resources",
+      "company": "Company",
+      "docs": "Documentation",
+      "getStarted": "Get started",
+      "signin": "Sign in",
+      "contact": "Contact",
+      "rights": "All rights reserved."
     }
   },
   "assessments": {

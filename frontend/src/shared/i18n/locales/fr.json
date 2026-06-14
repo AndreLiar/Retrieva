@@ -417,6 +417,105 @@
         "title": "Exporter les preuves",
         "desc": "Générez des livrables prêts pour le régulateur, dont le Registre d'information et les artefacts de remédiation des écarts."
       }
+    },
+    "problem": {
+      "heading": "Évaluer ses fournisseurs DORA, c'est lent, manuel, et jamais terminé",
+      "subtitle": "Chaque tiers ICT (articles 28 à 30) doit être évalué — et réévalué — en continu. À la main, ça ne tient pas à l'échelle.",
+      "points": {
+        "manual": "Un analyste lit un contrat de 50 pages contre une checklist — pour chaque fournisseur.",
+        "slow": "Des semaines par évaluation, incohérent d'un analyste à l'autre, et cher dès qu'on l'externalise.",
+        "endless": "Nouveaux fournisseurs, renouvellements, revues annuelles — le travail ne s'arrête jamais.",
+        "accountable": "DORA s'applique depuis janvier 2025, et l'entité financière reste responsable de chaque prestataire."
+      }
+    },
+    "differentiation": {
+      "heading": "Ni une énième suite GRC. Ni ChatGPT.",
+      "subtitle": "La plupart des outils vous font remplir des registres à la main, ou donnent une réponse indéfendable.",
+      "grc": {
+        "title": "Suites GRC",
+        "desc": "Puissantes mais lourdes, chères, des mois à déployer — et vous remplissez quand même les registres et lisez les documents vous-même."
+      },
+      "chatgpt": {
+        "title": "ChatGPT & tableurs",
+        "desc": "Rapide, mais une réponse jetable : pas de citations, pas de trace d'audit, pas de sign-off, aucune vue de votre portefeuille."
+      },
+      "retrieva": {
+        "title": "Retrieva",
+        "desc": "Lit les preuves réelles — contrat, SOC 2, ISO — cite chaque constat, et laisse votre expert relire-et-signer, sur tout votre portefeuille fournisseurs."
+      }
+    },
+    "credibility": {
+      "heading": "Ancré sur le règlement — pas sur la mémoire du modèle",
+      "subtitle": "Chaque constat est traçable jusqu'au texte source. Conçu pour être audité, pas pour impressionner.",
+      "points": {
+        "grounded": "Construit sur le texte verbatim des articles DORA + les RTS/ITS (EUR-Lex), versionné et daté — vous savez exactement quel texte a servi.",
+        "cited": "Chaque écart et chaque réponse est cité jusqu'à sa source — une preuve auditable, pas une supposition assurée.",
+        "signoff": "La revue de contrat (Art. 30) vérifie les clauses obligatoires, et votre expert signe clause par clause."
+      }
+    },
+    "security": {
+      "heading": "Conçu pour des données réglementées",
+      "subtitle": "Les documents de vos fournisseurs sont sensibles. Ils sont traités comme tels.",
+      "points": {
+        "isolation": {
+          "title": "Isolation tenant stricte",
+          "desc": "Les documents de chaque fournisseur sont cloisonnés — appliqué à la fois côté base de données et côté vecteurs, rien ne fuit entre espaces."
+        },
+        "selfHosted": {
+          "title": "Embeddings auto-hébergés",
+          "desc": "Vos documents sont vectorisés en interne — ils ne sont pas envoyés à une API d'embeddings tierce."
+        },
+        "encryption": {
+          "title": "Chiffré & durci",
+          "desc": "Chiffrement AES-256 au niveau des champs au repos, cookies de session httpOnly, et rate-limiting par IP sur les surfaces d'authentification."
+        },
+        "erasure": {
+          "title": "Effacement réel",
+          "desc": "Supprimez un fournisseur et ses données partent avec — documents, vecteurs, évaluations et fichiers sont purgés."
+        }
+      }
+    },
+    "faq": {
+      "heading": "Questions",
+      "items": {
+        "data": {
+          "q": "Mes données sont-elles en sécurité ?",
+          "a": "Les documents fournisseurs sont isolés par espace, chiffrés au repos, et vectorisés en interne (jamais envoyés à une API d'embeddings tierce). Supprimer un fournisseur efface ses données."
+        },
+        "replace": {
+          "q": "Dois-je remplacer mon outil GRC ?",
+          "a": "Non. Retrieva fait la partie lourde — lire les documents et produire des rapports d'écarts DORA cités — et complète votre registre ou GRC existant."
+        },
+        "frameworks": {
+          "q": "Qu'est-ce que ça couvre ?",
+          "a": "Le risque tiers ICT DORA : gap analysis sur les articles 28 à 30, revue de contrat Art. 30 avec sign-off clause par clause, questionnaires de due diligence, et export du Registre d'information."
+        },
+        "language": {
+          "q": "Ça marche en français ?",
+          "a": "Oui. L'interface est bilingue (FR/EN) et l'assistant répond dans la langue de votre question."
+        },
+        "speed": {
+          "q": "En combien de temps j'ai de la valeur ?",
+          "a": "Uploadez un contrat ou les documents sécurité d'un fournisseur et obtenez un rapport d'écarts DORA cité en minutes — pas en jours."
+        }
+      }
+    },
+    "finalCta": {
+      "heading": "Transformez une pile de documents fournisseur en dossier DORA défendable.",
+      "subtitle": "Uploadez les preuves, obtenez un rapport d'écarts cité, relisez et signez. Démarrez gratuitement — sans carte bancaire.",
+      "primary": "Commencer",
+      "secondary": "Se connecter"
+    },
+    "footer": {
+      "tagline": "Intelligence de conformité DORA — lire les preuves, citer les écarts, signer.",
+      "product": "Produit",
+      "resources": "Ressources",
+      "company": "Entreprise",
+      "docs": "Documentation",
+      "getStarted": "Commencer",
+      "signin": "Se connecter",
+      "contact": "Contact",
+      "rights": "Tous droits réservés."
     }
   },
   "assessments": {
