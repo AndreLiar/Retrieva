@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef } from 'react';
 import type { Source } from '@/types';
 import { getActiveWorkspaceContextId } from '@/shared/lib/workspace-context';
+import i18n from '@/shared/i18n/config';
 
 /**
  * ISSUE #41 FIX: Streaming timeout configuration
@@ -111,7 +112,7 @@ export function useStreaming(options: UseStreamingOptions = {}) {
             ...(resolvedWorkspaceId ? { 'X-Workspace-Id': resolvedWorkspaceId } : {}),
           },
           credentials: 'include',
-          body: JSON.stringify({ question, conversationId }),
+          body: JSON.stringify({ question, conversationId, lang: i18n.language }),
           signal: controller.signal,
         });
 

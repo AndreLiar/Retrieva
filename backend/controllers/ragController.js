@@ -12,7 +12,7 @@ import logger from '../config/logger.js';
  * This controller only handles HTTP request/response shaping.
  */
 export const askQuestion = catchAsync(async (req, res) => {
-  const { question, conversationId, filters, useIntentAware = true, forceIntent } = req.body;
+  const { question, conversationId, filters, useIntentAware = true, forceIntent, lang } = req.body;
 
   if (!conversationId) {
     return sendError(res, 400, 'conversationId is required');
@@ -29,6 +29,7 @@ export const askQuestion = catchAsync(async (req, res) => {
       authorizedWorkspaceIds: req.authorizedWorkspaces?.map((w) => w.workspaceId) || [],
       forceIntent: forceIntent || null,
       useIntentAware,
+      lang,
     });
 
     // B1: honor the workspace canViewSources permission before returning sources.
@@ -54,7 +55,7 @@ export const askQuestion = catchAsync(async (req, res) => {
  * progressively.
  */
 export const askQuestionStream = catchAsync(async (req, res) => {
-  const { question, conversationId, filters, useIntentAware = true, forceIntent } = req.body;
+  const { question, conversationId, filters, useIntentAware = true, forceIntent, lang } = req.body;
 
   if (!conversationId) {
     return sendError(res, 400, 'conversationId is required');
@@ -92,6 +93,7 @@ export const askQuestionStream = catchAsync(async (req, res) => {
       authorizedWorkspaceIds: req.authorizedWorkspaces?.map((w) => w.workspaceId) || [],
       forceIntent: forceIntent || null,
       useIntentAware,
+      lang,
       onEvent: send,
     });
   } catch (error) {
