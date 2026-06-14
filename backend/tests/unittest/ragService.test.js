@@ -505,7 +505,8 @@ describe('askWithConversation', () => {
 
     expect(vendorSearch).toHaveBeenCalledTimes(1);
     expect(retrieveRegulationDocs).toHaveBeenCalledTimes(1);
-    expect(retrieveRegulationDocs).toHaveBeenCalledWith(expect.any(String), 5);
+    // 3rd arg = the UI locale, threaded through for language-aware source links (#424).
+    expect(retrieveRegulationDocs).toHaveBeenCalledWith(expect.any(String), 5, undefined);
 
     // Reranker should see merged set (vendor first, regulation second).
     const mergedArg = rerankDocuments.mock.calls[0][0];

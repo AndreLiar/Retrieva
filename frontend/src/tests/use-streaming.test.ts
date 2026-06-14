@@ -169,15 +169,12 @@ describe('useStreaming', () => {
         result.current.startStreaming('test question', 'conv-123');
       });
 
-      expect(mockFetch).toHaveBeenCalledWith(
-        expect.any(String),
-        expect.objectContaining({
-          body: JSON.stringify({
-            question: 'test question',
-            conversationId: 'conv-123',
-          }),
-        })
-      );
+      // Parse the body so the assertion ignores the added `lang` field (#424).
+      const body = JSON.parse((mockFetch.mock.calls[0][1] as { body: string }).body);
+      expect(body).toMatchObject({
+        question: 'test question',
+        conversationId: 'conv-123',
+      });
     });
 
     it('should use POST method', () => {

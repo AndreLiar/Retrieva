@@ -33,6 +33,7 @@ export async function executeRAG({
   onEvent = null,
   userId = null,
   authorizedWorkspaceIds = null,
+  lang = 'en',
 }) {
   logger.info('Executing RAG query', {
     service: 'rag-executor',
@@ -47,6 +48,7 @@ export async function executeRAG({
     onEvent,
     userId,
     authorizedWorkspaceIds,
+    lang,
   });
 
   logger.info('RAG query completed', {
