@@ -225,6 +225,8 @@ export interface Source {
   title: string;
   content: string;
   url?: string;
+  /** False for unofficial working translations (e.g. the FR DORA text) — #424 */
+  official?: boolean;
   pageId?: string;
   score?: number;
 }

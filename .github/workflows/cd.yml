@@ -196,8 +196,9 @@ jobs:
 
             # ── Sync compliance knowledge base (smart sync, detached) ─────
             # Compares Qdrant point count to JSON article count.
-            # No-op if already in sync (~1s); first-run seeding embeds 58
-            # articles via Ollama Cloud and can take 10–15 min.
+            # No-op if already in sync (~1s); seeding embeds 116 entries
+            # (58 EN + 58 FR working translation, #424) via the embedding
+            # endpoint and can take ~20 min on a cold collection.
             # Run detached (-d) so the deploy job is NOT blocked on the
             # seed — the operator inspects /var/log/retrieva-seed-kb.log
             # afterwards if compliance_kb is unexpectedly empty.

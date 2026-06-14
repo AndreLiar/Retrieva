@@ -141,6 +141,15 @@ function SourceCard({ source, index, isExpanded, onToggle, domId }: SourceCardPr
             </Badge>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium truncate">{source.title}</p>
+              {source.official === false && (
+                <Badge
+                  variant="outline"
+                  className="mt-0.5 h-auto px-1 py-0 text-[10px] font-normal text-amber-700 border-amber-300 dark:text-amber-400 dark:border-amber-700"
+                  title={t('chat.ui.sources.unofficialHint')}
+                >
+                  {t('chat.ui.sources.unofficial')}
+                </Badge>
+              )}
               {source.score !== undefined && (
                 <p className="text-xs text-muted-foreground">
                   {t('chat.ui.sources.relevance', { pct: Math.round(source.score * 100) })}

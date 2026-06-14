@@ -869,7 +869,9 @@
         "title": "Sources ({{count}})",
         "showLess": "Afficher moins",
         "showMore": "Afficher {{count}} sources de plus",
-        "relevance": "Pertinence : {{pct}} %"
+        "relevance": "Pertinence : {{pct}} %",
+        "unofficial": "Traduction de travail",
+        "unofficialHint": "Traduction automatique non officielle — le texte faisant foi est la version officielle sur EUR-Lex (voir le lien de la source)."
       },
       "bubble": {
         "copyAria": "Copier le message",

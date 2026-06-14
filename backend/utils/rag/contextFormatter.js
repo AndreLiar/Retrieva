@@ -38,6 +38,7 @@
  * @property {string} title - Document title
  * @property {string} content - Preview of chunk content (for frontend display)
  * @property {string} url - Document URL
+ * @property {boolean} official - False for unofficial working translations (#424)
  * @property {string|null} pageId - Source page/document ID
  * @property {number|null} score - Relevance score as number (for frontend compatibility)
  * @property {string|null} section - Section within document
@@ -62,13 +63,13 @@ export function formatContext(docs) {
 
       // Use full heading breadcrumb for hierarchical disambiguation.
       // Falls back to legacy section field for backward compatibility.
-      const sectionLabel = headingPath?.length > 0
-        ? headingPath.join(' > ')
-        : (doc.metadata?.section || '');
+      const sectionLabel =
+        headingPath?.length > 0 ? headingPath.join(' > ') : doc.metadata?.section || '';
 
-      const header = sectionLabel && sectionLabel !== 'General'
-        ? `[Source ${sourceNum}: ${docTitle} - ${sectionLabel}]`
-        : `[Source ${sourceNum}: ${docTitle}]`;
+      const header =
+        sectionLabel && sectionLabel !== 'General'
+          ? `[Source ${sourceNum}: ${docTitle} - ${sectionLabel}]`
+          : `[Source ${sourceNum}: ${docTitle}]`;
 
       return `${header}\n${doc.pageContent}`;
     })
@@ -104,7 +105,12 @@ export function formatSources(docs) {
       id: doc.metadata?.sourceId || `source-${sourceNumber}`,
       title: doc.metadata?.documentTitle || 'Untitled',
       content: contentPreview,
-      url: doc.metadata?.documentUrl || doc.metadata?.source || '',
+      // `metadata.url` (e.g. the EUR-Lex link on regulation chunks, #424) must
+      // come before `metadata.source` — the latter is a category tag like
+      // 'regulation', not a URL, and would otherwise shadow the real link.
+      url: doc.metadata?.documentUrl || doc.metadata?.url || doc.metadata?.source || '',
+      // false for the working French translation → the UI labels it unofficial.
+      official: doc.metadata?.official !== false,
       pageId: doc.metadata?.sourceId || null,
       score: relevanceScore ? parseFloat(relevanceScore.toFixed(4)) : null,
 
