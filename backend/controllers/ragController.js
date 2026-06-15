@@ -84,6 +84,13 @@ export const askQuestionStream = catchAsync(async (req, res) => {
     closed = true;
   });
 
+  // Keep the SSE connection alive through nginx's proxy_read_timeout (default 60s).
+  // The embedding phase can take minutes on CPU-only ollama — without this, nginx
+  // kills the idle connection before the first event is ever flushed.
+  const heartbeat = setInterval(() => {
+    if (!closed && !res.writableEnded) res.write(': keepalive\n\n');
+  }, 20000);
+
   try {
     await executeRAG({
       question,
@@ -104,6 +111,7 @@ export const askQuestionStream = catchAsync(async (req, res) => {
       send('error', { message: 'Stream failed', code: 'STREAM_ERROR' });
     }
   } finally {
+    clearInterval(heartbeat);
     if (!res.writableEnded) res.end();
   }
 });
