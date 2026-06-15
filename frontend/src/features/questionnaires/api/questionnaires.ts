@@ -68,9 +68,9 @@ export interface CreateQuestionnaireDto {
 // ---------------------------------------------------------------------------
 
 const publicApiBaseURL =
-  (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_API_URL
+  typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_API_URL
     ? process.env.NEXT_PUBLIC_API_URL
-    : '') + '/api/v1';
+    : '/api/v1';
 
 const publicClient = axios.create({
   baseURL: publicApiBaseURL,
