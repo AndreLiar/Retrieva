@@ -16,6 +16,7 @@ import healthRoutes from './routes/healthRoutes.js';
 import assessmentRoutes from './routes/assessmentRoutes.js';
 import complianceRoutes from './routes/complianceRoutes.js';
 import questionnaireRoutes from './routes/questionnaireRoutes.js';
+import questionnairePublicRoutes from './routes/questionnairePublicRoutes.js';
 import organizationRoutes from './routes/organizationRoutes.js';
 import billingRoutes from './routes/billingRoutes.js';
 import { handleStripeWebhook } from './controllers/billingController.js';
@@ -239,9 +240,14 @@ app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/organizations', organizationRoutes);
 app.use('/api/v1/billing', billingRoutes);
 
+// Unguarded: public vendor questionnaire form (token-gated, not workspace auth).
+// Mounted ahead of requireActivePlan so a visitor's own session cookie (e.g. the
+// workspace owner previewing their own link from a paused-plan org) can't 402
+// a route a vendor with no Retrieva account must be able to reach.
+app.use('/api/v1/questionnaires', questionnairePublicRoutes);
+
 // Paid routes — optionalAuth sets req.user when a token is present so the
-// plan guard can check it; public sub-routes (e.g. questionnaire respond)
-// have no token and pass through to the router's own authenticate.
+// plan guard can check it.
 // authenticate is idempotent so the router's router.use(authenticate) is a
 // no-op when req.user is already set by optionalAuth.
 // B2: setTenantContext (after auth) makes the active workspace available to the
