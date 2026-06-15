@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Loader2, ShieldCheck, ShieldOff, Copy } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -123,16 +124,17 @@ export function MfaSection() {
 
         {!enabled && setup && (
           <div className="space-y-4">
-            <div className="space-y-1">
+            <div className="space-y-3">
               <p className="text-sm font-medium">{t('settings.mfa.step1')}</p>
               <p className="text-xs text-muted-foreground">
                 {t('settings.mfa.step1Desc')}
               </p>
-              <code className="block break-all rounded bg-muted px-2 py-1 text-xs">
+              <div className="flex justify-center rounded-lg border bg-white p-4">
+                <QRCodeSVG value={setup.otpauthUrl} size={180} />
+              </div>
+              <p className="text-xs text-muted-foreground">{t('settings.mfa.manualEntry')}</p>
+              <code className="block break-all rounded bg-muted px-2 py-1 text-xs select-all">
                 {setup.secret}
-              </code>
-              <code className="block break-all rounded bg-muted px-2 py-1 text-xs">
-                {setup.otpauthUrl}
               </code>
             </div>
             <Separator />
