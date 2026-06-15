@@ -5,8 +5,6 @@ import {
   getQuestionnaire,
   deleteQuestionnaire,
   sendQuestionnaire,
-  getPublicForm,
-  submitResponse,
 } from '../controllers/questionnaireController.js';
 import { authenticate } from '../middleware/auth.js';
 import { requireWorkspaceAccess } from '../middleware/workspaceAuth.js';
@@ -14,39 +12,16 @@ import { validateBody, validateParams, validateQuery } from '../middleware/valid
 import {
   createQuestionnaireSchema,
   sendQuestionnaireSchema,
-  submitQuestionnaireResponseSchema,
   idParamsSchema,
-  tokenParamsSchema,
   listQuestionnairesQuerySchema,
 } from '../validators/schemas.js';
 
 const router = Router();
 
 // ---------------------------------------------------------------------------
-// Public routes — no authentication required (token-based access only)
-// ---------------------------------------------------------------------------
-
-/**
- * @route  GET /api/v1/questionnaires/respond/:token
- * @desc   Load the public vendor questionnaire form
- * @access Public (token-gated)
- */
-router.get('/respond/:token', validateParams(tokenParamsSchema), getPublicForm);
-
-/**
- * @route  POST /api/v1/questionnaires/respond/:token
- * @desc   Save partial or final vendor response
- * @access Public (token-gated)
- */
-router.post(
-  '/respond/:token',
-  validateParams(tokenParamsSchema),
-  validateBody(submitQuestionnaireResponseSchema),
-  submitResponse
-);
-
-// ---------------------------------------------------------------------------
 // Authenticated routes — require JWT + workspace membership
+// Public /respond/:token routes live in questionnairePublicRoutes.js, mounted
+// unguarded in app.js (ahead of requireActivePlan).
 // ---------------------------------------------------------------------------
 
 /**
