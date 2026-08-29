@@ -19,10 +19,11 @@ on:
 env:
   HARBOR: harbor.10.0.0.200.nip.io
   GHCR_ORG: ghcr.io/andrelair-platform
-  # Frontend bakes NEXT_PUBLIC_* at build time → point at the minicloud ingress
-  # (was retrieva.online on the old DO build).
-  FE_API_URL: https://retrieva.devandre.sbs/api/v1
-  FE_WS_URL: https://retrieva.devandre.sbs
+  # Frontend bakes NEXT_PUBLIC_* at build time → public domain retrieva.online
+  # (served via the minicloud Cloudflare tunnel; ingress routes / → frontend,
+  #  /api → backend on the same host).
+  FE_API_URL: https://retrieva.online/api/v1
+  FE_WS_URL: https://retrieva.online
   FE_APP_NAME: Retrieva
 
 jobs:
