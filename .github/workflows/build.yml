@@ -107,6 +107,20 @@ jobs:
           echo "harbor=${HARBOR_REF}" >> "$GITHUB_OUTPUT"
           { echo 'list<<EOF'; echo "$TAGS"; echo 'EOF'; } >> "$GITHUB_OUTPUT"
 
+      # NEXT_PUBLIC_* is baked at build time, so dev and prod need different
+      # frontend images (the SPA derives its API + WebSocket base from these).
+      # main → prod public domain; dev → internal dev host (Tailscale + minicloud CA).
+      - name: Resolve frontend public URLs (per environment)
+        if: matrix.service == 'frontend'
+        run: |
+          if [ "${{ steps.meta.outputs.branch }}" = "main" ]; then
+            echo "FE_API_URL=https://retrieva.online/api/v1" >> "$GITHUB_ENV"
+            echo "FE_WS_URL=https://retrieva.online"          >> "$GITHUB_ENV"
+          else
+            echo "FE_API_URL=https://retrieva-dev.10.0.0.200.nip.io/api/v1" >> "$GITHUB_ENV"
+            echo "FE_WS_URL=https://retrieva-dev.10.0.0.200.nip.io"          >> "$GITHUB_ENV"
+          fi
+
       - name: Build and push
         id: build
         uses: docker/build-push-action@v7
