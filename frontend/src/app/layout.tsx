@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import Script from 'next/script';
 import { Cormorant_Garamond, DM_Sans, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 import { Providers } from '@/shared/providers';
@@ -55,9 +54,17 @@ async function RootLayoutContent({
       <body
         className={`${cormorant.variable} ${dmSans.variable} ${jetbrainsMono.variable} font-sans antialiased`}
       >
-        {/* Runtime env — sets window.__ENV__ before hydration so ONE image serves
-            every environment (Kargo promotes the same artifact dev->prod). */}
-        <Script src="/__env.js" strategy="beforeInteractive" />
+        {/* Runtime env — this layout renders dynamically (auth-session uses cookies()
+            + noStore()), so the SERVER reads API_URL from the container env at request
+            time and injects window.__ENV__ before hydration. One image serves every
+            environment (Kargo promotes the same artifact dev->prod). Read via getApiUrl(). */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `window.__ENV__=${JSON.stringify({
+              API_URL: process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? '',
+            })};`,
+          }}
+        />
         <Providers initialUser={initialUser ?? undefined} authResolved={!!initialUser}>
           {children}
         </Providers>
