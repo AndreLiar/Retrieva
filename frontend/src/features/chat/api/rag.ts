@@ -1,6 +1,7 @@
 import apiClient from '@/shared/api/client';
 import type { ApiResponse, RAGResponse, Source } from '@/types';
 import { getActiveWorkspaceContextId } from '@/shared/lib/workspace-context';
+import { getApiUrl } from '@/lib/runtime-env';
 
 export interface RAGQueryData {
   question: string;
@@ -22,7 +23,7 @@ export const ragApi = {
    * Get the streaming endpoint URL for SSE
    */
   getStreamUrl: () => {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3007/api/v1';
+    const baseUrl = getApiUrl();
     return `${baseUrl}/rag/stream`;
   },
 
@@ -46,7 +47,7 @@ export async function* streamRAGResponse(
   data: RAGQueryData,
   signal?: AbortSignal
 ): AsyncGenerator<{ type: string; data: string }> {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3007/api/v1';
+  const baseUrl = getApiUrl();
   const workspaceId = getActiveWorkspaceContextId(data.workspaceId);
 
   const response = await fetch(`${baseUrl}/rag/stream`, {

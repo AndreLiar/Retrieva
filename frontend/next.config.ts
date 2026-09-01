@@ -7,7 +7,7 @@ const nextConfig: NextConfig = {
 
 
   async rewrites() {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3007/api/v1';
+    const apiUrl = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3007/api/v1';
     if (process.env.NODE_ENV === 'development') {
       return [
         {

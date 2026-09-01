@@ -353,7 +353,7 @@ export function QuestionnaireDetailPage({ params }: QuestionnaireDetailPageProps
     }
 
     const baseUrl =
-      process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || window.location.origin;
+      window.__ENV__?.API_URL?.replace('/api', '') || window.location.origin;
     const link = `${baseUrl}/q/${data.token}`;
 
     navigator.clipboard.writeText(link).then(() => {

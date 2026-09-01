@@ -18,14 +18,12 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Build arguments for public env vars (baked into the JS bundle at build time)
-ARG NEXT_PUBLIC_API_URL
-ARG NEXT_PUBLIC_WS_URL
+# Build args for BUILD-CONSTANT public env vars only. The API URL is NOT baked here —
+# it is injected at RUNTIME via /__env.js (see src/app/__env.js/route.ts + runtime-env.ts)
+# so a single image serves every environment (Kargo promotes the same artifact dev->prod).
 ARG NEXT_PUBLIC_APP_NAME=Retrieva
 ARG NEXT_PUBLIC_SENTRY_DSN
 
-ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
-ENV NEXT_PUBLIC_WS_URL=$NEXT_PUBLIC_WS_URL
 ENV NEXT_PUBLIC_APP_NAME=$NEXT_PUBLIC_APP_NAME
 ENV NEXT_PUBLIC_SENTRY_DSN=$NEXT_PUBLIC_SENTRY_DSN
 
