@@ -96,7 +96,7 @@ export function QuestionnairesPage() {
       return;
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || window.location.origin;
+    const baseUrl = window.__ENV__?.API_URL?.replace('/api', '') || window.location.origin;
     const link = `${baseUrl}/q/${questionnaire.token}`;
     navigator.clipboard.writeText(link).then(() => {
       setCopiedId(questionnaire._id);

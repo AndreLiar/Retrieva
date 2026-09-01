@@ -4,6 +4,7 @@ import type { ApiResponse } from '@/types';
 import { dispatchSecureLogout } from '@/shared/lib/auth-events';
 import { redirectToLogin, isPublicAuthPath } from '@/shared/lib/navigation';
 import { clearActiveWorkspaceContextId, getActiveWorkspaceContextId } from '@/shared/lib/workspace-context';
+import { getApiUrl } from '@/lib/runtime-env';
 
 /**
  * ISSUE #41 FIX: API timeout configuration
@@ -14,7 +15,7 @@ const API_TIMEOUT_MS = 30000; // 30 seconds
 
 // Create axios instance
 const apiClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3007/api/v1',
+  baseURL: getApiUrl(),
   withCredentials: true, // Important for HTTP-only cookies
   timeout: API_TIMEOUT_MS, // ISSUE #41 FIX: Add default timeout
   headers: {

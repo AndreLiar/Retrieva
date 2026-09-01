@@ -4,6 +4,7 @@ import { useState, useCallback, useRef } from 'react';
 import type { Source } from '@/types';
 import { getActiveWorkspaceContextId } from '@/shared/lib/workspace-context';
 import i18n from '@/shared/i18n/config';
+import { getApiUrl } from '@/lib/runtime-env';
 
 /**
  * ISSUE #41 FIX: Streaming timeout configuration
@@ -91,8 +92,7 @@ export function useStreaming(options: UseStreamingOptions = {}) {
       const totalTimeout = options.totalTimeout ?? STREAM_TOTAL_TIMEOUT_MS;
 
       try {
-        const baseUrl =
-          process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3007/api/v1';
+        const baseUrl = getApiUrl();
         const resolvedWorkspaceId = getActiveWorkspaceContextId(workspaceId);
 
         // ISSUE #41 FIX: Set connection timeout

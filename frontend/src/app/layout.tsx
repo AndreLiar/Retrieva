@@ -54,6 +54,17 @@ async function RootLayoutContent({
       <body
         className={`${cormorant.variable} ${dmSans.variable} ${jetbrainsMono.variable} font-sans antialiased`}
       >
+        {/* Runtime env — this layout renders dynamically (auth-session uses cookies()
+            + noStore()), so the SERVER reads API_URL from the container env at request
+            time and injects window.__ENV__ before hydration. One image serves every
+            environment (Kargo promotes the same artifact dev->prod). Read via getApiUrl(). */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `window.__ENV__=${JSON.stringify({
+              API_URL: process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? '',
+            })};`,
+          }}
+        />
         <Providers initialUser={initialUser ?? undefined} authResolved={!!initialUser}>
           {children}
         </Providers>

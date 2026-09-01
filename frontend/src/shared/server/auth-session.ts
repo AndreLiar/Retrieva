@@ -4,8 +4,9 @@ import { cookies } from 'next/headers';
 import { unstable_noStore as noStore } from 'next/cache';
 
 import type { User } from '@/types';
+import { getApiUrl } from '@/lib/runtime-env';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3007/api/v1';
+const API_BASE_URL = getApiUrl();
 
 function buildCookieHeader(store: Awaited<ReturnType<typeof cookies>>) {
   return store

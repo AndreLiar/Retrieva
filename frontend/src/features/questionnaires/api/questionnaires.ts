@@ -1,6 +1,7 @@
 import axios from 'axios';
 import apiClient from '@/shared/api/client';
 import type { ApiResponse } from '@/types';
+import { getApiUrl } from '@/lib/runtime-env';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -67,10 +68,7 @@ export interface CreateQuestionnaireDto {
 // Used for the vendor-facing /q/:token form to avoid token-refresh loops.
 // ---------------------------------------------------------------------------
 
-const publicApiBaseURL =
-  typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_API_URL
-    ? process.env.NEXT_PUBLIC_API_URL
-    : '/api/v1';
+const publicApiBaseURL = getApiUrl();
 
 const publicClient = axios.create({
   baseURL: publicApiBaseURL,
