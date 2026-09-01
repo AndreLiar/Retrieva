@@ -9,8 +9,11 @@
 name: Build
 
 on:
+  # Only main builds the promotable artifact. Kargo owns dev->prod (it promotes the
+  # main build to retrieva-dev then prod), so dev-branch builds are redundant — dev
+  # iteration is local/preview, not a deployed track.
   push:
-    branches: [main, dev]
+    branches: [main]
     paths-ignore:
       - 'docs/**'
       - '*.md'
@@ -50,9 +53,9 @@ jobs:
         run: |
           SHA=$(git rev-parse --short HEAD)
           BRANCH=${GITHUB_REF_NAME}
-          # Bare SHA on main (same tag pushed to BOTH Harbor + ghcr → one promotable
-          # artifact for Kargo). dev branch keeps a dev- prefix for iteration builds.
-          if [ "$BRANCH" = "main" ]; then TAG="${SHA}"; else TAG="${BRANCH}-${SHA}"; fi
+          # main-only: bare SHA, same tag pushed to BOTH Harbor + ghcr → ONE promotable
+          # artifact that Kargo's git Warehouse promotes dev->prod.
+          TAG="${SHA}"
           echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
           echo "sha=${SHA}"  >> "$GITHUB_OUTPUT"
           echo "branch=${BRANCH}" >> "$GITHUB_OUTPUT"
