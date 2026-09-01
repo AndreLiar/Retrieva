@@ -19,11 +19,9 @@ on:
 env:
   HARBOR: harbor.10.0.0.200.nip.io
   GHCR_ORG: ghcr.io/andrelair-platform
-  # Frontend bakes NEXT_PUBLIC_* at build time → public domain retrieva.online
-  # (served via the minicloud Cloudflare tunnel; ingress routes / → frontend,
-  #  /api → backend on the same host).
-  FE_API_URL: https://retrieva.online/api/v1
-  FE_WS_URL: https://retrieva.online
+  # The frontend no longer bakes the API/WS URL — it reads API_URL at RUNTIME
+  # (window.__ENV__, injected by the layout). So ONE image serves dev + prod and
+  # Kargo can promote the same artifact. Only the constant APP_NAME is still baked.
   FE_APP_NAME: Retrieva
 
 jobs:
@@ -52,7 +50,9 @@ jobs:
         run: |
           SHA=$(git rev-parse --short HEAD)
           BRANCH=${GITHUB_REF_NAME}
-          if [ "$BRANCH" = "main" ]; then TAG="${SHA}-amd64"; else TAG="${BRANCH}-${SHA}-amd64"; fi
+          # Bare SHA on main (same tag pushed to BOTH Harbor + ghcr → one promotable
+          # artifact for Kargo). dev branch keeps a dev- prefix for iteration builds.
+          if [ "$BRANCH" = "main" ]; then TAG="${SHA}"; else TAG="${BRANCH}-${SHA}"; fi
           echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
           echo "sha=${SHA}"  >> "$GITHUB_OUTPUT"
           echo "branch=${BRANCH}" >> "$GITHUB_OUTPUT"
@@ -107,20 +107,8 @@ jobs:
           echo "harbor=${HARBOR_REF}" >> "$GITHUB_OUTPUT"
           { echo 'list<<EOF'; echo "$TAGS"; echo 'EOF'; } >> "$GITHUB_OUTPUT"
 
-      # NEXT_PUBLIC_* is baked at build time, so dev and prod need different
-      # frontend images (the SPA derives its API + WebSocket base from these).
-      # main → prod public domain; dev → internal dev host (Tailscale + minicloud CA).
-      - name: Resolve frontend public URLs (per environment)
-        if: matrix.service == 'frontend'
-        run: |
-          if [ "${{ steps.meta.outputs.branch }}" = "main" ]; then
-            echo "FE_API_URL=https://retrieva.online/api/v1" >> "$GITHUB_ENV"
-            echo "FE_WS_URL=https://retrieva.online"          >> "$GITHUB_ENV"
-          else
-            echo "FE_API_URL=https://retrieva-dev.10.0.0.200.nip.io/api/v1" >> "$GITHUB_ENV"
-            echo "FE_WS_URL=https://retrieva-dev.10.0.0.200.nip.io"          >> "$GITHUB_ENV"
-          fi
-
+      # Frontend reads API/WS at runtime (window.__ENV__) — no per-env baking. Only the
+      # constant APP_NAME is passed as a build arg. Same image runs dev + prod.
       - name: Build and push
         id: build
         uses: docker/build-push-action@v7
@@ -130,8 +118,6 @@ jobs:
           platforms: linux/amd64
           tags: ${{ steps.tags.outputs.list }}
           build-args: |
-            ${{ matrix.service == 'frontend' && format('NEXT_PUBLIC_API_URL={0}', env.FE_API_URL) || '' }}
-            ${{ matrix.service == 'frontend' && format('NEXT_PUBLIC_WS_URL={0}', env.FE_WS_URL) || '' }}
             ${{ matrix.service == 'frontend' && format('NEXT_PUBLIC_APP_NAME={0}', env.FE_APP_NAME) || '' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
