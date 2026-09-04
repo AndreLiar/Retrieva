@@ -1,21 +1,24 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
+// The LLM factory is now a thin client over the AI gateway (LiteLLM). There is no per-provider
+// dispatch, key rotation or fallback chain in the app — the gateway owns all of that. These tests
+// assert the gateway contract: one ChatOpenAI pointed at the gateway /v1, model resolved per
+// purpose (LLM_<PURPOSE>_MODEL → LLM_MODEL), provider always 'litellm'.
+
 const ENV_KEYS = [
   'LLM_PROVIDER',
   'LLM_MODEL',
-  'LLM_CHAT_PROVIDER',
   'LLM_CHAT_MODEL',
-  'LLM_FORMATTER_PROVIDER',
   'LLM_FORMATTER_MODEL',
-  'LLM_ANALYSIS_PROVIDER',
   'LLM_ANALYSIS_MODEL',
-  'LLM_JUDGE_PROVIDER',
   'LLM_JUDGE_MODEL',
   'JUDGE_LLM_MODEL',
-  'GROQ_API_KEY',
-  'OLLAMA_API_KEY_1',
-  'OLLAMA_API_KEY_2',
-  'OLLAMA_API_KEY_3',
+  'LITELLM_BASE_URL',
+  'LITELLM_API_KEY',
+  'AZURE_OPENAI_ENDPOINT',
+  'AZURE_OPENAI_API_KEY',
+  'OPENAI_API_BASE',
+  'OPENAI_API_KEY',
 ];
 
 let savedEnv;
@@ -24,13 +27,9 @@ beforeEach(() => {
   savedEnv = {};
   for (const k of ENV_KEYS) savedEnv[k] = process.env[k];
   for (const k of ENV_KEYS) delete process.env[k];
-  // Pre-seed Ollama keys to '' so dotenv.config() (called at module import in
-  // llmProvider.js) doesn't repopulate them from backend/.env. The provider
-  // filters falsy keys out, so the unauthenticated path is taken.
-  process.env.OLLAMA_API_KEY_1 = '';
-  process.env.OLLAMA_API_KEY_2 = '';
-  process.env.OLLAMA_API_KEY_3 = '';
-  process.env.GROQ_API_KEY = '';
+  // Canonical gateway config for the tests.
+  process.env.LITELLM_BASE_URL = 'http://litellm.ai.svc.cluster.local:4000';
+  process.env.LITELLM_API_KEY = 'sk-test-gateway';
   vi.resetModules();
 });
 
@@ -42,141 +41,92 @@ afterEach(() => {
   vi.resetModules();
 });
 
-describe('createLLM purpose dispatch', () => {
-  it('returns a Groq instance when LLM_CHAT_PROVIDER=groq and purpose=chat', async () => {
-    process.env.LLM_CHAT_PROVIDER = 'groq';
-    process.env.LLM_CHAT_MODEL = 'llama-3.1-8b-instant';
-    process.env.GROQ_API_KEY = 'test-key';
-    process.env.LLM_PROVIDER = 'ollama';
-
-    const fakeChatOpenAI = vi.fn(function () {
-      this.kind = 'groq';
-      this.withFallbacks = ({ fallbacks }) => ({
-        kind: 'fallback-chain',
-        primary: this,
-        fallbacks,
-      });
-    });
-    vi.doMock('@langchain/openai', () => ({ ChatOpenAI: fakeChatOpenAI }));
-    const fakeChatOllama = vi.fn(function () {
-      this.kind = 'ollama';
-      this.bindTools = () => this;
-    });
-    vi.doMock('@langchain/ollama', () => ({ ChatOllama: fakeChatOllama }));
-
-    const { createLLM } = await import('../../config/llmProvider.js');
-    const llm = await createLLM({ purpose: 'chat' });
-
-    expect(llm.kind).toBe('fallback-chain');
-    expect(llm.primary.kind).toBe('groq');
-    expect(llm.fallbacks).toHaveLength(1);
-    expect(llm.fallbacks[0].kind).toBe('ollama');
-    // Groq received the right model + baseURL
-    const ctorArgs = fakeChatOpenAI.mock.calls[0][0];
-    expect(ctorArgs.model).toBe('llama-3.1-8b-instant');
-    expect(ctorArgs.configuration.baseURL).toBe('https://api.groq.com/openai/v1');
-    expect(ctorArgs.apiKey).toBe('test-key');
+function mockChatOpenAI() {
+  const ctor = vi.fn(function (args) {
+    this.kind = 'gateway';
+    this.args = args;
   });
+  vi.doMock('@langchain/openai', () => ({ ChatOpenAI: ctor }));
+  return ctor;
+}
 
-  it('falls back to LLM_PROVIDER when no per-purpose override is set', async () => {
-    process.env.LLM_PROVIDER = 'ollama';
-    process.env.LLM_MODEL = 'gemma3:12b';
-
-    const fakeChatOllama = vi.fn(function () {
-      this.kind = 'ollama';
-      this.bindTools = () => this;
-    });
-    vi.doMock('@langchain/ollama', () => ({ ChatOllama: fakeChatOllama }));
+describe('createLLM — routes everything through the AI gateway', () => {
+  it('builds one ChatOpenAI pointed at the gateway /v1 with the resolved model + key', async () => {
+    process.env.LLM_MODEL = 'tier-premium';
+    const ctor = mockChatOpenAI();
 
     const { createLLM } = await import('../../config/llmProvider.js');
     const llm = await createLLM({ purpose: 'analysis' });
 
-    expect(llm.kind).toBe('ollama');
-    expect(fakeChatOllama).toHaveBeenCalledTimes(1);
-    expect(fakeChatOllama.mock.calls[0][0].model).toBe('gemma3:12b');
+    expect(llm.kind).toBe('gateway');
+    const args = ctor.mock.calls[0][0];
+    expect(args.model).toBe('tier-premium');
+    // baseURL normalised to end in /v1
+    expect(args.configuration.baseURL).toBe('http://litellm.ai.svc.cluster.local:4000/v1');
+    expect(args.apiKey).toBe('sk-test-gateway');
   });
 
-  it('throws a clear error if Groq selected without GROQ_API_KEY', async () => {
-    process.env.LLM_CHAT_PROVIDER = 'groq';
-    // GROQ_API_KEY intentionally missing — fallback wrapper is gated on the key,
-    // so we hit the bare createGroqLLM path which must throw.
-
-    vi.doMock('@langchain/openai', () => ({ ChatOpenAI: vi.fn() }));
+  it('per-purpose model overrides the global LLM_MODEL', async () => {
+    process.env.LLM_MODEL = 'tier-premium';
+    process.env.LLM_CHAT_MODEL = 'tier-standard';
+    const ctor = mockChatOpenAI();
 
     const { createLLM } = await import('../../config/llmProvider.js');
-    await expect(createLLM({ purpose: 'chat' })).rejects.toThrow(/GROQ_API_KEY/);
+    await createLLM({ purpose: 'chat' });
+
+    expect(ctor.mock.calls[0][0].model).toBe('tier-standard');
   });
 
-  it('keeps gap-analysis on Ollama when only chat overrides are set', async () => {
-    process.env.LLM_CHAT_PROVIDER = 'groq';
-    process.env.GROQ_API_KEY = 'test-key';
-    process.env.LLM_PROVIDER = 'ollama';
-    process.env.LLM_MODEL = 'gemma3:12b';
-
-    const fakeChatOllama = vi.fn(function () {
-      this.kind = 'ollama';
-      this.bindTools = () => this;
-    });
-    vi.doMock('@langchain/ollama', () => ({ ChatOllama: fakeChatOllama }));
+  it('falls back to AZURE_OPENAI_* when LITELLM_* is unset (smooth cutover)', async () => {
+    delete process.env.LITELLM_BASE_URL;
+    delete process.env.LITELLM_API_KEY;
+    process.env.AZURE_OPENAI_ENDPOINT = 'http://litellm.ai.svc.cluster.local:4000';
+    process.env.AZURE_OPENAI_API_KEY = 'sk-azure-vkey';
+    process.env.LLM_MODEL = 'ollama-cloud';
+    const ctor = mockChatOpenAI();
 
     const { createLLM } = await import('../../config/llmProvider.js');
-    const llm = await createLLM({ purpose: 'analysis' });
+    await createLLM({ purpose: 'analysis' });
 
-    expect(llm.kind).toBe('ollama');
-    expect(fakeChatOllama.mock.calls[0][0].model).toBe('gemma3:12b');
+    const args = ctor.mock.calls[0][0];
+    expect(args.configuration.baseURL).toBe('http://litellm.ai.svc.cluster.local:4000/v1');
+    expect(args.apiKey).toBe('sk-azure-vkey');
+    expect(args.model).toBe('ollama-cloud');
   });
 
-  it('getActiveLLMMeta reflects the resolved provider/model for a purpose', async () => {
-    process.env.LLM_CHAT_PROVIDER = 'groq';
-    process.env.LLM_CHAT_MODEL = 'llama-3.1-8b-instant';
-    process.env.LLM_PROVIDER = 'ollama';
-    process.env.LLM_MODEL = 'gemma3:12b';
+  it('throws a clear error when no model is configured', async () => {
+    // LLM_MODEL intentionally unset
+    mockChatOpenAI();
+    const { createLLM } = await import('../../config/llmProvider.js');
+    await expect(createLLM({ purpose: 'analysis' })).rejects.toThrow(/model is required/i);
+  });
+
+  it('throws a clear error when the gateway URL is unset', async () => {
+    delete process.env.LITELLM_BASE_URL;
+    process.env.LLM_MODEL = 'tier-premium';
+    mockChatOpenAI();
+    const { createLLM } = await import('../../config/llmProvider.js');
+    await expect(createLLM({ purpose: 'analysis' })).rejects.toThrow(/gateway URL is required/i);
+  });
+
+  it('getActiveLLMMeta reports provider=litellm + the resolved model', async () => {
+    process.env.LLM_MODEL = 'tier-premium';
+    process.env.JUDGE_LLM_MODEL = 'tier-standard';
 
     const { getActiveLLMMeta } = await import('../../config/llmProvider.js');
 
-    expect(getActiveLLMMeta('chat')).toEqual({
-      provider: 'groq',
-      model: 'llama-3.1-8b-instant',
-      purpose: 'chat',
-    });
     expect(getActiveLLMMeta('analysis')).toEqual({
-      provider: 'ollama',
-      model: 'gemma3:12b',
+      provider: 'litellm',
+      model: 'tier-premium',
       purpose: 'analysis',
     });
+    // judge model resolution happens in getJudgeLLM, not getActiveLLMMeta; meta uses LLM_MODEL here
+    expect(getActiveLLMMeta('chat').provider).toBe('litellm');
   });
 
-  it('groq chat default is llama-3.3-70b-versatile (rephrase quality fix from #244)', async () => {
-    // No explicit LLM_*_MODEL — exercise the resolveModelForPurpose default path
-    process.env.LLM_CHAT_PROVIDER = 'groq';
-
-    const { getActiveLLMMeta } = await import('../../config/llmProvider.js');
-
-    expect(getActiveLLMMeta('chat')).toEqual({
-      provider: 'groq',
-      model: 'llama-3.3-70b-versatile',
-      purpose: 'chat',
-    });
-  });
-
-  it('groq formatter default stays on llama-3.1-8b-instant (cheap + JSON-tolerant)', async () => {
-    process.env.LLM_FORMATTER_PROVIDER = 'groq';
-
-    const { getActiveLLMMeta } = await import('../../config/llmProvider.js');
-
-    expect(getActiveLLMMeta('formatter')).toEqual({
-      provider: 'groq',
-      model: 'llama-3.1-8b-instant',
-      purpose: 'formatter',
-    });
-  });
-
-  it('explicit LLM_CHAT_MODEL still wins over the new default', async () => {
-    process.env.LLM_CHAT_PROVIDER = 'groq';
-    process.env.LLM_CHAT_MODEL = 'mixtral-8x7b-32768';
-
-    const { getActiveLLMMeta } = await import('../../config/llmProvider.js');
-
-    expect(getActiveLLMMeta('chat').model).toBe('mixtral-8x7b-32768');
+  it('getCurrentProvider is always the gateway', async () => {
+    process.env.LLM_PROVIDER = 'azure_openai'; // legacy value — must be ignored
+    const { getCurrentProvider } = await import('../../config/llmProvider.js');
+    expect(getCurrentProvider()).toBe('litellm');
   });
 });
