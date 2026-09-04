@@ -65,7 +65,7 @@ const guardrailsConfig = {
   },
 };
 
-import { getCallbacks } from '../config/langsmith.js';
+import { getCallbacks, startTrace } from '../config/tracing.js';
 
 // Default dependencies
 import { createLLM, getActiveLLMMeta } from '../config/llm.js';
@@ -514,6 +514,17 @@ class RAGService {
 
     const workspaceId = conversation.workspaceId || null;
 
+    // App-level LLMOps trace (Langfuse) — one trace per RAG query, with session + user, holding
+    // the retrieval span and the answer generation. No-op when Langfuse isn't configured.
+    const trace = startTrace({
+      name: 'rag.askWithConversation',
+      sessionId: conversationId,
+      userId,
+      input: question,
+      tags: ['feature:rag-chat'],
+      metadata: { workspaceId, requestId },
+    });
+
     // SECURITY (tenant isolation): the retrieval workspace IS the conversation's
     // workspace. Authorize it against the caller's real memberships so a user
     // cannot read another workspace's documents via a spoofed X-Workspace-Id or
@@ -553,6 +564,7 @@ class RAGService {
 
     emit('status', { message: 'Retrieving context...', queryId: requestId });
 
+    const retrievalSpan = trace.span({ name: 'retrieval', input: { question } });
     const searchQuery = await this._rephraseQuery(question, history);
 
     // Resolve workspace UUID for Qdrant filtering
@@ -613,6 +625,16 @@ class RAGService {
 
     const mergedDocs = deduplicateDocuments([...vendorDocs, ...regulationDocs]);
     const rerankedDocs = rerankDocuments(mergedDocs, searchQuery, 15);
+
+    retrievalSpan.end({
+      output: {
+        searchQuery,
+        vendorDocs: vendorDocs.length,
+        regulationDocs: regulationDocs.length,
+        merged: mergedDocs.length,
+        afterRerank: rerankedDocs.length,
+      },
+    });
 
     const retrieval = {
       documents: rerankedDocs,
@@ -678,6 +700,11 @@ class RAGService {
     try {
       const combinedInstruction = callerInstruction || '';
 
+      const answerGen = trace.generation({
+        name: 'answer',
+        model: getActiveLLMMeta('chat').model,
+        input: { question, contextChars: context.length },
+      });
       const response = await this._generateAnswer(question, context, history, {
         runName: 'rag-query',
         sourcesCount: retrieval.documents.length,
@@ -685,6 +712,9 @@ class RAGService {
         onEvent: onEvent || undefined,
         responseInstruction: combinedInstruction,
       });
+      answerGen.end({ output: response });
+      trace.update({ output: response });
+      trace.flush().catch(() => {});
 
       // Fast path (#244 follow-up): skip the synchronous LLM judge in the chat
       // request. The judge currently runs gemma3:12b on Ollama Cloud (~5 s) and

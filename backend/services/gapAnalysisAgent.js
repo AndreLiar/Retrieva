@@ -21,7 +21,7 @@ import { assessmentRepository } from '../repositories/AssessmentRepository.js';
 import { embeddings } from '../config/embeddings.js';
 import { createLLM } from '../config/llmProvider.js';
 import logger from '../config/logger.js';
-import { getCallbacks } from '../config/langsmith.js';
+import { getCallbacks } from '../config/tracing.js';
 import {
   CONTRACT_A30_CLAUSES,
   CONTRACT_A30_SYSTEM_PROMPT,
