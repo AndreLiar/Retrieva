@@ -12,7 +12,6 @@
 // the RAG code never needs null checks (startTrace returns a null-object handle when disabled).
 import { Client } from 'langsmith';
 import { LangChainTracer } from '@langchain/core/tracers/tracer_langchain';
-import { Langfuse } from 'langfuse';
 import logger from './logger.js';
 
 // ── LangSmith (unchanged) ────────────────────────────────────────────────────
@@ -40,16 +39,27 @@ const LF_BASEURL =
   process.env.LANGFUSE_BASEURL || process.env.LANGFUSE_BASE_URL || process.env.LANGFUSE_HOST;
 const langfuseEnabled = !!(LF_PUBLIC && LF_SECRET);
 
-const langfuse = langfuseEnabled
-  ? new Langfuse({ publicKey: LF_PUBLIC, secretKey: LF_SECRET, ...(LF_BASEURL ? { baseUrl: LF_BASEURL } : {}) })
-  : null;
-
+// langfuse is imported DYNAMICALLY (top-level await) so a missing/optional dependency never breaks
+// module load — tracing simply stays disabled. In production the package is present (backend image),
+// so the client initialises at boot; if it can't be resolved, we log and degrade to no-op.
+let langfuse = null;
 if (langfuseEnabled) {
-  logger.info('Langfuse tracing enabled', { baseUrl: LF_BASEURL || 'cloud' });
+  try {
+    const { Langfuse } = await import('langfuse');
+    langfuse = new Langfuse({
+      publicKey: LF_PUBLIC,
+      secretKey: LF_SECRET,
+      ...(LF_BASEURL ? { baseUrl: LF_BASEURL } : {}),
+    });
+    logger.info('Langfuse tracing enabled', { baseUrl: LF_BASEURL || 'cloud' });
+  } catch (e) {
+    logger.warn('Langfuse SDK unavailable — tracing disabled', { error: e.message });
+    langfuse = null;
+  }
 }
 
 export function isLangfuseEnabled() {
-  return langfuseEnabled;
+  return !!langfuse;
 }
 
 // Null-object so callers write trace.span(...) / gen.end(...) unconditionally.
