@@ -15,7 +15,7 @@ vi.mock('../../config/logger.js', () => ({
 vi.mock('../../config/langsmith.js', () => ({ getCallbacks: vi.fn(() => []) }));
 vi.mock('../../config/llm.js', () => ({
   createLLM: vi.fn(),
-  getActiveLLMMeta: vi.fn(() => ({ provider: 'ollama', model: 'gemma3:12b', purpose: 'chat' })),
+  getActiveLLMMeta: vi.fn(() => ({ provider: 'litellm', model: 'tier-premium', purpose: 'chat' })),
 }));
 vi.mock('../../config/vectorStore.js', () => ({ getVectorStore: vi.fn() }));
 vi.mock('../../utils/rag/ragCache.js', () => ({ ragCache: { get: vi.fn(), set: vi.fn() } }));
