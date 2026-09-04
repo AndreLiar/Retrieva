@@ -34,8 +34,15 @@ vi.mock('../../config/llmProvider.js', () => ({
   }),
 }));
 
-vi.mock('../../config/langsmith.js', () => ({
+vi.mock('../../config/tracing.js', () => ({
   getCallbacks: vi.fn(() => []),
+  startTrace: vi.fn(() => ({
+    id: null,
+    span: () => ({ end() {}, update() {} }),
+    generation: () => ({ end() {}, update() {} }),
+    update() {},
+    flush: async () => {},
+  })),
 }));
 
 vi.mock('@qdrant/js-client-rest', () => ({
