@@ -4,7 +4,7 @@ sidebar_position: 9
 
 # Concentration & nth-party Graph — Design (ADR)
 
-**Status:** Phase 1 + Phase 2 complete (dev) · **Tracking:** `platform-backlog` RTV-15 · **Date:** 2026-09-05
+**Status:** Phase 1 + 2 live (prod); Phase 3 complete (dev) · **Tracking:** `platform-backlog` RTV-15 · **Date:** 2026-09-06
 
 ## Context
 
@@ -70,7 +70,7 @@ view, and an extension of the Register (RT.02.01) with the concentration/nth-par
 |---|---|
 | **P1** ✅ | `CriticalFunction` + `ProviderDependency` models (org-scoped) + `concentrationService` (graph build, transitive supported-CIFs, SPOF, shared-substrate, coverage%) + unit tests |
 | **P2** ✅ | `/api/v1/concentration` API (analyze · CIF CRUD · dependency confirm · extract) + auto-extract sub-provider edges from subprocessor lists (LLM, **unconfirmed until human-confirmed**) + RT.02.01 register extension (Critical Functions Supported + Concentration Score columns) |
-| P3 | Interactive graph visualisation + concentration alerts (Art 29 thresholds) |
+| **P3** ✅ | Graph data endpoint (`GET /graph` — viz-ready nodes/edges + scores) + **concentration alerts** wired into `alertMonitorService`: providers over the concentration threshold (`CONCENTRATION_ALERT_THRESHOLD`, default 3) and single-points-of-failure on critical functions → email the implicated provider's owners (deduped). *(Interactive React viz is the remaining frontend task — the backend contract is `GET /graph`.)* |
 
 ## API (P2)
 

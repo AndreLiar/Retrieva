@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import {
   getConcentration,
+  getConcentrationGraph,
   getCriticalFunctions,
   createOrUpdateCriticalFunction,
   removeCriticalFunction,
@@ -17,6 +18,9 @@ const router = Router();
 
 // GET /api/v1/concentration — org concentration analysis (providers, SPOF, substrate, coverage)
 router.get('/', authenticate, getConcentration);
+
+// GET /api/v1/concentration/graph — viz-ready nodes + edges (for the frontend graph)
+router.get('/graph', authenticate, getConcentrationGraph);
 
 // Critical Functions (firm-owned governance)
 router.get('/functions', authenticate, getCriticalFunctions);

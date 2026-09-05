@@ -179,6 +179,54 @@ async function loadModels() {
   return { Workspace, CriticalFunction, ProviderDependency };
 }
 
+/**
+ * Build a viz-ready node/edge graph for the org (P3 frontend contract). Nodes carry
+ * the concentration score so the UI can size/colour them; edges include CIF→provider
+ * dependencies + provider→sub-provider nth-party links.
+ */
+export async function getGraph(organizationId, deps = {}) {
+  const { Workspace, CriticalFunction, ProviderDependency } = deps.models || (await loadModels());
+  const [workspaces, cfs, edges] = await Promise.all([
+    Workspace.find({ organizationId }).lean(),
+    CriticalFunction.find({ organizationId }).lean(),
+    ProviderDependency.find({ organizationId }).lean(),
+  ]);
+  const analysis = computeConcentration({
+    providers: workspaces.map((w) => ({ id: String(w._id), name: w.name, tier: w.vendorTier })),
+    criticalFunctions: cfs.map((c) => ({
+      id: String(c._id), name: c.name, criticality: c.criticality, dependsOn: (c.dependsOn || []).map(String),
+    })),
+    edges: edges.filter((e) => e.confirmed),
+  });
+  const scoreByWs = Object.fromEntries(
+    (analysis.providerConcentration || []).map((p) => [p.key.replace(/^w:/, ''), p.weightedScore])
+  );
+
+  const nodes = [
+    ...cfs.map((c) => ({
+      id: `cf:${c._id}`, type: 'function', label: c.name, criticality: c.criticality,
+    })),
+    ...workspaces.map((w) => ({
+      id: `w:${w._id}`, type: 'provider', label: w.name, tier: w.vendorTier || null,
+      concentrationScore: scoreByWs[String(w._id)] || 0,
+    })),
+  ];
+  const graphEdges = [];
+  for (const c of cfs) for (const pid of c.dependsOn || []) {
+    graphEdges.push({ from: `cf:${c._id}`, to: `w:${pid}`, kind: 'depends_on' });
+  }
+  for (const e of edges) {
+    const from = e.parent?.kind === 'workspace' && e.parent.workspaceId ? `w:${e.parent.workspaceId}` : `x:${norm(e.parent?.name)}`;
+    const to = e.child?.kind === 'workspace' && e.child.workspaceId ? `w:${e.child.workspaceId}` : `x:${norm(e.child?.name)}`;
+    if (e.child?.kind === 'external') nodes.push({ id: to, type: 'subprovider', label: e.child.name });
+    graphEdges.push({ from, to, kind: 'sub_processes_via', source: e.source, confirmed: e.confirmed });
+  }
+  // dedup external subprovider nodes
+  const seen = new Set();
+  const uniqueNodes = nodes.filter((n) => (seen.has(n.id) ? false : seen.add(n.id)));
+  return { nodes: uniqueNodes, edges: graphEdges, summary: analysis };
+}
+
 // ── Critical Function CRUD (firm-owned governance) ───────────────────────────
 
 export async function listCriticalFunctions(organizationId, deps = {}) {

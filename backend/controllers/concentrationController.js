@@ -1,6 +1,7 @@
 import { catchAsync, sendSuccess, sendError } from '../utils/index.js';
 import {
   analyzeOrganization,
+  getGraph,
   listCriticalFunctions,
   upsertCriticalFunction,
   deleteCriticalFunction,
@@ -23,6 +24,12 @@ export const getConcentration = catchAsync(async (req, res) => {
   if (!id) return;
   const result = await analyzeOrganization(id);
   sendSuccess(res, 200, 'Concentration analysis', result);
+});
+
+export const getConcentrationGraph = catchAsync(async (req, res) => {
+  const id = requireOrg(req, res);
+  if (!id) return;
+  sendSuccess(res, 200, 'Concentration graph', await getGraph(id));
 });
 
 export const getCriticalFunctions = catchAsync(async (req, res) => {

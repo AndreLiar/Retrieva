@@ -124,6 +124,8 @@ function buildMonitoringAlertHtml({ toName, workspaceName, alertType, details })
     'annual-review-overdue': `The scheduled annual DORA vendor review for <strong>${workspaceName}</strong> was due on <strong>${details.reviewDate}</strong> and has not been completed. Please schedule this review to maintain compliance.`,
     'assessment-overdue-12mo': `No DORA gap assessment has been run for vendor <strong>${workspaceName}</strong> in over 12 months. The last assessment was ${details.lastAssessmentDate ? `on <strong>${details.lastAssessmentDate}</strong>` : '<strong>never</strong>'}. DORA Article 28 requires periodic reviews.`,
     'review-due-30': `The annual DORA vendor review for <strong>${workspaceName}</strong> is scheduled on <strong>${details.reviewDate}</strong> — in 30 days. Initiate a new gap assessment to remain compliant with DORA Article 28.`,
+    'concentration-risk': `Vendor <strong>${workspaceName}</strong> now supports <strong>${details.supportedFunctions}</strong> critical/important function(s) — a concentration risk under DORA Article 28(4)/29. Review your dependency on this provider and consider whether an alternative or exit plan is needed.`,
+    'single-point-of-failure': `The critical function <strong>${details.functionName}</strong> depends on <strong>${workspaceName}</strong> as its <strong>sole</strong> provider — a single point of failure under DORA Article 28(4). Assess whether a backup provider or exit strategy is required.`,
   };
   const message =
     alertMessages[alertType] ||
@@ -499,6 +501,8 @@ const local = {
       'annual-review-overdue': `[Overdue] Annual vendor review required for ${workspaceName}`,
       'assessment-overdue-12mo': `[Reminder] No DORA assessment run in 12 months — ${workspaceName}`,
       'review-due-30': `[30-Day Notice] Annual vendor review due — ${workspaceName}`,
+      'concentration-risk': `[Concentration Risk] ${workspaceName} supports ${details.supportedFunctions} critical function(s) — DORA Art 28(4)`,
+      'single-point-of-failure': `[Single Point of Failure] ${details.functionName} depends solely on ${workspaceName}`,
     };
     const subject = subjects[alertType] || `Compliance Alert — ${workspaceName}`;
     const html = buildMonitoringAlertHtml({ toName, workspaceName, alertType, details });
