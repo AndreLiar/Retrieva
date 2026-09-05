@@ -34,16 +34,13 @@ vi.mock('../../config/llmProvider.js', () => ({
   }),
 }));
 
-vi.mock('../../config/tracing.js', () => ({
-  getCallbacks: vi.fn(() => []),
-  startTrace: vi.fn(() => ({
-    id: null,
-    span: () => ({ end() {}, update() {} }),
-    generation: () => ({ end() {}, update() {} }),
-    update() {},
-    flush: async () => {},
-  })),
-}));
+vi.mock('../../config/tracing.js', () => {
+  const obs = () => ({ end() {}, update() {}, span: obs, generation: obs, event: obs });
+  return {
+    getCallbacks: vi.fn(() => []),
+    startTrace: vi.fn(() => ({ id: null, span: obs, generation: obs, update() {}, flush: async () => {} })),
+  };
+});
 
 vi.mock('@qdrant/js-client-rest', () => ({
   // Regular function (not arrow) so the mock is constructable: Vitest 4 invokes

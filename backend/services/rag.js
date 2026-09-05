@@ -565,7 +565,9 @@ class RAGService {
     emit('status', { message: 'Retrieving context...', queryId: requestId });
 
     const retrievalSpan = trace.span({ name: 'retrieval', input: { question } });
+    const rephraseSpan = retrievalSpan.span({ name: 'rephrase-query', input: { question } });
     const searchQuery = await this._rephraseQuery(question, history);
+    rephraseSpan.end({ output: { searchQuery } });
 
     // Resolve workspace UUID for Qdrant filtering
     const qdrantWorkspaceId = await this._resolveQdrantWorkspaceId(workspaceId);
@@ -596,6 +598,10 @@ class RAGService {
     // Issue #206: chat must see DORA article text, not just uploaded vendor docs.
     // Use allSettled so one collection's failure (e.g. embedding-dim drift,
     // unseeded compliance_kb) doesn't take down the other.
+    const searchSpan = retrievalSpan.span({
+      name: 'vector-search',
+      input: { searchQuery, qdrantWorkspaceId, collections: ['vendor', 'regulation'] },
+    });
     const [vendorResult, regulationResult] = await Promise.allSettled([
       this.vectorStore.similaritySearch(searchQuery, 15, qdrantFilter),
       this.retrieveRegulationDocs(searchQuery, 5, options.lang),
@@ -623,8 +629,17 @@ class RAGService {
       metadata: { ...(doc.metadata || {}), source: doc.metadata?.source || 'vendor' },
     }));
 
+    searchSpan.end({
+      output: { vendorDocs: vendorDocs.length, regulationDocs: regulationDocs.length },
+    });
+
+    const rerankSpan = retrievalSpan.span({
+      name: 'dedup-rerank',
+      input: { vendorDocs: vendorDocs.length, regulationDocs: regulationDocs.length },
+    });
     const mergedDocs = deduplicateDocuments([...vendorDocs, ...regulationDocs]);
     const rerankedDocs = rerankDocuments(mergedDocs, searchQuery, 15);
+    rerankSpan.end({ output: { merged: mergedDocs.length, afterRerank: rerankedDocs.length } });
 
     retrievalSpan.end({
       output: {
@@ -704,6 +719,7 @@ class RAGService {
         name: 'answer',
         model: getActiveLLMMeta('chat').model,
         input: { question, contextChars: context.length },
+        metadata: { historyTurns: history.length, sourcesCount: retrieval.documents.length },
       });
       const response = await this._generateAnswer(question, context, history, {
         runName: 'rag-query',
@@ -712,7 +728,17 @@ class RAGService {
         onEvent: onEvent || undefined,
         responseInstruction: combinedInstruction,
       });
-      answerGen.end({ output: response });
+      // Exact token cost is captured per-call by the LiteLLM gateway (ai-gateway
+      // project). _generateAnswer returns text (streamed), so here we record an
+      // ESTIMATE (~4 chars/token) — enough for relative per-session/user consumption
+      // trends in the retrieva project without a competing billing source of truth.
+      const estIn = Math.ceil((question.length + (context?.length || 0)) / 4);
+      const estOut = Math.ceil((response?.length || 0) / 4);
+      answerGen.end({
+        output: response,
+        usage: { input: estIn, output: estOut, total: estIn + estOut, unit: 'TOKENS' },
+        metadata: { usageEstimated: true },
+      });
       trace.update({ output: response });
       trace.flush().catch(() => {});
 
