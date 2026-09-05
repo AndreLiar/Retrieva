@@ -14,8 +14,10 @@ import { embeddings } from '../config/embeddings.js';
 import {
   convertToMarkdown,
   convertViaDocling,
+  convertWithFigures,
   isDoclingEnabled,
 } from '../config/documentConversion.js';
+import { captionFigures, isVlmCaptionEnabled } from './visionService.js';
 import logger from '../config/logger.js';
 
 // Raster image types accepted for OCR-only ingestion (RTV-14 Phase 1). These have
@@ -276,8 +278,32 @@ export async function ingestFile({
     assessmentId,
   });
 
-  // 1. Parse (PDF/images go through Docling/OCR — see parseFile)
-  const rawText = await parseFile(buffer, fileType, fileName);
+  // 1. Parse. Phase 2 (RTV-14): when figure captioning is enabled, PDFs/images go
+  //    through Docling's figure-aware conversion (markdown + figure crops) and gated
+  //    VLM captions are appended to the text; otherwise the Phase 1 text/OCR path.
+  let rawText;
+  const ext = (fileType || '').toLowerCase();
+  const figureAware = isVlmCaptionEnabled() && (ext === 'pdf' || IMAGE_EXTS.has(ext));
+  if (figureAware) {
+    try {
+      const { markdown, figures } = await convertWithFigures(buffer, fileName);
+      rawText = markdown || '';
+      const captions = await captionFigures(figures, { fileName });
+      if (captions.length) {
+        rawText += `\n\n## Figures\n\n${captions.join('\n\n')}`;
+        logger.info('Appended VLM figure captions', {
+          service: 'file-ingestion', fileName, captions: captions.length,
+        });
+      }
+    } catch (err) {
+      logger.warn('Figure-aware ingestion failed; falling back to text parse', {
+        service: 'file-ingestion', fileName, error: err.message,
+      });
+      rawText = await parseFile(buffer, fileType, fileName);
+    }
+  } else {
+    rawText = await parseFile(buffer, fileType, fileName);
+  }
   if (!rawText || rawText.trim().length < MIN_USABLE_TEXT) {
     throw new Error(
       `Could not extract text from ${fileName}. The file may be empty, or OCR found no readable content.`

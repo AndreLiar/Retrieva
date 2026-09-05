@@ -76,6 +76,52 @@ export async function convertViaDocling(buffer, fileName) {
   return postConvert(DOCLING_URL, buffer, fileName, 'files');
 }
 
+/**
+ * Convert via docling-serve requesting BOTH markdown and the embedded figure
+ * images (RTV-14 Phase 2). docling detects pictures (charts/diagrams) and, with
+ * image_export_mode=embedded, returns each as a base64 data-URI plus its bounding
+ * box — the input for gated VLM captioning.
+ *
+ * @returns {Promise<{ markdown: string, figures: Array<{dataUrl:string,width:number,height:number,bytes:number}> }>}
+ */
+export async function convertWithFigures(buffer, fileName) {
+  const form = new FormData();
+  form.append('files', new Blob([buffer]), fileName || 'document');
+  form.append('to_formats', 'md');
+  form.append('to_formats', 'json');
+  form.append('image_export_mode', 'embedded');
+  form.append('do_ocr', 'true');
+  form.append('do_table_structure', 'true');
+  form.append('images_scale', '2');
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), CONVERT_TIMEOUT_MS);
+  try {
+    const res = await fetch(`${DOCLING_URL}/v1/convert/file`, {
+      method: 'POST',
+      body: form,
+      signal: controller.signal,
+    });
+    if (!res.ok) throw new Error(`docling convert HTTP ${res.status}`);
+    const json = await res.json();
+    const doc = json?.document || {};
+    const markdown = typeof doc.md_content === 'string' ? doc.md_content : '';
+    const pics = doc.json_content?.pictures || [];
+    const figures = [];
+    for (const p of pics) {
+      const uri = p?.image?.uri || p?.image?.url || '';
+      if (typeof uri !== 'string' || !uri.startsWith('data:image')) continue;
+      const bbox = p?.prov?.[0]?.bbox || p?.bbox || {};
+      const width = Math.abs((bbox.r ?? 0) - (bbox.l ?? 0));
+      const height = Math.abs((bbox.t ?? 0) - (bbox.b ?? 0));
+      figures.push({ dataUrl: uri, width, height, bytes: uri.length });
+    }
+    return { markdown, figures };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 logger.info('Document conversion configured', {
   service: 'document-conversion',
   useDocling: USE_DOCLING,
