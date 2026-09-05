@@ -35,6 +35,8 @@ export default [
         Response: 'readonly',
         Request: 'readonly',
         Headers: 'readonly',
+        FormData: 'readonly',
+        Blob: 'readonly',
         // Test globals
         describe: 'readonly',
         it: 'readonly',
