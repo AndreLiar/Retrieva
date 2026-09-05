@@ -22,11 +22,10 @@ import { embeddings } from '../config/embeddings.js';
 import { createLLM } from '../config/llmProvider.js';
 import logger from '../config/logger.js';
 import { getCallbacks } from '../config/tracing.js';
-import {
-  CONTRACT_A30_CLAUSES,
-  CONTRACT_A30_SYSTEM_PROMPT,
-  DORA_SYSTEM_PROMPT,
-} from '../prompts/gapAnalysisPrompts.js';
+import { CONTRACT_A30_CLAUSES } from '../prompts/gapAnalysisPrompts.js';
+// Agent system prompts are managed in Langfuse (label-routed) with the Git constants
+// as runtime fallback — resolved via the prompt manager. RTV-14 prompt-mgmt.
+import { resolveContractA30Prompt, resolveDoraPrompt } from '../config/promptManager.js';
 
 const QDRANT_URL = process.env.QDRANT_URL || 'http://localhost:6333';
 const QDRANT_API_KEY = process.env.QDRANT_API_KEY;
@@ -345,10 +344,11 @@ async function runContractA30ReActAgent(assessment, emit) {
 
   emit('Building Article 30 contract review agent…', 15);
 
+  const contractPrompt = await resolveContractA30Prompt();
   const agent = createReactAgent({
     llm,
     tools,
-    stateModifier: new SystemMessage(CONTRACT_A30_SYSTEM_PROMPT),
+    stateModifier: new SystemMessage(contractPrompt.text),
   });
 
   emit('Agent reviewing contract against Article 30 clauses…', 25);
@@ -497,11 +497,12 @@ async function runReActAgent(assessment, emit) {
 
   // createReactAgent from @langchain/langgraph/prebuilt — the canonical
   // LangChain v1.x ReAct loop using tool calling under the hood
+  const doraPrompt = await resolveDoraPrompt();
   const agent = createReactAgent({
     llm,
     tools,
-    // Inject system prompt via stateModifier
-    stateModifier: new SystemMessage(DORA_SYSTEM_PROMPT),
+    // Inject system prompt via stateModifier (managed in Langfuse, Git fallback)
+    stateModifier: new SystemMessage(doraPrompt.text),
     // Cap iterations to avoid runaway loops
     // (each iteration = one LLM call + optional tool calls)
   });

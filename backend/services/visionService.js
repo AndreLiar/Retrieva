@@ -15,6 +15,7 @@
  * A 40-page text contract = 0 calls; a 3-chart deck = ~3 calls.
  */
 
+import { resolveVisionCaptionPrompt } from '../config/promptManager.js';
 import logger from '../config/logger.js';
 
 const VLM_ENABLED = String(process.env.INGEST_VLM_CAPTION ?? 'false').toLowerCase() === 'true';
@@ -31,7 +32,8 @@ const MIN_ASPECT = 0.2;
 const MAX_ASPECT = 5.0;
 const TIMEOUT_MS = Number(process.env.VLM_TIMEOUT_MS || 40000);
 
-const PROMPT =
+// Git seed + runtime fallback for the Langfuse-managed prompt `retrieva-vision-caption`.
+export const VISION_CAPTION_PROMPT =
   'You are indexing a document figure for search. In 2–3 sentences, describe the ' +
   'figure type (bar/line/pie chart, diagram, table, photo…), its axes/labels, and ' +
   'the key data points or trend it conveys. Transcribe any embedded text. Be factual; ' +
@@ -56,7 +58,7 @@ export function figurePassesFilter(fig) {
   return true;
 }
 
-async function captionOne(dataUrl) {
+async function captionOne(dataUrl, promptText) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
@@ -71,7 +73,7 @@ async function captionOne(dataUrl) {
           {
             role: 'user',
             content: [
-              { type: 'text', text: PROMPT },
+              { type: 'text', text: promptText },
               { type: 'image_url', image_url: { url: dataUrl } },
             ],
           },
@@ -116,9 +118,15 @@ export async function captionFigures(figures, { fileName, trace } = {}) {
     return [];
   }
 
+  // Resolve the caption prompt (Langfuse-managed, label-routed) with the Git PROMPT
+  // as fallback. Resolved once per document; linked to each figure generation for
+  // trace-linked prompt-version attribution.
+  const vp = await resolveVisionCaptionPrompt(VISION_CAPTION_PROMPT);
+  const promptText = vp.text;
+
   logger.info('VLM captioning figures', {
     service: 'vision', fileName, model: VLM_MODEL,
-    total: figures.length, captioning: kept.length,
+    total: figures.length, captioning: kept.length, promptSource: vp.source,
   });
 
   // Bounded-concurrency worker pool (never fan out unboundedly).
@@ -134,11 +142,12 @@ export async function captionFigures(figures, { fileName, trace } = {}) {
       const gen = trace?.generation?.({
         name: `figure-caption-${i + 1}`,
         model: VLM_MODEL,
+        ...(vp.langfusePrompt ? { prompt: vp.langfusePrompt } : {}),
         input: [
           {
             role: 'user',
             content: [
-              { type: 'text', text: PROMPT },
+              { type: 'text', text: promptText },
               { type: 'image_url', image_url: { url: fig.dataUrl } },
             ],
           },
@@ -151,7 +160,7 @@ export async function captionFigures(figures, { fileName, trace } = {}) {
         },
       });
       try {
-        const caption = await captionOne(fig.dataUrl);
+        const caption = await captionOne(fig.dataUrl, promptText);
         captions[i] = caption;
         gen?.end?.({ output: caption });
       } catch (err) {
