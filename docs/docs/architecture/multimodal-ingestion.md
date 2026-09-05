@@ -4,7 +4,11 @@ sidebar_position: 7
 
 # Multimodal Ingestion — Design Decision (ADR)
 
-**Status:** Proposed · **Tracking issue:** `platform-backlog` RTV-14 (sub-issue of the CERT-1 → Retrieva epic #282) · **Date:** 2026-09-05
+**Status:** Implemented (Phase 1 + Phase 2, dev) · **Tracking issue:** `platform-backlog` RTV-14 (sub-issue of the CERT-1 → Retrieva epic #282) · **Date:** 2026-09-05
+
+:::note Implementation status
+**Phase 1 (Docling text + OCR)** — live on retrieva-dev; images accepted, scanned PDFs OCR'd, graceful fallback to local parsers. **Phase 2 (VLM figure captioning)** — implemented and enabled on **dev** (`INGEST_VLM_CAPTION=true`), opt-in on prod. **Vision model = `azure-gpt-4.1-mini`** (funded + EU via LiteLLM), *not* the free `nvidia-vision-90b` (its NIM endpoint is dead) and *not* OpenAI `gpt-4o-mini` (unfunded). The one model serves dev and prod.
+:::
 
 > Detailed design for upgrading Retrieva's ingestion beyond text-only. The
 > lightweight tracker lives on the backlog (RTV-14); this ADR is the deep design,
@@ -108,8 +112,12 @@ Target:
 
 ## Acceptance criteria (tracked in RTV-14)
 
-- [ ] `fileUpload.js` accepts `.png`/`.jpg` without validation errors.
-- [ ] A scanned, text-free PDF produces retrievable chunks (>0-char embeddings) via Docling OCR.
-- [ ] A chart-bearing PDF produces Markdown chunks describing chart axes/trends via LiteLLM captioning (Phase 2).
-- [ ] No outbound HTTP leaves Retrieva directly; all vision inference is visible on the LiteLLM/Langfuse dashboards.
-- [ ] If the vision model fails/times out, ingestion completes with Docling layout text (no job termination).
+- [x] `fileUpload.js` accepts `.png`/`.jpg` without validation errors. *(Phase 1)*
+- [x] A scanned, text-free PDF produces retrievable chunks (>0-char embeddings) via Docling OCR. *(Phase 1 — verified live: an image OCR'd to `## Hello DORA RTV14 Docling OCR test`)*
+- [x] A chart-bearing PDF produces Markdown chunks describing chart axes/trends via LiteLLM captioning. *(Phase 2 — `azure-gpt-4.1-mini`; docling returns figure crops via `image_export_mode=embedded`)*
+- [x] No outbound HTTP leaves Retrieva directly; all vision inference goes through the LiteLLM gateway (governed, EU key). *(egress netpol ai:8000/5001 + LiteLLM only)*
+- [x] If the vision model fails/times out, ingestion completes with the text path (no job termination). *(best-effort captions + Phase 1 fallback)*
+
+## Cost gates (the "VLM only when necessary" rule)
+
+The VLM is an **ingestion-time enrichment**, never a per-request/per-chat call. All must pass before one call: (1) `INGEST_VLM_CAPTION` on; (2) the doc has figures (pure-text → 0 calls); (3) each figure passes the pre-filter (`VLM_MIN_FIGURE_PT`, aspect 0.2–5.0, `VLM_MIN_FIGURE_BYTES` — skips logos/icons); (4) per-doc cap (`VLM_MAX_FIGURES`, largest-first) + bounded concurrency (`VLM_CONCURRENCY`). A 40-page contract = 0 calls; a 3-chart deck ≈ 3.
