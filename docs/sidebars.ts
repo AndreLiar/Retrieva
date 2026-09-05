@@ -19,6 +19,7 @@ const sidebars: SidebarsConfig = {
         'architecture/ai-infrastructure',
         'architecture/multimodal-ingestion',
         'architecture/prompt-management',
+        'architecture/concentration-graph',
       ],
     },
     {
