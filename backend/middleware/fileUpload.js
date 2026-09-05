@@ -7,9 +7,29 @@ const ALLOWED_MIME_TYPES = new Set([
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
   'application/vnd.ms-excel', // .xls
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+  // Images (RTV-14 Phase 1) — OCR'd via Docling during ingestion.
+  'image/png',
+  'image/jpeg', // .jpg / .jpeg
+  'image/tiff', // .tif / .tiff
+  'image/bmp',
+  'image/gif',
+  'image/webp',
 ]);
 
-const ALLOWED_EXTENSIONS = new Set(['.pdf', '.xlsx', '.xls', '.docx']);
+const ALLOWED_EXTENSIONS = new Set([
+  '.pdf',
+  '.xlsx',
+  '.xls',
+  '.docx',
+  '.png',
+  '.jpg',
+  '.jpeg',
+  '.tif',
+  '.tiff',
+  '.bmp',
+  '.gif',
+  '.webp',
+]);
 
 const MAX_FILE_SIZE_MB = 25;
 const MAX_FILES_PER_UPLOAD = 5;
@@ -20,7 +40,12 @@ function fileFilter(_req, file, cb) {
   const ext = path.extname(file.originalname).toLowerCase();
 
   if (!ALLOWED_EXTENSIONS.has(ext) || !ALLOWED_MIME_TYPES.has(file.mimetype)) {
-    return cb(new AppError(`Unsupported file type: ${ext}. Allowed: pdf, xlsx, xls, docx`, 400));
+    return cb(
+      new AppError(
+        `Unsupported file type: ${ext}. Allowed: pdf, xlsx, xls, docx, png, jpg, tiff, bmp, gif, webp`,
+        400
+      )
+    );
   }
 
   cb(null, true);

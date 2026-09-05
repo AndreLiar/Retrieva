@@ -1,15 +1,28 @@
 /**
  * File Ingestion Service
  *
- * Parses uploaded vendor documents (PDF, XLSX, DOCX) into text chunks
- * and indexes them into a per-assessment Qdrant collection.
+ * Parses uploaded vendor documents (PDF, XLSX, DOCX, images) into text chunks
+ * and indexes them into a per-assessment Qdrant collection. PDFs and images are
+ * converted via the platform's Docling/markitdown-proxy services (layout-aware +
+ * OCR — RTV-14 Phase 1), with a graceful fallback to the local text parsers.
  */
 
 import * as XLSX from 'xlsx';
 import { QdrantClient } from '@qdrant/js-client-rest';
 import { contentHash } from '../utils/index.js';
 import { embeddings } from '../config/embeddings.js';
+import {
+  convertToMarkdown,
+  convertViaDocling,
+  isDoclingEnabled,
+} from '../config/documentConversion.js';
 import logger from '../config/logger.js';
+
+// Raster image types accepted for OCR-only ingestion (RTV-14 Phase 1). These have
+// no local parser — they go through the conversion service (→ Docling OCR).
+const IMAGE_EXTS = new Set(['png', 'jpg', 'jpeg', 'tiff', 'tif', 'bmp', 'gif', 'webp']);
+// Below this, extracted text is treated as "no usable text" (scanned/image-only).
+const MIN_USABLE_TEXT = 10;
 
 const QDRANT_URL = process.env.QDRANT_URL || 'http://localhost:6333';
 const QDRANT_API_KEY = process.env.QDRANT_API_KEY;
@@ -85,12 +98,52 @@ async function parseDocx(buffer) {
 }
 
 /**
- * Dispatch to the correct parser based on file extension.
+ * Dispatch to the correct parser based on file type (extension).
+ *
+ * Docling path (RTV-14 Phase 1):
+ *   - images (png/jpg/…) → conversion service (proxy → Docling OCR). No local parser.
+ *   - pdf → markitdown-proxy (PyMuPDF: fast text + tables); if that yields no usable
+ *     text (scanned/image-only), fall back to Docling OCR directly; if the services
+ *     are unreachable, fall back to the local pdf-parse.
+ *   - xlsx/docx → local parsers (deterministic, no network dependency).
+ *
+ * @param {Buffer} buffer
+ * @param {string} fileType  lowercased extension ('pdf'|'xlsx'|'xls'|'docx'|'png'|…)
+ * @param {string} [fileName] original filename (drives server-side type routing)
  */
-export async function parseFile(buffer, fileType) {
-  switch (fileType) {
-    case 'pdf':
-      return parsePdf(buffer);
+export async function parseFile(buffer, fileType, fileName) {
+  const ext = (fileType || '').toLowerCase();
+
+  // Images: OCR-only, no local parser.
+  if (IMAGE_EXTS.has(ext)) {
+    return (await convertToMarkdown(buffer, fileName)) || '';
+  }
+
+  if (ext === 'pdf') {
+    if (isDoclingEnabled()) {
+      try {
+        // Fast path: markitdown-proxy (PyMuPDF) — text-based PDFs + table recovery.
+        const md = await convertToMarkdown(buffer, fileName);
+        if (md && md.trim().length >= MIN_USABLE_TEXT) return md;
+        // Scanned / image-only PDF → PyMuPDF found no text → OCR via Docling.
+        logger.info('PDF has little extractable text; falling back to Docling OCR', {
+          service: 'file-ingestion',
+          fileName,
+        });
+        const ocr = await convertViaDocling(buffer, fileName);
+        if (ocr && ocr.trim().length >= MIN_USABLE_TEXT) return ocr;
+      } catch (err) {
+        logger.warn('Docling/markitdown conversion failed; falling back to local pdf-parse', {
+          service: 'file-ingestion',
+          fileName,
+          error: err.message,
+        });
+      }
+    }
+    return parsePdf(buffer); // local fallback (services disabled/unreachable)
+  }
+
+  switch (ext) {
     case 'xlsx':
     case 'xls':
       return parseXlsx(buffer);
@@ -200,7 +253,7 @@ export async function deleteAssessmentCollection(assessmentId) {
  *
  * @param {object} params
  * @param {Buffer}   params.buffer       - Raw file buffer
- * @param {string}   params.fileType     - 'pdf' | 'xlsx' | 'xls' | 'docx'
+ * @param {string}   params.fileType     - 'pdf' | 'xlsx' | 'xls' | 'docx' | 'png' | 'jpg' | …
  * @param {string}   params.fileName     - Original filename (for metadata)
  * @param {string}   params.assessmentId - MongoDB Assessment _id (string)
  * @param {string}   params.vendorName   - Used in chunk metadata
@@ -223,11 +276,11 @@ export async function ingestFile({
     assessmentId,
   });
 
-  // 1. Parse
-  const rawText = await parseFile(buffer, fileType);
-  if (!rawText || rawText.trim().length < 10) {
+  // 1. Parse (PDF/images go through Docling/OCR — see parseFile)
+  const rawText = await parseFile(buffer, fileType, fileName);
+  if (!rawText || rawText.trim().length < MIN_USABLE_TEXT) {
     throw new Error(
-      `Could not extract text from ${fileName}. The file may be empty or image-only.`
+      `Could not extract text from ${fileName}. The file may be empty, or OCR found no readable content.`
     );
   }
 
