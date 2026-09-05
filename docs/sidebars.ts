@@ -17,6 +17,7 @@ const sidebars: SidebarsConfig = {
         'architecture/multi-tenancy',
         'architecture/llm-model-selection',
         'architecture/ai-infrastructure',
+        'architecture/multimodal-ingestion',
       ],
     },
     {
