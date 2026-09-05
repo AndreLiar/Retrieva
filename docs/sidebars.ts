@@ -18,6 +18,7 @@ const sidebars: SidebarsConfig = {
         'architecture/llm-model-selection',
         'architecture/ai-infrastructure',
         'architecture/multimodal-ingestion',
+        'architecture/prompt-management',
       ],
     },
     {
