@@ -19,6 +19,9 @@ import emailService from './emailService.js';
 import logger from '../config/logger.js';
 
 const DEDUP_WINDOW_MS = 20 * 60 * 60 * 1000; // 20 hours
+// DORA Art 28(4)/29 concentration alert threshold: a provider supporting this many
+// critical/important functions (weighted) is flagged. Tunable per deployment.
+const CONCENTRATION_FN_THRESHOLD = Number(process.env.CONCENTRATION_ALERT_THRESHOLD || 3);
 
 /**
  * Orchestrator — runs all 4 checks in parallel (allSettled so one failure
@@ -32,7 +35,13 @@ export async function runMonitoringAlerts() {
     checkContractRenewal(),
     checkAnnualReviewOverdue(),
     checkAssessmentOverdue(),
+    checkConcentrationRisk(),
   ]);
+  if (results[4]?.status === 'rejected')
+    logger.error('Concentration risk check failed', {
+      error: results[4].reason?.message,
+      service: 'alertMonitor',
+    });
 
   const [certs, contracts, reviews, assessments] = results;
   if (certs.status === 'rejected')
@@ -220,6 +229,66 @@ async function checkAssessmentOverdue() {
   });
 
   await Promise.allSettled(perWorkspace);
+}
+
+// ---------------------------------------------------------------------------
+// Check 5 — Concentration risk (RTV-15 P3, DORA Art 28(4)/29)
+// ---------------------------------------------------------------------------
+
+async function checkConcentrationRisk() {
+  const [{ Organization }, { analyzeOrganization }] = await Promise.all([
+    import('../models/Organization.js'),
+    import('./concentrationService.js'),
+  ]);
+  const orgs = await Organization.find({}).select('_id').lean();
+
+  const perOrg = orgs.map(async (org) => {
+    let analysis;
+    try {
+      analysis = await analyzeOrganization(org._id);
+    } catch {
+      return; // best-effort per org
+    }
+
+    // (a) providers over the concentration threshold → alert that provider's owners
+    for (const p of analysis.providerConcentration || []) {
+      if (!p.isAssessedProvider || p.weightedScore < CONCENTRATION_FN_THRESHOLD) continue;
+      const workspaceId = p.key.replace(/^w:/, '');
+      const workspace = await workspaceRepository.findById(workspaceId);
+      if (!workspace) continue;
+      const alertKey = 'concentration-risk';
+      if (isWithinDedupWindow(workspace, alertKey)) continue;
+      await sendAlertToOwners(workspace, alertKey, { supportedFunctions: p.supportedFunctions });
+      await workspaceRepository.updateMany(
+        { _id: workspace._id },
+        { $set: { [`alertsSentAt.${alertKey}`]: new Date() } }
+      );
+      logger.info('Concentration risk alert sent', {
+        service: 'alertMonitor', workspaceId, supportedFunctions: p.supportedFunctions,
+      });
+    }
+
+    // (b) single points of failure on a CRITICAL function → alert the sole provider's owners
+    for (const spof of analysis.singlePointsOfFailure || []) {
+      if (spof.criticality !== 'critical') continue;
+      const workspace = await workspaceRepository.findOne({
+        organizationId: org._id, name: spof.soleProvider,
+      });
+      if (!workspace) continue;
+      const alertKey = `spof:${spof.functionId}`;
+      if (isWithinDedupWindow(workspace, alertKey)) continue;
+      await sendAlertToOwners(workspace, 'single-point-of-failure', { functionName: spof.functionName });
+      await workspaceRepository.updateMany(
+        { _id: workspace._id },
+        { $set: { [`alertsSentAt.${alertKey}`]: new Date() } }
+      );
+      logger.info('SPOF alert sent', {
+        service: 'alertMonitor', workspaceId: workspace._id, functionName: spof.functionName,
+      });
+    }
+  });
+
+  await Promise.allSettled(perOrg);
 }
 
 // ---------------------------------------------------------------------------

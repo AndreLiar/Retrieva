@@ -9,7 +9,7 @@ vi.mock('../../config/logger.js', () => ({
   default: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
 }));
 
-const { computeConcentration, parseSubproviderExtraction } = await import('../../services/concentrationService.js');
+const { computeConcentration, parseSubproviderExtraction, getGraph } = await import('../../services/concentrationService.js');
 
 // Scenario: two functions, three providers, a shared Azure substrate.
 //   Claims (critical)   → Azure, OpenAI
@@ -108,5 +108,31 @@ describe('parseSubproviderExtraction (P2 auto-extraction)', () => {
     const out = parseSubproviderExtraction('{"subproviders":["AWS","GCP"]}', 'Vendor');
     expect(out.map((o) => o.name)).toEqual(['AWS', 'GCP']);
     expect(out[0].service).toBe('');
+  });
+});
+
+describe('getGraph (P3 viz contract)', () => {
+  const lean = (arr) => ({ find: () => ({ lean: async () => arr }) });
+  const models = {
+    Workspace: lean([{ _id: 'az', name: 'Azure', vendorTier: 'critical' }, { _id: 'oa', name: 'OpenAI', vendorTier: 'important' }]),
+    CriticalFunction: lean([{ _id: 'cf1', name: 'Claims', criticality: 'critical', dependsOn: ['az', 'oa'] }]),
+    ProviderDependency: lean([
+      { parent: { kind: 'workspace', workspaceId: 'oa', name: 'OpenAI' }, child: { kind: 'external', name: 'Azure-infra' }, source: 'extracted', confirmed: true },
+    ]),
+  };
+
+  it('returns viz nodes (functions, providers, subproviders) + typed edges', async () => {
+    const g = await getGraph('org1', { models });
+    const types = g.nodes.reduce((m, n) => ((m[n.type] = (m[n.type] || 0) + 1), m), {});
+    expect(types.function).toBe(1);
+    expect(types.provider).toBe(2);
+    expect(types.subprovider).toBe(1); // Azure-infra
+    // provider carries a concentration score for UI sizing
+    const azure = g.nodes.find((n) => n.label === 'Azure');
+    expect(azure.concentrationScore).toBeGreaterThan(0);
+    // edges: CIF→provider (depends_on) + provider→sub (sub_processes_via)
+    expect(g.edges.some((e) => e.kind === 'depends_on')).toBe(true);
+    expect(g.edges.some((e) => e.kind === 'sub_processes_via')).toBe(true);
+    expect(g.summary).toBeTruthy(); // embeds the concentration analysis
   });
 });
