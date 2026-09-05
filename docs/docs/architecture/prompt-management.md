@@ -80,20 +80,39 @@ the **governed LiteLLM gateway** (not a raw provider key):
 | Which prompt made this answer? | open the trace → the `answer` generation shows the linked prompt version |
 | Seed / update via API | `langfuse.createPrompt({ name, type:'text', prompt, labels:['production'], config:{ variables, temperature, topP, maxTokens } })` |
 
+## Managed prompts
+
+All of retrieva's LLM prompts are now Langfuse-managed (one project, label-routed,
+Git fallback). The RAG prompt is templated (Mustache vars + guarded-dynamic params);
+the other three are static system prompts.
+
+| Langfuse prompt | Drives | Git fallback |
+|---|---|---|
+| `retrieva-rag-system` | RAG answer generation (templated + model params) | `backend/prompts/ragPrompt.js` |
+| `retrieva-contract-a30-system` | DORA Art.30 contract-review ReAct agent | `backend/prompts/gapAnalysisPrompts.js` |
+| `retrieva-dora-gap-system` | DORA gap-analysis ReAct agent | `backend/prompts/gapAnalysisPrompts.js` |
+| `retrieva-vision-caption` | Figure captioning (multimodal) | `backend/services/visionService.js` |
+
 ## Files
 
 | Concern | Location |
 |---|---|
-| Resolver (Langfuse-first + fallback + clamp) | `backend/config/promptManager.js` |
+| Resolver (generic Langfuse-first + fallback + clamp) | `backend/config/promptManager.js` (`resolveManagedPrompt`, `resolveRagPrompt`, `resolveContractA30Prompt`, `resolveDoraPrompt`, `resolveVisionCaptionPrompt`) |
 | Langfuse client + `getLangfusePrompt` | `backend/config/tracing.js` |
 | Seed template + Mustache vars + chat builder | `backend/prompts/ragPrompt.js` |
-| Wiring into generation | `backend/services/rag.js` (`_generateAnswer`) |
+| Static agent prompts (seed + fallback) | `backend/prompts/gapAnalysisPrompts.js` |
+| Wiring: RAG | `backend/services/rag.js` (`_generateAnswer`) |
+| Wiring: gap-analysis agents | `backend/services/gapAnalysisAgent.js` |
+| Wiring: vision caption (+ prompt-version link) | `backend/services/visionService.js` |
 | Model-param passthrough (`topP`) | `backend/config/llmProvider.js` |
 | Env (per overlay) | `LANGFUSE_PROMPT_LABEL` (prod=production / dev=latest) |
 
-## Known gaps
+## Notes
 
-- Playground **execution** requires the LLM Connection to be configured in Langfuse
-  project settings (one-time, owner-only — done 2026-09-05).
-- Model params are guarded-dynamic for the RAG prompt only; other prompts
-  (`gapAnalysisPrompts`, vision caption prompt) are not yet Langfuse-managed.
+- Playground **execution** requires the LLM Connection configured in Langfuse project
+  settings (one-time, owner-only — done 2026-09-05).
+- **Guarded-dynamic model params** apply to the RAG prompt; the three static agent/vision
+  prompts are managed for text/versioning (their params stay code/env-routed).
+- The static agent prompts embed a fixed clause/domain list from `gapAnalysisPrompts.js`
+  at seed time — reseed the Langfuse prompt if `CONTRACT_A30_CLAUSES` changes (the Git
+  fallback stays in sync automatically).

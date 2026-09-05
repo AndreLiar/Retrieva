@@ -14,10 +14,21 @@
 
 import { getLangfusePrompt } from './tracing.js';
 import { RAG_SYSTEM_TEMPLATE, RAG_PROMPT_VARIABLES, RAG_PROMPT_CONFIG } from '../prompts/ragPrompt.js';
+import {
+  CONTRACT_A30_SYSTEM_PROMPT,
+  DORA_SYSTEM_PROMPT,
+} from '../prompts/gapAnalysisPrompts.js';
 import logger from './logger.js';
 
 const PROMPT_LABEL = process.env.LANGFUSE_PROMPT_LABEL || 'latest';
 const RAG_PROMPT_NAME = 'retrieva-rag-system';
+// Langfuse prompt names for the other managed prompts (static — no template vars).
+export const PROMPT_NAMES = {
+  rag: RAG_PROMPT_NAME,
+  contractA30: 'retrieva-contract-a30-system',
+  doraGap: 'retrieva-dora-gap-system',
+  visionCaption: 'retrieva-vision-caption',
+};
 
 // Guardrail bounds for params read from the (externally-editable) Langfuse prompt
 // config — a bad/unbounded playground value can never reach prod (DORA change-safety).
@@ -42,36 +53,76 @@ function renderMustacheLite(template, vars = {}) {
 }
 
 /**
- * Resolve the RAG system prompt for one request.
+ * Generic resolver: Langfuse-first (label-routed) with a Git-committed fallback.
+ * Works for both templated prompts (pass `vars`) and static prompts (`vars={}`).
  *
- * @param {object} vars  values for the template variables (context, responseInstruction)
- * @returns {Promise<{ systemText: string, langfusePrompt: object|null, source: 'langfuse'|'git', label: string, modelParams: object }>}
+ * @param {object}  o
+ * @param {string}  o.name             Langfuse prompt name
+ * @param {string}  o.fallbackTemplate Git-committed text (seed + runtime fallback)
+ * @param {object}  [o.vars]           Mustache variables (empty for static prompts)
+ * @param {object}  [o.fallbackConfig] default model params (null = don't manage params)
+ * @returns {Promise<{ text: string, langfusePrompt: object|null, source: 'langfuse'|'git', label: string, modelParams: object }>}
  */
-export async function resolveRagPrompt(vars = {}) {
-  const safeVars = {};
-  for (const v of RAG_PROMPT_VARIABLES) safeVars[v] = vars[v] ?? '';
-
-  const lf = await getLangfusePrompt(RAG_PROMPT_NAME, { label: PROMPT_LABEL });
+export async function resolveManagedPrompt({ name, fallbackTemplate, vars = {}, fallbackConfig = null }) {
+  const lf = await getLangfusePrompt(name, { label: PROMPT_LABEL });
   if (lf) {
     try {
-      const systemText = lf.compile(safeVars);
-      // Guarded-dynamic model params: start from the Git defaults, overlay the
-      // Langfuse prompt config, then clamp to safe bounds (drop `model`).
-      const modelParams = { ...RAG_PROMPT_CONFIG, ...safeModelParams(lf.config || {}) };
-      return { systemText, langfusePrompt: lf, source: 'langfuse', label: PROMPT_LABEL, modelParams };
+      const text = lf.compile(vars); // static prompts: vars={} → returns text unchanged
+      const modelParams = fallbackConfig
+        ? { ...fallbackConfig, ...safeModelParams(lf.config || {}) }
+        : safeModelParams(lf.config || {});
+      return { text, langfusePrompt: lf, source: 'langfuse', label: PROMPT_LABEL, modelParams };
     } catch (e) {
       logger.warn('Langfuse prompt.compile failed — using Git fallback', {
-        service: 'prompt-manager', name: RAG_PROMPT_NAME, error: e.message,
+        service: 'prompt-manager', name, error: e.message,
       });
     }
   }
   return {
-    systemText: renderMustacheLite(RAG_SYSTEM_TEMPLATE, safeVars),
+    text: renderMustacheLite(fallbackTemplate, vars),
     langfusePrompt: null,
     source: 'git',
     label: PROMPT_LABEL,
-    modelParams: { ...RAG_PROMPT_CONFIG }, // safe code-side defaults
+    modelParams: fallbackConfig ? { ...fallbackConfig } : {},
   };
+}
+
+/**
+ * Resolve the RAG system prompt for one request. Keeps `systemText` (RAG callers use it).
+ *
+ * @param {object} vars  values for the template variables (context, responseInstruction)
+ */
+export async function resolveRagPrompt(vars = {}) {
+  const safeVars = {};
+  for (const v of RAG_PROMPT_VARIABLES) safeVars[v] = vars[v] ?? '';
+  const r = await resolveManagedPrompt({
+    name: RAG_PROMPT_NAME,
+    fallbackTemplate: RAG_SYSTEM_TEMPLATE,
+    vars: safeVars,
+    fallbackConfig: RAG_PROMPT_CONFIG,
+  });
+  return { systemText: r.text, ...r };
+}
+
+/** Contract Art.30 review agent system prompt (static). */
+export function resolveContractA30Prompt() {
+  return resolveManagedPrompt({
+    name: PROMPT_NAMES.contractA30,
+    fallbackTemplate: CONTRACT_A30_SYSTEM_PROMPT,
+  });
+}
+
+/** DORA gap-analysis agent system prompt (static). */
+export function resolveDoraPrompt() {
+  return resolveManagedPrompt({
+    name: PROMPT_NAMES.doraGap,
+    fallbackTemplate: DORA_SYSTEM_PROMPT,
+  });
+}
+
+/** Vision figure-caption prompt (static). Fallback text passed by the caller. */
+export function resolveVisionCaptionPrompt(fallbackTemplate) {
+  return resolveManagedPrompt({ name: PROMPT_NAMES.visionCaption, fallbackTemplate });
 }
 
 export const __testables = { renderMustacheLite, safeModelParams, PROMPT_LABEL, RAG_PROMPT_NAME };
