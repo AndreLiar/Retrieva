@@ -66,3 +66,47 @@ describe('resolveRagPrompt', () => {
     expect(r.systemText).not.toMatch(/\{\{/);
   });
 });
+
+describe('resolveRagPrompt — guarded-dynamic model params', () => {
+  it('returns clamped params from the Langfuse prompt config (temperature/top_p/maxTokens)', async () => {
+    getLangfusePrompt.mockResolvedValue({
+      compile: () => 'sys',
+      config: { temperature: 0.7, top_p: 0.9, max_tokens: 1500 },
+    });
+    const { resolveRagPrompt } = await import('../../config/promptManager.js');
+    const r = await resolveRagPrompt({ context: 'c' });
+    expect(r.modelParams.temperature).toBe(0.7);
+    expect(r.modelParams.topP).toBe(0.9); // snake_case top_p accepted
+    expect(r.modelParams.maxTokens).toBe(1500);
+  });
+
+  it('CLAMPS out-of-bounds params (a bad playground value cannot reach prod)', async () => {
+    getLangfusePrompt.mockResolvedValue({
+      compile: () => 'sys',
+      config: { temperature: 9, topP: 5, maxTokens: 999999 },
+    });
+    const { resolveRagPrompt } = await import('../../config/promptManager.js');
+    const r = await resolveRagPrompt({ context: 'c' });
+    expect(r.modelParams.temperature).toBe(2); // clamped to [0,2]
+    expect(r.modelParams.topP).toBe(1); // clamped to [0,1]
+    expect(r.modelParams.maxTokens).toBe(4096); // clamped to [1,4096]
+  });
+
+  it('IGNORES a model override in the prompt config (model stays env-routed)', async () => {
+    getLangfusePrompt.mockResolvedValue({
+      compile: () => 'sys',
+      config: { model: 'gpt-4o', temperature: 0.2 },
+    });
+    const { resolveRagPrompt } = await import('../../config/promptManager.js');
+    const r = await resolveRagPrompt({ context: 'c' });
+    expect(r.modelParams.model).toBeUndefined();
+    expect(r.modelParams.temperature).toBe(0.2);
+  });
+
+  it('falls back to safe code-side default params when Langfuse is unavailable', async () => {
+    getLangfusePrompt.mockResolvedValue(null);
+    const { resolveRagPrompt } = await import('../../config/promptManager.js');
+    const r = await resolveRagPrompt({ context: 'c' });
+    expect(r.modelParams).toEqual({ temperature: 0.1, topP: 1, maxTokens: 2048 });
+  });
+});

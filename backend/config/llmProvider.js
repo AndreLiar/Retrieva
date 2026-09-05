@@ -68,6 +68,7 @@ const providerConfigSchema = z.object({
   provider: z.literal('litellm'),
   model: z.string().min(1),
   temperature: z.number().min(0).max(2).optional(),
+  topP: z.number().min(0).max(1).optional(),
   maxTokens: z.number().positive().optional(),
   baseUrl: z.string().url().optional(),
   apiKey: z.string().optional(),
@@ -120,6 +121,7 @@ async function createGatewayLLM(config) {
     configuration: { baseURL: config.baseUrl || GATEWAY_BASE_URL },
     temperature: config.temperature ?? guardrailsConfig.generation.temperature,
     maxTokens: config.maxTokens ?? guardrailsConfig.generation.maxTokens,
+    ...(config.topP !== undefined && { topP: config.topP }),
     stop: guardrailsConfig.generation.stopSequences,
     ...(seed !== null && seed !== undefined && { seed }),
   });

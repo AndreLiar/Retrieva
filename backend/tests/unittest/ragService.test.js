@@ -53,6 +53,7 @@ vi.mock('../../config/promptManager.js', () => ({
     langfusePrompt: null,
     source: 'git',
     label: 'latest',
+    modelParams: { temperature: 0.1, topP: 1, maxTokens: 2048 },
   })),
 }));
 vi.mock('../../utils/core/asyncHelpers.js', () => ({
