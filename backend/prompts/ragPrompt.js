@@ -71,6 +71,13 @@ Each source is formatted as [Source X: Document Title - Section]. Use the source
 // Variables the system template expects — used for Langfuse config + input typing.
 export const RAG_PROMPT_VARIABLES = ['context', 'responseInstruction'];
 
+// Default model params (the Git fallback / seed for the Langfuse prompt `config`).
+// Low temperature is deliberate for a compliance RAG. When the prompt is managed in
+// Langfuse these can be tuned in the playground and shipped by relabelling — but the
+// runtime CLAMPS whatever it reads to safe bounds (see promptManager) and never lets
+// the prompt override the *model* (that stays env-routed for governance).
+export const RAG_PROMPT_CONFIG = { temperature: 0.1, topP: 1, maxTokens: 2048 };
+
 /**
  * Build the LangChain ChatPromptTemplate from an already-rendered system string.
  * The system text is passed as a LITERAL SystemMessage (no re-templating), so any

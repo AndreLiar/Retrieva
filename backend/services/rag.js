@@ -276,8 +276,26 @@ class RAGService {
     if (resolved.langfusePrompt && metadata.langfuseGeneration) {
       metadata.langfuseGeneration.update?.({ prompt: resolved.langfusePrompt });
     }
+    // Guarded-dynamic model params (temperature/top_p/maxTokens) from the managed
+    // prompt config, already clamped to safe bounds by the prompt manager. Build a
+    // request-scoped LLM only when they differ from the base client; the model name
+    // stays env-routed (never taken from the prompt). Falls back to this.llm on any
+    // creation error so a param issue never breaks answering.
+    let llm = this.llm;
+    const mp = resolved.modelParams || {};
+    if (mp.temperature !== undefined || mp.topP !== undefined || mp.maxTokens !== undefined) {
+      try {
+        llm = await createLLM({ purpose: 'chat', ...mp });
+        metadata.langfuseGeneration?.update?.({ modelParameters: mp });
+      } catch (e) {
+        this.logger.warn('Request-scoped LLM build failed — using base client', {
+          service: 'rag', error: e.message,
+        });
+        llm = this.llm;
+      }
+    }
     const ragChatPrompt = buildRagChatPrompt(resolved.systemText);
-    const chain = ragChatPrompt.pipe(this.llm).pipe(new StringOutputParser());
+    const chain = ragChatPrompt.pipe(llm).pipe(new StringOutputParser());
     const callbacks = getCallbacks({
       runName: 'rag-answer-generation',
       feature: 'rag',
