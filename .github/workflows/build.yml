@@ -36,6 +36,9 @@ jobs:
       packages: write
       id-token: write
     strategy:
+      # Don't let one image's transient (e.g. a Harbor-over-Tailscale login blip on a
+      # fresh runner) cancel the other image's good build — each is pushed independently.
+      fail-fast: false
       matrix:
         include:
           - service: backend
@@ -73,6 +76,19 @@ jobs:
           echo "${{ secrets.MINICLOUD_CA_CERT }}" | sudo tee /etc/docker/certs.d/${{ env.HARBOR }}/ca.crt
           echo "${{ secrets.MINICLOUD_CA_CERT }}" | sudo tee /usr/local/share/ca-certificates/minicloud-ca.crt
           sudo update-ca-certificates
+
+      # Readiness gate: the Tailscale tunnel + subnet-route acceptance to the 10.0.0.0/24
+      # LAN isn't guaranteed ready the instant the action returns, so an immediate
+      # `docker login` can hit "context deadline exceeded" on a fresh runner. Poll
+      # Harbor's /v2/ over the tailnet until it answers (401 = reachable) before login.
+      - name: Wait for Harbor over Tailscale
+        run: |
+          for i in $(seq 1 30); do
+            code=$(curl -sk -o /dev/null -w '%{http_code}' --max-time 5 "https://${HARBOR}/v2/" || echo 000)
+            if [ "$code" != "000" ]; then echo "Harbor reachable (HTTP $code) after $((i*3))s"; exit 0; fi
+            echo "[$i] Harbor not reachable over Tailscale yet…"; sleep 3
+          done
+          echo "Harbor never became reachable over Tailscale (90s)"; exit 1
 
       - name: Login to Harbor
         uses: docker/login-action@v4
