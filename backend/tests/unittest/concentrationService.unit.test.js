@@ -9,7 +9,7 @@ vi.mock('../../config/logger.js', () => ({
   default: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
 }));
 
-const { computeConcentration } = await import('../../services/concentrationService.js');
+const { computeConcentration, parseSubproviderExtraction } = await import('../../services/concentrationService.js');
 
 // Scenario: two functions, three providers, a shared Azure substrate.
 //   Claims (critical)   → Azure, OpenAI
@@ -82,5 +82,31 @@ describe('computeConcentration', () => {
     expect(e.providerConcentration).toEqual([]);
     expect(e.singlePointsOfFailure).toEqual([]);
     expect(e.coverage.totalProviders).toBe(0);
+  });
+});
+
+describe('parseSubproviderExtraction (P2 auto-extraction)', () => {
+  it('parses a clean JSON subprocessor list', () => {
+    const raw = '{"subproviders":[{"name":"Microsoft Azure","service":"cloud infrastructure"},{"name":"Cloudflare","service":"CDN"}]}';
+    const out = parseSubproviderExtraction(raw, 'OpenAI');
+    expect(out).toHaveLength(2);
+    expect(out[0]).toEqual({ name: 'Microsoft Azure', service: 'cloud infrastructure' });
+  });
+
+  it('tolerates prose around the JSON and dedups + drops self-reference', () => {
+    const raw = 'Here is the list:\n{"subproviders":[{"name":"Azure"},{"name":"azure"},{"name":"OpenAI"}]}\nThanks';
+    const out = parseSubproviderExtraction(raw, 'OpenAI');
+    expect(out.map((o) => o.name)).toEqual(['Azure']); // dup "azure" dropped, self "OpenAI" dropped
+  });
+
+  it('returns [] on unparseable output (no false edges)', () => {
+    expect(parseSubproviderExtraction('the model refused', 'X')).toEqual([]);
+    expect(parseSubproviderExtraction('{"subproviders":[]}', 'X')).toEqual([]);
+  });
+
+  it('accepts plain-string entries', () => {
+    const out = parseSubproviderExtraction('{"subproviders":["AWS","GCP"]}', 'Vendor');
+    expect(out.map((o) => o.name)).toEqual(['AWS', 'GCP']);
+    expect(out[0].service).toBe('');
   });
 });
