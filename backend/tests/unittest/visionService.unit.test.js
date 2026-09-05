@@ -112,4 +112,32 @@ describe('captionFigures — gating', () => {
     expect(caps.length).toBe(1); // one failed, one succeeded
     expect(caps[0]).toContain('ok caption');
   });
+
+  it('logs a multimodal generation (image input) per figure when a trace is passed', async () => {
+    vi.stubEnv('INGEST_VLM_CAPTION', 'true');
+    vi.stubEnv('AZURE_OPENAI_API_KEY', 'k');
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ choices: [{ message: { content: 'a chart' } }] }),
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+    const gens = [];
+    const trace = {
+      generation: (opts) => {
+        const g = { input: opts.input, ended: null, end(o) { this.ended = o; } };
+        gens.push(g);
+        return g;
+      },
+    };
+    const m = await import('../../services/visionService.js');
+    const caps = await m.captionFigures(
+      [{ dataUrl: 'data:image/png;base64,AAAA', width: 400, height: 300, bytes: 9000 }],
+      { fileName: 'r.pdf', trace }
+    );
+    expect(caps.length).toBe(1);
+    expect(gens.length).toBe(1); // one generation logged for the figure
+    const content = gens[0].input[0].content;
+    expect(content.some((c) => c.type === 'image_url' && c.image_url.url.startsWith('data:image'))).toBe(true);
+    expect(gens[0].ended.output).toBe('a chart');
+  });
 });

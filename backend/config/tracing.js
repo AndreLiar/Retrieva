@@ -72,7 +72,15 @@ export function isLangfuseEnabled() {
 }
 
 // Null-object so callers write trace.span(...) / gen.end(...) unconditionally.
-const NULL_OBS = { end() {}, update() {} };
+// Self-nesting: span()/generation() return NULL_OBS too, so child observations
+// (e.g. retrieval sub-steps) stay no-ops when Langfuse is disabled.
+const NULL_OBS = {
+  end() {},
+  update() {},
+  span: () => NULL_OBS,
+  generation: () => NULL_OBS,
+  event: () => NULL_OBS,
+};
 const NULL_TRACE = { id: null, span: () => NULL_OBS, generation: () => NULL_OBS, update() {}, async flush() {} };
 
 /**

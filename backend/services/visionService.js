@@ -97,8 +97,10 @@ async function captionOne(dataUrl) {
  * @param {Array<{dataUrl:string,width:number,height:number,bytes:number}>} figures
  * @param {object} [opts]
  * @param {string} [opts.fileName]
+ * @param {object} [opts.trace] optional Langfuse trace handle — each figure is logged
+ *   as a multimodal generation (image input) under it.
  */
-export async function captionFigures(figures, { fileName } = {}) {
+export async function captionFigures(figures, { fileName, trace } = {}) {
   if (!isVlmCaptionEnabled()) return [];
   if (!Array.isArray(figures) || figures.length === 0) return [];
 
@@ -125,13 +127,39 @@ export async function captionFigures(figures, { fileName } = {}) {
   async function worker() {
     while (next < kept.length) {
       const i = next++;
+      const fig = kept[i];
+      // Multimodal generation (RTV-14 gap 3): log the figure image as the input so
+      // visual inputs appear in the retrieva Langfuse project. The core SDK extracts
+      // the base64 data-URI and stores it as media. No-op when no trace/disabled.
+      const gen = trace?.generation?.({
+        name: `figure-caption-${i + 1}`,
+        model: VLM_MODEL,
+        input: [
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: PROMPT },
+              { type: 'image_url', image_url: { url: fig.dataUrl } },
+            ],
+          },
+        ],
+        metadata: {
+          fileName,
+          width: Math.round(fig.width || 0),
+          height: Math.round(fig.height || 0),
+          bytes: fig.bytes,
+        },
+      });
       try {
-        captions[i] = await captionOne(kept[i].dataUrl);
+        const caption = await captionOne(fig.dataUrl);
+        captions[i] = caption;
+        gen?.end?.({ output: caption });
       } catch (err) {
         logger.warn('VLM caption failed for a figure (skipping)', {
           service: 'vision', fileName, index: i, error: err.message,
         });
         captions[i] = null; // best-effort: one bad figure never fails ingestion
+        gen?.end?.({ output: null, level: 'ERROR', statusMessage: err.message });
       }
     }
   }

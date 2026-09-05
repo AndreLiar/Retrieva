@@ -18,6 +18,7 @@ import {
   isDoclingEnabled,
 } from '../config/documentConversion.js';
 import { captionFigures, isVlmCaptionEnabled } from './visionService.js';
+import { startTrace } from '../config/tracing.js';
 import logger from '../config/logger.js';
 
 // Raster image types accepted for OCR-only ingestion (RTV-14 Phase 1). These have
@@ -278,6 +279,17 @@ export async function ingestFile({
     assessmentId,
   });
 
+  // App-level trace for the ingestion lifecycle. Groups a document's figure
+  // captions (multimodal generations — RTV-14 gap 3) under one trace; sessionId =
+  // assessmentId so a document set stays together in Langfuse.
+  const trace = startTrace({
+    name: 'rag.ingestDocument',
+    sessionId: assessmentId,
+    input: { fileName, fileType },
+    tags: ['feature:ingestion'],
+    metadata: { assessmentId, workspaceId, vendorName },
+  });
+
   // 1. Parse. Phase 2 (RTV-14): when figure captioning is enabled, PDFs/images go
   //    through Docling's figure-aware conversion (markdown + figure crops) and gated
   //    VLM captions are appended to the text; otherwise the Phase 1 text/OCR path.
@@ -288,7 +300,9 @@ export async function ingestFile({
     try {
       const { markdown, figures } = await convertWithFigures(buffer, fileName);
       rawText = markdown || '';
-      const captions = await captionFigures(figures, { fileName });
+      // Pass the trace so each captioned figure is logged as a multimodal
+      // generation (image input) in the retrieva Langfuse project.
+      const captions = await captionFigures(figures, { fileName, trace });
       if (captions.length) {
         rawText += `\n\n## Figures\n\n${captions.join('\n\n')}`;
         logger.info('Appended VLM figure captions', {
@@ -416,6 +430,9 @@ export async function ingestFile({
     chunkCount: chunks.length,
     collectionName,
   });
+
+  trace.update({ output: { chunkCount: chunks.length, collectionName } });
+  trace.flush().catch(() => {});
 
   return { chunkCount: chunks.length, collectionName };
 }

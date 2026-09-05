@@ -12,16 +12,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 vi.mock('../../config/logger.js', () => ({
   default: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
 }));
-vi.mock('../../config/tracing.js', () => ({
-  getCallbacks: vi.fn(() => []),
-  startTrace: vi.fn(() => ({
-    id: null,
-    span: () => ({ end() {}, update() {} }),
-    generation: () => ({ end() {}, update() {} }),
-    update() {},
-    flush: async () => {},
-  })),
-}));
+vi.mock('../../config/tracing.js', () => {
+  // self-nesting no-op observation (span → child span/generation → …)
+  const obs = () => ({ end() {}, update() {}, span: obs, generation: obs, event: obs });
+  return {
+    getCallbacks: vi.fn(() => []),
+    startTrace: vi.fn(() => ({ id: null, span: obs, generation: obs, update() {}, flush: async () => {} })),
+  };
+});
 vi.mock('../../config/llm.js', () => ({
   createLLM: vi.fn(),
   getActiveLLMMeta: vi.fn(() => ({ provider: 'litellm', model: 'tier-premium', purpose: 'chat' })),
