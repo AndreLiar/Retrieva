@@ -15,6 +15,7 @@ import authRoutes from './routes/authRoutes.js';
 import healthRoutes from './routes/healthRoutes.js';
 import assessmentRoutes from './routes/assessmentRoutes.js';
 import complianceRoutes from './routes/complianceRoutes.js';
+import concentrationRoutes from './routes/concentrationRoutes.js';
 import questionnaireRoutes from './routes/questionnaireRoutes.js';
 import questionnairePublicRoutes from './routes/questionnairePublicRoutes.js';
 import organizationRoutes from './routes/organizationRoutes.js';
@@ -265,6 +266,7 @@ app.use(
 app.use('/api/v1/workspaces', optionalAuth, requireActivePlan, workspaceRoutes);
 app.use('/api/v1/assessments', optionalAuth, requireActivePlan, setTenantContext, assessmentRoutes);
 app.use('/api/v1/compliance', optionalAuth, requireActivePlan, complianceRoutes);
+app.use('/api/v1/concentration', optionalAuth, requireActivePlan, concentrationRoutes);
 app.use(
   '/api/v1/questionnaires',
   optionalAuth,

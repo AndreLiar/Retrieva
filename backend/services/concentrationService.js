@@ -178,3 +178,156 @@ async function loadModels() {
   ]);
   return { Workspace, CriticalFunction, ProviderDependency };
 }
+
+// ── Critical Function CRUD (firm-owned governance) ───────────────────────────
+
+export async function listCriticalFunctions(organizationId, deps = {}) {
+  const { CriticalFunction } = deps.models || (await loadModels());
+  return CriticalFunction.find({ organizationId }).sort({ criticality: 1, name: 1 }).lean();
+}
+
+export async function upsertCriticalFunction(organizationId, { id, name, criticality, description, dependsOn, userId }, deps = {}) {
+  const { CriticalFunction } = deps.models || (await loadModels());
+  const doc = { organizationId, name, criticality, description: description || '', dependsOn: dependsOn || [] };
+  if (id) {
+    return CriticalFunction.findOneAndUpdate({ _id: id, organizationId }, doc, { new: true }).lean();
+  }
+  return (await CriticalFunction.create({ ...doc, createdBy: userId || '' })).toObject();
+}
+
+export async function deleteCriticalFunction(organizationId, id, deps = {}) {
+  const { CriticalFunction } = deps.models || (await loadModels());
+  return CriticalFunction.findOneAndDelete({ _id: id, organizationId }).lean();
+}
+
+// ── nth-party dependency edges ───────────────────────────────────────────────
+
+export async function listDependencies(organizationId, deps = {}) {
+  const { ProviderDependency } = deps.models || (await loadModels());
+  return ProviderDependency.find({ organizationId }).sort({ confirmed: 1, createdAt: -1 }).lean();
+}
+
+/** Confirm (or reject) an AI-extracted edge — the human-in-the-loop gate. */
+export async function setDependencyConfirmed(organizationId, id, confirmed, deps = {}) {
+  const { ProviderDependency } = deps.models || (await loadModels());
+  if (confirmed === false) {
+    return ProviderDependency.findOneAndDelete({ _id: id, organizationId }).lean();
+  }
+  return ProviderDependency.findOneAndUpdate(
+    { _id: id, organizationId },
+    { confirmed: true, lastVerifiedAt: new Date() },
+    { new: true }
+  ).lean();
+}
+
+// ── Sub-provider auto-extraction (P2) ────────────────────────────────────────
+
+const SUBPROVIDER_EXTRACT_PROMPT = `You are extracting the SUBPROCESSOR / sub-provider list from an ICT vendor's documentation (SOC 2, DPA, subprocessor page). List ONLY named third-party companies the vendor itself relies on to deliver its service (e.g. cloud/infra providers, sub-CSPs). Exclude the vendor itself, the customer, generic terms, and product names. Return STRICT JSON: {"subproviders":[{"name":"...","service":"..."}]} — service is a short role (e.g. "cloud infrastructure"), or "" if unknown. If none found, return {"subproviders":[]}.`;
+
+/**
+ * Pure parse of the LLM's extraction output into clean, deduped edge candidates.
+ * Drops self-references (a vendor listing itself) and empties. Exported for testing.
+ *
+ * @param {string} raw            LLM response text (expected JSON)
+ * @param {string} parentName     the vendor being extracted (self-reference filter)
+ * @returns {Array<{name:string, service:string}>}
+ */
+export function parseSubproviderExtraction(raw, parentName = '') {
+  let obj;
+  try {
+    const m = String(raw).match(/\{[\s\S]*\}/); // tolerate prose around the JSON
+    obj = JSON.parse(m ? m[0] : raw);
+  } catch {
+    return [];
+  }
+  const list = Array.isArray(obj?.subproviders) ? obj.subproviders : [];
+  const pn = norm(parentName);
+  const seen = new Set();
+  const out = [];
+  for (const item of list) {
+    const name = typeof item === 'string' ? item : item?.name;
+    const clean = String(name || '').trim();
+    if (!clean) continue;
+    const key = norm(clean);
+    if (key === pn || seen.has(key)) continue; // no self-ref, no dups
+    seen.add(key);
+    out.push({ name: clean, service: (typeof item === 'object' && item?.service) ? String(item.service).trim() : '' });
+  }
+  return out;
+}
+
+/**
+ * Extract sub-provider edges for one workspace from its vendor docs and persist them
+ * as UNCONFIRMED extracted edges (human confirms before they affect scoring). Reuses
+ * the existing per-assessment vector search + a governed LLM. Best-effort.
+ *
+ * @returns {Promise<{ created:number, candidates:Array }>}
+ */
+export async function extractSubProvidersForWorkspace(organizationId, workspaceId, deps = {}) {
+  const models = deps.models || (await loadModels());
+  const { Workspace, ProviderDependency } = models;
+  const ws = await Workspace.findOne({ _id: workspaceId, organizationId }).lean();
+  if (!ws) throw Object.assign(new Error('Workspace not found'), { statusCode: 404 });
+
+  const search = deps.searchVendorDocs || (await defaultSearch(workspaceId));
+  const llm = deps.llm || (await defaultLLM());
+
+  const chunks = await search('subprocessors subcontractors third-party providers cloud infrastructure data processing locations');
+  if (!chunks || !chunks.length) return { created: 0, candidates: [] };
+  const context = chunks.slice(0, 12).map((c, i) => `[${i + 1}] ${c}`).join('\n\n');
+
+  let raw = '';
+  try {
+    const res = await llm.invoke([
+      { role: 'system', content: SUBPROVIDER_EXTRACT_PROMPT },
+      { role: 'user', content: `Vendor: ${ws.name}\n\nDocumentation excerpts:\n${context}` },
+    ]);
+    raw = typeof res === 'string' ? res : res?.content || '';
+  } catch (e) {
+    logger.warn('Sub-provider extraction LLM call failed', { service: 'concentration', workspaceId, error: e.message });
+    return { created: 0, candidates: [] };
+  }
+
+  const candidates = parseSubproviderExtraction(raw, ws.name);
+  let created = 0;
+  for (const c of candidates) {
+    // idempotent: skip if an edge parent(ws)→child(name) already exists
+    const exists = await ProviderDependency.findOne({
+      organizationId, 'parent.workspaceId': workspaceId, 'child.name': c.name,
+    }).lean();
+    if (exists) continue;
+    await ProviderDependency.create({
+      organizationId,
+      parent: { kind: 'workspace', workspaceId, name: ws.name, tier: ws.vendorTier || null },
+      child: { kind: 'external', name: c.name, tier: null },
+      relationship: c.service || 'sub_processes_via',
+      source: 'extracted',
+      confidence: 0.7,
+      confirmed: false, // human must confirm before it affects concentration scoring
+    });
+    created += 1;
+  }
+  logger.info('Sub-provider extraction complete', {
+    service: 'concentration', workspaceId, candidates: candidates.length, created,
+  });
+  return { created, candidates };
+}
+
+async function defaultSearch(workspaceId) {
+  // Find the latest complete assessment for the workspace + reuse its chunk search.
+  const [{ Assessment }, ingest] = await Promise.all([
+    import('../models/Assessment.js'),
+    import('./fileIngestionService.js'),
+  ]);
+  const a = await Assessment.findOne({ workspaceId, status: 'complete' }).sort({ createdAt: -1 }).lean();
+  if (!a) return async () => [];
+  return async (q) => {
+    const hits = await ingest.searchAssessmentChunks(String(a._id), q, 15);
+    return hits.map((h) => h.content);
+  };
+}
+
+async function defaultLLM() {
+  const { createLLM } = await import('../config/llmProvider.js');
+  return createLLM({ purpose: 'analysis' });
+}

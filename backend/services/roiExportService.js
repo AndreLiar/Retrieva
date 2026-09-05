@@ -52,6 +52,23 @@ export async function generateRoiWorkbook(userId) {
     latestQuestionnaires.map((q) => [q._id.toString(), q.doc])
   );
 
+  // Concentration analysis (RTV-15) — org-scoped; map by workspace id for the register
+  // columns. Best-effort: a register must still generate if the graph isn't populated.
+  const concentrationByWs = {};
+  try {
+    const orgId = workspaces[0]?.organizationId;
+    if (orgId) {
+      const { analyzeOrganization } = await import('./concentrationService.js');
+      const c = await analyzeOrganization(orgId);
+      for (const p of c.providerConcentration || []) {
+        concentrationByWs[p.key.replace(/^w:/, '')] = p; // key = "w:<id>"
+      }
+    }
+  } catch (err) {
+    // non-fatal — leave concentration columns blank
+    void err;
+  }
+
   const wb = XLSX.utils.book_new();
 
   // -------------------------------------------------------------------------
@@ -86,6 +103,9 @@ export async function generateRoiWorkbook(userId) {
     'B_01.02.0130 Questionnaire Score',
     'B_01.02.0140 Assessment Risk',
     'B_01.02.0150 Next Review Date',
+    // Concentration (RTV-15 — DORA Art 28(4)/29)
+    'B_01.02.0160 Critical Functions Supported',
+    'B_01.02.0170 Concentration Score',
   ];
 
   const providersRows = [providersHeader];
@@ -109,6 +129,8 @@ export async function generateRoiWorkbook(userId) {
         : '',
       assessment?.results?.overallRisk || '',
       fmtDate(ws.nextReviewDate),
+      concentrationByWs[wsId]?.supportedFunctions ?? '',
+      concentrationByWs[wsId]?.weightedScore ?? '',
     ]);
   }
   const wsProviders = XLSX.utils.aoa_to_sheet(providersRows);

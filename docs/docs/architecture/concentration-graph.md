@@ -4,7 +4,7 @@ sidebar_position: 9
 
 # Concentration & nth-party Graph — Design (ADR)
 
-**Status:** Proposed → Phase 1 in progress · **Tracking:** `platform-backlog` RTV-15 · **Date:** 2026-09-05
+**Status:** Phase 1 + Phase 2 complete (dev) · **Tracking:** `platform-backlog` RTV-15 · **Date:** 2026-09-05
 
 ## Context
 
@@ -68,9 +68,26 @@ view, and an extension of the Register (RT.02.01) with the concentration/nth-par
 
 | Phase | Scope |
 |---|---|
-| **P1** (this) | `CriticalFunction` + `ProviderDependency` models (org-scoped) + `concentrationService` (graph build, transitive supported-CIFs, SPOF, shared-substrate, coverage%) + unit tests |
-| P2 | API + auto-extract sub-provider edges from subprocessor lists (LLM, human-confirmed) + RT.02.01 extension |
+| **P1** ✅ | `CriticalFunction` + `ProviderDependency` models (org-scoped) + `concentrationService` (graph build, transitive supported-CIFs, SPOF, shared-substrate, coverage%) + unit tests |
+| **P2** ✅ | `/api/v1/concentration` API (analyze · CIF CRUD · dependency confirm · extract) + auto-extract sub-provider edges from subprocessor lists (LLM, **unconfirmed until human-confirmed**) + RT.02.01 register extension (Critical Functions Supported + Concentration Score columns) |
 | P3 | Interactive graph visualisation + concentration alerts (Art 29 thresholds) |
+
+## API (P2)
+
+Org-scoped (`/api/v1/concentration`, keyed off `req.user.organizationId`):
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/` | concentration analysis (provider ranking, SPOF, shared substrate, coverage%) |
+| GET/POST | `/functions`, `/functions/:id` (DELETE) | Critical Function CRUD (firm-owned) |
+| GET | `/dependencies` | list nth-party edges (confirmed + pending) |
+| PATCH | `/dependencies/:id` | confirm/reject an AI-extracted edge (human gate) |
+| POST | `/extract/:workspaceId` | auto-extract sub-provider edges from that vendor's docs → **unconfirmed** |
+
+**Human-in-the-loop:** extracted edges are `source:extracted, confirmed:false` and are
+**excluded from scoring** until a human confirms them (`analyzeOrganization` filters
+`confirmed:true`). AI maps the chain; a person ratifies it before it affects a
+compliance artifact.
 
 ## Why this is the high-potential bet
 
