@@ -37,6 +37,14 @@ const LF_PUBLIC = process.env.LANGFUSE_PUBLIC_KEY;
 const LF_SECRET = process.env.LANGFUSE_SECRET_KEY;
 const LF_BASEURL =
   process.env.LANGFUSE_BASEURL || process.env.LANGFUSE_BASE_URL || process.env.LANGFUSE_HOST;
+// One Langfuse project is shared by dev + prod (a project can't be split per env, and we don't
+// create two). We distinguish environments with Langfuse's native `environment` attribute, which
+// gives a first-class Environment filter in the UI. The image is env-agnostic (same artifact dev
+// & prod, NODE_ENV=production in both) so this MUST come from a per-overlay env var, not NODE_ENV.
+// Must match ^(?!langfuse)[a-z0-9-_]+$.
+const LF_ENV = (process.env.LANGFUSE_TRACING_ENVIRONMENT || 'development')
+  .toLowerCase()
+  .replace(/[^a-z0-9-_]/g, '-');
 const langfuseEnabled = !!(LF_PUBLIC && LF_SECRET);
 
 // langfuse is imported DYNAMICALLY (top-level await) so a missing/optional dependency never breaks
@@ -49,9 +57,10 @@ if (langfuseEnabled) {
     langfuse = new Langfuse({
       publicKey: LF_PUBLIC,
       secretKey: LF_SECRET,
+      environment: LF_ENV,
       ...(LF_BASEURL ? { baseUrl: LF_BASEURL } : {}),
     });
-    logger.info('Langfuse tracing enabled', { baseUrl: LF_BASEURL || 'cloud' });
+    logger.info('Langfuse tracing enabled', { baseUrl: LF_BASEURL || 'cloud', environment: LF_ENV });
   } catch (e) {
     logger.warn('Langfuse SDK unavailable — tracing disabled', { error: e.message });
     langfuse = null;
@@ -82,8 +91,11 @@ export function startTrace({ name, sessionId, userId, input, tags, metadata } = 
       sessionId: sessionId || undefined,
       userId: userId || undefined,
       input,
-      tags,
-      metadata,
+      // The native `environment` attribute (set on the client) is the primary dev/prod
+      // discriminator; also mirror it into tags + metadata so it's filterable even on
+      // older Langfuse UIs and visible inline on the trace.
+      tags: [...(tags || []), `env:${LF_ENV}`],
+      metadata: { ...(metadata || {}), environment: LF_ENV },
     });
     return {
       id: trace.id,
