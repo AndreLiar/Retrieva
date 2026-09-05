@@ -5,8 +5,9 @@ import { randomUUID } from 'crypto';
 import mongoose from 'mongoose';
 import { AppError } from '../utils/index.js';
 
-// Prompts
-import { ragPrompt } from '../prompts/ragPrompt.js';
+// Prompts — resolved via Langfuse Prompt Management (label-routed) with Git fallback
+import { buildRagChatPrompt } from '../prompts/ragPrompt.js';
+import { resolveRagPrompt } from '../config/promptManager.js';
 
 // LLM timeout protection
 import {
@@ -263,7 +264,20 @@ class RAGService {
   }
 
   async _generateAnswer(question, context, history, metadata = {}) {
-    const chain = ragPrompt.pipe(this.llm).pipe(new StringOutputParser());
+    // Resolve the system prompt from Langfuse (label-routed) with Git fallback, and
+    // Mustache-compile the context/responseInstruction into it. The rendered text is
+    // a literal SystemMessage; the chat_history + user question stay LangChain-templated.
+    const resolved = await resolveRagPrompt({
+      context,
+      responseInstruction: metadata.responseInstruction || '',
+    });
+    // Trace-linked prompt-version attribution: attach the managed prompt to the
+    // app-level generation so every answer links to the exact prompt version used.
+    if (resolved.langfusePrompt && metadata.langfuseGeneration) {
+      metadata.langfuseGeneration.update?.({ prompt: resolved.langfusePrompt });
+    }
+    const ragChatPrompt = buildRagChatPrompt(resolved.systemText);
+    const chain = ragChatPrompt.pipe(this.llm).pipe(new StringOutputParser());
     const callbacks = getCallbacks({
       runName: 'rag-answer-generation',
       feature: 'rag',
@@ -272,11 +286,10 @@ class RAGService {
       sessionId: metadata.conversationId,
     });
 
+    // context/responseInstruction are already baked into the system text above.
     const invokeInput = {
-      context,
       input: question,
       chat_history: history,
-      responseInstruction: metadata.responseInstruction || '',
     };
 
     // Timeout configuration (in ms)
@@ -727,6 +740,7 @@ class RAGService {
         sessionId: conversationId,
         onEvent: onEvent || undefined,
         responseInstruction: combinedInstruction,
+        langfuseGeneration: answerGen,
       });
       // Exact token cost is captured per-call by the LiteLLM gateway (ai-gateway
       // project). _generateAnswer returns text (streamed), so here we record an

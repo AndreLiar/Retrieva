@@ -18,6 +18,7 @@ vi.mock('../../config/tracing.js', () => {
   return {
     getCallbacks: vi.fn(() => []),
     startTrace: vi.fn(() => ({ id: null, span: obs, generation: obs, update() {}, flush: async () => {} })),
+    getLangfusePrompt: vi.fn(async () => null),
   };
 });
 vi.mock('../../config/llm.js', () => ({
@@ -41,7 +42,19 @@ vi.mock('../../repositories/ConversationRepository.js', () => ({
     updateById: vi.fn().mockResolvedValue({}),
   },
 }));
-vi.mock('../../prompts/ragPrompt.js', () => ({ ragPrompt: { pipe: vi.fn() } }));
+vi.mock('../../prompts/ragPrompt.js', () => ({
+  RAG_SYSTEM_TEMPLATE: 'system {{context}} {{responseInstruction}}',
+  RAG_PROMPT_VARIABLES: ['context', 'responseInstruction'],
+  buildRagChatPrompt: vi.fn(() => ({ pipe: vi.fn(() => ({ pipe: vi.fn() })) })),
+}));
+vi.mock('../../config/promptManager.js', () => ({
+  resolveRagPrompt: vi.fn(async () => ({
+    systemText: 'system prompt',
+    langfusePrompt: null,
+    source: 'git',
+    label: 'latest',
+  })),
+}));
 vi.mock('../../utils/core/asyncHelpers.js', () => ({
   invokeWithTimeout: vi.fn(),
   streamWithTimeout: vi.fn(),

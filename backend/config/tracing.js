@@ -125,6 +125,36 @@ export function startTrace({ name, sessionId, userId, input, tags, metadata } = 
 }
 
 /**
+ * Fetch a managed prompt from the dedicated retrieva Langfuse project (Prompt
+ * Management). Label-routed so one project serves dev + prod: prod pulls the
+ * `production` label, dev pulls `latest` (set via LANGFUSE_PROMPT_LABEL per overlay).
+ * Never throws — returns null if Langfuse is disabled/unreachable or the prompt is
+ * absent, so callers fall back to the Git-committed template (no runtime SPOF).
+ * The returned object exposes `.compile(vars)` (Mustache) and links to a generation
+ * when passed as `prompt` — giving trace-linked prompt-version attribution.
+ *
+ * @param {string} name
+ * @param {object} [opts]
+ * @param {string} [opts.label]           'production' | 'latest' | 'canary' | …
+ * @param {number} [opts.cacheTtlSeconds] SDK client-side cache (default 60s)
+ * @returns {Promise<object|null>}
+ */
+export async function getLangfusePrompt(name, { label, cacheTtlSeconds = 60 } = {}) {
+  if (!langfuse) return null;
+  try {
+    return await langfuse.getPrompt(name, undefined, {
+      ...(label ? { label } : {}),
+      cacheTtlSeconds,
+      // Serve a stale cached prompt if a refresh fetch fails — availability over freshness.
+      fallback: undefined,
+    });
+  } catch (e) {
+    logger.warn('Langfuse getPrompt failed — using Git fallback', { name, label, error: e.message });
+    return null;
+  }
+}
+
+/**
  * LangChain callbacks for chain .invoke() — LangSmith only (Langfuse traces are built manually via
  * startTrace, since langfuse-langchain does not support LangChain v1).
  */
