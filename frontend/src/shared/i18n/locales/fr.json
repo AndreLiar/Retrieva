@@ -383,6 +383,10 @@
       "security": {
         "title": "Sécurité de niveau entreprise",
         "desc": "Isolation des espaces de travail, MFA, détection des données personnelles, journalisation d'audit et secrets chiffrés — conçu pour les secteurs réglementés."
+      },
+      "concentration": {
+        "title": "Graphe de concentration & nème-partie",
+        "desc": "Cartographiez fonctions critiques → prestataires → leurs sous-traitants, et révélez le risque de concentration et les points uniques de défaillance sur tout votre portefeuille (DORA Art. 28(4)/29) — la question inter-fournisseurs qu’un tableur ne peut pas traiter."
       }
     },
     "ingestionHeading": "Apportez votre documentation fournisseurs",
@@ -516,6 +520,17 @@
       "signin": "Se connecter",
       "contact": "Contact",
       "rights": "Tous droits réservés."
+    },
+    "stats": {
+      "heading": "Le régulateur a déjà prouvé le problème",
+      "subtitle": "Lors du « dry run » 2024 des AES, chaque Registre d’Information a subi 116 contrôles de qualité des données.",
+      "checks": "116",
+      "checksLabel": "contrôles qualité par Registre",
+      "pass": "6,5 %",
+      "passLabel": "des entités ont tout réussi",
+      "fail": "93,5 %",
+      "failLabel": "ont échoué — le tableur ne modélise pas le graphe",
+      "footnote": "Échecs les plus fréquents : données de contrat incomplètes, informations sous-traitants (nème-partie) manquantes, classification FCI erronée. Source : synthèse EBA 2024 DORA Dry Run."
     }
   },
   "assessments": {
