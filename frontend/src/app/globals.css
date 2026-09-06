@@ -18,8 +18,8 @@
   --popover:            0 0% 100%;
   --popover-foreground: 215 45% 10%;
 
-  /* Primary — royal blue */
-  --primary:            214 78% 36%;       /* #1043A0 */
+  /* Primary — electric blue / cyan (brand accent) */
+  --primary:            199 90% 44%;       /* electric blue */
   --primary-foreground: 0 0% 100%;
 
   /* Secondary — warm stone */
@@ -31,8 +31,8 @@
   --muted-foreground:   215 18% 46%;
 
   /* Accent — light blue tint for hover states */
-  --accent:             214 55% 94%;
-  --accent-foreground:  214 78% 36%;
+  --accent:             199 60% 94%;
+  --accent-foreground:  199 90% 40%;
 
   --destructive:        0 72% 51%;
   --destructive-foreground: 0 0% 100%;
@@ -40,7 +40,7 @@
   /* Borders */
   --border:             215 18% 88%;
   --input:              215 18% 88%;
-  --ring:               214 78% 36%;
+  --ring:               199 90% 44%;
 
   /* Charts */
   --chart-1: 214 78% 48%;
@@ -72,33 +72,34 @@
 }
 
 .dark {
-  --background:         215 35% 7%;
-  --foreground:         36 18% 93%;
+  /* Premium near-black surface (WHOOP-like) + electric cyan accent */
+  --background:         220 33% 6%;        /* near-black #0A0E14 */
+  --foreground:         210 20% 96%;
 
-  --card:               215 30% 10%;
-  --card-foreground:    36 18% 93%;
+  --card:               220 28% 9%;
+  --card-foreground:    210 20% 96%;
 
-  --popover:            215 30% 10%;
-  --popover-foreground: 36 18% 93%;
+  --popover:            220 28% 9%;
+  --popover-foreground: 210 20% 96%;
 
-  --primary:            210 80% 60%;
-  --primary-foreground: 215 45% 8%;
+  --primary:            195 92% 56%;       /* electric cyan #22D3EE */
+  --primary-foreground: 220 45% 7%;
 
-  --secondary:          215 25% 17%;
-  --secondary-foreground: 36 18% 88%;
+  --secondary:          220 22% 15%;
+  --secondary-foreground: 210 18% 90%;
 
-  --muted:              215 25% 14%;
-  --muted-foreground:   215 14% 54%;
+  --muted:              220 22% 13%;
+  --muted-foreground:   215 15% 60%;
 
-  --accent:             215 28% 20%;
-  --accent-foreground:  210 80% 70%;
+  --accent:             199 90% 16%;
+  --accent-foreground:  195 92% 66%;
 
   --destructive:        0 58% 44%;
   --destructive-foreground: 0 0% 98%;
 
-  --border:             215 25% 19%;
-  --input:              215 25% 17%;
-  --ring:               210 80% 60%;
+  --border:             220 20% 16%;
+  --input:              220 20% 16%;
+  --ring:               195 92% 56%;
 
   --chart-1: 210 80% 60%;
   --chart-2: 142 65% 50%;
@@ -190,7 +191,7 @@
   }
 
   .font-display {
-    font-family: var(--font-display), Georgia, serif;
+    font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
   }
 
   /* Sidebar active accent bar */

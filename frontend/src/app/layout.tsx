@@ -1,20 +1,22 @@
 import type { Metadata } from 'next';
-import { Cormorant_Garamond, DM_Sans, JetBrains_Mono } from 'next/font/google';
+import { Space_Grotesk, Inter, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 import { Providers } from '@/shared/providers';
 import { getServerSessionUser } from '@/shared/server/auth-session';
 
-const cormorant = Cormorant_Garamond({
+// Bold modern-sans brand direction (WHOOP-like): Space Grotesk for display headlines,
+// Inter for body. Replaces the previous Cormorant serif / DM Sans pairing.
+const spaceGrotesk = Space_Grotesk({
   variable: '--font-display',
   subsets: ['latin'],
-  weight: ['300', '400', '500', '600', '700'],
+  weight: ['400', '500', '600', '700'],
   display: 'swap',
 });
 
-const dmSans = DM_Sans({
+const inter = Inter({
   variable: '--font-sans',
   subsets: ['latin'],
-  weight: ['300', '400', '500', '600'],
+  weight: ['300', '400', '500', '600', '700'],
   display: 'swap',
 });
 
@@ -52,7 +54,7 @@ async function RootLayoutContent({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${cormorant.variable} ${dmSans.variable} ${jetbrainsMono.variable} font-sans antialiased`}
+        className={`${spaceGrotesk.variable} ${inter.variable} ${jetbrainsMono.variable} font-sans antialiased`}
       >
         {/* Runtime env — this layout renders dynamically (auth-session uses cookies()
             + noStore()), so the SERVER reads API_URL from the container env at request
