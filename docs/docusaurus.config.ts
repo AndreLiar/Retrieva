@@ -11,11 +11,14 @@ const config: Config = {
     v4: true,
   },
 
-  url: 'https://andreliar.github.io',
-  baseUrl: '/Retrieva/',
+  // Docs publish to the ORG repo's GitHub Pages (andrelair-platform/retrieva). GitHub Pages
+  // paths are case-sensitive: the repo serves at /retrieva/ (lowercase), so baseUrl must match
+  // exactly — the old '/Retrieva/' (capital) + andreliar.github.io host 404'd every asset/link.
+  url: 'https://andrelair-platform.github.io',
+  baseUrl: '/retrieva/',
 
-  organizationName: 'AndreLiar',
-  projectName: 'Retrieva',
+  organizationName: 'andrelair-platform',
+  projectName: 'retrieva',
   trailingSlash: false,
   deploymentBranch: 'gh-pages',
 
