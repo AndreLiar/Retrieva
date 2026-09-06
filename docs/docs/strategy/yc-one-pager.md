@@ -30,6 +30,14 @@ Chief Compliance Officer's headcount — **and the cost grows faster than the bu
 the AI-native problem the YC RFS describes: monitoring regulatory change, flagging anomalies,
 generating reports, keeping audit trails, across a jurisdictional patchwork.
 
+**The regulator proved the pain.** In the **2024 ESA "dry run,"** each Register of Information faced
+**116 data-quality checks — only 6.5% of firms passed all of them.** The top failures: **incomplete
+contract data, missing subcontractor (nth-party) information, and incorrect Critical/Important
+Function classification** — because *"a spreadsheet cannot maintain the relational integrity between
+entities, contracts and functions."* Meanwhile ~**half of UK financial firms spent >€1M** on DORA,
+and smaller firms lack the resources to map their supply chain at all. **93.5% of firms failed —
+that is the market.** (Full analysis + sources: [Product Vision → Market problem](./product-vision.md).)
+
 ## The product
 
 Retrieva ingests the documents a firm already has (contracts, SOC 2 / ISO reports, DPAs,
@@ -96,3 +104,13 @@ Operating Model vision.)*
 - Serves double duty as the author's RNCP39583 certification project — battle-tested, documented.
 - **The ask:** YC — to turn a working, regulation-mandated product into the compliance infrastructure
   every EU (then global) financial entity runs on.
+
+---
+
+**Sources (market validation):**
+[EBA — 2024 DORA Dry Run key findings (6.5% / 116 checks)](https://www.eba.europa.eu/sites/default/files/2024-12/c1454b59-15cc-445e-be14-966e3338cedc/ESA%202024%2035%20DORA%20Dry%20Run%20exercise%20summary%20report%20for%20publication.pdf) ·
+[Neotas — DORA TPRM 2026](https://www.neotas.com/dora-compliance-for-third-party-risk-management/) ·
+[Infosecurity Magazine — compliance headwinds](https://www.infosecurity-magazine.com/news/dora-financial-firms-compliance/) ·
+[Fintech Global — true cost of non-compliance](https://fintech.global/2026/03/17/the-true-cost-of-dora-non-compliance-in-financial-services/) ·
+[Kiteworks — DORA TPRM guide](https://www.kiteworks.com/third-party-risk/dora-third-party-risk-management/) ·
+[Trusty — shared compliance burden](https://trusty.report/dora-third-party-risk-management-how-financial-entities-and-ict-providers-share-the-compliance-burden/)
