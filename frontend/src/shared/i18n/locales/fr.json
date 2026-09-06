@@ -343,9 +343,8 @@
   },
   "landing": {
     "badge": "Règlement DORA (UE) 2022/2554",
-    "heroTitle": "Intelligence de conformité DORA",
-    "heroTitleAccent": "pour les entités financières",
-    "heroSubtitle": "Automatisez les évaluations des risques liés aux prestataires TIC, identifiez les écarts de conformité au regard des exigences DORA, et obtenez des réponses instantanées d'un copilote IA formé sur votre documentation.",
+    "heroTitle": "Voyez où un seul fournisseur fait tomber l’activité.",
+    "heroSubtitle": "Retrieva cartographie chaque fournisseur et ses sous-traitants en un seul graphe — la concentration et les points uniques de défaillance que votre Registre ne montre pas. Évaluez avec les preuves disponibles ; les lacunes deviennent un risque suivi.",
     "featuresHeading": "Tout ce qu'il faut pour respecter vos obligations DORA",
     "features": {
       "gapAnalysis": {

@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 
 import { PricingSection } from '@/components/marketing/pricing-section';
+import { ConcentrationGraphHero } from '@/components/marketing/ConcentrationGraphHero';
 import { VideoHero } from '@/components/marketing/VideoHero';
 import { ThemeToggle } from '@/components/theme/theme-toggle';
 import { LanguageSwitcher } from '@/shared/ui/language-switcher';
@@ -57,36 +58,43 @@ export function LandingPageContent() {
         </div>
       </header>
 
-      <section className="container mx-auto px-4 py-24 text-center">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border bg-muted text-sm text-muted-foreground mb-6">
-            <ShieldCheck className="h-3.5 w-3.5 text-primary" />
-            {t('landing.badge')}
+      <section className="container mx-auto px-4 pt-20 pb-24">
+        <div className="grid lg:grid-cols-[1.05fr_0.95fr] gap-12 lg:gap-8 items-center">
+          {/* Left — the message */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border bg-muted/60 text-xs text-muted-foreground mb-6">
+              <ShieldCheck className="h-3.5 w-3.5 text-primary" />
+              {t('landing.badge')}
+            </div>
+            <h1 className="font-display text-4xl md:text-5xl xl:text-6xl font-bold leading-[1.05] tracking-tight mb-6 text-balance">
+              {t('landing.heroTitle')}
+            </h1>
+            <p className="text-lg text-muted-foreground max-w-xl mb-8 leading-relaxed">
+              {t('landing.heroSubtitle')}
+            </p>
+            <div className="flex flex-wrap gap-4">
+              <Link href="/register">
+                <Button size="lg" className="gap-2">{t('common.startFree')}</Button>
+              </Link>
+              <Link href="/login">
+                <Button size="lg" variant="outline">{t('common.signIn')}</Button>
+              </Link>
+            </div>
+          </motion.div>
+
+          {/* Right — the product itself: a live concentration graph */}
+          <div className="relative">
+            <div
+              className="absolute -inset-8 -z-10 rounded-full opacity-40 blur-3xl"
+              style={{ background: 'radial-gradient(closest-side, hsl(var(--primary)/0.25), transparent)' }}
+            />
+            <ConcentrationGraphHero className="mx-auto max-w-md" />
           </div>
-          <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6">
-            {t('landing.heroTitle')}{' '}
-            <span className="text-primary">{t('landing.heroTitleAccent')}</span>
-          </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
-            {t('landing.heroSubtitle')}
-          </p>
-          <div className="flex gap-4 justify-center">
-            <Link href="/register">
-              <Button size="lg" className="gap-2">
-                {t('common.startFree')} <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
-            <Link href="/login">
-              <Button size="lg" variant="outline">
-                {t('common.signIn')}
-              </Button>
-            </Link>
-          </div>
-        </motion.div>
+        </div>
       </section>
 
       <VideoHero />
