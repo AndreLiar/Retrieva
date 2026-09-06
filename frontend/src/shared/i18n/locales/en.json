@@ -343,9 +343,9 @@
   },
   "landing": {
     "badge": "DORA Regulation (EU) 2022/2554",
-    "heroTitle": "DORA Compliance Intelligence",
-    "heroTitleAccent": "for Financial Entities",
-    "heroSubtitle": "Automate third-party ICT risk assessments, identify compliance gaps against DORA requirements, and get instant answers from an AI copilot trained on your documentation.",
+    "heroTitle": "See where a single vendor takes the business down.",
+    "heroTitleAccent": "",
+    "heroSubtitle": "Retrieva maps every vendor and its subprocessors into one graph — the concentration and single points of failure your Register can’t show. Assess with the evidence you have; the gaps become tracked risk.",
     "featuresHeading": "Everything you need to meet DORA obligations",
     "features": {
       "gapAnalysis": {
