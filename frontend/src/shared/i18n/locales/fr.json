@@ -354,7 +354,7 @@
       },
       "questionnaires": {
         "title": "Questionnaires fournisseurs",
-        "desc": "Générez automatiquement des questionnaires de sécurité, invitez les prestataires à répondre, et obtenez des résultats de conformité notés par IA instantanément."
+        "desc": "Quand un fournisseur ne partage pas ses rapports, envoyez un questionnaire de sécurité à jeton (sans compte) — invitez-le à s’auto-attester et obtenez des résultats notés par IA, défendables."
       },
       "copilot": {
         "title": "Copilote DORA",
@@ -389,16 +389,16 @@
         "desc": "Cartographiez fonctions critiques → prestataires → leurs sous-traitants, et révélez le risque de concentration et les points uniques de défaillance sur tout votre portefeuille (DORA Art. 28(4)/29) — la question inter-fournisseurs qu’un tableur ne peut pas traiter."
       }
     },
-    "ingestionHeading": "Apportez votre documentation fournisseurs",
-    "ingestionSubtitle": "Téléversez les contrats fournisseurs, les politiques TIC et les rapports d'audit — analysés, découpés et indexés automatiquement dans un pipeline RAG de haute qualité.",
-    "ingestionCardTitle": "Ingestion de documents",
-    "ingestionCardSubtitle": "Aucune infrastructure requise",
+    "ingestionHeading": "Obtenez les preuves — même quand les fournisseurs ne les fournissent pas",
+    "ingestionSubtitle": "Les fournisseurs tardent, se retranchent derrière des NDA, ou ne répondent jamais. Retrieva évalue avec les preuves disponibles — et transforme ce qui manque en risque suivi, exactement ce qu’exige DORA.",
+    "ingestionCardTitle": "Preuves multi-sources",
+    "ingestionCardSubtitle": "Aucun téléversement unique requis",
     "ingestionItems": {
-      "files": "Téléversement de fichiers — PDF, DOCX, XLSX",
-      "parsing": "Analyse, découpage et indexation automatiques",
-      "selfHosted": "Embeddings auto-hébergés — votre contenu reste privé"
+      "files": "Téléversez ce que vous avez — contrats, SOC 2, ISO, DPA (PDF/DOCX/XLSX), ou récupérés depuis les portails de confiance des fournisseurs",
+      "questionnaire": "Documents indisponibles ? Envoyez au fournisseur un questionnaire à jeton (sans compte) — il s’auto-atteste, Retrieva le note",
+      "gap": "Le fournisseur ne fournit rien ? Cela devient un constat — « contrôle non vérifié » — inscrit comme risque dans votre Registre"
     },
-    "ingestionFootnote": "Remplissez un formulaire — Retrieva s'occupe du reste.",
+    "ingestionFootnote": "Vous restez responsable de chaque prestataire ; Retrieva rend les lacunes explicites et suivies, jamais masquées.",
     "howItWorksHeading": "Comment ça marche",
     "steps": {
       "index": {

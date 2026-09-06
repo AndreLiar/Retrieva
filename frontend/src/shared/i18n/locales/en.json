@@ -354,7 +354,7 @@
       },
       "questionnaires": {
         "title": "Vendor Questionnaires",
-        "desc": "Auto-generate security questionnaires, invite vendors to respond, and get LLM-scored compliance results instantly."
+        "desc": "When a vendor won’t share reports, send a tokenized security questionnaire (no account needed) — invite them to self-attest and get LLM-scored, defensible results."
       },
       "copilot": {
         "title": "DORA Copilot",
@@ -389,16 +389,16 @@
         "desc": "Map critical functions → providers → their subprocessors, and surface concentration risk and single points of failure across your whole portfolio (DORA Art. 28(4)/29) — the cross-vendor question a spreadsheet can’t answer."
       }
     },
-    "ingestionHeading": "Bring your vendor documentation",
-    "ingestionSubtitle": "Upload vendor contracts, ICT policies, and audit reports — parsed, chunked, and embedded into a high-quality RAG pipeline automatically.",
-    "ingestionCardTitle": "Document Ingestion",
-    "ingestionCardSubtitle": "Zero infrastructure required",
+    "ingestionHeading": "Get the evidence — even when vendors won’t hand it over",
+    "ingestionSubtitle": "Vendors stall, hide behind NDAs, or never reply. Retrieva assesses with whatever evidence exists — and turns what’s missing into a tracked risk, which is exactly what DORA requires.",
+    "ingestionCardTitle": "Multi-source evidence",
+    "ingestionCardSubtitle": "No single upload required",
     "ingestionItems": {
-      "files": "File upload — PDF, DOCX, XLSX",
-      "parsing": "Automatic parsing, chunking & embedding",
-      "selfHosted": "Self-hosted embeddings — your content stays private"
+      "files": "Upload what you have — contracts, SOC 2, ISO, DPA (PDF/DOCX/XLSX), or pulled from vendor trust portals",
+      "questionnaire": "Can’t get the documents? Send the vendor a tokenized questionnaire (no account) — they self-attest, Retrieva scores it",
+      "gap": "Vendor provides nothing? That becomes a finding — “control unverified” — recorded as risk in your Register"
     },
-    "ingestionFootnote": "Fill in a form — Retrieva handles the rest.",
+    "ingestionFootnote": "You stay accountable for every provider; Retrieva makes the gaps explicit and tracked, not hidden.",
     "howItWorksHeading": "How It Works",
     "steps": {
       "index": {

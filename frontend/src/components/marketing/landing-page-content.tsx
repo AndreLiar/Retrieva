@@ -251,8 +251,8 @@ export function LandingPageContent() {
               <ul className="space-y-2 text-sm text-muted-foreground mb-4">
                 {[
                   t('landing.ingestionItems.files'),
-                  t('landing.ingestionItems.parsing'),
-                  t('landing.ingestionItems.selfHosted'),
+                  t('landing.ingestionItems.questionnaire'),
+                  t('landing.ingestionItems.gap'),
                 ].map((item) => (
                   <li key={item} className="flex items-center gap-2">
                     <CheckCircle2 className="h-3.5 w-3.5 text-green-500 shrink-0" />
