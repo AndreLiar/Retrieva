@@ -73,6 +73,15 @@ const sidebars: SidebarsConfig = {
         'deployment/observability',
       ],
     },
+    {
+      type: 'category',
+      label: 'Certification (RNCP39583)',
+      collapsed: false,
+      items: [
+        'certification/overview',
+        'certification/bc02-accessibility-audit',
+      ],
+    },
     'contributing',
   ],
   apiSidebar: [
