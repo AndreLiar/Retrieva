@@ -11,6 +11,7 @@ const sidebars: SidebarsConfig = {
       label: 'Strategy & Positioning',
       collapsed: false,
       items: [
+        'strategy/product-vision',
         'strategy/yc-one-pager',
       ],
     },
