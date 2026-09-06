@@ -8,6 +8,14 @@ const sidebars: SidebarsConfig = {
     'getting-started',
     {
       type: 'category',
+      label: 'Strategy & Positioning',
+      collapsed: false,
+      items: [
+        'strategy/yc-one-pager',
+      ],
+    },
+    {
+      type: 'category',
       label: 'Architecture',
       collapsed: false,
       items: [
