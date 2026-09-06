@@ -20,6 +20,42 @@ human-review-required*. In regulated finance, that human-in-the-loop governance 
 sellable form of AI — and it is baked into the code (extracted edges are confidence-scored and
 excluded from scoring until a person confirms them).
 
+## Market problem / validation — the regulator proved it
+
+This is not a "we think this is a problem" pitch. The **regulator's own exercise** proved the
+failure and named the exact gaps Retrieva is built to prevent.
+
+**The killer stat:** in the **2024 ESA "dry run,"** each Register of Information was subjected to
+**116 data-quality checks — only 6.5% of firms passed all of them.** The three most common
+failures: **incomplete contract data, missing subcontractor (nth-party) information, and incorrect
+CIF (Critical/Important Function) classification.** Root cause cited: *"an Excel spreadsheet cannot
+maintain the required relational integrity between entities, contracts and functions"* →
+spreadsheet Registers *"typically fail by the first formal submission"* at 50+ vendors.
+
+**Complaints ≈ Retrieva's feature list:**
+
+| Complaint (real, sourced) | Retrieva capability |
+|---|---|
+| 6.5% pass — spreadsheets can't hold relational integrity | Register (`roiExportService`) on a **relational graph** (Org→Workspace→CriticalFunction→ProviderDependency), not a sheet |
+| Missing subcontractor / 4th-party info | **`concentrationService` nth-party graph** — the moat, literally this gap |
+| Incorrect CIF classification | `CriticalFunction` model + AI control-mapping |
+| 300-page SOC2/ISO/DPA manual review doesn't scale | Docling+RAG ingestion → auto-extract → Art 28–30 mapping |
+| Too expensive / no expertise (esp. smaller firms; ~half of UK firms spent >€1M) | AI extracts + scores, human ratifies → replaces consultant/headcount cost |
+| Contract clauses (audit rights, exit) — vendors resist | clause checker + exit-strategy scoring (roadmap) |
+| Continuous monitoring / re-assess on change | `alertMonitorService` |
+
+**The positioning line this unlocks:** *"93.5% of firms failed the ESA's Register data-quality
+checks because spreadsheets can't model the entity→contract→function→subprocessor graph. Retrieva
+is that graph — so the Register is correct by construction."*
+
+**Sources:**
+[EBA — 2024 DORA Dry Run key findings (6.5% / 116 checks)](https://www.eba.europa.eu/sites/default/files/2024-12/c1454b59-15cc-445e-be14-966e3338cedc/ESA%202024%2035%20DORA%20Dry%20Run%20exercise%20summary%20report%20for%20publication.pdf) ·
+[Neotas — DORA TPRM 2026 (spreadsheet failure, subcontractor gaps)](https://www.neotas.com/dora-compliance-for-third-party-risk-management/) ·
+[Infosecurity Magazine — smaller-firm resource gap](https://www.infosecurity-magazine.com/news/dora-financial-firms-compliance/) ·
+[Fintech Global — true cost of DORA non-compliance (>€1M)](https://fintech.global/2026/03/17/the-true-cost-of-dora-non-compliance-in-financial-services/) ·
+[Kiteworks — DORA TPRM (contract renegotiation, oversight gaps)](https://www.kiteworks.com/third-party-risk/dora-third-party-risk-management/) ·
+[Trusty — shared compliance burden](https://trusty.report/dora-third-party-risk-management-how-financial-entities-and-ict-providers-share-the-compliance-burden/)
+
 ## What Retrieva is today (built, in code)
 
 The DORA ICT-TPRM workflow is already implemented end-to-end:
