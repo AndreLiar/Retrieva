@@ -84,7 +84,10 @@ jobs:
       - name: Wait for Harbor over Tailscale
         run: |
           for i in $(seq 1 30); do
-            code=$(curl -sk -o /dev/null -w '%{http_code}' --max-time 5 "https://${HARBOR}/v2/" || echo 000)
+            # `|| true` not `|| echo 000`: curl already prints "000" via -w on a connect
+            # failure; a second "000" made "000000" which wrongly passed the check.
+            code=$(curl -sk -o /dev/null -w '%{http_code}' --max-time 5 "https://${HARBOR}/v2/" 2>/dev/null || true)
+            [ -z "$code" ] && code=000
             if [ "$code" != "000" ]; then echo "Harbor reachable (HTTP $code) after $((i*3))s"; exit 0; fi
             echo "[$i] Harbor not reachable over Tailscale yet…"; sleep 3
           done
