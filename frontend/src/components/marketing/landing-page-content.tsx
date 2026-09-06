@@ -31,6 +31,7 @@ import { VideoHero } from '@/components/marketing/VideoHero';
 import { ThemeToggle } from '@/components/theme/theme-toggle';
 import { LanguageSwitcher } from '@/shared/ui/language-switcher';
 import { Button } from '@/shared/ui/button';
+import { Logo } from '@/shared/ui/logo';
 
 export function LandingPageContent() {
   const { t } = useTranslation();
@@ -39,10 +40,7 @@ export function LandingPageContent() {
     <div className="min-h-screen bg-background">
       <header className="border-b">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="h-6 w-6 text-primary" />
-            <span className="font-bold text-xl">Retrieva</span>
-          </div>
+          <Logo />
           <div className="flex items-center gap-4">
             <LanguageSwitcher />
             <ThemeToggle />
@@ -402,7 +400,7 @@ export function LandingPageContent() {
         <div className="container mx-auto px-4 py-12">
           <div className="grid gap-8 md:grid-cols-4">
             <div>
-              <div className="text-lg font-bold mb-2">Retrieva</div>
+              <Logo className="mb-2" />
               <p className="text-sm text-muted-foreground">{t('landing.footer.tagline')}</p>
             </div>
             <div>
