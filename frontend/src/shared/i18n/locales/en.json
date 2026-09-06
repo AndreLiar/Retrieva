@@ -383,6 +383,10 @@
       "security": {
         "title": "Enterprise-Grade Security",
         "desc": "Workspace isolation, MFA, PII detection, audit logging, and encrypted secrets — built for regulated industries."
+      },
+      "concentration": {
+        "title": "Concentration & nth-party graph",
+        "desc": "Map critical functions → providers → their subprocessors, and surface concentration risk and single points of failure across your whole portfolio (DORA Art. 28(4)/29) — the cross-vendor question a spreadsheet can’t answer."
       }
     },
     "ingestionHeading": "Bring your vendor documentation",
@@ -516,6 +520,17 @@
       "signin": "Sign in",
       "contact": "Contact",
       "rights": "All rights reserved."
+    },
+    "stats": {
+      "heading": "The regulator already proved the problem",
+      "subtitle": "In the 2024 ESA dry run, every Register of Information faced 116 data-quality checks.",
+      "checks": "116",
+      "checksLabel": "data-quality checks per Register",
+      "pass": "6.5%",
+      "passLabel": "of firms passed all of them",
+      "fail": "93.5%",
+      "failLabel": "failed — spreadsheets can’t model the graph",
+      "footnote": "Top failures: incomplete contract data, missing subcontractor (nth-party) info, wrong CIF classification. Source: EBA 2024 DORA Dry Run summary."
     }
   },
   "assessments": {

@@ -18,6 +18,7 @@ import {
   Gauge,
   ListChecks,
   Lock,
+  Network,
   ScrollText,
   Server,
   ShieldCheck,
@@ -92,6 +93,29 @@ export function LandingPageContent() {
 
       <VideoHero />
 
+      {/* By the numbers — regulator-proven market validation (WHOOP-style stat band) */}
+      <section className="bg-primary/5 border-y py-20">
+        <div className="container mx-auto px-4 max-w-5xl text-center">
+          <h2 className="text-2xl md:text-3xl font-bold mb-2">{t('landing.stats.heading')}</h2>
+          <p className="text-muted-foreground mb-12 max-w-2xl mx-auto">{t('landing.stats.subtitle')}</p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
+            {[
+              { v: 'landing.stats.checks', l: 'landing.stats.checksLabel', accent: false },
+              { v: 'landing.stats.pass', l: 'landing.stats.passLabel', accent: false },
+              { v: 'landing.stats.fail', l: 'landing.stats.failLabel', accent: true },
+            ].map(({ v, l, accent }) => (
+              <div key={v}>
+                <div className={`text-5xl md:text-6xl font-bold tracking-tight mb-2 ${accent ? 'text-primary' : ''}`}>
+                  {t(v)}
+                </div>
+                <p className="text-sm text-muted-foreground">{t(l)}</p>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground/80 mt-10 max-w-2xl mx-auto">{t('landing.stats.footnote')}</p>
+        </div>
+      </section>
+
       {/* Problem */}
       <section className="bg-muted/50 py-24">
         <div className="container mx-auto px-4 max-w-4xl text-center">
@@ -113,6 +137,11 @@ export function LandingPageContent() {
       <section className="container mx-auto px-4 py-24">
         <h2 className="text-3xl font-bold text-center mb-12">{t('landing.featuresHeading')}</h2>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <FeatureCard
+            icon={<Network className="h-8 w-8" />}
+            title={t('landing.features.concentration.title')}
+            description={t('landing.features.concentration.desc')}
+          />
           <FeatureCard
             icon={<FileSearch className="h-8 w-8" />}
             title={t('landing.features.gapAnalysis.title')}
@@ -396,7 +425,7 @@ export function LandingPageContent() {
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li>
                   <a
-                    href="https://andreliar.github.io/Retrieva/"
+                    href="https://andrelair-platform.github.io/retrieva/"
                     target="_blank"
                     rel="noreferrer"
                     className="hover:text-foreground"
