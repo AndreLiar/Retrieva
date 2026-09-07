@@ -16,6 +16,8 @@ const eslintConfig = defineConfig([
     "test-results/**",
     "blob-report/**",
     "next-env.d.ts",
+    // Storybook build artifact — never lint the minified output.
+    "storybook-static/**",
   ]),
   {
     rules: {
