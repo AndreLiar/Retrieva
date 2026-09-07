@@ -17,6 +17,7 @@ on:
     paths-ignore:
       - 'docs/**'
       - '*.md'
+      - 'bmad/**'
   workflow_dispatch:
 
 env:

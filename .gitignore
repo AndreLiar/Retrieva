@@ -93,3 +93,7 @@ testprocess/
 
 # Local Claude Code session data (memory, settings)
 .claude/
+
+# BMAD dev tooling (installed per-repo when implementation starts)
+_bmad/
+_bmad-output/
