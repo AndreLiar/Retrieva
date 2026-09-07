@@ -1,0 +1,18 @@
+name: BMAD Sync
+
+# Per-product BMAD for Retrieva (Certification / Project #2). Retrieva is the product HOME repo:
+# stories live here under bmad/stories/ and sync to GitHub Issues via the org-shared reusable
+# workflow. Each story's frontmatter (repo:/project:/milestone:) routes the created issue to the
+# member repo (retrieva or retrieva-backend) + the Retrieva board. See andrelair rules bmad.md.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'bmad/stories/**'
+  workflow_dispatch:
+
+jobs:
+  bmad-sync:
+    uses: andrelair-platform/.github/.github/workflows/bmad-sync.yml@main
+    secrets: inherit
