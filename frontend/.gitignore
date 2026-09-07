@@ -45,3 +45,6 @@ next-env.d.ts
 /.tsbuildinfo-test
 
 .claude/
+
+*storybook.log
+storybook-static
