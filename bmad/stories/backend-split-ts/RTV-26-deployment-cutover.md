@@ -1,5 +1,5 @@
 ---
-id: RTV-22-deployment-cutover
+id: RTV-26-deployment-cutover
 title: "Deployment cutover — GitOps + Kargo for retrieva-backend"
 status: Ready
 type: Story
@@ -50,5 +50,5 @@ Retrieva currently uses a **git Warehouse** (2 images, backend + frontend, keyed
 
 ## Dependencies
 
-- Depends on: RTV-21
-- Blocks: RTV-23
+- Depends on: RTV-25
+- Blocks: RTV-27

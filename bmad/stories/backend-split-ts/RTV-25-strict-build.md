@@ -1,5 +1,5 @@
 ---
-id: RTV-21-strict-build
+id: RTV-25-strict-build
 title: "Enforce strict mode repo-wide; tsc build → dist/; prod Dockerfile"
 status: Ready
 type: Story
@@ -19,7 +19,7 @@ As the **Tech Lead**, I want the whole backend to compile under `strict` and shi
 
 ## Background
 
-With every file converted (RTV-18/19/20), we remove the `allowJs` scaffolding, flip `strict: true` globally, and switch the runtime from `node index.js` (JS) to a `tsc`-built `dist/`. This is the point where TypeScript's value is fully banked.
+With every file converted (RTV-22/19/20), we remove the `allowJs` scaffolding, flip `strict: true` globally, and switch the runtime from `node index.js` (JS) to a `tsc`-built `dist/`. This is the point where TypeScript's value is fully banked.
 
 ## Acceptance Criteria
 
@@ -50,5 +50,5 @@ With every file converted (RTV-18/19/20), we remove the `allowJs` scaffolding, f
 
 ## Dependencies
 
-- Depends on: RTV-19, RTV-20
-- Blocks: RTV-22
+- Depends on: RTV-23, RTV-24
+- Blocks: RTV-26

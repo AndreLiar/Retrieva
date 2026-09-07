@@ -1,5 +1,5 @@
 ---
-id: RTV-18-domain-dora-graph-ts
+id: RTV-22-domain-dora-graph-ts
 title: "Convert domain models + the DORA graph to strict TypeScript (Zod z.infer)"
 status: Ready
 type: Story
@@ -33,7 +33,7 @@ The DORA graph is the product thesis — the relational integrity spreadsheets c
 
 - Convert leaf models first (no cross-model deps), then aggregates.
 - Where a Zod schema and a Mongoose schema describe the same entity, keep ONE canonical shape and derive the other.
-- Don't boil the ocean on strict for the whole repo here — scope strict to the converted dirs; repo-wide strict is RTV-21.
+- Don't boil the ocean on strict for the whole repo here — scope strict to the converted dirs; repo-wide strict is RTV-25.
 
 ## Definition of Done
 
@@ -50,5 +50,5 @@ The DORA graph is the product thesis — the relational integrity spreadsheets c
 
 ## Dependencies
 
-- Depends on: RTV-17
-- Blocks: RTV-19, RTV-20
+- Depends on: RTV-21
+- Blocks: RTV-23, RTV-24

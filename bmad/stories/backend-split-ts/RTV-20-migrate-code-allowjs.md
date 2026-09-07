@@ -1,5 +1,5 @@
 ---
-id: RTV-16-migrate-code-allowjs
+id: RTV-20-migrate-code-allowjs
 title: "Move the backend into retrieva-backend, green under allowJs"
 status: Ready
 type: Story
@@ -26,14 +26,14 @@ The backend (`retrieva/backend/**`) moves wholesale, preserving git history wher
 - [ ] AC-1: `backend/**` (app.js, index.js, config/, controllers/, models/, middleware/, services/, workers/, migrations/, utils/, tests/) moved to `retrieva-backend`; history preserved via `git filter-repo`/subtree where feasible.
 - [ ] AC-2: `npm ci` + `npm run typecheck` (`tsc --noEmit`, allowJs) exit 0 — JS files type-check loosely with no hard errors.
 - [ ] AC-3: `npm run test` (vitest unit) + `npm run test:integration` pass (mongodb-memory-server + Redis as today).
-- [ ] AC-4: `Dockerfile` builds and the container boots (`/health` 200) running the JS entrypoint (still `node index.js`; the `tsc` build comes in RTV-21).
+- [ ] AC-4: `Dockerfile` builds and the container boots (`/health` 200) running the JS entrypoint (still `node index.js`; the `tsc` build comes in RTV-25).
 - [ ] AC-5: `.env.example` + secret templates migrated; no secrets committed; `.env.production*.enc` handled per current SOPS/ESO flow.
 
 ## Technical Notes
 
 - Keep `node --import ./instrument.js index.js` entrypoint (Sentry/OTel) working post-move.
 - migrate-mongo config + `migrations/` come along; verify `migrate:status` runs.
-- Frontend removal from `retrieva` (making it frontend-only) is tracked separately in RTV-22's cutover — this story only ADDS to the new repo.
+- Frontend removal from `retrieva` (making it frontend-only) is tracked separately in RTV-26's cutover — this story only ADDS to the new repo.
 
 ## Definition of Done
 
@@ -50,5 +50,5 @@ The backend (`retrieva/backend/**`) moves wholesale, preserving git history wher
 
 ## Dependencies
 
-- Depends on: RTV-15
-- Blocks: RTV-17, RTV-18
+- Depends on: RTV-19
+- Blocks: RTV-21, RTV-22
