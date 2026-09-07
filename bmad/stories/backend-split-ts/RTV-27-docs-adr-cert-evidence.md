@@ -1,5 +1,5 @@
 ---
-id: RTV-23-docs-adr-cert-evidence
+id: RTV-27-docs-adr-cert-evidence
 title: "Docs + ADR + certification evidence for the split & TS migration"
 status: Ready
 type: Story
@@ -48,5 +48,5 @@ Per `documentation.md`, no workstream is done until its written trace reflects r
 
 ## Dependencies
 
-- Depends on: RTV-22
+- Depends on: RTV-26
 - Blocks: none (sprint close)

@@ -1,5 +1,5 @@
 ---
-id: RTV-15-scaffold-backend-repo
+id: RTV-19-scaffold-backend-repo
 title: "Scaffold retrieva-backend repo with a TypeScript baseline (allowJs)"
 status: Ready
 type: Story
@@ -32,7 +32,7 @@ Split from the monorepo (RFC #474): the backend moves to its own repo; `retrieva
 ## Technical Notes
 
 - NodeNext gotcha: relative imports need explicit `.js` extensions even in `.ts` source — document it in CONTRIBUTING.
-- Do NOT enable `strict` yet — that would make AC-3 impossible before any conversion. Strict comes in RTV-21.
+- Do NOT enable `strict` yet — that would make AC-3 impossible before any conversion. Strict comes in RTV-25.
 - Keep the repo Node-ESM (matches current backend) — no CommonJS regression.
 
 ## Definition of Done
@@ -52,4 +52,4 @@ Split from the monorepo (RFC #474): the backend moves to its own repo; `retrieva
 ## Dependencies
 
 - Depends on: #474 (RFC decision to split)
-- Blocks: RTV-16
+- Blocks: RTV-20

@@ -1,5 +1,5 @@
 ---
-id: RTV-20-services-workers-integrations-ts
+id: RTV-24-services-workers-integrations-ts
 title: "Convert services, workers, and integrations to TypeScript"
 status: Ready
 type: Story
@@ -50,5 +50,5 @@ The heavy logic lives here: RAG (`services/rag.js`, `fileIngestionService.js`, `
 
 ## Dependencies
 
-- Depends on: RTV-18
-- Blocks: RTV-21
+- Depends on: RTV-22
+- Blocks: RTV-25

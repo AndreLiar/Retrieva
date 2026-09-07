@@ -1,5 +1,5 @@
 ---
-id: RTV-17-ci-quality-gates
+id: RTV-21-ci-quality-gates
 title: "CI quality gates — tsc --noEmit + eslint + vitest"
 status: Ready
 type: Story
@@ -48,5 +48,5 @@ Type-stripping at runtime (Node 24) erases types but does not *check* them — s
 
 ## Dependencies
 
-- Depends on: RTV-16
-- Blocks: RTV-18 (safe conversion needs the gate)
+- Depends on: RTV-20
+- Blocks: RTV-22 (safe conversion needs the gate)
